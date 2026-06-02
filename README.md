@@ -68,3 +68,4 @@ npm run preview
 - Figma: https://www.figma.com/design/vIsxsnPzYLGFBSsts3yHXO
 - Linear: https://linear.app/joses-workspace-1/project/use-me-with-style-platform-37c7b8734a16
 - Notion hub: https://www.notion.so/35fcb5a5fd7a8110ab69f4abb538de98
+- Vercel production: https://use-me-with-style-platform.vercel.app
