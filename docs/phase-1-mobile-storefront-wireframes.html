@@ -1,0 +1,1696 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Use Me With Style - Phase 1 Wireframe Pack</title>
+    <style>
+      :root {
+        --ink: #151515;
+        --muted: #676767;
+        --line: #d7d7d7;
+        --soft-line: #ececec;
+        --paper: #ffffff;
+        --board: #f4f4f1;
+        --panel: #fbfaf7;
+        --accent: #b89135;
+        --accent-soft: #f5ebc9;
+        --info: #e8eef7;
+        --success: #e8f2e6;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--board);
+        color: var(--ink);
+        font-family:
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+      }
+
+      .board {
+        max-width: 1800px;
+        margin: 0 auto;
+        padding: 40px;
+      }
+
+      .header {
+        display: grid;
+        grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+        gap: 28px;
+        align-items: end;
+        margin-bottom: 32px;
+      }
+
+      .eyebrow {
+        margin: 0 0 10px;
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        max-width: 820px;
+        margin: 0;
+        font-size: 42px;
+        line-height: 1.05;
+        letter-spacing: 0;
+      }
+
+      .subhead {
+        max-width: 860px;
+        margin: 16px 0 0;
+        color: var(--muted);
+        font-size: 16px;
+        line-height: 1.55;
+      }
+
+      .meta {
+        display: grid;
+        gap: 8px;
+        padding: 18px;
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      .meta-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        font-size: 13px;
+      }
+
+      .meta-row span:first-child {
+        color: var(--muted);
+      }
+
+      .flow {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        margin: 0 0 30px;
+        padding: 16px;
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      .flow-step {
+        min-height: 34px;
+        padding: 9px 12px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--panel);
+        font-size: 12px;
+        font-weight: 750;
+      }
+
+      .flow-arrow {
+        color: var(--accent);
+        font-weight: 800;
+      }
+
+      .wireframes {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 28px;
+        align-items: start;
+      }
+
+      .screen-card {
+        display: grid;
+        gap: 12px;
+      }
+
+      .screen-title {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: baseline;
+      }
+
+      .screen-title h2 {
+        margin: 0;
+        font-size: 18px;
+        letter-spacing: 0;
+      }
+
+      .screen-title span {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .phone {
+        width: 320px;
+        min-height: 690px;
+        margin: 0 auto;
+        padding: 14px;
+        background: #0d0d0d;
+        border-radius: 28px;
+        box-shadow: 0 24px 55px rgba(0, 0, 0, 0.16);
+      }
+
+      .screen {
+        position: relative;
+        overflow: hidden;
+        min-height: 662px;
+        background: var(--paper);
+        border-radius: 20px;
+        border: 1px solid #1c1c1c;
+      }
+
+      .status {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 14px 6px;
+        font-size: 10px;
+        font-weight: 800;
+      }
+
+      .topbar {
+        display: grid;
+        grid-template-columns: 32px 1fr 32px;
+        gap: 8px;
+        align-items: center;
+        padding: 8px 14px 12px;
+        border-bottom: 1px solid var(--soft-line);
+      }
+
+      .brand {
+        text-align: center;
+        font-size: 14px;
+        font-weight: 900;
+      }
+
+      .icon {
+        display: grid;
+        place-items: center;
+        width: 30px;
+        height: 30px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        color: var(--ink);
+        font-size: 13px;
+        font-weight: 850;
+      }
+
+      .content {
+        padding: 14px;
+      }
+
+      .hero {
+        display: grid;
+        gap: 12px;
+        min-height: 190px;
+        padding: 16px;
+        background: linear-gradient(135deg, #eeeeee, #fafafa);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      .label {
+        width: fit-content;
+        padding: 5px 8px;
+        background: var(--accent-soft);
+        border-radius: 5px;
+        color: #6b5119;
+        font-size: 10px;
+        font-weight: 850;
+        text-transform: uppercase;
+      }
+
+      .hero h3,
+      .block h3 {
+        margin: 0;
+        font-size: 22px;
+        line-height: 1.08;
+        letter-spacing: 0;
+      }
+
+      .muted {
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.45;
+      }
+
+      .button {
+        display: grid;
+        place-items: center;
+        min-height: 42px;
+        padding: 0 14px;
+        background: var(--ink);
+        border-radius: 6px;
+        color: #f3d785;
+        font-size: 12px;
+        font-weight: 850;
+      }
+
+      .secondary-button {
+        display: grid;
+        place-items: center;
+        min-height: 40px;
+        padding: 0 14px;
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .spaced {
+        justify-content: space-between;
+      }
+
+      .section-label {
+        margin: 18px 0 9px;
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .chips {
+        display: flex;
+        gap: 8px;
+        overflow: hidden;
+      }
+
+      .chip {
+        white-space: nowrap;
+        padding: 8px 10px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 750;
+      }
+
+      .chip.active {
+        background: var(--ink);
+        color: var(--accent-soft);
+        border-color: var(--ink);
+      }
+
+      .product-row {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+      }
+
+      .product {
+        min-height: 142px;
+        padding: 10px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      .thumb {
+        display: grid;
+        place-items: center;
+        min-height: 72px;
+        margin-bottom: 8px;
+        background: #e7e7e7;
+        border-radius: 6px;
+        color: #9a9a9a;
+        font-size: 11px;
+        font-weight: 850;
+      }
+
+      .product strong,
+      .cart-line strong {
+        display: block;
+        font-size: 12px;
+        line-height: 1.2;
+      }
+
+      .product small,
+      .cart-line small {
+        display: block;
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 10px;
+      }
+
+      .searchbox,
+      .field {
+        min-height: 42px;
+        padding: 12px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .filter-row {
+        display: grid;
+        grid-template-columns: 1fr 86px;
+        gap: 8px;
+      }
+
+      .image-stack {
+        min-height: 248px;
+        padding: 14px;
+        background: #e7e7e7;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      .image-main {
+        display: grid;
+        place-items: center;
+        min-height: 200px;
+        border: 1px dashed #b8b8b8;
+        border-radius: 8px;
+        color: #777;
+        font-size: 12px;
+        font-weight: 850;
+      }
+
+      .options {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+      }
+
+      .option {
+        display: grid;
+        place-items: center;
+        min-height: 38px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .option.active {
+        border-color: var(--ink);
+        background: var(--ink);
+        color: var(--accent-soft);
+      }
+
+      .stock-note {
+        padding: 10px;
+        background: var(--info);
+        border-radius: 6px;
+        color: #294560;
+        font-size: 11px;
+        line-height: 1.4;
+      }
+
+      .sticky-cta {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: grid;
+        gap: 8px;
+        padding: 12px 14px 14px;
+        background: rgba(255, 255, 255, 0.96);
+        border-top: 1px solid var(--soft-line);
+      }
+
+      .cart-line {
+        display: grid;
+        grid-template-columns: 58px 1fr auto;
+        gap: 10px;
+        align-items: center;
+        padding: 10px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      .mini-thumb {
+        min-height: 58px;
+        background: #e7e7e7;
+        border-radius: 6px;
+      }
+
+      .qty {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 800;
+      }
+
+      .summary {
+        display: grid;
+        gap: 8px;
+        padding: 12px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      .summary div,
+      .timeline div {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        font-size: 12px;
+      }
+
+      .summary strong {
+        font-size: 14px;
+      }
+
+      .form {
+        display: grid;
+        gap: 8px;
+      }
+
+      .split {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+
+      .notice {
+        padding: 12px;
+        background: var(--accent-soft);
+        border-radius: 8px;
+        color: #66521c;
+        font-size: 11px;
+        line-height: 1.42;
+      }
+
+      .success-box {
+        display: grid;
+        place-items: center;
+        min-height: 150px;
+        padding: 20px;
+        background: var(--success);
+        border: 1px solid #c8ddc5;
+        border-radius: 8px;
+        text-align: center;
+      }
+
+      .success-box strong {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 22px;
+      }
+
+      .timeline {
+        display: grid;
+        gap: 10px;
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      .bottom-nav {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        background: var(--paper);
+        border-top: 1px solid var(--soft-line);
+      }
+
+      .nav-item {
+        display: grid;
+        place-items: center;
+        gap: 3px;
+        min-height: 56px;
+        color: var(--muted);
+        font-size: 10px;
+        font-weight: 800;
+      }
+
+      .nav-item.active {
+        color: var(--ink);
+      }
+
+      .nav-symbol {
+        font-size: 15px;
+      }
+
+      .notes {
+        width: min(100%, 320px);
+        margin: 0 auto;
+        padding: 14px;
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      .notes h3 {
+        margin: 0 0 8px;
+        font-size: 12px;
+        text-transform: uppercase;
+      }
+
+      .notes ul {
+        margin: 0;
+        padding-left: 18px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.45;
+      }
+
+      .handoff {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 18px;
+        margin-top: 32px;
+      }
+
+      .handoff-panel {
+        padding: 18px;
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      .handoff-panel h2 {
+        margin: 0 0 10px;
+        font-size: 16px;
+      }
+
+      .handoff-panel ul {
+        margin: 0;
+        padding-left: 18px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.55;
+      }
+
+      .section-header {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(280px, 420px);
+        gap: 22px;
+        align-items: end;
+        margin: 46px 0 22px;
+        padding-top: 28px;
+        border-top: 1px solid var(--line);
+      }
+
+      .section-header h2 {
+        margin: 0;
+        font-size: 30px;
+        line-height: 1.12;
+        letter-spacing: 0;
+      }
+
+      .section-header p {
+        margin: 10px 0 0;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.55;
+      }
+
+      .admin-grid {
+        display: grid;
+        grid-template-columns: minmax(720px, 1.2fr) minmax(320px, 0.8fr);
+        gap: 28px;
+        align-items: start;
+      }
+
+      .desktop-frame,
+      .tablet-frame {
+        overflow: hidden;
+        background: var(--paper);
+        border: 1px solid #222;
+        border-radius: 12px;
+        box-shadow: 0 24px 55px rgba(0, 0, 0, 0.12);
+      }
+
+      .desktop-frame {
+        min-height: 720px;
+      }
+
+      .admin-shell {
+        display: grid;
+        grid-template-columns: 188px 1fr;
+        min-height: 720px;
+      }
+
+      .admin-sidebar {
+        display: grid;
+        align-content: start;
+        gap: 8px;
+        padding: 18px 14px;
+        background: #151515;
+        color: #f6f2e7;
+      }
+
+      .admin-logo {
+        margin-bottom: 14px;
+        color: #f3d785;
+        font-size: 16px;
+        font-weight: 900;
+      }
+
+      .admin-nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 36px;
+        padding: 0 10px;
+        border-radius: 6px;
+        color: #d8d8d8;
+        font-size: 12px;
+        font-weight: 750;
+      }
+
+      .admin-nav.active {
+        background: #2a2a2a;
+        color: #f3d785;
+      }
+
+      .badge {
+        padding: 2px 6px;
+        background: var(--accent-soft);
+        border-radius: 999px;
+        color: #5d4516;
+        font-size: 10px;
+        font-weight: 850;
+      }
+
+      .admin-main {
+        padding: 24px;
+        background: var(--panel);
+      }
+
+      .admin-top {
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+        align-items: start;
+        margin-bottom: 18px;
+      }
+
+      .admin-title h3 {
+        margin: 0;
+        font-size: 28px;
+        line-height: 1.1;
+      }
+
+      .admin-title p {
+        margin: 6px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .kpis {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        margin-bottom: 14px;
+      }
+
+      .kpi,
+      .admin-panel,
+      .responsive-panel {
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      .kpi {
+        min-height: 92px;
+        padding: 14px;
+      }
+
+      .kpi span {
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .kpi strong {
+        display: block;
+        margin-top: 8px;
+        font-size: 23px;
+      }
+
+      .kpi small {
+        display: block;
+        margin-top: 5px;
+        color: #4f8147;
+        font-size: 11px;
+        font-weight: 800;
+      }
+
+      .admin-panels {
+        display: grid;
+        grid-template-columns: 1.35fr 0.9fr;
+        gap: 14px;
+      }
+
+      .admin-panel {
+        padding: 16px;
+      }
+
+      .admin-panel h4 {
+        margin: 0 0 12px;
+        font-size: 15px;
+      }
+
+      .chart-wire {
+        display: grid;
+        align-items: end;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 8px;
+        min-height: 180px;
+        padding: 16px;
+        background: var(--panel);
+        border: 1px dashed var(--line);
+        border-radius: 8px;
+      }
+
+      .bar {
+        display: block;
+        min-height: 28px;
+        background: #d7d1c2;
+        border-radius: 5px 5px 0 0;
+      }
+
+      .bar.active {
+        background: var(--accent);
+      }
+
+      .admin-list {
+        display: grid;
+        gap: 8px;
+      }
+
+      .admin-list-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 12px;
+        align-items: center;
+        padding: 10px;
+        background: var(--panel);
+        border: 1px solid var(--soft-line);
+        border-radius: 6px;
+        font-size: 12px;
+      }
+
+      .admin-list-row strong {
+        display: block;
+        font-size: 12px;
+      }
+
+      .admin-list-row small {
+        display: block;
+        margin-top: 3px;
+        color: var(--muted);
+        font-size: 10px;
+      }
+
+      .admin-bottom {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        margin-top: 14px;
+      }
+
+      .decision-stack {
+        display: grid;
+        gap: 12px;
+      }
+
+      .decision-card {
+        padding: 14px;
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      .decision-card h3 {
+        margin: 0 0 6px;
+        font-size: 14px;
+      }
+
+      .decision-card p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.45;
+      }
+
+      .responsive-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 24px;
+      }
+
+      .tablet-frame {
+        min-height: 430px;
+        padding: 14px;
+      }
+
+      .tablet-screen {
+        min-height: 402px;
+        padding: 16px;
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      .desktop-wire {
+        display: grid;
+        grid-template-columns: 1.1fr 1fr;
+        gap: 14px;
+      }
+
+      .wire-block {
+        min-height: 80px;
+        padding: 12px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 750;
+      }
+
+      .wire-block.tall {
+        min-height: 208px;
+      }
+
+      .wire-block.dark {
+        background: #151515;
+        color: #f3d785;
+      }
+
+      .responsive-rules {
+        display: grid;
+        gap: 10px;
+        margin-top: 12px;
+      }
+
+      .rule-row {
+        display: grid;
+        grid-template-columns: 100px 1fr;
+        gap: 12px;
+        padding: 10px;
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        font-size: 12px;
+      }
+
+      .rule-row strong {
+        font-size: 12px;
+      }
+
+      @media (max-width: 840px) {
+        .board {
+          padding: 24px 16px;
+        }
+
+        .header,
+        .section-header,
+        .admin-grid {
+          grid-template-columns: 1fr;
+        }
+
+        h1 {
+          font-size: 32px;
+        }
+
+        .admin-shell {
+          grid-template-columns: 1fr;
+        }
+
+        .admin-sidebar {
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+
+        .admin-logo {
+          grid-column: 1 / -1;
+        }
+
+        .kpis,
+        .admin-panels,
+        .admin-bottom,
+        .desktop-wire {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="board">
+      <section class="header">
+        <div>
+          <p class="eyebrow">Phase 1 wireframe pack</p>
+          <h1>Storefront, admin dashboard, and responsive behavior</h1>
+          <p class="subhead">
+            Low-fidelity pass for the first production design review. The goal is to validate the customer journey, launch admin workflow,
+            and responsive behavior before visual polish.
+          </p>
+        </div>
+        <aside class="meta" aria-label="Project metadata">
+          <div class="meta-row"><span>Project</span><strong>Use Me With Style</strong></div>
+          <div class="meta-row"><span>Fidelity</span><strong>Low-fi wireframes</strong></div>
+          <div class="meta-row"><span>Viewports</span><strong>Mobile, tablet, desktop</strong></div>
+          <div class="meta-row"><span>Source</span><strong>Prototype and Phase 1 Notion scope</strong></div>
+        </aside>
+      </section>
+
+      <nav class="flow" aria-label="Customer flow">
+        <span class="flow-step">01 Home</span>
+        <span class="flow-arrow">-></span>
+        <span class="flow-step">02 Catalogue</span>
+        <span class="flow-arrow">-></span>
+        <span class="flow-step">03 Product</span>
+        <span class="flow-arrow">-></span>
+        <span class="flow-step">04 Cart</span>
+        <span class="flow-arrow">-></span>
+        <span class="flow-step">05 Checkout</span>
+        <span class="flow-arrow">-></span>
+        <span class="flow-step">06 Confirmation</span>
+        <span class="flow-arrow">-></span>
+        <span class="flow-step">07 Account</span>
+      </nav>
+
+      <section class="wireframes">
+        <article class="screen-card">
+          <div class="screen-title">
+            <h2>01. Home / Launch Drop</h2>
+            <span>Entry and merchandising</span>
+          </div>
+          <div class="phone">
+            <div class="screen">
+              <div class="status"><span>9:41</span><span>AO / EN</span></div>
+              <div class="topbar">
+                <div class="icon">=</div>
+                <div class="brand">Use Me</div>
+                <div class="icon">Bag</div>
+              </div>
+              <div class="content" style="padding-bottom: 72px">
+                <div class="hero">
+                  <span class="label">New drop</span>
+                  <h3>Aurora Collection</h3>
+                  <p class="muted">Hero space for campaign image, launch message, and strongest conversion action.</p>
+                  <div class="row">
+                    <div class="button" style="flex: 1">Shop the drop</div>
+                    <div class="secondary-button" style="flex: 1">View lookbook</div>
+                  </div>
+                </div>
+                <div class="section-label">Shop by category</div>
+                <div class="chips">
+                  <span class="chip active">All</span>
+                  <span class="chip">Dresses</span>
+                  <span class="chip">Tops</span>
+                  <span class="chip">Sets</span>
+                </div>
+                <div class="section-label row spaced">
+                  <span>New arrivals</span>
+                  <span class="muted">View all</span>
+                </div>
+                <div class="product-row">
+                  <div class="product"><div class="thumb">Image</div><strong>Aurora Dress</strong><small>Kz 18,500</small></div>
+                  <div class="product"><div class="thumb">Image</div><strong>Sereno Set</strong><small>Kz 24,500</small></div>
+                </div>
+                <div class="section-label">Social shopping strip</div>
+                <div class="row">
+                  <div class="thumb" style="flex: 1; min-height: 58px">IG</div>
+                  <div class="thumb" style="flex: 1; min-height: 58px">IG</div>
+                  <div class="thumb" style="flex: 1; min-height: 58px">IG</div>
+                </div>
+              </div>
+              <div class="bottom-nav">
+                <div class="nav-item active"><span class="nav-symbol">H</span><span>Home</span></div>
+                <div class="nav-item"><span class="nav-symbol">S</span><span>Shop</span></div>
+                <div class="nav-item"><span class="nav-symbol">B</span><span>Cart</span></div>
+                <div class="nav-item"><span class="nav-symbol">A</span><span>Account</span></div>
+              </div>
+            </div>
+          </div>
+          <aside class="notes">
+            <h3>Notes</h3>
+            <ul>
+              <li>Use this to test brand storytelling versus direct shopping.</li>
+              <li>Keep campaign blocks editable for future CMS/admin control.</li>
+              <li>Market/language choice should be visible but quiet.</li>
+            </ul>
+          </aside>
+        </article>
+
+        <article class="screen-card">
+          <div class="screen-title">
+            <h2>02. Catalogue / Collection</h2>
+            <span>Discovery and filtering</span>
+          </div>
+          <div class="phone">
+            <div class="screen">
+              <div class="status"><span>9:41</span><span>AO / EN</span></div>
+              <div class="topbar">
+                <div class="icon">&lt;</div>
+                <div class="brand">Shop</div>
+                <div class="icon">Bag</div>
+              </div>
+              <div class="content" style="padding-bottom: 72px">
+                <div class="filter-row">
+                  <div class="searchbox">Search product, color, size</div>
+                  <div class="secondary-button">Filter</div>
+                </div>
+                <div class="section-label">Categories</div>
+                <div class="chips">
+                  <span class="chip active">All</span>
+                  <span class="chip">Dresses</span>
+                  <span class="chip">Tops</span>
+                  <span class="chip">Leggings</span>
+                </div>
+                <div class="section-label row spaced">
+                  <span>12 products</span>
+                  <span class="muted">Sort: New</span>
+                </div>
+                <div class="product-row">
+                  <div class="product"><div class="thumb">Image</div><span class="label">New</span><strong>Aurora Dress</strong><small>Kz 18,500</small></div>
+                  <div class="product"><div class="thumb">Image</div><strong>Solene Dress</strong><small>Kz 22,000</small></div>
+                  <div class="product"><div class="thumb">Image</div><span class="label">Low stock</span><strong>Mares Dress</strong><small>Kz 16,500</small></div>
+                  <div class="product"><div class="thumb">Image</div><strong>Brisa Top</strong><small>Kz 8,500</small></div>
+                </div>
+                <div class="notice" style="margin-top: 12px">State to design later: no results, sold out, waitlist available, and loading products.</div>
+              </div>
+              <div class="bottom-nav">
+                <div class="nav-item"><span class="nav-symbol">H</span><span>Home</span></div>
+                <div class="nav-item active"><span class="nav-symbol">S</span><span>Shop</span></div>
+                <div class="nav-item"><span class="nav-symbol">B</span><span>Cart</span></div>
+                <div class="nav-item"><span class="nav-symbol">A</span><span>Account</span></div>
+              </div>
+            </div>
+          </div>
+          <aside class="notes">
+            <h3>Notes</h3>
+            <ul>
+              <li>Filter logic should stay small in Phase 1: category, size, color, availability.</li>
+              <li>Product cards need price, stock cue, and product image hierarchy.</li>
+              <li>Search can be simple but should support social-driven product finding.</li>
+            </ul>
+          </aside>
+        </article>
+
+        <article class="screen-card">
+          <div class="screen-title">
+            <h2>03. Product Detail</h2>
+            <span>Decision and add to cart</span>
+          </div>
+          <div class="phone">
+            <div class="screen">
+              <div class="status"><span>9:41</span><span>AO / EN</span></div>
+              <div class="topbar">
+                <div class="icon">&lt;</div>
+                <div class="brand">Product</div>
+                <div class="icon">Bag</div>
+              </div>
+              <div class="content" style="padding-bottom: 96px">
+                <div class="image-stack">
+                  <div class="image-main">Product media carousel</div>
+                </div>
+                <div class="section-label row spaced">
+                  <span>Aurora Dress</span>
+                  <span>Kz 18,500</span>
+                </div>
+                <p class="muted">Short fit, fabric, and styling note. Keep copy concise for mobile.</p>
+                <div class="section-label">Size</div>
+                <div class="options">
+                  <span class="option">XS</span>
+                  <span class="option active">S</span>
+                  <span class="option">M</span>
+                  <span class="option">L</span>
+                </div>
+                <div class="section-label">Color</div>
+                <div class="options">
+                  <span class="option active">Sand</span>
+                  <span class="option">Night</span>
+                  <span class="option">Coral</span>
+                  <span class="option">More</span>
+                </div>
+                <div class="stock-note" style="margin-top: 12px">Size S: 4 left. If unavailable, show waitlist capture instead of losing demand.</div>
+              </div>
+              <div class="sticky-cta">
+                <div class="row spaced muted"><span>Selected: S / Sand</span><strong>Kz 18,500</strong></div>
+                <div class="button">Add to cart</div>
+              </div>
+            </div>
+          </div>
+          <aside class="notes">
+            <h3>Notes</h3>
+            <ul>
+              <li>Critical Phase 1 state: unavailable size should become join waitlist.</li>
+              <li>Sticky CTA keeps purchase action reachable after scrolling.</li>
+              <li>Related products can sit below this first viewport.</li>
+            </ul>
+          </aside>
+        </article>
+
+        <article class="screen-card">
+          <div class="screen-title">
+            <h2>04. Cart</h2>
+            <span>Review and edit order</span>
+          </div>
+          <div class="phone">
+            <div class="screen">
+              <div class="status"><span>9:41</span><span>AO / EN</span></div>
+              <div class="topbar">
+                <div class="icon">&lt;</div>
+                <div class="brand">Cart</div>
+                <div class="icon">X</div>
+              </div>
+              <div class="content" style="padding-bottom: 96px">
+                <div class="cart-line">
+                  <div class="mini-thumb"></div>
+                  <div>
+                    <strong>Aurora Dress</strong>
+                    <small>Size M / Sand</small>
+                    <div class="qty">- 1 +</div>
+                  </div>
+                  <strong>Kz 18,500</strong>
+                </div>
+                <div class="cart-line" style="margin-top: 10px">
+                  <div class="mini-thumb"></div>
+                  <div>
+                    <strong>Brisa Top</strong>
+                    <small>Size S / Black</small>
+                    <div class="qty">- 1 +</div>
+                  </div>
+                  <strong>Kz 8,500</strong>
+                </div>
+                <div class="section-label">Order notes</div>
+                <div class="field">Optional delivery or fit note</div>
+                <div class="section-label">Summary</div>
+                <div class="summary">
+                  <div><span>Subtotal</span><span>Kz 27,000</span></div>
+                  <div><span>Delivery</span><span>Calculated next</span></div>
+                  <div><strong>Total</strong><strong>Kz 27,000</strong></div>
+                </div>
+                <div class="notice" style="margin-top: 12px">State to design later: empty cart with return-to-shop action.</div>
+              </div>
+              <div class="sticky-cta">
+                <div class="button">Continue to checkout</div>
+                <div class="secondary-button">Keep shopping</div>
+              </div>
+            </div>
+          </div>
+          <aside class="notes">
+            <h3>Notes</h3>
+            <ul>
+              <li>Cart should expose quantity edit and item removal without a separate page.</li>
+              <li>Delivery cost can wait until checkout if market rules are undecided.</li>
+              <li>Empty cart state is required for implementation handoff.</li>
+            </ul>
+          </aside>
+        </article>
+
+        <article class="screen-card">
+          <div class="screen-title">
+            <h2>05. Checkout</h2>
+            <span>Market, delivery, payment</span>
+          </div>
+          <div class="phone">
+            <div class="screen">
+              <div class="status"><span>9:41</span><span>AO / EN</span></div>
+              <div class="topbar">
+                <div class="icon">&lt;</div>
+                <div class="brand">Checkout</div>
+                <div class="icon">?</div>
+              </div>
+              <div class="content" style="padding-bottom: 96px">
+                <div class="section-label">Contact</div>
+                <div class="form">
+                  <div class="field">Full name</div>
+                  <div class="field">Phone or WhatsApp</div>
+                  <div class="field">Email</div>
+                </div>
+                <div class="section-label">Market</div>
+                <div class="split">
+                  <div class="option active">Angola</div>
+                  <div class="option">Portugal</div>
+                </div>
+                <div class="section-label">Delivery</div>
+                <div class="form">
+                  <div class="field">City / province</div>
+                  <div class="field">Delivery address</div>
+                </div>
+                <div class="section-label">Payment</div>
+                <div class="chips">
+                  <span class="chip active">Multicaixa</span>
+                  <span class="chip">Bank transfer</span>
+                  <span class="chip">Card</span>
+                </div>
+                <div class="summary" style="margin-top: 12px">
+                  <div><span>Items</span><span>Kz 27,000</span></div>
+                  <div><span>Delivery</span><span>Kz 2,000</span></div>
+                  <div><strong>Total</strong><strong>Kz 29,000</strong></div>
+                </div>
+              </div>
+              <div class="sticky-cta">
+                <div class="button">Place order</div>
+              </div>
+            </div>
+          </div>
+          <aside class="notes">
+            <h3>Notes</h3>
+            <ul>
+              <li>Payment/provider decision is still a business dependency.</li>
+              <li>Checkout must create a stored order record for admin.</li>
+              <li>Validation states need to be designed before implementation.</li>
+            </ul>
+          </aside>
+        </article>
+
+        <article class="screen-card">
+          <div class="screen-title">
+            <h2>06. Confirmation</h2>
+            <span>Order captured</span>
+          </div>
+          <div class="phone">
+            <div class="screen">
+              <div class="status"><span>9:41</span><span>AO / EN</span></div>
+              <div class="topbar">
+                <div class="icon"></div>
+                <div class="brand">Confirmed</div>
+                <div class="icon">Bag</div>
+              </div>
+              <div class="content">
+                <div class="success-box">
+                  <div>
+                    <strong>Order #1046</strong>
+                    <p class="muted">Thank you. Your order was received and is now visible to the admin team.</p>
+                  </div>
+                </div>
+                <div class="section-label">What happens next</div>
+                <div class="timeline">
+                  <div><span>1. Payment review</span><span>Pending</span></div>
+                  <div><span>2. Fulfilment</span><span>After payment</span></div>
+                  <div><span>3. Delivery update</span><span>WhatsApp</span></div>
+                </div>
+                <div class="section-label">Order summary</div>
+                <div class="summary">
+                  <div><span>Aurora Dress</span><span>Kz 18,500</span></div>
+                  <div><span>Brisa Top</span><span>Kz 8,500</span></div>
+                  <div><strong>Total</strong><strong>Kz 29,000</strong></div>
+                </div>
+                <div class="row" style="margin-top: 14px">
+                  <div class="button" style="flex: 1">View order</div>
+                  <div class="secondary-button" style="flex: 1">Continue</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <aside class="notes">
+            <h3>Notes</h3>
+            <ul>
+              <li>Must reassure customer and reduce manual follow-up questions.</li>
+              <li>Should reference the payment/delivery channel chosen in checkout.</li>
+              <li>Order ID must match admin order queue.</li>
+            </ul>
+          </aside>
+        </article>
+
+        <article class="screen-card">
+          <div class="screen-title">
+            <h2>07. Account</h2>
+            <span>Continuity after purchase</span>
+          </div>
+          <div class="phone">
+            <div class="screen">
+              <div class="status"><span>9:41</span><span>AO / EN</span></div>
+              <div class="topbar">
+                <div class="icon">&lt;</div>
+                <div class="brand">Account</div>
+                <div class="icon">Edit</div>
+              </div>
+              <div class="content" style="padding-bottom: 72px">
+                <div class="hero" style="min-height: 118px">
+                  <span class="label">VIP signal</span>
+                  <h3>Mariana Sousa</h3>
+                  <p class="muted">Wishlist, order history, and service context in one place.</p>
+                </div>
+                <div class="section-label row spaced">
+                  <span>Recent orders</span>
+                  <span class="muted">View all</span>
+                </div>
+                <div class="timeline">
+                  <div><span>#1046</span><span>Payment review</span></div>
+                  <div><span>#1045</span><span>Processing</span></div>
+                  <div><span>#1040</span><span>Delivered</span></div>
+                </div>
+                <div class="section-label">Wishlist</div>
+                <div class="product-row">
+                  <div class="product"><div class="thumb">Image</div><strong>Aurora Dress</strong><small>Size M available</small></div>
+                  <div class="product"><div class="thumb">Image</div><strong>Athena Top</strong><small>Saved last week</small></div>
+                </div>
+                <div class="notice" style="margin-top: 12px">Phase 1 can treat account as lightweight order lookup if full login is deferred.</div>
+              </div>
+              <div class="bottom-nav">
+                <div class="nav-item"><span class="nav-symbol">H</span><span>Home</span></div>
+                <div class="nav-item"><span class="nav-symbol">S</span><span>Shop</span></div>
+                <div class="nav-item"><span class="nav-symbol">B</span><span>Cart</span></div>
+                <div class="nav-item active"><span class="nav-symbol">A</span><span>Account</span></div>
+              </div>
+            </div>
+          </div>
+          <aside class="notes">
+            <h3>Notes</h3>
+            <ul>
+              <li>Useful for repeat customers, but full accounts may be Phase 2.</li>
+              <li>Wishlist and order history can inform marketing and stock decisions later.</li>
+              <li>Confirm whether Phase 1 uses account login or order lookup only.</li>
+            </ul>
+          </aside>
+        </article>
+      </section>
+
+      <section class="section-header" aria-labelledby="admin-title">
+        <div>
+          <p class="eyebrow">Phase 1 admin wireframes</p>
+          <h2 id="admin-title">Admin dashboard and launch operations</h2>
+          <p>
+            The admin side should be calm, operational, and focused on the daily launch workflow:
+            what changed today, which orders need action, which products need stock attention, and which market/payment settings are still unresolved.
+          </p>
+        </div>
+        <aside class="meta" aria-label="Admin scope">
+          <div class="meta-row"><span>Primary viewport</span><strong>Desktop admin</strong></div>
+          <div class="meta-row"><span>Fallback viewport</span><strong>Tablet/mobile stacked</strong></div>
+          <div class="meta-row"><span>Phase 1 modules</span><strong>Dashboard, Orders, Products, Settings</strong></div>
+          <div class="meta-row"><span>Default deferrals</span><strong>AI, advanced analytics, roles</strong></div>
+        </aside>
+      </section>
+
+      <section class="admin-grid">
+        <article class="screen-card">
+          <div class="screen-title">
+            <h2>A01. Admin Dashboard</h2>
+            <span>Daily operating view</span>
+          </div>
+          <div class="desktop-frame">
+            <div class="admin-shell">
+              <aside class="admin-sidebar">
+                <div class="admin-logo">Use Me Admin</div>
+                <div class="admin-nav active">Dashboard</div>
+                <div class="admin-nav">Orders <span class="badge">2</span></div>
+                <div class="admin-nav">Products</div>
+                <div class="admin-nav">Settings</div>
+                <div class="admin-nav">Roadmap</div>
+              </aside>
+              <div class="admin-main">
+                <div class="admin-top">
+                  <div class="admin-title">
+                    <h3>Morning check</h3>
+                    <p>What Raisa needs to know before opening the store today.</p>
+                  </div>
+                  <div class="secondary-button">Export day summary</div>
+                </div>
+
+                <div class="kpis">
+                  <div class="kpi"><span>Orders today</span><strong>12</strong><small>+3 vs yesterday</small></div>
+                  <div class="kpi"><span>Revenue today</span><strong>Kz 218K</strong><small>+18%</small></div>
+                  <div class="kpi"><span>Visits today</span><strong>1,438</strong><small>+12%</small></div>
+                  <div class="kpi"><span>Conversion</span><strong>3.2%</strong><small style="color:#a96344">-0.4%</small></div>
+                </div>
+
+                <div class="admin-panels">
+                  <div class="admin-panel">
+                    <h4>Daily revenue trend</h4>
+                    <div class="chart-wire">
+                      <span class="bar" style="height: 44px"></span>
+                      <span class="bar" style="height: 72px"></span>
+                      <span class="bar" style="height: 58px"></span>
+                      <span class="bar" style="height: 96px"></span>
+                      <span class="bar active" style="height: 138px"></span>
+                      <span class="bar" style="height: 112px"></span>
+                      <span class="bar" style="height: 82px"></span>
+                    </div>
+                  </div>
+                  <div class="admin-panel">
+                    <h4>Recent orders</h4>
+                    <div class="admin-list">
+                      <div class="admin-list-row"><div><strong>#1045 Mariana Sousa</strong><small>Luanda · payment review</small></div><span class="badge">New</span></div>
+                      <div class="admin-list-row"><div><strong>#1044 Ana Pereira</strong><small>Lisboa · 2 items</small></div><span class="badge">New</span></div>
+                      <div class="admin-list-row"><div><strong>#1043 Beatriz Lima</strong><small>Luanda · processing</small></div><span>Open</span></div>
+                      <div class="admin-list-row"><div><strong>#1042 Sofia Mendes</strong><small>Porto · shipped</small></div><span>Open</span></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="admin-bottom">
+                  <div class="admin-panel">
+                    <h4>Product pressure</h4>
+                    <div class="admin-list">
+                      <div class="admin-list-row"><div><strong>Mares Dress S</strong><small>Sold out · 32 waitlist customers</small></div><span class="badge">Restock</span></div>
+                      <div class="admin-list-row"><div><strong>Aurora Dress M</strong><small>4 units left · high cart activity</small></div><span class="badge">Low</span></div>
+                      <div class="admin-list-row"><div><strong>Sereno Set</strong><small>Top seller in Portugal</small></div><span>Watch</span></div>
+                    </div>
+                  </div>
+                  <div class="admin-panel">
+                    <h4>Launch decisions</h4>
+                    <div class="admin-list">
+                      <div class="admin-list-row"><div><strong>Payment provider</strong><small>Angola and Portugal rules incomplete</small></div><span class="badge">Open</span></div>
+                      <div class="admin-list-row"><div><strong>Delivery fees</strong><small>Needs city/market pricing</small></div><span class="badge">Open</span></div>
+                      <div class="admin-list-row"><div><strong>Product photos</strong><small>Catalogue source and assets</small></div><span>Review</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <aside class="notes" style="width:min(100%, 760px)">
+            <h3>Notes</h3>
+            <ul>
+              <li>Dashboard must answer: what happened today, what needs attention, and where Raisa should click next.</li>
+              <li>Phase 1 quick links should lead to Orders, Products, and Settings only.</li>
+              <li>Advanced analytics and AI suggestions can be visible as future signals, but not required for launch.</li>
+            </ul>
+          </aside>
+        </article>
+
+        <div class="decision-stack">
+          <article class="screen-card">
+            <div class="screen-title">
+              <h2>A02. Orders Snapshot</h2>
+              <span>Queue and detail entry</span>
+            </div>
+            <div class="decision-card">
+              <h3>Order queue wireframe</h3>
+              <p>Filter chips: All, New, Processing, Shipped, Delivered. First highlighted row is payment review for #1045.</p>
+              <div class="admin-list" style="margin-top: 12px">
+                <div class="admin-list-row"><div><strong>#1045</strong><small>Mariana · Multicaixa review</small></div><span class="badge">Review</span></div>
+                <div class="admin-list-row"><div><strong>#1044</strong><small>Ana · Lisboa · 2 items</small></div><span>Open</span></div>
+                <div class="admin-list-row"><div><strong>#1043</strong><small>Beatriz · processing</small></div><span>Open</span></div>
+              </div>
+            </div>
+          </article>
+
+          <article class="screen-card">
+            <div class="screen-title">
+              <h2>A03. Products Snapshot</h2>
+              <span>Catalogue control</span>
+            </div>
+            <div class="decision-card">
+              <h3>Product management wireframe</h3>
+              <p>Grid of products with image placeholder, status, price, total stock, and low-stock cue. Primary action: Add product.</p>
+              <div class="product-row" style="margin-top: 12px">
+                <div class="product"><div class="thumb">Photo</div><strong>Aurora Dress</strong><small>4 left · active</small></div>
+                <div class="product"><div class="thumb">Photo</div><strong>Mares Dress</strong><small>Sold out S</small></div>
+              </div>
+            </div>
+          </article>
+
+          <article class="screen-card">
+            <div class="screen-title">
+              <h2>A04. Settings Snapshot</h2>
+              <span>Markets and payment</span>
+            </div>
+            <div class="decision-card">
+              <h3>Launch settings wireframe</h3>
+              <p>Three market cards: Angola, Portugal, International. Each exposes currency, payment methods, delivery rules, and language defaults.</p>
+              <div class="admin-list" style="margin-top: 12px">
+                <div class="admin-list-row"><div><strong>Angola</strong><small>Kz · Multicaixa · local delivery</small></div><span>Edit</span></div>
+                <div class="admin-list-row"><div><strong>Portugal</strong><small>EUR · card · CTT</small></div><span>Edit</span></div>
+                <div class="admin-list-row"><div><strong>International</strong><small>USD/EUR · Stripe/PayPal</small></div><span>Later</span></div>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="section-header" aria-labelledby="responsive-title">
+        <div>
+          <p class="eyebrow">Responsive wireframes</p>
+          <h2 id="responsive-title">Mobile-ready behavior for the other Phase 1 screens</h2>
+          <p>
+            These are not final visuals. They define how the already planned screens change when the viewport grows:
+            mobile keeps the purchase action close, tablet introduces two-column review states, and desktop opens wider merchandising and operations layouts.
+          </p>
+        </div>
+        <aside class="meta" aria-label="Responsive scope">
+          <div class="meta-row"><span>Mobile</span><strong>320-430px</strong></div>
+          <div class="meta-row"><span>Tablet</span><strong>768-1024px</strong></div>
+          <div class="meta-row"><span>Desktop</span><strong>1200px+</strong></div>
+          <div class="meta-row"><span>Rule</span><strong>Same content, different density</strong></div>
+        </aside>
+      </section>
+
+      <section class="responsive-grid">
+        <article class="screen-card">
+          <div class="screen-title">
+            <h2>R01. Storefront Home</h2>
+            <span>Mobile -> desktop</span>
+          </div>
+          <div class="tablet-frame">
+            <div class="tablet-screen">
+              <div class="desktop-wire">
+                <div class="wire-block tall dark">Full-width launch hero with campaign image, collection story, and primary CTA</div>
+                <div>
+                  <div class="wire-block">New arrivals carousel becomes 2x2 editorial grid</div>
+                  <div class="wire-block" style="margin-top: 12px">Categories become horizontal pills on mobile, card grid on desktop</div>
+                  <div class="wire-block" style="margin-top: 12px">Social shopping strip expands to shoppable content row</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="responsive-rules">
+            <div class="rule-row"><strong>Mobile</strong><span>Single column, sticky bottom nav, hero CTA above product sections.</span></div>
+            <div class="rule-row"><strong>Tablet</strong><span>Hero remains first, product cards move to two or three columns.</span></div>
+            <div class="rule-row"><strong>Desktop</strong><span>Hero can become split editorial/product composition with a persistent top nav.</span></div>
+          </div>
+        </article>
+
+        <article class="screen-card">
+          <div class="screen-title">
+            <h2>R02. Catalogue and Product</h2>
+            <span>Discovery scales up</span>
+          </div>
+          <div class="tablet-frame">
+            <div class="tablet-screen">
+              <div class="desktop-wire">
+                <div>
+                  <div class="wire-block">Search, category tabs, sort</div>
+                  <div class="wire-block tall" style="margin-top: 12px">Product grid: 2 columns mobile, 3 tablet, 4 desktop</div>
+                </div>
+                <div>
+                  <div class="wire-block tall">Product media left on desktop, details and options right</div>
+                  <div class="wire-block" style="margin-top: 12px">Sticky add-to-cart remains on mobile, becomes inline desktop CTA</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="responsive-rules">
+            <div class="rule-row"><strong>Mobile</strong><span>Filters collapse behind one button; product CTA sticks to bottom.</span></div>
+            <div class="rule-row"><strong>Tablet</strong><span>Filters can be inline chips; product images and details begin to sit side by side.</span></div>
+            <div class="rule-row"><strong>Desktop</strong><span>Use left filter rail for catalogue and two-column product detail layout.</span></div>
+          </div>
+        </article>
+
+        <article class="screen-card">
+          <div class="screen-title">
+            <h2>R03. Cart and Checkout</h2>
+            <span>Conversion protection</span>
+          </div>
+          <div class="tablet-frame">
+            <div class="tablet-screen">
+              <div class="desktop-wire">
+                <div>
+                  <div class="wire-block tall">Cart items or checkout form in primary column</div>
+                  <div class="wire-block" style="margin-top: 12px">Delivery note and validation messages sit below relevant fields</div>
+                </div>
+                <div>
+                  <div class="wire-block tall dark">Order summary becomes persistent right column on tablet/desktop</div>
+                  <div class="wire-block" style="margin-top: 12px">Payment and delivery decisions appear as market-aware cards</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="responsive-rules">
+            <div class="rule-row"><strong>Mobile</strong><span>One step at a time, sticky CTA, summary close to final action.</span></div>
+            <div class="rule-row"><strong>Tablet</strong><span>Form and summary can sit side by side after cart review.</span></div>
+            <div class="rule-row"><strong>Desktop</strong><span>Persistent right summary reduces anxiety while customer fills checkout.</span></div>
+          </div>
+        </article>
+
+        <article class="screen-card">
+          <div class="screen-title">
+            <h2>R04. Admin Responsiveness</h2>
+            <span>Operational fallback</span>
+          </div>
+          <div class="tablet-frame">
+            <div class="tablet-screen">
+              <div class="desktop-wire">
+                <div>
+                  <div class="wire-block">Desktop sidebar becomes top tab bar on tablet</div>
+                  <div class="wire-block" style="margin-top: 12px">KPI cards stack 2x2 on tablet, 1 column on mobile</div>
+                  <div class="wire-block" style="margin-top: 12px">Order table becomes order cards below 840px</div>
+                </div>
+                <div>
+                  <div class="wire-block tall dark">Dashboard remains useful on mobile for quick checks, not heavy admin work</div>
+                  <div class="wire-block" style="margin-top: 12px">Product editor stacks image, fields, stock, and publish controls</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="responsive-rules">
+            <div class="rule-row"><strong>Mobile</strong><span>Useful for quick order checks and status updates; complex editing is secondary.</span></div>
+            <div class="rule-row"><strong>Tablet</strong><span>Good baseline for fulfilment use during operations.</span></div>
+            <div class="rule-row"><strong>Desktop</strong><span>Primary admin viewport for product setup, order review, and settings.</span></div>
+          </div>
+        </article>
+      </section>
+
+      <section class="handoff" aria-label="Wireframe handoff notes">
+        <div class="handoff-panel">
+          <h2>States To Add In Figma</h2>
+          <ul>
+            <li>Empty cart and no-search-results states.</li>
+            <li>Unavailable size with waitlist capture.</li>
+            <li>Checkout validation and payment-review messaging.</li>
+            <li>Confirmation for Angola, Portugal, and international market variations.</li>
+            <li>Admin empty/loading/error states for orders, products, and settings.</li>
+          </ul>
+        </div>
+        <div class="handoff-panel">
+          <h2>Open Phase 1 Decisions</h2>
+          <ul>
+            <li>Primary launch market and default currency.</li>
+            <li>Payment methods/provider for Angola and Portugal.</li>
+            <li>Delivery and fulfilment rules.</li>
+            <li>Whether full customer accounts remain Phase 2.</li>
+            <li>Whether admin mobile is for quick checks only or full editing.</li>
+          </ul>
+        </div>
+        <div class="handoff-panel">
+          <h2>Figma Transfer Plan</h2>
+          <ul>
+            <li>Create page: 01 - Mobile Storefront Wireframes.</li>
+            <li>Create page: 02 - Admin Phase 1 Wireframes.</li>
+            <li>Create page: 03 - Responsive Behavior.</li>
+            <li>Add seven storefront mobile frames plus admin and responsive review notes.</li>
+            <li>Use low-fi components first: header, bottom nav, product card, field, CTA, order summary.</li>
+            <li>Move to visual polish only after flow review.</li>
+          </ul>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
