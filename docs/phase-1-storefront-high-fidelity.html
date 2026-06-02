@@ -1,0 +1,2653 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Use Me With Style - Phase 1 Storefront High Fidelity</title>
+    <link rel="icon" type="image/svg+xml" href="../public/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Montserrat:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --black: #050505;
+        --ink: #171514;
+        --charcoal: #2b2927;
+        --muted: #6c655d;
+        --stone: #e7dfcf;
+        --line: #d8cdb7;
+        --line-soft: #ece5d8;
+        --paper: #fffdf8;
+        --ivory: #f8f4ec;
+        --champagne: #e5c24f;
+        --gold: #caa039;
+        --gold-deep: #937027;
+        --rose: #a66f63;
+        --sage: #78816f;
+        --blue: #426a70;
+        --success: #3f754d;
+        --alert: #b95545;
+        --shadow: 0 28px 80px rgba(18, 16, 12, 0.16);
+        --display: "Cormorant Garamond", "Bodoni 72", Didot, Georgia, serif;
+        --body: Montserrat, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        background:
+          linear-gradient(180deg, rgba(255, 253, 248, 0.8), rgba(231, 223, 207, 0.58)),
+          var(--ivory);
+        color: var(--ink);
+        font-family: var(--body);
+        letter-spacing: 0;
+      }
+
+      img {
+        display: block;
+        max-width: 100%;
+      }
+
+      button,
+      input,
+      textarea,
+      select {
+        font: inherit;
+        letter-spacing: 0;
+      }
+
+      .board {
+        width: min(1760px, calc(100% - 40px));
+        margin: 0 auto;
+        padding: 36px 0 56px;
+      }
+
+      .board-header {
+        display: grid;
+        grid-template-columns: minmax(0, 1.05fr) minmax(340px, 0.95fr);
+        gap: 28px;
+        align-items: stretch;
+        margin-bottom: 26px;
+      }
+
+      .intro,
+      .brand-card,
+      .handoff-card,
+      .screen-note,
+      .system-panel,
+      .responsive-card {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(255, 253, 248, 0.9);
+      }
+
+      .intro {
+        min-height: 360px;
+        display: grid;
+        align-content: space-between;
+        padding: 30px;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .intro::after {
+        content: "";
+        position: absolute;
+        inset: auto 30px 28px auto;
+        width: 178px;
+        height: 178px;
+        border: 1px solid rgba(202, 160, 57, 0.36);
+        background:
+          linear-gradient(135deg, rgba(202, 160, 57, 0.08), rgba(66, 106, 112, 0.05)),
+          repeating-linear-gradient(135deg, transparent 0 12px, rgba(202, 160, 57, 0.1) 12px 13px);
+        transform: rotate(45deg);
+      }
+
+      .intro-top {
+        position: relative;
+        z-index: 1;
+      }
+
+      .kicker {
+        margin: 0 0 10px;
+        color: var(--gold-deep);
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        max-width: 760px;
+        font-family: var(--display);
+        font-size: 58px;
+        line-height: 0.98;
+        font-weight: 700;
+        letter-spacing: 0;
+      }
+
+      .subhead {
+        max-width: 760px;
+        margin-top: 18px;
+        color: var(--muted);
+        font-size: 15px;
+        line-height: 1.7;
+      }
+
+      .intro-bottom {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .status-pill {
+        display: inline-flex;
+        align-items: center;
+        min-height: 32px;
+        padding: 0 10px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--paper);
+        color: var(--charcoal);
+        font-size: 11px;
+        font-weight: 750;
+      }
+
+      .status-pill.dark {
+        border-color: var(--black);
+        background: var(--black);
+        color: var(--champagne);
+      }
+
+      .brand-card {
+        display: grid;
+        gap: 18px;
+        padding: 24px;
+      }
+
+      .brand-strip {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+
+      .logo-box {
+        min-height: 156px;
+        display: grid;
+        place-items: center;
+        padding: 18px;
+        border: 1px solid var(--line-soft);
+        border-radius: 8px;
+        background: var(--paper);
+      }
+
+      .logo-box.dark {
+        background: var(--black);
+        border-color: var(--black);
+      }
+
+      .logo-box img {
+        width: 190px;
+        height: auto;
+      }
+
+      .brand-meta {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .meta-cell {
+        min-height: 84px;
+        padding: 14px;
+        border: 1px solid var(--line-soft);
+        border-radius: 8px;
+        background: rgba(248, 244, 236, 0.7);
+      }
+
+      .meta-label {
+        margin-bottom: 8px;
+        color: var(--muted);
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .meta-value {
+        color: var(--ink);
+        font-size: 13px;
+        font-weight: 750;
+        line-height: 1.35;
+      }
+
+      .section-title {
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+        align-items: end;
+        margin: 30px 0 16px;
+      }
+
+      .section-title h2 {
+        font-family: var(--display);
+        font-size: 34px;
+        line-height: 1;
+        font-weight: 700;
+      }
+
+      .section-title p {
+        max-width: 680px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.6;
+        text-align: right;
+      }
+
+      .system-grid {
+        display: grid;
+        grid-template-columns: 1.1fr 0.9fr 1fr;
+        gap: 18px;
+        margin-bottom: 30px;
+      }
+
+      .system-panel {
+        padding: 20px;
+      }
+
+      .system-panel h3 {
+        margin-bottom: 14px;
+        font-size: 16px;
+      }
+
+      .palette {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .swatch {
+        overflow: hidden;
+        min-height: 94px;
+        border: 1px solid var(--line-soft);
+        border-radius: 8px;
+        background: var(--paper);
+      }
+
+      .chip-color {
+        height: 52px;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+      }
+
+      .swatch span {
+        display: block;
+        padding: 8px;
+        color: var(--muted);
+        font-size: 10px;
+        font-weight: 750;
+        line-height: 1.25;
+      }
+
+      .type-demo {
+        display: grid;
+        gap: 12px;
+      }
+
+      .type-line {
+        display: grid;
+        gap: 4px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--line-soft);
+      }
+
+      .type-line:last-child {
+        padding-bottom: 0;
+        border-bottom: 0;
+      }
+
+      .type-line strong {
+        font-size: 11px;
+        text-transform: uppercase;
+      }
+
+      .type-line .display {
+        font-family: var(--display);
+        font-size: 34px;
+        line-height: 1;
+      }
+
+      .type-line .script {
+        font-family: "Cormorant Garamond", Georgia, serif;
+        font-style: italic;
+        font-size: 28px;
+        line-height: 1;
+      }
+
+      .type-line .body {
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.55;
+      }
+
+      .component-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 42px;
+        padding: 0 14px;
+        border: 1px solid var(--black);
+        border-radius: 6px;
+        background: var(--black);
+        color: var(--champagne);
+        font-size: 12px;
+        font-weight: 800;
+        text-decoration: none;
+      }
+
+      .btn.secondary {
+        border-color: var(--line);
+        background: var(--paper);
+        color: var(--ink);
+      }
+
+      .btn.gold {
+        border-color: var(--gold);
+        background: var(--gold);
+        color: var(--black);
+      }
+
+      .segmented {
+        display: inline-grid;
+        grid-template-columns: 1fr 1fr;
+        min-height: 38px;
+        padding: 3px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--ivory);
+      }
+
+      .segmented span {
+        display: grid;
+        place-items: center;
+        min-width: 92px;
+        padding: 0 10px;
+        border-radius: 6px;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 800;
+      }
+
+      .segmented .active {
+        background: var(--black);
+        color: var(--champagne);
+      }
+
+      .tag {
+        display: inline-flex;
+        align-items: center;
+        min-height: 28px;
+        padding: 0 8px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--paper);
+        color: var(--charcoal);
+        font-size: 10px;
+        font-weight: 800;
+      }
+
+      .tag.gold {
+        border-color: rgba(202, 160, 57, 0.35);
+        background: rgba(229, 194, 79, 0.16);
+        color: var(--gold-deep);
+      }
+
+      .tag.sage {
+        border-color: rgba(120, 129, 111, 0.35);
+        background: rgba(120, 129, 111, 0.12);
+        color: #4b5944;
+      }
+
+      .screens-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(330px, 1fr));
+        gap: 30px;
+        align-items: start;
+      }
+
+      .screen-card {
+        display: grid;
+        gap: 12px;
+      }
+
+      .screen-title {
+        display: flex;
+        justify-content: space-between;
+        gap: 14px;
+        align-items: baseline;
+      }
+
+      .screen-title h3 {
+        font-size: 17px;
+        line-height: 1.2;
+      }
+
+      .screen-title span {
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 800;
+      }
+
+      .phone-shell {
+        width: 342px;
+        min-height: 728px;
+        margin: 0 auto;
+        padding: 12px;
+        border-radius: 30px;
+        background: linear-gradient(145deg, #0c0c0c, #23201c);
+        box-shadow: var(--shadow);
+      }
+
+      .phone {
+        position: relative;
+        overflow: hidden;
+        min-height: 704px;
+        border: 1px solid #111;
+        border-radius: 22px;
+        background: var(--paper);
+      }
+
+      .phone.dark {
+        background: var(--black);
+        color: var(--paper);
+      }
+
+      .status-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        min-height: 28px;
+        padding: 8px 14px 4px;
+        font-size: 10px;
+        font-weight: 800;
+      }
+
+      .phone.dark .status-bar {
+        color: var(--champagne);
+      }
+
+      .topbar {
+        display: grid;
+        grid-template-columns: 36px 1fr 36px;
+        gap: 10px;
+        align-items: center;
+        min-height: 56px;
+        padding: 6px 14px 10px;
+        border-bottom: 1px solid var(--line-soft);
+      }
+
+      .phone.dark .topbar {
+        border-color: rgba(229, 194, 79, 0.28);
+      }
+
+      .wordmark {
+        justify-self: center;
+        width: 122px;
+        max-height: 36px;
+        object-fit: contain;
+      }
+
+      .wordmark.gold {
+        width: 116px;
+      }
+
+      .icon-button {
+        display: grid;
+        place-items: center;
+        width: 34px;
+        height: 34px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--paper);
+      }
+
+      .phone.dark .icon-button {
+        border-color: rgba(229, 194, 79, 0.36);
+        background: rgba(255, 255, 255, 0.04);
+      }
+
+      .glyph {
+        position: relative;
+        display: block;
+        width: 18px;
+        height: 18px;
+        color: var(--ink);
+      }
+
+      .phone.dark .glyph {
+        color: var(--champagne);
+      }
+
+      .glyph.menu {
+        height: 14px;
+        background:
+          linear-gradient(currentColor, currentColor) 0 1px / 18px 2px no-repeat,
+          linear-gradient(currentColor, currentColor) 0 7px / 14px 2px no-repeat,
+          linear-gradient(currentColor, currentColor) 0 13px / 18px 2px no-repeat;
+      }
+
+      .glyph.search::before {
+        content: "";
+        position: absolute;
+        inset: 2px 5px 5px 2px;
+        border: 2px solid currentColor;
+        border-radius: 50%;
+      }
+
+      .glyph.search::after {
+        content: "";
+        position: absolute;
+        width: 8px;
+        height: 2px;
+        right: 1px;
+        bottom: 3px;
+        background: currentColor;
+        transform: rotate(45deg);
+        transform-origin: center;
+      }
+
+      .glyph.bag::before {
+        content: "";
+        position: absolute;
+        left: 3px;
+        right: 3px;
+        bottom: 2px;
+        height: 11px;
+        border: 2px solid currentColor;
+        border-radius: 3px;
+      }
+
+      .glyph.bag::after {
+        content: "";
+        position: absolute;
+        top: 1px;
+        left: 6px;
+        width: 6px;
+        height: 6px;
+        border: 2px solid currentColor;
+        border-bottom: 0;
+        border-radius: 8px 8px 0 0;
+      }
+
+      .glyph.back::before {
+        content: "";
+        position: absolute;
+        left: 5px;
+        top: 4px;
+        width: 10px;
+        height: 10px;
+        border-left: 2px solid currentColor;
+        border-bottom: 2px solid currentColor;
+        transform: rotate(45deg);
+      }
+
+      .glyph.filter {
+        background:
+          linear-gradient(currentColor, currentColor) 1px 3px / 16px 2px no-repeat,
+          linear-gradient(currentColor, currentColor) 4px 9px / 10px 2px no-repeat,
+          linear-gradient(currentColor, currentColor) 7px 15px / 6px 2px no-repeat;
+      }
+
+      .hero-panel {
+        position: relative;
+        min-height: 334px;
+        overflow: hidden;
+        padding: 18px;
+        background: var(--black);
+      }
+
+      .hero-panel::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        opacity: 0.86;
+        background:
+          radial-gradient(circle at 70% 16%, rgba(229, 194, 79, 0.18), transparent 32%),
+          linear-gradient(135deg, rgba(255, 253, 248, 0.06), transparent 34%),
+          linear-gradient(160deg, #0a0a0a 0%, #171310 56%, #5e4524 100%);
+      }
+
+      .hero-fashion {
+        position: absolute;
+        right: 14px;
+        bottom: 0;
+        width: 154px;
+        height: 282px;
+      }
+
+      .hero-fashion::before {
+        content: "";
+        position: absolute;
+        left: 52px;
+        top: 22px;
+        width: 58px;
+        height: 58px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #7b4f3d, #d8b58e);
+      }
+
+      .hero-fashion::after {
+        content: "";
+        position: absolute;
+        left: 23px;
+        top: 78px;
+        width: 114px;
+        height: 196px;
+        border-radius: 8px 8px 0 0;
+        background:
+          linear-gradient(115deg, rgba(255, 255, 255, 0.35), transparent 22%),
+          repeating-linear-gradient(105deg, rgba(255, 255, 255, 0.16) 0 9px, transparent 9px 20px),
+          linear-gradient(140deg, #d9bd83, #7e653e 58%, #d7b965);
+        clip-path: polygon(28% 0, 74% 0, 93% 100%, 2% 100%);
+        box-shadow: -18px 18px 40px rgba(0, 0, 0, 0.28);
+      }
+
+      .hero-content {
+        position: relative;
+        z-index: 1;
+        width: 170px;
+        padding-top: 18px;
+      }
+
+      .hero-content h2 {
+        margin-top: 16px;
+        font-family: var(--display);
+        font-size: 39px;
+        line-height: 0.94;
+        color: var(--paper);
+      }
+
+      .hero-content p {
+        margin-top: 12px;
+        color: rgba(255, 253, 248, 0.74);
+        font-size: 12px;
+        line-height: 1.55;
+      }
+
+      .hero-content .btn {
+        margin-top: 16px;
+      }
+
+      .announcement {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        min-height: 36px;
+        padding: 0 14px;
+        border-bottom: 1px solid var(--line-soft);
+        background: var(--ivory);
+        color: var(--muted);
+        font-size: 10px;
+        font-weight: 800;
+      }
+
+      .announcement strong {
+        color: var(--gold-deep);
+      }
+
+      .phone-content {
+        padding: 14px;
+      }
+
+      .phone-content.tight {
+        padding: 12px;
+      }
+
+      .section-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: end;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+
+      .section-head h3 {
+        font-size: 14px;
+      }
+
+      .section-head a,
+      .micro-link {
+        color: var(--gold-deep);
+        font-size: 10px;
+        font-weight: 800;
+        text-decoration: none;
+      }
+
+      .category-row {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+        margin-bottom: 18px;
+      }
+
+      .category-tile {
+        min-height: 76px;
+        display: grid;
+        align-content: end;
+        gap: 6px;
+        padding: 8px;
+        border: 1px solid var(--line-soft);
+        border-radius: 8px;
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.56), rgba(255, 255, 255, 0)),
+          var(--ivory);
+        color: var(--charcoal);
+        font-size: 10px;
+        font-weight: 800;
+      }
+
+      .category-dot {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: var(--gold);
+      }
+
+      .category-tile:nth-child(2) .category-dot {
+        background: var(--rose);
+      }
+
+      .category-tile:nth-child(3) .category-dot {
+        background: var(--sage);
+      }
+
+      .category-tile:nth-child(4) .category-dot {
+        background: var(--blue);
+      }
+
+      .product-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .product-tile {
+        overflow: hidden;
+        border: 1px solid var(--line-soft);
+        border-radius: 8px;
+        background: var(--paper);
+      }
+
+      .product-photo {
+        position: relative;
+        overflow: hidden;
+        min-height: 144px;
+        background:
+          radial-gradient(circle at 30% 15%, rgba(255, 255, 255, 0.8), transparent 26%),
+          linear-gradient(145deg, #eee4d4, #c2aa74 70%, #846539);
+      }
+
+      .product-photo.dark-photo {
+        background:
+          radial-gradient(circle at 72% 18%, rgba(229, 194, 79, 0.28), transparent 26%),
+          linear-gradient(145deg, #171514, #4c4030 62%, #111);
+      }
+
+      .product-photo.sage-photo {
+        background:
+          radial-gradient(circle at 28% 20%, rgba(255, 255, 255, 0.58), transparent 26%),
+          linear-gradient(145deg, #e9e1d1, #9ba28f 70%, #5e6858);
+      }
+
+      .product-photo.rose-photo {
+        background:
+          radial-gradient(circle at 70% 18%, rgba(255, 255, 255, 0.58), transparent 28%),
+          linear-gradient(145deg, #efe0d8, #b8796e 70%, #6f3d38);
+      }
+
+      .garment {
+        position: absolute;
+        left: 50%;
+        bottom: 12px;
+        width: 74px;
+        height: 116px;
+        transform: translateX(-50%);
+        border-radius: 8px 8px 2px 2px;
+        background:
+          linear-gradient(115deg, rgba(255, 255, 255, 0.34), transparent 28%),
+          repeating-linear-gradient(102deg, rgba(255, 255, 255, 0.16) 0 7px, transparent 7px 16px),
+          linear-gradient(155deg, #f1d989, #a68134);
+        clip-path: polygon(34% 0, 66% 0, 86% 98%, 11% 98%);
+        box-shadow: 0 18px 28px rgba(0, 0, 0, 0.18);
+      }
+
+      .garment.set {
+        height: 92px;
+        bottom: 20px;
+        clip-path: polygon(15% 0, 85% 0, 76% 46%, 64% 46%, 72% 100%, 29% 100%, 37% 46%, 24% 46%);
+      }
+
+      .garment.top {
+        height: 88px;
+        bottom: 28px;
+        clip-path: polygon(18% 4%, 36% 0, 50% 8%, 64% 0, 82% 4%, 92% 34%, 72% 44%, 70% 100%, 30% 100%, 28% 44%, 8% 34%);
+      }
+
+      .garment.dark-garment {
+        background:
+          linear-gradient(115deg, rgba(255, 255, 255, 0.22), transparent 30%),
+          repeating-linear-gradient(102deg, rgba(255, 255, 255, 0.1) 0 7px, transparent 7px 16px),
+          linear-gradient(155deg, #2e2a25, #050505);
+      }
+
+      .garment.rose-garment {
+        background:
+          linear-gradient(115deg, rgba(255, 255, 255, 0.28), transparent 30%),
+          repeating-linear-gradient(102deg, rgba(255, 255, 255, 0.12) 0 7px, transparent 7px 16px),
+          linear-gradient(155deg, #d9a29a, #7e443e);
+      }
+
+      .product-info {
+        display: grid;
+        gap: 6px;
+        padding: 9px;
+      }
+
+      .product-info strong {
+        font-size: 12px;
+      }
+
+      .price-line {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        align-items: center;
+        color: var(--muted);
+        font-size: 10px;
+        font-weight: 700;
+      }
+
+      .price-line b {
+        color: var(--ink);
+        font-size: 11px;
+      }
+
+      .bottom-nav {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        min-height: 58px;
+        border-top: 1px solid var(--line-soft);
+        background: rgba(255, 253, 248, 0.96);
+      }
+
+      .nav-item {
+        display: grid;
+        place-items: center;
+        gap: 3px;
+        color: var(--muted);
+        font-size: 9px;
+        font-weight: 800;
+      }
+
+      .nav-item.active {
+        color: var(--gold-deep);
+      }
+
+      .nav-dot {
+        width: 18px;
+        height: 18px;
+        border: 1.8px solid currentColor;
+        border-radius: 50%;
+      }
+
+      .search-block {
+        display: grid;
+        grid-template-columns: 1fr 38px;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+
+      .search-field,
+      .field,
+      .textarea {
+        min-height: 42px;
+        display: flex;
+        align-items: center;
+        padding: 0 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--paper);
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 650;
+      }
+
+      .textarea {
+        min-height: 66px;
+        align-items: start;
+        padding-top: 12px;
+      }
+
+      .filter-row {
+        display: flex;
+        gap: 8px;
+        overflow: hidden;
+        margin-bottom: 12px;
+      }
+
+      .collection-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        padding-bottom: 70px;
+      }
+
+      .product-hero {
+        position: relative;
+        min-height: 308px;
+        overflow: hidden;
+        background:
+          radial-gradient(circle at 74% 18%, rgba(229, 194, 79, 0.23), transparent 30%),
+          linear-gradient(145deg, #171514, #3c3023 56%, #caa039);
+      }
+
+      .product-hero .garment {
+        width: 124px;
+        height: 214px;
+        bottom: 24px;
+      }
+
+      .product-hero .tag {
+        position: absolute;
+        top: 14px;
+        right: 14px;
+      }
+
+      .product-detail {
+        display: grid;
+        gap: 14px;
+        padding: 16px 14px 82px;
+      }
+
+      .title-price {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: start;
+      }
+
+      .title-price h2 {
+        font-family: var(--display);
+        font-size: 31px;
+        line-height: 1;
+      }
+
+      .title-price strong {
+        white-space: nowrap;
+        font-size: 14px;
+      }
+
+      .small-copy {
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.55;
+      }
+
+      .option-block {
+        display: grid;
+        gap: 8px;
+      }
+
+      .option-label {
+        display: flex;
+        justify-content: space-between;
+        color: var(--muted);
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .swatch-row,
+      .size-row,
+      .payment-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .color-swatch {
+        width: 30px;
+        height: 30px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--gold);
+      }
+
+      .color-swatch.black {
+        background: var(--black);
+      }
+
+      .color-swatch.rose {
+        background: var(--rose);
+      }
+
+      .color-swatch.ivory {
+        background: var(--ivory);
+      }
+
+      .size-chip,
+      .pay-chip {
+        display: grid;
+        place-items: center;
+        min-width: 42px;
+        min-height: 34px;
+        padding: 0 10px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--paper);
+        color: var(--charcoal);
+        font-size: 11px;
+        font-weight: 800;
+      }
+
+      .size-chip.active,
+      .pay-chip.active {
+        border-color: var(--black);
+        background: var(--black);
+        color: var(--champagne);
+      }
+
+      .delivery-box,
+      .order-box,
+      .total-box,
+      .message-box,
+      .timeline {
+        border: 1px solid var(--line-soft);
+        border-radius: 8px;
+        background: var(--ivory);
+      }
+
+      .delivery-box {
+        display: grid;
+        gap: 8px;
+        padding: 12px;
+      }
+
+      .delivery-row,
+      .total-row,
+      .cart-row,
+      .timeline-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        align-items: center;
+        font-size: 11px;
+      }
+
+      .delivery-row strong,
+      .total-row strong,
+      .timeline-row strong {
+        font-size: 11px;
+      }
+
+      .sticky-cta {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: grid;
+        grid-template-columns: 42px 1fr;
+        gap: 10px;
+        padding: 10px 14px 14px;
+        border-top: 1px solid var(--line-soft);
+        background: rgba(255, 253, 248, 0.97);
+      }
+
+      .cart-list {
+        display: grid;
+        gap: 10px;
+        padding-bottom: 18px;
+      }
+
+      .cart-item {
+        display: grid;
+        grid-template-columns: 76px 1fr;
+        gap: 10px;
+        padding: 10px;
+        border: 1px solid var(--line-soft);
+        border-radius: 8px;
+        background: var(--paper);
+      }
+
+      .mini-photo {
+        position: relative;
+        overflow: hidden;
+        min-height: 90px;
+        border-radius: 8px;
+        background: linear-gradient(145deg, #ead9bd, #af8b42);
+      }
+
+      .mini-photo::after {
+        content: "";
+        position: absolute;
+        left: 23px;
+        bottom: 10px;
+        width: 30px;
+        height: 62px;
+        clip-path: polygon(34% 0, 66% 0, 86% 98%, 11% 98%);
+        background: linear-gradient(140deg, #f4dd93, #8e6b28);
+      }
+
+      .cart-info {
+        display: grid;
+        align-content: space-between;
+        gap: 8px;
+      }
+
+      .cart-info h3 {
+        font-size: 13px;
+      }
+
+      .cart-row {
+        color: var(--muted);
+      }
+
+      .qty {
+        display: inline-grid;
+        grid-template-columns: 24px 26px 24px;
+        min-height: 28px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        overflow: hidden;
+        background: var(--ivory);
+      }
+
+      .qty span {
+        display: grid;
+        place-items: center;
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .total-box {
+        display: grid;
+        gap: 9px;
+        padding: 12px;
+      }
+
+      .total-row {
+        color: var(--muted);
+      }
+
+      .total-row.final {
+        padding-top: 8px;
+        border-top: 1px solid var(--line);
+        color: var(--ink);
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      .checkout-flow {
+        display: grid;
+        gap: 12px;
+        padding-bottom: 74px;
+      }
+
+      .stepper {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+        margin-bottom: 2px;
+      }
+
+      .step {
+        min-height: 6px;
+        border-radius: 6px;
+        background: var(--line-soft);
+      }
+
+      .step.active {
+        background: var(--gold);
+      }
+
+      .form-grid {
+        display: grid;
+        gap: 8px;
+      }
+
+      .field-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+
+      .method-card {
+        display: grid;
+        gap: 6px;
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--paper);
+      }
+
+      .method-card.active {
+        border-color: var(--gold);
+        background: rgba(229, 194, 79, 0.13);
+      }
+
+      .method-card strong {
+        font-size: 12px;
+      }
+
+      .method-card span {
+        color: var(--muted);
+        font-size: 10px;
+        line-height: 1.45;
+      }
+
+      .confirmation-hero {
+        display: grid;
+        gap: 12px;
+        place-items: center;
+        padding: 32px 18px 24px;
+        text-align: center;
+        background:
+          radial-gradient(circle at 50% 0, rgba(229, 194, 79, 0.2), transparent 34%),
+          var(--black);
+        color: var(--paper);
+      }
+
+      .checkmark {
+        width: 58px;
+        height: 58px;
+        border: 1px solid rgba(229, 194, 79, 0.72);
+        border-radius: 50%;
+        position: relative;
+      }
+
+      .checkmark::after {
+        content: "";
+        position: absolute;
+        left: 17px;
+        top: 19px;
+        width: 22px;
+        height: 12px;
+        border-left: 3px solid var(--champagne);
+        border-bottom: 3px solid var(--champagne);
+        transform: rotate(-45deg);
+      }
+
+      .confirmation-hero h2 {
+        font-family: var(--display);
+        font-size: 34px;
+        line-height: 1;
+      }
+
+      .confirmation-hero p {
+        color: rgba(255, 253, 248, 0.72);
+        font-size: 12px;
+        line-height: 1.55;
+      }
+
+      .order-box {
+        display: grid;
+        gap: 10px;
+        padding: 12px;
+        background: var(--paper);
+      }
+
+      .timeline {
+        display: grid;
+        gap: 10px;
+        padding: 12px;
+      }
+
+      .timeline-row {
+        align-items: start;
+        color: var(--muted);
+      }
+
+      .timeline-dot {
+        width: 12px;
+        height: 12px;
+        margin-top: 2px;
+        border: 2px solid var(--line);
+        border-radius: 50%;
+      }
+
+      .timeline-row.done .timeline-dot {
+        border-color: var(--success);
+        background: var(--success);
+      }
+
+      .timeline-row.current .timeline-dot {
+        border-color: var(--gold);
+        background: var(--gold);
+      }
+
+      .timeline-label {
+        flex: 1;
+      }
+
+      .timeline-label strong {
+        display: block;
+        color: var(--ink);
+        margin-bottom: 2px;
+      }
+
+      .message-box {
+        display: grid;
+        gap: 8px;
+        padding: 12px;
+        background: rgba(120, 129, 111, 0.1);
+      }
+
+      .message-box strong {
+        color: #41503b;
+        font-size: 12px;
+      }
+
+      .message-box p {
+        color: var(--muted);
+        font-size: 10px;
+        line-height: 1.5;
+      }
+
+      .lookup-panel {
+        display: grid;
+        gap: 9px;
+        padding: 14px;
+      }
+
+      .desktop-shell {
+        padding: 14px;
+        border-radius: 18px;
+        background: linear-gradient(145deg, #0c0c0c, #27231d);
+        box-shadow: var(--shadow);
+      }
+
+      .desktop-screen {
+        overflow: hidden;
+        min-height: 790px;
+        border: 1px solid #111;
+        border-radius: 8px;
+        background: var(--paper);
+      }
+
+      .desktop-topbar {
+        display: grid;
+        grid-template-columns: 220px 1fr 220px;
+        gap: 20px;
+        align-items: center;
+        min-height: 86px;
+        padding: 0 36px;
+        border-bottom: 1px solid var(--line-soft);
+      }
+
+      .desktop-logo {
+        width: 178px;
+      }
+
+      .desktop-nav {
+        display: flex;
+        justify-content: center;
+        gap: 24px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .desktop-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+      }
+
+      .desktop-hero {
+        display: grid;
+        grid-template-columns: 0.9fr 1.1fr;
+        min-height: 426px;
+        background: var(--black);
+        color: var(--paper);
+      }
+
+      .desktop-hero-copy {
+        display: grid;
+        align-content: center;
+        gap: 18px;
+        padding: 48px 54px;
+      }
+
+      .desktop-hero-copy h2 {
+        font-family: var(--display);
+        font-size: 70px;
+        line-height: 0.92;
+      }
+
+      .desktop-hero-copy p {
+        max-width: 450px;
+        color: rgba(255, 253, 248, 0.7);
+        font-size: 14px;
+        line-height: 1.7;
+      }
+
+      .desktop-editorial {
+        position: relative;
+        overflow: hidden;
+        background:
+          radial-gradient(circle at 70% 22%, rgba(229, 194, 79, 0.2), transparent 28%),
+          linear-gradient(130deg, #1a1715, #6f542b);
+      }
+
+      .desktop-editorial::before,
+      .desktop-editorial::after {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        border-radius: 8px 8px 0 0;
+        box-shadow: 0 24px 50px rgba(0, 0, 0, 0.25);
+      }
+
+      .desktop-editorial::before {
+        left: 118px;
+        width: 190px;
+        height: 360px;
+        background:
+          linear-gradient(115deg, rgba(255, 255, 255, 0.32), transparent 25%),
+          repeating-linear-gradient(104deg, rgba(255, 255, 255, 0.13) 0 13px, transparent 13px 28px),
+          linear-gradient(150deg, #e6c565, #86622b);
+        clip-path: polygon(31% 0, 69% 0, 92% 100%, 8% 100%);
+      }
+
+      .desktop-editorial::after {
+        right: 96px;
+        width: 154px;
+        height: 300px;
+        background:
+          linear-gradient(115deg, rgba(255, 255, 255, 0.22), transparent 28%),
+          repeating-linear-gradient(104deg, rgba(255, 255, 255, 0.08) 0 13px, transparent 13px 28px),
+          linear-gradient(150deg, #2f2b27, #050505);
+        clip-path: polygon(15% 0, 85% 0, 76% 46%, 64% 46%, 72% 100%, 29% 100%, 37% 46%, 24% 46%);
+      }
+
+      .desktop-section {
+        padding: 30px 36px 36px;
+      }
+
+      .desktop-products {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      .desktop-products .product-photo {
+        min-height: 236px;
+      }
+
+      .tablet-shell {
+        width: 780px;
+        max-width: 100%;
+        margin: 0 auto;
+        padding: 14px;
+        border-radius: 22px;
+        background: linear-gradient(145deg, #0c0c0c, #27231d);
+        box-shadow: var(--shadow);
+      }
+
+      .tablet-screen {
+        overflow: hidden;
+        min-height: 590px;
+        border: 1px solid #111;
+        border-radius: 8px;
+        background: var(--paper);
+      }
+
+      .tablet-screen .topbar {
+        grid-template-columns: 48px 1fr 48px;
+        padding-inline: 24px;
+      }
+
+      .tablet-product {
+        display: grid;
+        grid-template-columns: 0.95fr 1.05fr;
+        min-height: 505px;
+      }
+
+      .tablet-product .product-hero {
+        min-height: 505px;
+      }
+
+      .tablet-product .product-detail {
+        padding: 34px 30px 90px;
+      }
+
+      .responsive-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+        gap: 26px;
+        align-items: start;
+      }
+
+      .responsive-card {
+        display: grid;
+        gap: 14px;
+        padding: 20px;
+      }
+
+      .responsive-card h3 {
+        font-size: 16px;
+      }
+
+      .breakpoint-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .breakpoint {
+        display: grid;
+        grid-template-columns: 78px 1fr;
+        gap: 12px;
+        align-items: start;
+        padding: 12px;
+        border: 1px solid var(--line-soft);
+        border-radius: 8px;
+        background: var(--ivory);
+      }
+
+      .breakpoint strong {
+        color: var(--gold-deep);
+        font-size: 12px;
+      }
+
+      .breakpoint span {
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.5;
+      }
+
+      .handoff-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .handoff-card {
+        display: grid;
+        gap: 8px;
+        padding: 16px;
+      }
+
+      .handoff-card h3 {
+        font-size: 14px;
+      }
+
+      .handoff-card p,
+      .screen-note p {
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.55;
+      }
+
+      .screen-note {
+        padding: 12px;
+      }
+
+      .screen-note strong {
+        display: block;
+        margin-bottom: 4px;
+        color: var(--ink);
+        font-size: 11px;
+        text-transform: uppercase;
+      }
+
+      @media (max-width: 1240px) {
+        .board-header,
+        .system-grid,
+        .responsive-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .screens-grid {
+          grid-template-columns: repeat(2, minmax(330px, 1fr));
+        }
+
+        .section-title {
+          align-items: start;
+          flex-direction: column;
+        }
+
+        .section-title p {
+          text-align: left;
+        }
+
+        .handoff-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 780px) {
+        .board {
+          width: min(100% - 20px, 520px);
+          padding-top: 20px;
+        }
+
+        h1 {
+          font-size: 42px;
+        }
+
+        .brand-strip,
+        .brand-meta,
+        .screens-grid,
+        .handoff-grid,
+        .field-row {
+          grid-template-columns: 1fr;
+        }
+
+        .palette {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .phone-shell {
+          width: min(342px, 100%);
+        }
+
+        .desktop-shell,
+        .tablet-shell {
+          width: 100%;
+          overflow: hidden;
+          padding: 10px;
+        }
+
+        .desktop-screen,
+        .tablet-screen {
+          width: 100%;
+          min-width: 0;
+        }
+
+        .desktop-screen {
+          min-height: auto;
+        }
+
+        .desktop-topbar {
+          grid-template-columns: 1fr;
+          gap: 12px;
+          min-height: auto;
+          padding: 16px;
+        }
+
+        .desktop-logo {
+          justify-self: center;
+          width: 150px;
+        }
+
+        .desktop-nav {
+          flex-wrap: wrap;
+          gap: 12px;
+        }
+
+        .desktop-actions {
+          justify-content: center;
+          flex-wrap: wrap;
+        }
+
+        .desktop-hero {
+          grid-template-columns: 1fr;
+          min-height: auto;
+        }
+
+        .desktop-hero-copy {
+          padding: 30px 24px;
+        }
+
+        .desktop-hero-copy h2 {
+          font-size: 44px;
+        }
+
+        .desktop-editorial {
+          min-height: 320px;
+        }
+
+        .desktop-editorial::before {
+          left: 16%;
+          width: 150px;
+          height: 286px;
+        }
+
+        .desktop-editorial::after {
+          right: 12%;
+          width: 112px;
+          height: 236px;
+        }
+
+        .desktop-section {
+          padding: 24px 16px;
+        }
+
+        .desktop-products {
+          grid-template-columns: 1fr;
+        }
+
+        .tablet-product {
+          grid-template-columns: 1fr;
+        }
+
+        .tablet-product .product-hero {
+          min-height: 360px;
+        }
+
+        .tablet-product .product-detail {
+          padding: 24px 18px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="board">
+      <header class="board-header">
+        <section class="intro">
+          <div class="intro-top">
+            <p class="kicker">Phase 1 storefront high fidelity</p>
+            <h1>Mobile-first boutique commerce for Angola and Portugal.</h1>
+            <p class="subhead">
+              Storefront screens polished from the Phase 1 wireframes using the
+              Use Me With Style identity: black, white, metallic gold, editorial
+              fashion imagery, clear ordering, lightweight order lookup, and
+              market-aware payments and fulfilment.
+            </p>
+          </div>
+          <div class="intro-bottom">
+            <span class="status-pill dark">Ready for Figma pass</span>
+            <span class="status-pill">Mobile storefront first</span>
+            <span class="status-pill">Desktop responsive reference</span>
+            <span class="status-pill">Client media placeholders</span>
+          </div>
+        </section>
+
+        <aside class="brand-card" aria-label="Brand assets">
+          <div class="brand-strip">
+            <div class="logo-box">
+              <img
+                src="../public/brand/use-me-logo-black-transparent.png"
+                alt="Use Me With Style black wordmark"
+              />
+            </div>
+            <div class="logo-box dark">
+              <img
+                src="../public/brand/use-me-logo-gold-transparent.png"
+                alt="Use Me With Style gold wordmark"
+              />
+            </div>
+          </div>
+          <div class="brand-meta">
+            <div class="meta-cell">
+              <div class="meta-label">Primary feel</div>
+              <div class="meta-value">Elegant, editorial, feminine, premium.</div>
+            </div>
+            <div class="meta-cell">
+              <div class="meta-label">Typeface map</div>
+              <div class="meta-value">Display/script for brand moments. Montserrat for UI.</div>
+            </div>
+            <div class="meta-cell">
+              <div class="meta-label">Markets</div>
+              <div class="meta-value">Angola manual delivery. Portugal CTT/courier.</div>
+            </div>
+          </div>
+        </aside>
+      </header>
+
+      <section aria-labelledby="system-title">
+        <div class="section-title">
+          <h2 id="system-title">Design System Direction</h2>
+          <p>
+            These tokens are intentionally close to the brand guide and current
+            prototype, while adding small rose, sage, and blue accents for
+            commerce states and richer storefront scanning.
+          </p>
+        </div>
+        <div class="system-grid">
+          <div class="system-panel">
+            <h3>Color Tokens</h3>
+            <div class="palette">
+              <div class="swatch">
+                <div class="chip-color" style="background: #050505"></div>
+                <span>Black<br />#050505</span>
+              </div>
+              <div class="swatch">
+                <div class="chip-color" style="background: #fffdf8"></div>
+                <span>Paper<br />#FFFDF8</span>
+              </div>
+              <div class="swatch">
+                <div class="chip-color" style="background: #e5c24f"></div>
+                <span>Champagne<br />#E5C24F</span>
+              </div>
+              <div class="swatch">
+                <div class="chip-color" style="background: #caa039"></div>
+                <span>Gold<br />#CAA039</span>
+              </div>
+              <div class="swatch">
+                <div class="chip-color" style="background: #e7dfcf"></div>
+                <span>Stone<br />#E7DFCF</span>
+              </div>
+              <div class="swatch">
+                <div class="chip-color" style="background: #a66f63"></div>
+                <span>Rose<br />#A66F63</span>
+              </div>
+              <div class="swatch">
+                <div class="chip-color" style="background: #78816f"></div>
+                <span>Sage<br />#78816F</span>
+              </div>
+              <div class="swatch">
+                <div class="chip-color" style="background: #426a70"></div>
+                <span>Blue<br />#426A70</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="system-panel">
+            <h3>Typography</h3>
+            <div class="type-demo">
+              <div class="type-line">
+                <strong>Display</strong>
+                <span class="display">New season edits</span>
+              </div>
+              <div class="type-line">
+                <strong>Script mood</strong>
+                <span class="script">with style</span>
+              </div>
+              <div class="type-line">
+                <strong>Interface</strong>
+                <span class="body">
+                  Montserrat for catalogue labels, checkout forms, order status,
+                  payment options, and repeat shopping actions.
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="system-panel">
+            <h3>Core Components</h3>
+            <div class="component-row">
+              <span class="btn">Add to cart</span>
+              <span class="btn secondary">View details</span>
+              <span class="btn gold">Continue</span>
+            </div>
+            <div class="component-row">
+              <span class="segmented">
+                <span class="active">Angola</span>
+                <span>Portugal</span>
+              </span>
+            </div>
+            <div class="component-row">
+              <span class="tag gold">New arrival</span>
+              <span class="tag sage">In stock</span>
+              <span class="tag">MBWay</span>
+              <span class="tag">Stripe</span>
+              <span class="tag">PayPal</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="mobile-title">
+        <div class="section-title">
+          <h2 id="mobile-title">Mobile Storefront Screens</h2>
+          <p>
+            Primary Phase 1 customer journey: discover, browse, inspect product,
+            cart, checkout, confirm, and check order status without full accounts.
+          </p>
+        </div>
+
+        <div class="screens-grid">
+          <article class="screen-card">
+            <div class="screen-title">
+              <h3>01. Home</h3>
+              <span>390 x 844</span>
+            </div>
+            <div class="phone-shell">
+              <div class="phone dark">
+                <div class="status-bar"><span>9:41</span><span>5G 100%</span></div>
+                <div class="topbar">
+                  <button class="icon-button" aria-label="Menu">
+                    <span class="glyph menu"></span>
+                  </button>
+                  <img
+                    class="wordmark gold"
+                    src="../public/brand/use-me-logo-gold-transparent.png"
+                    alt="Use Me With Style"
+                  />
+                  <button class="icon-button" aria-label="Cart">
+                    <span class="glyph bag"></span>
+                  </button>
+                </div>
+                <section class="hero-panel">
+                  <div class="hero-fashion" aria-hidden="true"></div>
+                  <div class="hero-content">
+                    <span class="tag gold">Angola / Portugal</span>
+                    <h2>New pieces for your next moment.</h2>
+                    <p>
+                      Elevated dresses, tops, sets, and leggings curated for
+                      everyday confidence.
+                    </p>
+                    <span class="btn gold">Shop new arrivals</span>
+                  </div>
+                </section>
+                <div class="announcement">
+                  <span>Portugal: CTT and courier</span>
+                  <strong>AO manual delivery</strong>
+                </div>
+                <div class="phone-content">
+                  <div class="section-head">
+                    <h3>Shop by category</h3>
+                    <a href="#">View all</a>
+                  </div>
+                  <div class="category-row">
+                    <div class="category-tile">
+                      <span class="category-dot"></span>
+                      Dresses
+                    </div>
+                    <div class="category-tile">
+                      <span class="category-dot"></span>
+                      Tops
+                    </div>
+                    <div class="category-tile">
+                      <span class="category-dot"></span>
+                      Sets
+                    </div>
+                    <div class="category-tile">
+                      <span class="category-dot"></span>
+                      Leggings
+                    </div>
+                  </div>
+                  <div class="section-head">
+                    <h3>Featured today</h3>
+                    <a href="#">Browse</a>
+                  </div>
+                  <div class="product-grid">
+                    <div class="product-tile">
+                      <div class="product-photo"><span class="garment"></span></div>
+                      <div class="product-info">
+                        <strong>Vestido Aurora</strong>
+                        <div class="price-line"><b>18,500 Kz</b><span>EUR 22</span></div>
+                      </div>
+                    </div>
+                    <div class="product-tile">
+                      <div class="product-photo dark-photo">
+                        <span class="garment set dark-garment"></span>
+                      </div>
+                      <div class="product-info">
+                        <strong>Conjunto Sereno</strong>
+                        <div class="price-line"><b>24,500 Kz</b><span>EUR 29</span></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="screen-note">
+              <strong>Figma intent</strong>
+              <p>Use as the storefront entry artboard with dark premium hero, category navigation, and cross-market delivery signal.</p>
+            </div>
+          </article>
+
+          <article class="screen-card">
+            <div class="screen-title">
+              <h3>02. Browse and Filter</h3>
+              <span>390 x 844</span>
+            </div>
+            <div class="phone-shell">
+              <div class="phone">
+                <div class="status-bar"><span>9:41</span><span>5G 100%</span></div>
+                <div class="topbar">
+                  <button class="icon-button" aria-label="Menu">
+                    <span class="glyph menu"></span>
+                  </button>
+                  <img
+                    class="wordmark"
+                    src="../public/brand/use-me-logo-black-transparent.png"
+                    alt="Use Me With Style"
+                  />
+                  <button class="icon-button" aria-label="Cart">
+                    <span class="glyph bag"></span>
+                  </button>
+                </div>
+                <div class="phone-content tight">
+                  <div class="search-block">
+                    <div class="search-field">Search dresses, tops, sets</div>
+                    <button class="icon-button" aria-label="Filter">
+                      <span class="glyph filter"></span>
+                    </button>
+                  </div>
+                  <div class="filter-row">
+                    <span class="tag gold">New</span>
+                    <span class="tag">Dresses</span>
+                    <span class="tag">In stock</span>
+                    <span class="tag">Under EUR 30</span>
+                  </div>
+                  <div class="section-head">
+                    <h3>New arrivals</h3>
+                    <a href="#">24 items</a>
+                  </div>
+                  <div class="collection-grid">
+                    <div class="product-tile">
+                      <div class="product-photo"><span class="garment"></span></div>
+                      <div class="product-info">
+                        <span class="tag gold">New</span>
+                        <strong>Vestido Aurora</strong>
+                        <div class="price-line"><b>18,500 Kz</b><span>EUR 22</span></div>
+                      </div>
+                    </div>
+                    <div class="product-tile">
+                      <div class="product-photo rose-photo">
+                        <span class="garment rose-garment"></span>
+                      </div>
+                      <div class="product-info">
+                        <span class="tag">Few left</span>
+                        <strong>Vestido Lume</strong>
+                        <div class="price-line"><b>19,500 Kz</b><span>EUR 23</span></div>
+                      </div>
+                    </div>
+                    <div class="product-tile">
+                      <div class="product-photo sage-photo">
+                        <span class="garment top"></span>
+                      </div>
+                      <div class="product-info">
+                        <span class="tag sage">In stock</span>
+                        <strong>Top Iris</strong>
+                        <div class="price-line"><b>8,000 Kz</b><span>EUR 9</span></div>
+                      </div>
+                    </div>
+                    <div class="product-tile">
+                      <div class="product-photo dark-photo">
+                        <span class="garment set dark-garment"></span>
+                      </div>
+                      <div class="product-info">
+                        <span class="tag">Bestseller</span>
+                        <strong>Conjunto Sereno</strong>
+                        <div class="price-line"><b>24,500 Kz</b><span>EUR 29</span></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <nav class="bottom-nav" aria-label="Storefront navigation">
+                  <span class="nav-item active"><span class="nav-dot"></span>Shop</span>
+                  <span class="nav-item"><span class="nav-dot"></span>Search</span>
+                  <span class="nav-item"><span class="nav-dot"></span>Orders</span>
+                  <span class="nav-item"><span class="nav-dot"></span>Help</span>
+                </nav>
+              </div>
+            </div>
+            <div class="screen-note">
+              <strong>Figma intent</strong>
+              <p>Turn filters, product tiles, status chips, and market price display into reusable storefront components.</p>
+            </div>
+          </article>
+
+          <article class="screen-card">
+            <div class="screen-title">
+              <h3>03. Product Detail</h3>
+              <span>390 x 844</span>
+            </div>
+            <div class="phone-shell">
+              <div class="phone">
+                <div class="status-bar"><span>9:41</span><span>5G 100%</span></div>
+                <div class="topbar">
+                  <button class="icon-button" aria-label="Back">
+                    <span class="glyph back"></span>
+                  </button>
+                  <img
+                    class="wordmark"
+                    src="../public/brand/use-me-logo-black-transparent.png"
+                    alt="Use Me With Style"
+                  />
+                  <button class="icon-button" aria-label="Cart">
+                    <span class="glyph bag"></span>
+                  </button>
+                </div>
+                <section class="product-hero">
+                  <span class="tag gold">New arrival</span>
+                  <span class="garment"></span>
+                </section>
+                <section class="product-detail">
+                  <div class="title-price">
+                    <div>
+                      <h2>Vestido Aurora</h2>
+                      <p class="small-copy">Soft drape, sculpted waist, easy evening finish.</p>
+                    </div>
+                    <strong>18,500 Kz</strong>
+                  </div>
+                  <div class="option-block">
+                    <div class="option-label"><span>Colour</span><span>Areia</span></div>
+                    <div class="swatch-row">
+                      <span class="color-swatch"></span>
+                      <span class="color-swatch black"></span>
+                      <span class="color-swatch rose"></span>
+                      <span class="color-swatch ivory"></span>
+                    </div>
+                  </div>
+                  <div class="option-block">
+                    <div class="option-label"><span>Size</span><span>4 left in M</span></div>
+                    <div class="size-row">
+                      <span class="size-chip">XS</span>
+                      <span class="size-chip">S</span>
+                      <span class="size-chip active">M</span>
+                      <span class="size-chip">L</span>
+                    </div>
+                  </div>
+                  <div class="delivery-box">
+                    <div class="delivery-row"><strong>Market</strong><span>Angola selected</span></div>
+                    <div class="delivery-row"><strong>Delivery</strong><span>Manual coordination</span></div>
+                    <div class="delivery-row"><strong>Payment</strong><span>Payment review after order</span></div>
+                  </div>
+                </section>
+                <div class="sticky-cta">
+                  <button class="icon-button" aria-label="Search">
+                    <span class="glyph search"></span>
+                  </button>
+                  <span class="btn">Add to cart</span>
+                </div>
+              </div>
+            </div>
+            <div class="screen-note">
+              <strong>Figma intent</strong>
+              <p>Primary product template with selected size, stock hint, Angola/PT market modules, and sticky cart CTA.</p>
+            </div>
+          </article>
+
+          <article class="screen-card">
+            <div class="screen-title">
+              <h3>04. Cart</h3>
+              <span>390 x 844</span>
+            </div>
+            <div class="phone-shell">
+              <div class="phone">
+                <div class="status-bar"><span>9:41</span><span>5G 100%</span></div>
+                <div class="topbar">
+                  <button class="icon-button" aria-label="Back">
+                    <span class="glyph back"></span>
+                  </button>
+                  <img
+                    class="wordmark"
+                    src="../public/brand/use-me-logo-black-transparent.png"
+                    alt="Use Me With Style"
+                  />
+                  <button class="icon-button" aria-label="Search">
+                    <span class="glyph search"></span>
+                  </button>
+                </div>
+                <div class="phone-content">
+                  <div class="section-head">
+                    <h3>Your cart</h3>
+                    <a href="#">2 items</a>
+                  </div>
+                  <div class="cart-list">
+                    <div class="cart-item">
+                      <div class="mini-photo"></div>
+                      <div class="cart-info">
+                        <div>
+                          <h3>Vestido Aurora</h3>
+                          <p class="small-copy">Areia / M</p>
+                        </div>
+                        <div class="cart-row">
+                          <span class="qty"><span>-</span><span>1</span><span>+</span></span>
+                          <strong>18,500 Kz</strong>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="cart-item">
+                      <div class="mini-photo" style="background: linear-gradient(145deg, #1b1816, #5b4a33)"></div>
+                      <div class="cart-info">
+                        <div>
+                          <h3>Top Athena</h3>
+                          <p class="small-copy">Preto / S</p>
+                        </div>
+                        <div class="cart-row">
+                          <span class="qty"><span>-</span><span>1</span><span>+</span></span>
+                          <strong>9,500 Kz</strong>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="delivery-box">
+                    <div class="delivery-row"><strong>Delivery market</strong><span>Portugal</span></div>
+                    <div class="delivery-row"><strong>Method</strong><span>CTT or courier at checkout</span></div>
+                  </div>
+                  <div style="height: 12px"></div>
+                  <div class="payment-row">
+                    <span class="pay-chip active">MBWay</span>
+                    <span class="pay-chip">Stripe</span>
+                    <span class="pay-chip">PayPal</span>
+                  </div>
+                  <div style="height: 12px"></div>
+                  <div class="total-box">
+                    <div class="total-row"><span>Subtotal</span><strong>28,000 Kz</strong></div>
+                    <div class="total-row"><span>Delivery</span><strong>Calculated next</strong></div>
+                    <div class="total-row final"><span>Total estimate</span><strong>28,000 Kz</strong></div>
+                  </div>
+                </div>
+                <div class="sticky-cta">
+                  <button class="icon-button" aria-label="Search">
+                    <span class="glyph search"></span>
+                  </button>
+                  <span class="btn">Checkout</span>
+                </div>
+              </div>
+            </div>
+            <div class="screen-note">
+              <strong>Figma intent</strong>
+              <p>Supports quantity edits, method preview, and payment chips before checkout. Pricing copy stays clear for both markets.</p>
+            </div>
+          </article>
+
+          <article class="screen-card">
+            <div class="screen-title">
+              <h3>05. Checkout</h3>
+              <span>390 x 844</span>
+            </div>
+            <div class="phone-shell">
+              <div class="phone">
+                <div class="status-bar"><span>9:41</span><span>5G 100%</span></div>
+                <div class="topbar">
+                  <button class="icon-button" aria-label="Back">
+                    <span class="glyph back"></span>
+                  </button>
+                  <img
+                    class="wordmark"
+                    src="../public/brand/use-me-logo-black-transparent.png"
+                    alt="Use Me With Style"
+                  />
+                  <button class="icon-button" aria-label="Cart">
+                    <span class="glyph bag"></span>
+                  </button>
+                </div>
+                <div class="phone-content checkout-flow">
+                  <div>
+                    <div class="section-head">
+                      <h3>Checkout</h3>
+                      <a href="#">Step 2 of 3</a>
+                    </div>
+                    <div class="stepper">
+                      <span class="step active"></span>
+                      <span class="step active"></span>
+                      <span class="step"></span>
+                    </div>
+                  </div>
+                  <div class="segmented" style="width: 100%">
+                    <span>Angola</span>
+                    <span class="active">Portugal</span>
+                  </div>
+                  <div class="form-grid">
+                    <div class="field">Name</div>
+                    <div class="field-row">
+                      <div class="field">Phone / WhatsApp</div>
+                      <div class="field">Email</div>
+                    </div>
+                    <div class="field">Address</div>
+                    <div class="field-row">
+                      <div class="field">City</div>
+                      <div class="field">Country</div>
+                    </div>
+                  </div>
+                  <div class="option-block">
+                    <div class="option-label"><span>Delivery method</span><span>Portugal</span></div>
+                    <div class="method-card active">
+                      <strong>CTT delivery</strong>
+                      <span>Best for nationwide Portugal shipping.</span>
+                    </div>
+                    <div class="method-card">
+                      <strong>Courier delivery</strong>
+                      <span>Manual quote if the customer needs special handling.</span>
+                    </div>
+                  </div>
+                  <div class="option-block">
+                    <div class="option-label"><span>Payment</span><span>Phase 1</span></div>
+                    <div class="payment-row">
+                      <span class="pay-chip active">MBWay</span>
+                      <span class="pay-chip">Stripe</span>
+                      <span class="pay-chip">PayPal</span>
+                    </div>
+                  </div>
+                  <div class="textarea">Notes for delivery</div>
+                </div>
+                <div class="sticky-cta">
+                  <button class="icon-button" aria-label="Search">
+                    <span class="glyph search"></span>
+                  </button>
+                  <span class="btn">Review order</span>
+                </div>
+              </div>
+            </div>
+            <div class="screen-note">
+              <strong>Figma intent</strong>
+              <p>Captures Phase 1 required order data: name, WhatsApp, email, address, city, country, payment, delivery, and notes.</p>
+            </div>
+          </article>
+
+          <article class="screen-card">
+            <div class="screen-title">
+              <h3>06. Confirmation and Lookup</h3>
+              <span>390 x 844</span>
+            </div>
+            <div class="phone-shell">
+              <div class="phone">
+                <div class="status-bar"><span>9:41</span><span>5G 100%</span></div>
+                <section class="confirmation-hero">
+                  <img
+                    class="wordmark gold"
+                    src="../public/brand/use-me-logo-gold-transparent.png"
+                    alt="Use Me With Style"
+                  />
+                  <span class="checkmark" aria-hidden="true"></span>
+                  <div>
+                    <h2>Order received</h2>
+                    <p>Reference UMWS-1045 was sent to email and WhatsApp.</p>
+                  </div>
+                </section>
+                <div class="phone-content">
+                  <div class="order-box">
+                    <div class="delivery-row"><strong>Status</strong><span class="tag gold">Payment review</span></div>
+                    <div class="delivery-row"><strong>Total</strong><span>18,500 Kz</span></div>
+                    <div class="delivery-row"><strong>Delivery</strong><span>Manual Angola coordination</span></div>
+                  </div>
+                  <div style="height: 12px"></div>
+                  <div class="timeline">
+                    <div class="timeline-row done">
+                      <span class="timeline-dot"></span>
+                      <span class="timeline-label"><strong>New</strong>Order captured successfully.</span>
+                    </div>
+                    <div class="timeline-row current">
+                      <span class="timeline-dot"></span>
+                      <span class="timeline-label"><strong>Payment review</strong>Admin team confirms payment.</span>
+                    </div>
+                    <div class="timeline-row">
+                      <span class="timeline-dot"></span>
+                      <span class="timeline-label"><strong>Processing</strong>Items are prepared for delivery.</span>
+                    </div>
+                  </div>
+                  <div style="height: 12px"></div>
+                  <div class="message-box">
+                    <strong>WhatsApp automation</strong>
+                    <p>
+                      Hi Mariana, your Use Me With Style order UMWS-1045 was
+                      received. We will confirm payment and delivery details soon.
+                    </p>
+                  </div>
+                  <div class="lookup-panel">
+                    <div class="section-head">
+                      <h3>Track another order</h3>
+                      <a href="#">No account needed</a>
+                    </div>
+                    <div class="field">Order reference or email</div>
+                    <span class="btn secondary">Check status</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="screen-note">
+              <strong>Figma intent</strong>
+              <p>Lightweight confirmation and lookup replace full accounts in Phase 1 while still giving customer reassurance.</p>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section aria-labelledby="responsive-title">
+        <div class="section-title">
+          <h2 id="responsive-title">Responsive Storefront References</h2>
+          <p>
+            Desktop and tablet references establish how the same components scale
+            when customers browse from laptops, tablets, and larger screens.
+          </p>
+        </div>
+
+        <div class="responsive-grid">
+          <article class="screen-card">
+            <div class="screen-title">
+              <h3>07. Desktop Home and Collection</h3>
+              <span>1440 x 900</span>
+            </div>
+            <div class="desktop-shell">
+              <div class="desktop-screen">
+                <header class="desktop-topbar">
+                  <img
+                    class="desktop-logo"
+                    src="../public/brand/use-me-logo-black-transparent.png"
+                    alt="Use Me With Style"
+                  />
+                  <nav class="desktop-nav" aria-label="Desktop storefront navigation">
+                    <span>New arrivals</span>
+                    <span>Dresses</span>
+                    <span>Tops</span>
+                    <span>Sets</span>
+                    <span>Order lookup</span>
+                  </nav>
+                  <div class="desktop-actions">
+                    <span class="segmented">
+                      <span class="active">Angola</span>
+                      <span>Portugal</span>
+                    </span>
+                    <button class="icon-button" aria-label="Cart">
+                      <span class="glyph bag"></span>
+                    </button>
+                  </div>
+                </header>
+                <section class="desktop-hero">
+                  <div class="desktop-hero-copy">
+                    <span class="tag gold">Phase 1 launch edit</span>
+                    <h2>Style that travels with the moment.</h2>
+                    <p>
+                      A premium storefront for quick discovery, clean checkout,
+                      and market-aware payment and delivery across Angola and
+                      Portugal.
+                    </p>
+                    <div class="component-row">
+                      <span class="btn gold">Shop collection</span>
+                      <span class="btn secondary">Track order</span>
+                    </div>
+                  </div>
+                  <div class="desktop-editorial" aria-hidden="true"></div>
+                </section>
+                <section class="desktop-section">
+                  <div class="section-head">
+                    <h3>Featured edit</h3>
+                    <a href="#">View full catalogue</a>
+                  </div>
+                  <div class="desktop-products">
+                    <div class="product-tile">
+                      <div class="product-photo"><span class="garment"></span></div>
+                      <div class="product-info">
+                        <span class="tag gold">New</span>
+                        <strong>Vestido Aurora</strong>
+                        <div class="price-line"><b>18,500 Kz</b><span>EUR 22</span></div>
+                      </div>
+                    </div>
+                    <div class="product-tile">
+                      <div class="product-photo rose-photo">
+                        <span class="garment rose-garment"></span>
+                      </div>
+                      <div class="product-info">
+                        <span class="tag">Few left</span>
+                        <strong>Vestido Lume</strong>
+                        <div class="price-line"><b>19,500 Kz</b><span>EUR 23</span></div>
+                      </div>
+                    </div>
+                    <div class="product-tile">
+                      <div class="product-photo dark-photo">
+                        <span class="garment set dark-garment"></span>
+                      </div>
+                      <div class="product-info">
+                        <span class="tag">Bestseller</span>
+                        <strong>Conjunto Sereno</strong>
+                        <div class="price-line"><b>24,500 Kz</b><span>EUR 29</span></div>
+                      </div>
+                    </div>
+                    <div class="product-tile">
+                      <div class="product-photo sage-photo">
+                        <span class="garment top"></span>
+                      </div>
+                      <div class="product-info">
+                        <span class="tag sage">In stock</span>
+                        <strong>Top Iris</strong>
+                        <div class="price-line"><b>8,000 Kz</b><span>EUR 9</span></div>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              </div>
+            </div>
+          </article>
+
+          <div class="responsive-card">
+            <h3>Breakpoint Notes</h3>
+            <div class="breakpoint-list">
+              <div class="breakpoint">
+                <strong>Mobile</strong>
+                <span>Single-column journey with sticky CTAs, bottom navigation, and market visibility near checkout decisions.</span>
+              </div>
+              <div class="breakpoint">
+                <strong>Tablet</strong>
+                <span>Product pages split media and detail into two panes while keeping the same form controls and CTA hierarchy.</span>
+              </div>
+              <div class="breakpoint">
+                <strong>Desktop</strong>
+                <span>Top navigation, larger editorial hero, four-column product grid, and explicit order lookup in the header.</span>
+              </div>
+              <div class="breakpoint">
+                <strong>Figma</strong>
+                <span>Create components with mobile variants first, then tablet and desktop auto-layout variants from the same tokens.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <article class="screen-card" style="margin-top: 28px">
+          <div class="screen-title">
+            <h3>08. Tablet Product Detail</h3>
+            <span>834 x 720</span>
+          </div>
+          <div class="tablet-shell">
+            <div class="tablet-screen">
+              <div class="topbar">
+                <button class="icon-button" aria-label="Back">
+                  <span class="glyph back"></span>
+                </button>
+                <img
+                  class="wordmark"
+                  src="../public/brand/use-me-logo-black-transparent.png"
+                  alt="Use Me With Style"
+                />
+                <button class="icon-button" aria-label="Cart">
+                  <span class="glyph bag"></span>
+                </button>
+              </div>
+              <div class="tablet-product">
+                <section class="product-hero">
+                  <span class="tag gold">New arrival</span>
+                  <span class="garment"></span>
+                </section>
+                <section class="product-detail">
+                  <div class="title-price">
+                    <div>
+                      <h2>Vestido Aurora</h2>
+                      <p class="small-copy">
+                        The same mobile product hierarchy, scaled for tablet:
+                        larger media, cleaner detail spacing, identical controls.
+                      </p>
+                    </div>
+                    <strong>EUR 22</strong>
+                  </div>
+                  <div class="option-block">
+                    <div class="option-label"><span>Colour</span><span>Areia</span></div>
+                    <div class="swatch-row">
+                      <span class="color-swatch"></span>
+                      <span class="color-swatch black"></span>
+                      <span class="color-swatch rose"></span>
+                      <span class="color-swatch ivory"></span>
+                    </div>
+                  </div>
+                  <div class="option-block">
+                    <div class="option-label"><span>Size</span><span>4 left in M</span></div>
+                    <div class="size-row">
+                      <span class="size-chip">XS</span>
+                      <span class="size-chip">S</span>
+                      <span class="size-chip active">M</span>
+                      <span class="size-chip">L</span>
+                    </div>
+                  </div>
+                  <div class="delivery-box">
+                    <div class="delivery-row"><strong>Market</strong><span>Portugal selected</span></div>
+                    <div class="delivery-row"><strong>Delivery</strong><span>CTT or courier</span></div>
+                    <div class="delivery-row"><strong>Payment</strong><span>MBWay, Stripe, PayPal</span></div>
+                  </div>
+                  <span class="btn">Add to cart</span>
+                </section>
+              </div>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section aria-labelledby="handoff-title">
+        <div class="section-title">
+          <h2 id="handoff-title">Figma Handoff Checklist</h2>
+          <p>
+            When Figma premium is active, this board can be recreated as frames
+            and components without revisiting Phase 1 storefront decisions.
+          </p>
+        </div>
+        <div class="handoff-grid">
+          <div class="handoff-card">
+            <span class="tag gold">01</span>
+            <h3>Create variables</h3>
+            <p>Color, type, spacing, radius, shadow, and status tokens from the system direction above.</p>
+          </div>
+          <div class="handoff-card">
+            <span class="tag gold">02</span>
+            <h3>Build components</h3>
+            <p>Buttons, icon buttons, chips, segmented market switch, product tile, fields, delivery cards, and order timeline.</p>
+          </div>
+          <div class="handoff-card">
+            <span class="tag gold">03</span>
+            <h3>Create frames</h3>
+            <p>Six mobile storefront frames first, then desktop home and tablet product detail responsive references.</p>
+          </div>
+          <div class="handoff-card">
+            <span class="tag gold">04</span>
+            <h3>Replace media</h3>
+            <p>Keep placeholders until client photography arrives. Swap product photos without changing layout behavior.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

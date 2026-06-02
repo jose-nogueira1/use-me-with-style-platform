@@ -58,6 +58,7 @@ npm run preview
 
 ## Project Docs
 
+- Phase 1 storefront high-fidelity pack: `docs/phase-1-storefront-high-fidelity.html`
 - Phase 1 wireframe pack: `docs/phase-1-mobile-storefront-wireframes.html`
 - Environment strategy: `docs/environments.md`
 - Prototype guide EN: `docs/use-me-prototype-guide-en.md`
