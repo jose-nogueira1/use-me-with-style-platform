@@ -11,6 +11,18 @@ Phase 1 focuses on the launch foundation: mobile-first storefront, catalogue, pr
 - Vite
 - Lucide React icons
 
+## Environments
+
+The repo is configured for three persistent environments:
+
+- `development` for local/internal development.
+- `staging` for client QA and production-like validation.
+- `production` for real customers, real orders, and live integrations.
+
+Tracked env files contain safe public defaults only: `.env.development`, `.env.staging`, `.env.production`, and `.env.example`.
+
+Secrets belong in untracked `.local` files, Vercel environment variables, Railway environment variables, or the relevant payment/media provider dashboard. See `docs/environments.md`.
+
 ## Phase 1 Scope
 
 - Angola and Portugal launch markets.
@@ -37,6 +49,9 @@ npm run dev
 
 ```bash
 npm run build
+npm run build:staging
+npm run build:production
+npm run env:check
 npm run lint
 npm run preview
 ```
@@ -44,6 +59,7 @@ npm run preview
 ## Project Docs
 
 - Phase 1 wireframe pack: `docs/phase-1-mobile-storefront-wireframes.html`
+- Environment strategy: `docs/environments.md`
 - Prototype guide EN: `docs/use-me-prototype-guide-en.md`
 - Prototype guide PT: `docs/use-me-prototype-guide-pt.md`
 

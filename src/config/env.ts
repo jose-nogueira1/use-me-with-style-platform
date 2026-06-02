@@ -1,0 +1,34 @@
+type AppEnv = "development" | "staging" | "production";
+type PaymentMode = "sandbox" | "live";
+
+const appEnvs: AppEnv[] = ["development", "staging", "production"];
+const paymentModes: PaymentMode[] = ["sandbox", "live"];
+
+function oneOf<T extends string>(value: string | undefined, allowed: T[], fallback: T) {
+  return allowed.includes(value as T) ? (value as T) : fallback;
+}
+
+function bool(value: string | undefined, fallback = false) {
+  if (value === "true") return true;
+  if (value === "false") return false;
+  return fallback;
+}
+
+export const publicEnv = {
+  appEnv: oneOf(import.meta.env.VITE_APP_ENV, appEnvs, "development"),
+  appName: import.meta.env.VITE_APP_NAME || "Use Me With Style",
+  siteUrl: import.meta.env.VITE_SITE_URL || "http://localhost:5173",
+  apiBaseUrl: import.meta.env.VITE_API_BASE_URL || "http://localhost:4000",
+  cmsUrl: import.meta.env.VITE_CMS_URL || "http://localhost:3000/admin",
+  defaultMarket: import.meta.env.VITE_DEFAULT_MARKET || "AO",
+  paymentMode: oneOf(import.meta.env.VITE_PAYMENT_MODE, paymentModes, "sandbox"),
+  mockDataEnabled: bool(import.meta.env.VITE_ENABLE_MOCK_DATA, true),
+  livePaymentsEnabled: bool(import.meta.env.VITE_ENABLE_LIVE_PAYMENTS),
+  messagingAutomationEnabled: bool(import.meta.env.VITE_ENABLE_MESSAGING_AUTOMATION),
+  analyticsEnabled: bool(import.meta.env.VITE_ENABLE_ANALYTICS),
+};
+
+export function applyRuntimeEnvMetadata() {
+  document.documentElement.dataset.appEnv = publicEnv.appEnv;
+  document.documentElement.dataset.paymentMode = publicEnv.paymentMode;
+}

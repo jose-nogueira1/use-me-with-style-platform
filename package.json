@@ -5,7 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:staging": "vite --mode staging",
     "build": "vite build",
+    "build:staging": "vite build --mode staging",
+    "build:production": "vite build --mode production",
+    "env:check": "node scripts/check-env.mjs development",
+    "env:check:staging": "node scripts/check-env.mjs staging",
+    "env:check:production": "node scripts/check-env.mjs production",
     "lint": "eslint .",
     "preview": "vite preview"
   },
