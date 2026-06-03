@@ -225,10 +225,15 @@ function chart(parent, x, y) {
 }
 
 function simpleRow(parent, title, note, x, y, badgeText = "", badgeVariant = "plain") {
-  text(parent, `Row Title / ${title}`, title, x, y, 220, 12, tokens.colors.ink, tokens.font.bold);
-  text(parent, `Row Note / ${title}`, note, x, y + 21, 240, 10, tokens.colors.muted, tokens.font.regular);
-  if (badgeText) badge(parent, badgeText, x + 276, y + 6, 98, badgeVariant);
-  rect(parent, `Row Divider / ${title}`, x, y + 54, 374, 1, tokens.colors.lineSoft);
+  const parentWidth = parent.width || 420;
+  const rowWidth = Math.max(160, parentWidth - x * 2);
+  const badgeWidth = 86;
+  const labelWidth = badgeText ? Math.max(110, rowWidth - badgeWidth - 14) : rowWidth;
+  const badgeX = x + rowWidth - badgeWidth;
+  text(parent, `Row Title / ${title}`, title, x, y, labelWidth, 12, tokens.colors.ink, tokens.font.bold);
+  text(parent, `Row Note / ${title}`, note, x, y + 21, labelWidth, 10, tokens.colors.muted, tokens.font.regular);
+  if (badgeText) badge(parent, badgeText, badgeX, y + 6, badgeWidth, badgeVariant);
+  rect(parent, `Row Divider / ${title}`, x, y + 54, rowWidth, 1, tokens.colors.lineSoft);
 }
 
 function buildDashboard(x, y) {
@@ -456,6 +461,66 @@ function buildSettings(x, y) {
   });
 }
 
+function messageCard(parent, title, badgeText, x, y, variant = "blue") {
+  const c = card(parent, `Message / ${title}`, x, y, 336, 252);
+  text(c, "Message Title", title, 18, 18, 218, 25, tokens.colors.ink, tokens.font.bold);
+  badge(c, badgeText, 236, 20, 78, variant);
+  text(c, "Message Body", "Phase 1 operational message support for order, payment, delivery, and product support moments.", 18, 64, 282, 11, tokens.colors.muted, tokens.font.regular);
+  rect(c, "Template Preview", 18, 126, 300, 92, tokens.colors.ivory, 8, tokens.colors.line);
+  text(c, "Template Copy", title.includes("WhatsApp") ? "Hi Mariana, your Use Me order #1045 is in payment review. We will confirm as soon as payment is approved." : "Thanks for messaging Use Me. Send us your order number and phone so we can check your status.", 32, 146, 264, 11, tokens.colors.ink, tokens.font.regular);
+}
+
+function buildMessaging(x, y) {
+  const f = desktopFrame("A08 / Messaging Automation Foundation", x, y, "Settings", "Settings / Messaging", "Automation foundation", "Templates, triggers, human review, and channel readiness for launch support.", "Save rules");
+  messageCard(f, "WhatsApp order updates", "Phase 1", 260, 126, "blue");
+  messageCard(f, "Instagram support prompts", "Phase 1", 608, 126, "blue");
+  const review = card(f, "Human Review Inbox", 260, 394, 336, 252);
+  text(review, "Review Title", "Human review inbox", 18, 18, 220, 25, tokens.colors.ink, tokens.font.bold);
+  badge(review, "Required", 236, 20, 78, "gold");
+  text(review, "Review Copy", "Payment, address, cancellation, or unresolved delivery messages stay visible for admin action.", 18, 64, 282, 11, tokens.colors.muted, tokens.font.regular);
+  simpleRow(review, "#1045 payment proof", "Attached to Payment Review.", 18, 126, "Review", "gold");
+  simpleRow(review, "#1044 CTT label request", "Instagram question routed to order detail.", 18, 190, "Open", "blue");
+  const boundary = card(f, "Automation Boundaries", 608, 394, 336, 252);
+  text(boundary, "Boundary Title", "Automation boundaries", 18, 18, 220, 25, tokens.colors.ink, tokens.font.bold);
+  badge(boundary, "Deferred", 236, 20, 78, "plain");
+  text(boundary, "Boundary Copy", "Admin can prepare/send operational messages. AI campaign planning, Meta Ads, segmentation, and analytics triggers stay out of Phase 1.", 18, 64, 282, 11, tokens.colors.muted, tokens.font.regular);
+  simpleRow(boundary, "Included", "Order and support message templates.", 18, 144);
+  simpleRow(boundary, "Deferred", "AI campaigns, Meta Ads automation, VIP flows.", 18, 202);
+  const trigger = card(f, "Trigger Map", 976, 126, 330, 520);
+  text(trigger, "Trigger Label", "Trigger map", 18, 18, 160, 10, tokens.colors.goldDeep, tokens.font.bold);
+  text(trigger, "Trigger Title", "Status changes create messages", 18, 48, 250, 26, tokens.colors.ink, tokens.font.bold);
+  simpleRow(trigger, "New", "Order confirmation draft.", 18, 126);
+  simpleRow(trigger, "Payment Review", "Payment proof or waiting message.", 18, 190, "Review", "gold");
+  simpleRow(trigger, "Processing", "Preparation update.", 18, 254);
+  simpleRow(trigger, "Shipped", "CTT/courier/manual delivery update.", 18, 318, "Send", "blue");
+  simpleRow(trigger, "Delivered / Cancelled", "Closure message and lookup state.", 18, 382);
+}
+
+function stateCard(parent, title, note, label, x, y, variant = "plain") {
+  const c = card(parent, `State / ${title}`, x, y, 336, 248);
+  text(c, "State Title", title, 18, 18, 220, 25, tokens.colors.ink, tokens.font.bold);
+  text(c, "State Note", note, 18, 58, 282, 11, tokens.colors.muted, tokens.font.regular);
+  const fill = variant === "error" ? "#FFF0EB" : variant === "loading" ? tokens.colors.shell : tokens.colors.ivory;
+  const stroke = variant === "error" ? "#E1B3AA" : tokens.colors.line;
+  rect(c, "State Visual", 18, 118, 300, 96, fill, 8, stroke);
+  text(c, "State Visual Label", label, 42, 152, 252, 11, variant === "error" ? tokens.colors.alert : tokens.colors.goldDeep, tokens.font.bold, "CENTER");
+}
+
+function buildStates(x, y) {
+  const f = desktopFrame("A09 / Admin States and Edge Cases", x, y, "Dashboard", "Admin QA", "State coverage", "Required UI states for dashboard, orders, products, settings, messaging, and order lookup.", "Mark ready");
+  stateCard(f, "Orders empty", "Shown before the first order or when filters return zero results.", "No matching orders / Clear filters", 260, 126);
+  stateCard(f, "Orders loading", "Skeleton rows keep the table stable while order data loads.", "Loading orders", 608, 126, "loading");
+  stateCard(f, "Orders error", "Admin can retry and still see the last known safe state.", "Could not load orders / Retry", 956, 126, "error");
+  stateCard(f, "Products empty", "Manual entry remains the primary action when the catalogue starts blank.", "No products yet / Add first product", 260, 390);
+  stateCard(f, "Provider pending", "Appy Pay can stay unavailable without blocking Portugal payments.", "Appy Pay pending / Use Payment Review", 608, 390);
+  stateCard(f, "Order lookup", "Full accounts are deferred, but admin can help customers retrieve an order.", "Lookup by order number / Phone or email", 956, 390);
+  const qa = card(f, "QA Checklist", 260, 680, 1044, 160);
+  text(qa, "QA Title", "Required fallback copy", 18, 18, 260, 25, tokens.colors.ink, tokens.font.bold);
+  simpleRow(qa, "Payment provider unavailable", "Show affected market and safe manual action.", 18, 70, "Covered", "green");
+  simpleRow(qa, "Delivery fee missing", "Keep order draft or payment review until fee is confirmed.", 360, 70, "Covered", "green");
+  simpleRow(qa, "Photo pending", "Allow product draft or placeholder publish based on admin choice.", 702, 70, "Covered", "green");
+}
+
 function mobileMetric(parent, label, value, note, x, y, variant = "plain") {
   const fill = variant === "red" ? "#FFF0EB" : tokens.colors.ivory;
   const stroke = variant === "red" ? "#E1B3AA" : tokens.colors.lineSoft;
@@ -515,6 +580,8 @@ buildProducts(0, 1540);
 buildProductEditor(1460, 1540);
 buildSettings(2920, 1540);
 buildMobile(4380, 1540);
+buildMessaging(0, 2560);
+buildStates(1460, 2560);
 
 figma.viewport.scrollAndZoomIntoView(page.children);
 

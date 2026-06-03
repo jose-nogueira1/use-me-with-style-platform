@@ -63,7 +63,9 @@
       "Products",
       "Product Editor",
       "Settings",
-      "Mobile Admin Quick Check"
+      "Mobile Admin Quick Check",
+      "Messaging Automation Foundation",
+      "Admin States and Edge Cases"
     ],
     "launchMarkets": [
       "Angola",
@@ -158,6 +160,22 @@
       "screenshot": "07-mobile-admin-quick-check.png",
       "size": [390, 844],
       "description": "Stretch mobile admin reference for urgent checks and simple action routing."
+    },
+    {
+      "id": "A08",
+      "name": "Messaging Automation Foundation",
+      "exportName": "08-messaging-automation",
+      "screenshot": "08-messaging-automation-foundation.png",
+      "size": [1360, 918],
+      "description": "WhatsApp and Instagram operational messaging foundation with status-triggered drafts, human review, and clear Phase 1 boundaries."
+    },
+    {
+      "id": "A09",
+      "name": "Admin States and Edge Cases",
+      "exportName": "09-admin-states",
+      "screenshot": "09-admin-states-edge-cases.png",
+      "size": [1360, 918],
+      "description": "Empty, loading, error, provider-pending, delivery-fee-missing, photo-pending, and order lookup state coverage for Phase 1 admin implementation."
     }
   ],
   "openDecisions": [

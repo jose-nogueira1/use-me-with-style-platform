@@ -1,6 +1,6 @@
 # Admin Phase 1 Design Review Screenshots
 
-Generated from `docs/phase-1-admin-high-fidelity.html` at 2026-06-03T09:51:08.372Z.
+Generated from `docs/phase-1-admin-high-fidelity.html` at 2026-06-03T10:29:29.370Z.
 
 Regenerate with:
 
@@ -47,6 +47,14 @@ npm run export:admin-screenshots
 ## Mobile Admin Quick Check
 
 ![Mobile Admin Quick Check](./07-mobile-admin-quick-check.png)
+
+## Messaging Automation Foundation
+
+![Messaging Automation Foundation](./08-messaging-automation-foundation.png)
+
+## Admin States and Edge Cases
+
+![Admin States and Edge Cases](./09-admin-states-edge-cases.png)
 
 ## Figma Handoff Checklist
 

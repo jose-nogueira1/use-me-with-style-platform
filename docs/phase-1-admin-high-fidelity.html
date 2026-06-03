@@ -1026,6 +1026,87 @@
         gap: 14px;
       }
 
+      .messaging-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 342px;
+        gap: 14px;
+      }
+
+      .message-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .message-card,
+      .state-card {
+        border: 1px solid var(--line-soft);
+        border-radius: 8px;
+        background: var(--paper);
+        padding: 16px;
+      }
+
+      .message-card h3,
+      .state-card h3 {
+        margin: 0;
+        color: var(--ink);
+        font-family: var(--display);
+        font-size: 25px;
+        line-height: 1;
+      }
+
+      .message-card p,
+      .state-card p {
+        margin: 9px 0 14px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.55;
+      }
+
+      .template-preview {
+        min-height: 116px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--ivory);
+        padding: 13px;
+        color: var(--ink);
+        font-size: 12px;
+        line-height: 1.55;
+      }
+
+      .state-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .state-visual {
+        min-height: 96px;
+        display: grid;
+        place-items: center;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--ivory);
+        color: var(--gold-deep);
+        font-size: 11px;
+        font-weight: 800;
+        line-height: 1.4;
+        text-align: center;
+        text-transform: uppercase;
+      }
+
+      .state-visual.loading {
+        background:
+          linear-gradient(90deg, var(--ivory) 0 22%, var(--shell) 22% 44%, var(--ivory) 44% 66%, var(--shell) 66% 88%, var(--ivory) 88%),
+          var(--ivory);
+      }
+
+      .state-visual.error {
+        border-color: rgba(185, 85, 69, 0.36);
+        background: #fff0eb;
+        color: var(--alert);
+      }
+
       .market-card {
         min-height: 270px;
         border: 1px solid var(--line-soft);
@@ -1227,6 +1308,9 @@
         .detail-layout,
         .editor-layout,
         .settings-grid,
+        .messaging-layout,
+        .message-grid,
+        .state-grid,
         .handoff-grid,
         .mobile-strip {
           grid-template-columns: 1fr;
@@ -1291,10 +1375,10 @@
           <div>
             <p class="eyebrow">Phase 1 Admin High Fidelity</p>
             <h1>Operations cockpit for launch orders, stock, markets, and manual coordination.</h1>
-            <p>
-              This pack turns the admin wireframes into review-ready, desktop-first screens. It keeps the Phase 1 scope tight:
-              Dashboard, Orders, Products, Settings, and a mobile quick-check reference.
-            </p>
+          <p>
+            This pack turns the admin wireframes into review-ready, desktop-first screens. It keeps the Phase 1 scope tight:
+              Dashboard, Orders, Products, Settings, messaging foundations, admin states, and a mobile quick-check reference.
+          </p>
             <div class="intro-actions">
               <span class="pill dark">Desktop admin first</span>
               <span class="pill gold">Angola and Portugal</span>
@@ -2270,6 +2354,206 @@
         </div>
       </article>
 
+      <article class="screen-panel export-target" data-export="08-messaging-automation">
+        <div class="screen-title">
+          <div>
+            <p class="eyebrow">A08</p>
+            <h2>Messaging Automation Foundation</h2>
+          </div>
+          <p>Phase 1 WhatsApp and Instagram operations without bringing forward AI campaigns or Meta Ads automation.</p>
+        </div>
+        <div class="desktop-frame">
+          <div class="admin-shell">
+            <aside class="sidebar">
+              <img class="sidebar-logo" src="../public/brand/use-me-logo-gold-transparent.png" alt="Use Me With Style" />
+              <nav class="nav-list" aria-label="Admin navigation">
+                <div class="nav-item">Dashboard</div>
+                <div class="nav-item">Orders</div>
+                <div class="nav-item">Products</div>
+                <div class="nav-item active">Settings</div>
+              </nav>
+              <div class="sidebar-foot">
+                <strong>Messaging scope</strong>
+                <span>WhatsApp and Instagram support launch operations; campaign automation remains deferred.</span>
+              </div>
+            </aside>
+            <section class="admin-main">
+              <header class="admin-topbar">
+                <div>
+                  <p class="page-kicker">Settings / Messaging</p>
+                  <h2 class="page-title">Automation foundation</h2>
+                  <p class="page-subtitle">Templates, triggers, human review, and channel readiness for launch support.</p>
+                </div>
+                <div class="top-actions">
+                  <button class="action-btn">Preview templates</button>
+                  <button class="action-btn primary">Save automation rules</button>
+                </div>
+              </header>
+              <div class="messaging-layout">
+                <div class="message-grid">
+                  <article class="message-card">
+                    <div class="market-title">
+                      <h3>WhatsApp order updates</h3>
+                      <span class="badge blue">Phase 1</span>
+                    </div>
+                    <p>Manual-trigger templates for confirmation, payment review, processing, shipped, delivered, and cancelled.</p>
+                    <div class="template-preview">
+                      Hi Mariana, your Use Me order #1045 is in payment review. We will confirm as soon as payment is approved.
+                    </div>
+                  </article>
+                  <article class="message-card">
+                    <div class="market-title">
+                      <h3>Instagram support prompts</h3>
+                      <span class="badge blue">Phase 1</span>
+                    </div>
+                    <p>Short responses for product questions, order lookup, payment review, and delivery follow-up.</p>
+                    <div class="template-preview">
+                      Thanks for messaging Use Me. Send us your order number and phone so we can check your status.
+                    </div>
+                  </article>
+                  <article class="message-card">
+                    <div class="market-title">
+                      <h3>Human review inbox</h3>
+                      <span class="badge gold">Required</span>
+                    </div>
+                    <p>Any payment, address, cancellation, or unresolved delivery message should stay visible for admin action.</p>
+                    <div class="simple-list">
+                      <div class="simple-row">
+                        <div class="list-copy"><strong>#1045 payment proof</strong><span>WhatsApp message attached to Payment Review.</span></div>
+                        <span class="badge gold">Review</span>
+                      </div>
+                      <div class="simple-row">
+                        <div class="list-copy"><strong>#1044 CTT label request</strong><span>Instagram question routed to order detail.</span></div>
+                        <span class="badge blue">Open</span>
+                      </div>
+                    </div>
+                  </article>
+                  <article class="message-card">
+                    <div class="market-title">
+                      <h3>Automation boundaries</h3>
+                      <span class="badge">Deferred</span>
+                    </div>
+                    <p>The admin can prepare/send operational messages. AI campaign planning, Meta Ads, segmentation, and analytics triggers stay out of Phase 1.</p>
+                    <div class="config-list">
+                      <div class="config-row"><strong>Included</strong><span>Order and support message templates.</span></div>
+                      <div class="config-row"><strong>Deferred</strong><span>AI campaigns, Meta Ads automation, VIP flows.</span></div>
+                    </div>
+                  </article>
+                </div>
+                <aside class="side-panel">
+                  <span class="side-label">Trigger map</span>
+                  <h3 class="side-title">Status changes create messages</h3>
+                  <p class="side-copy">Each status change can generate a draft message for admin approval before sending.</p>
+                  <div class="simple-list">
+                    <div class="simple-row"><div class="list-copy"><strong>New</strong><span>Order confirmation draft.</span></div></div>
+                    <div class="simple-row"><div class="list-copy"><strong>Payment Review</strong><span>Payment proof or waiting message.</span></div></div>
+                    <div class="simple-row"><div class="list-copy"><strong>Processing</strong><span>Preparation update.</span></div></div>
+                    <div class="simple-row"><div class="list-copy"><strong>Shipped</strong><span>CTT/courier/manual delivery update.</span></div></div>
+                    <div class="simple-row"><div class="list-copy"><strong>Delivered / Cancelled</strong><span>Closure message and lookup state.</span></div></div>
+                  </div>
+                </aside>
+              </div>
+            </section>
+          </div>
+        </div>
+      </article>
+
+      <article class="screen-panel export-target" data-export="09-admin-states">
+        <div class="screen-title">
+          <div>
+            <p class="eyebrow">A09</p>
+            <h2>Admin States and Edge Cases</h2>
+          </div>
+          <p>Implementation reference for the states that make admin usable on slower days, broken connections, or empty launch data.</p>
+        </div>
+        <div class="desktop-frame">
+          <div class="admin-shell">
+            <aside class="sidebar">
+              <img class="sidebar-logo" src="../public/brand/use-me-logo-gold-transparent.png" alt="Use Me With Style" />
+              <nav class="nav-list" aria-label="Admin navigation">
+                <div class="nav-item active">Dashboard</div>
+                <div class="nav-item">Orders</div>
+                <div class="nav-item">Products</div>
+                <div class="nav-item">Settings</div>
+              </nav>
+              <div class="sidebar-foot">
+                <strong>State coverage</strong>
+                <span>Empty, loading, error, permission, and unavailable-provider states should be designed before build.</span>
+              </div>
+            </aside>
+            <section class="admin-main">
+              <header class="admin-topbar">
+                <div>
+                  <p class="page-kicker">Admin QA</p>
+                  <h2 class="page-title">State coverage</h2>
+                  <p class="page-subtitle">Required UI states for dashboard, orders, products, settings, messaging, and order lookup.</p>
+                </div>
+                <div class="top-actions">
+                  <button class="action-btn">Export QA checklist</button>
+                  <button class="action-btn primary">Mark ready</button>
+                </div>
+              </header>
+              <div class="state-grid">
+                <article class="state-card">
+                  <h3>Orders empty</h3>
+                  <p>Shown before the first captured order or when all filters return zero results.</p>
+                  <div class="state-visual">No matching orders<br />Clear filters or create manual order</div>
+                </article>
+                <article class="state-card">
+                  <h3>Orders loading</h3>
+                  <p>Skeleton rows keep the table stable while orders, payment status, or fulfilment data loads.</p>
+                  <div class="state-visual loading">Loading orders</div>
+                </article>
+                <article class="state-card">
+                  <h3>Orders error</h3>
+                  <p>Admin can retry and still see the last known safe state when order sync fails.</p>
+                  <div class="state-visual error">Could not load orders<br />Retry</div>
+                </article>
+                <article class="state-card">
+                  <h3>Products empty</h3>
+                  <p>Manual entry remains the primary action when the catalogue starts blank.</p>
+                  <div class="state-visual">No products yet<br />Add first product</div>
+                </article>
+                <article class="state-card">
+                  <h3>Provider pending</h3>
+                  <p>Appy Pay can stay visibly unavailable without blocking Portugal payments or manual Angola review.</p>
+                  <div class="state-visual">Appy Pay pending<br />Use Payment Review</div>
+                </article>
+                <article class="state-card">
+                  <h3>Order lookup</h3>
+                  <p>Full accounts are deferred, but admin can help customers confirm or retrieve an order.</p>
+                  <div class="state-visual">Lookup by order number<br />Phone or email required</div>
+                </article>
+              </div>
+              <div class="two-col">
+                <section class="panel panel-pad">
+                  <div class="panel-title">
+                    <h3>Required fallback copy</h3>
+                    <span>Phase 1</span>
+                  </div>
+                  <div class="simple-list">
+                    <div class="simple-row"><div class="list-copy"><strong>Payment provider unavailable</strong><span>Tell admin which market is affected and what manual action is safe.</span></div></div>
+                    <div class="simple-row"><div class="list-copy"><strong>Delivery fee missing</strong><span>Keep order draft/payment review until fee is confirmed.</span></div></div>
+                    <div class="simple-row"><div class="list-copy"><strong>Photo pending</strong><span>Allow product draft or placeholder publish based on admin choice.</span></div></div>
+                  </div>
+                </section>
+                <section class="panel panel-pad">
+                  <div class="panel-title">
+                    <h3>QA checklist</h3>
+                    <span>Before launch</span>
+                  </div>
+                  <div class="simple-list">
+                    <div class="simple-row"><div class="list-copy"><strong>Dashboard</strong><span>Empty day, active day, payment review, low-stock.</span></div><span class="badge green">Covered</span></div>
+                    <div class="simple-row"><div class="list-copy"><strong>Orders</strong><span>All statuses plus filter-empty and retry state.</span></div><span class="badge green">Covered</span></div>
+                    <div class="simple-row"><div class="list-copy"><strong>Settings</strong><span>Angola pending and Portugal configured states.</span></div><span class="badge green">Covered</span></div>
+                  </div>
+                </section>
+              </div>
+            </section>
+          </div>
+        </div>
+      </article>
+
       <section class="section-title export-target" data-export="08-figma-handoff">
         <div>
           <p class="eyebrow">Figma handoff</p>
@@ -2289,6 +2573,8 @@
               <li>A05 Product Editor</li>
               <li>A06 Settings</li>
               <li>A07 Mobile Admin Quick Check</li>
+              <li>A08 Messaging Automation Foundation</li>
+              <li>A09 Admin States and Edge Cases</li>
             </ul>
           </section>
           <section class="handoff-panel">

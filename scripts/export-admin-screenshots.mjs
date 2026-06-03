@@ -74,6 +74,18 @@ const targets = [
     size: [1360, 900],
   },
   {
+    title: "Messaging Automation Foundation",
+    file: "08-messaging-automation-foundation.png",
+    exportName: "08-messaging-automation",
+    size: [1360, 918],
+  },
+  {
+    title: "Admin States and Edge Cases",
+    file: "09-admin-states-edge-cases.png",
+    exportName: "09-admin-states",
+    size: [1360, 918],
+  },
+  {
     title: "Figma Handoff Checklist",
     file: "08-figma-handoff.png",
     exportName: "08-figma-handoff",
