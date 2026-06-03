@@ -2,6 +2,10 @@
 
 Generated from `docs/phase-1-storefront-high-fidelity.html` at 2026-06-03T09:09:49.875Z.
 
+Browser gallery:
+
+[Open `index.html`](./index.html)
+
 Regenerate with:
 
 ```bash
