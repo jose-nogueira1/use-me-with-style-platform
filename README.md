@@ -60,6 +60,8 @@ npm run preview
 
 - Phase 1 storefront high-fidelity pack: `docs/phase-1-storefront-high-fidelity.html`
 - Phase 1 storefront review screenshots: `docs/design-review/storefront-phase-1/README.md`
+- Phase 1 admin high-fidelity pack: `docs/phase-1-admin-high-fidelity.html`
+- Phase 1 admin review screenshots: `docs/design-review/admin-phase-1/README.md`
 - Phase 1 Figma import kit: `docs/figma/README.md`
 - Phase 1 wireframe pack: `docs/phase-1-mobile-storefront-wireframes.html`
 - Environment strategy: `docs/environments.md`

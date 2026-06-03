@@ -1,0 +1,2328 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Use Me With Style - Phase 1 Admin High Fidelity</title>
+    <link rel="icon" type="image/svg+xml" href="../public/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Montserrat:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --black: #050505;
+        --ink: #171514;
+        --charcoal: #2b2927;
+        --muted: #6c655d;
+        --stone: #e7dfcf;
+        --line: #d8cdb7;
+        --line-soft: #ece5d8;
+        --paper: #fffdf8;
+        --ivory: #f8f4ec;
+        --shell: #f1eadf;
+        --champagne: #e5c24f;
+        --gold: #caa039;
+        --gold-deep: #937027;
+        --rose: #a66f63;
+        --sage: #78816f;
+        --blue: #426a70;
+        --success: #3f754d;
+        --alert: #b95545;
+        --warning: #b9822f;
+        --shadow: 0 28px 80px rgba(18, 16, 12, 0.16);
+        --display: "Cormorant Garamond", "Bodoni 72", Didot, Georgia, serif;
+        --body: Montserrat, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        background:
+          linear-gradient(180deg, rgba(255, 253, 248, 0.78), rgba(231, 223, 207, 0.56)),
+          var(--ivory);
+        color: var(--ink);
+        font-family: var(--body);
+        letter-spacing: 0;
+      }
+
+      img {
+        display: block;
+        max-width: 100%;
+      }
+
+      button,
+      input,
+      textarea,
+      select {
+        font: inherit;
+        letter-spacing: 0;
+      }
+
+      .board {
+        width: min(1760px, calc(100% - 40px));
+        margin: 0 auto;
+        padding: 36px 0 58px;
+      }
+
+      .board-header {
+        display: grid;
+        grid-template-columns: minmax(0, 1.05fr) minmax(340px, 0.95fr);
+        gap: 24px;
+        margin-bottom: 24px;
+      }
+
+      .intro,
+      .scope-panel,
+      .token-panel,
+      .screen-panel,
+      .handoff-panel {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(255, 253, 248, 0.92);
+      }
+
+      .intro {
+        min-height: 348px;
+        display: grid;
+        align-content: space-between;
+        padding: 30px;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .intro::after {
+        content: "";
+        position: absolute;
+        right: 36px;
+        bottom: 30px;
+        width: 190px;
+        height: 190px;
+        border: 1px solid rgba(202, 160, 57, 0.36);
+        background:
+          linear-gradient(135deg, rgba(202, 160, 57, 0.1), rgba(66, 106, 112, 0.06)),
+          repeating-linear-gradient(135deg, transparent 0 13px, rgba(202, 160, 57, 0.1) 13px 14px);
+        transform: rotate(45deg);
+      }
+
+      .intro > * {
+        position: relative;
+        z-index: 1;
+      }
+
+      .eyebrow {
+        margin: 0 0 10px;
+        color: var(--gold-deep);
+        font-size: 11px;
+        font-weight: 800;
+        line-height: 1.3;
+        text-transform: uppercase;
+      }
+
+      .intro h1,
+      .section-title h2,
+      .screen-title h2 {
+        margin: 0;
+        font-family: var(--display);
+        font-weight: 700;
+        line-height: 1;
+      }
+
+      .intro h1 {
+        max-width: 760px;
+        font-size: 70px;
+      }
+
+      .intro p,
+      .section-title p,
+      .screen-title p,
+      .handoff-panel p {
+        margin: 14px 0 0;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.65;
+      }
+
+      .intro-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 24px;
+      }
+
+      .pill {
+        min-height: 32px;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--paper);
+        color: var(--ink);
+        padding: 8px 11px;
+        font-size: 11px;
+        font-weight: 800;
+        line-height: 1;
+        text-transform: uppercase;
+      }
+
+      .pill.dark {
+        border-color: var(--black);
+        background: var(--black);
+        color: var(--champagne);
+      }
+
+      .pill.gold {
+        border-color: rgba(202, 160, 57, 0.42);
+        background: #fcf3d8;
+        color: var(--gold-deep);
+      }
+
+      .scope-panel {
+        padding: 24px;
+        display: grid;
+        gap: 16px;
+      }
+
+      .scope-logo {
+        width: 166px;
+        height: auto;
+      }
+
+      .scope-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .scope-item {
+        min-height: 88px;
+        border: 1px solid var(--line-soft);
+        border-radius: 8px;
+        background: var(--ivory);
+        padding: 14px;
+      }
+
+      .scope-item span,
+      .metric span,
+      .data-label,
+      .table-head,
+      .form-label,
+      .side-label {
+        color: var(--gold-deep);
+        font-size: 10px;
+        font-weight: 800;
+        line-height: 1.25;
+        text-transform: uppercase;
+      }
+
+      .scope-item strong {
+        display: block;
+        margin-top: 8px;
+        color: var(--ink);
+        font-size: 14px;
+        line-height: 1.35;
+      }
+
+      .section-title {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(280px, 420px);
+        gap: 20px;
+        align-items: end;
+        margin: 36px 0 16px;
+      }
+
+      .section-title h2 {
+        font-size: 42px;
+      }
+
+      .token-panel {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: 12px;
+        padding: 14px;
+      }
+
+      .swatch {
+        min-height: 88px;
+        border: 1px solid var(--line-soft);
+        border-radius: 8px;
+        overflow: hidden;
+        background: var(--paper);
+      }
+
+      .swatch-color {
+        height: 44px;
+        border-bottom: 1px solid var(--line-soft);
+      }
+
+      .swatch-label {
+        padding: 10px;
+        color: var(--muted);
+        font-size: 10px;
+        font-weight: 700;
+        line-height: 1.4;
+      }
+
+      .screen-panel {
+        margin: 18px 0 28px;
+        padding: 18px;
+      }
+
+      .screen-title {
+        display: flex;
+        justify-content: space-between;
+        gap: 18px;
+        align-items: flex-start;
+        margin-bottom: 14px;
+      }
+
+      .screen-title h2 {
+        font-size: 34px;
+      }
+
+      .screen-title p {
+        max-width: 620px;
+        margin-top: 4px;
+        text-align: right;
+      }
+
+      .desktop-frame {
+        width: 1360px;
+        min-height: 918px;
+        margin: 0 auto;
+        border: 1px solid var(--black);
+        border-radius: 8px;
+        background: var(--paper);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+
+      .admin-shell {
+        min-height: 918px;
+        display: grid;
+        grid-template-columns: 236px minmax(0, 1fr);
+        background: var(--ivory);
+      }
+
+      .sidebar {
+        background: var(--black);
+        color: var(--paper);
+        padding: 24px 18px;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .sidebar-logo {
+        width: 126px;
+        margin: 0 auto 28px;
+      }
+
+      .nav-list {
+        display: grid;
+        gap: 6px;
+      }
+
+      .nav-item {
+        min-height: 42px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border: 1px solid transparent;
+        border-radius: 6px;
+        color: rgba(255, 253, 248, 0.72);
+        padding: 0 12px;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .nav-item.active {
+        border-color: rgba(229, 194, 79, 0.45);
+        background: rgba(229, 194, 79, 0.12);
+        color: var(--champagne);
+      }
+
+      .nav-count {
+        min-width: 24px;
+        height: 22px;
+        display: inline-grid;
+        place-items: center;
+        border-radius: 6px;
+        background: var(--champagne);
+        color: var(--black);
+        font-size: 10px;
+        font-weight: 800;
+      }
+
+      .sidebar-foot {
+        margin-top: auto;
+        border: 1px solid rgba(229, 194, 79, 0.35);
+        border-radius: 8px;
+        padding: 14px;
+        background: rgba(255, 253, 248, 0.05);
+      }
+
+      .sidebar-foot strong {
+        display: block;
+        color: var(--champagne);
+        font-size: 12px;
+        line-height: 1.3;
+      }
+
+      .sidebar-foot span {
+        display: block;
+        margin-top: 7px;
+        color: rgba(255, 253, 248, 0.64);
+        font-size: 11px;
+        line-height: 1.45;
+      }
+
+      .admin-main {
+        min-width: 0;
+        padding: 24px;
+      }
+
+      .admin-topbar {
+        min-height: 62px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 18px;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+
+      .page-kicker {
+        margin: 0 0 6px;
+        color: var(--gold-deep);
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .page-title {
+        margin: 0;
+        color: var(--ink);
+        font-family: var(--display);
+        font-size: 34px;
+        font-weight: 700;
+        line-height: 1;
+      }
+
+      .page-subtitle {
+        margin: 5px 0 0;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.5;
+      }
+
+      .top-actions {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .icon-btn,
+      .action-btn {
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--paper);
+        color: var(--ink);
+      }
+
+      .icon-btn {
+        width: 42px;
+        height: 42px;
+        display: grid;
+        place-items: center;
+        font-size: 14px;
+        font-weight: 800;
+      }
+
+      .action-btn {
+        min-height: 42px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 0 14px;
+        color: var(--ink);
+        font-size: 11px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .action-btn.primary {
+        border-color: var(--black);
+        background: var(--black);
+        color: var(--champagne);
+      }
+
+      .metric-row {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+
+      .metric {
+        min-height: 112px;
+        border: 1px solid var(--line-soft);
+        border-radius: 8px;
+        background: var(--paper);
+        padding: 14px;
+      }
+
+      .metric strong {
+        display: block;
+        margin-top: 12px;
+        color: var(--ink);
+        font-family: var(--display);
+        font-size: 30px;
+        line-height: 1;
+      }
+
+      .metric small {
+        display: block;
+        margin-top: 10px;
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.3;
+      }
+
+      .metric.warning {
+        border-color: rgba(185, 130, 47, 0.45);
+        background: #fcf3d8;
+      }
+
+      .metric.alert {
+        border-color: rgba(185, 85, 69, 0.42);
+        background: #fff0eb;
+      }
+
+      .dashboard-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.35fr) minmax(360px, 0.65fr);
+        gap: 14px;
+      }
+
+      .panel {
+        border: 1px solid var(--line-soft);
+        border-radius: 8px;
+        background: var(--paper);
+      }
+
+      .panel-pad {
+        padding: 18px;
+      }
+
+      .panel-title {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: baseline;
+        margin-bottom: 14px;
+      }
+
+      .panel-title h3 {
+        margin: 0;
+        color: var(--ink);
+        font-family: var(--display);
+        font-size: 23px;
+        line-height: 1;
+      }
+
+      .panel-title span {
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .attention-list,
+      .simple-list {
+        display: grid;
+        gap: 9px;
+      }
+
+      .attention-row {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        gap: 12px;
+        align-items: center;
+        border: 1px solid var(--line-soft);
+        border-radius: 8px;
+        background: var(--ivory);
+        padding: 12px;
+      }
+
+      .attention-row.hot {
+        border-color: rgba(185, 130, 47, 0.48);
+        background: #fcf3d8;
+      }
+
+      .priority-dot {
+        width: 10px;
+        height: 44px;
+        border-radius: 5px;
+        background: var(--sage);
+      }
+
+      .attention-row.hot .priority-dot {
+        background: var(--warning);
+      }
+
+      .attention-copy strong,
+      .list-copy strong,
+      .customer-card strong,
+      .status-step strong {
+        display: block;
+        color: var(--ink);
+        font-size: 13px;
+        line-height: 1.3;
+      }
+
+      .attention-copy span,
+      .list-copy span,
+      .customer-card span,
+      .status-step span {
+        display: block;
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.45;
+      }
+
+      .badge {
+        min-height: 25px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--paper);
+        color: var(--ink);
+        padding: 0 9px;
+        font-size: 10px;
+        font-weight: 800;
+        line-height: 1;
+        white-space: nowrap;
+        text-transform: uppercase;
+      }
+
+      .badge.gold {
+        border-color: rgba(202, 160, 57, 0.38);
+        background: #fcf3d8;
+        color: var(--gold-deep);
+      }
+
+      .badge.green {
+        border-color: rgba(63, 117, 77, 0.32);
+        background: #eff4ec;
+        color: var(--success);
+      }
+
+      .badge.red {
+        border-color: rgba(185, 85, 69, 0.36);
+        background: #fff0eb;
+        color: var(--alert);
+      }
+
+      .badge.blue {
+        border-color: rgba(66, 106, 112, 0.32);
+        background: #edf4f3;
+        color: var(--blue);
+      }
+
+      .chart-box {
+        height: 206px;
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        align-items: end;
+        gap: 10px;
+        border: 1px solid var(--line-soft);
+        border-radius: 8px;
+        background:
+          linear-gradient(180deg, transparent 0 24%, rgba(216, 205, 183, 0.35) 24% 25%, transparent 25% 49%, rgba(216, 205, 183, 0.35) 49% 50%, transparent 50% 74%, rgba(216, 205, 183, 0.35) 74% 75%, transparent 75%),
+          var(--ivory);
+        padding: 14px 16px;
+      }
+
+      .bar-wrap {
+        display: grid;
+        align-items: end;
+        gap: 7px;
+        color: var(--muted);
+        font-size: 10px;
+        font-weight: 700;
+        text-align: center;
+      }
+
+      .bar {
+        width: 100%;
+        min-height: 28px;
+        border-radius: 5px 5px 0 0;
+        background: var(--stone);
+      }
+
+      .bar.active {
+        background: linear-gradient(180deg, var(--champagne), var(--gold));
+      }
+
+      .two-col {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 14px;
+        margin-top: 14px;
+      }
+
+      .simple-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 12px;
+        align-items: center;
+        border-bottom: 1px solid var(--line-soft);
+        padding: 10px 0;
+      }
+
+      .simple-row:last-child {
+        border-bottom: 0;
+      }
+
+      .queue-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 342px;
+        gap: 14px;
+      }
+
+      .filter-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 0 0 14px;
+      }
+
+      .filter-chip {
+        min-height: 34px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--paper);
+        color: var(--ink);
+        padding: 0 11px;
+        font-size: 11px;
+        font-weight: 800;
+      }
+
+      .filter-chip.active {
+        border-color: var(--black);
+        background: var(--black);
+        color: var(--champagne);
+      }
+
+      .table {
+        border: 1px solid var(--line-soft);
+        border-radius: 8px;
+        background: var(--paper);
+        overflow: hidden;
+      }
+
+      .table-row,
+      .table-head {
+        display: grid;
+        grid-template-columns: 64px minmax(0, 1fr) 54px 96px 98px 128px 76px;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .table-head {
+        background: var(--shell);
+        padding: 12px 14px;
+      }
+
+      .table-row {
+        min-height: 68px;
+        border-top: 1px solid var(--line-soft);
+        padding: 12px 14px;
+        color: var(--ink);
+        font-size: 12px;
+      }
+
+      .table-row.selected {
+        background: #fff7dd;
+        box-shadow: inset 4px 0 0 var(--gold);
+      }
+
+      .table-row strong {
+        display: block;
+        font-size: 12px;
+        line-height: 1.35;
+      }
+
+      .table-row span {
+        display: block;
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.35;
+      }
+
+      .side-panel {
+        border: 1px solid var(--line-soft);
+        border-radius: 8px;
+        background: var(--paper);
+        padding: 18px;
+      }
+
+      .side-label {
+        display: block;
+        margin-bottom: 8px;
+      }
+
+      .side-title {
+        margin: 0;
+        color: var(--ink);
+        font-family: var(--display);
+        font-size: 26px;
+        line-height: 1.05;
+      }
+
+      .side-copy {
+        margin: 9px 0 14px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.55;
+      }
+
+      .detail-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 352px;
+        gap: 14px;
+      }
+
+      .detail-header {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 18px;
+        align-items: center;
+        margin-bottom: 14px;
+      }
+
+      .detail-header h3 {
+        margin: 0;
+        font-family: var(--display);
+        font-size: 36px;
+        line-height: 1;
+      }
+
+      .status-track {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 8px;
+        margin-bottom: 14px;
+      }
+
+      .status-step {
+        min-height: 74px;
+        border: 1px solid var(--line-soft);
+        border-radius: 8px;
+        background: var(--paper);
+        padding: 12px;
+      }
+
+      .status-step.active {
+        border-color: rgba(202, 160, 57, 0.46);
+        background: #fcf3d8;
+      }
+
+      .data-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .data-card,
+      .customer-card {
+        border: 1px solid var(--line-soft);
+        border-radius: 8px;
+        background: var(--paper);
+        padding: 13px;
+      }
+
+      .data-value {
+        margin-top: 7px;
+        color: var(--ink);
+        font-size: 13px;
+        font-weight: 700;
+        line-height: 1.35;
+      }
+
+      .item-table {
+        margin-top: 14px;
+        border: 1px solid var(--line-soft);
+        border-radius: 8px;
+        overflow: hidden;
+        background: var(--paper);
+      }
+
+      .item-row {
+        display: grid;
+        grid-template-columns: 56px minmax(0, 1fr) 80px 80px 92px;
+        gap: 12px;
+        align-items: center;
+        border-top: 1px solid var(--line-soft);
+        padding: 12px;
+      }
+
+      .item-row:first-child {
+        border-top: 0;
+      }
+
+      .media-slot {
+        min-height: 56px;
+        display: grid;
+        place-items: center;
+        border: 1px dashed rgba(147, 112, 39, 0.44);
+        border-radius: 6px;
+        background: var(--ivory);
+        color: var(--gold-deep);
+        font-size: 10px;
+        font-weight: 800;
+        text-align: center;
+      }
+
+      .products-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .product-card {
+        border: 1px solid var(--line-soft);
+        border-radius: 8px;
+        background: var(--paper);
+        overflow: hidden;
+      }
+
+      .product-media {
+        height: 154px;
+        display: grid;
+        place-items: center;
+        background: var(--shell);
+      }
+
+      .product-body {
+        padding: 13px;
+      }
+
+      .product-body h3 {
+        margin: 0;
+        font-family: var(--display);
+        font-size: 21px;
+        line-height: 1;
+      }
+
+      .product-body p {
+        margin: 6px 0 12px;
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.45;
+      }
+
+      .stock-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 6px;
+      }
+
+      .stock-cell {
+        min-height: 42px;
+        display: grid;
+        place-items: center;
+        border: 1px solid var(--line-soft);
+        border-radius: 6px;
+        background: var(--ivory);
+        color: var(--ink);
+        font-size: 10px;
+        font-weight: 800;
+      }
+
+      .stock-cell.low {
+        border-color: rgba(185, 85, 69, 0.36);
+        background: #fff0eb;
+        color: var(--alert);
+      }
+
+      .editor-layout {
+        display: grid;
+        grid-template-columns: 328px minmax(0, 1fr);
+        gap: 14px;
+      }
+
+      .editor-media {
+        min-height: 524px;
+        display: grid;
+        grid-template-rows: minmax(0, 1fr) auto;
+        border: 1px solid var(--line-soft);
+        border-radius: 8px;
+        background: var(--paper);
+        overflow: hidden;
+      }
+
+      .editor-form {
+        border: 1px solid var(--line-soft);
+        border-radius: 8px;
+        background: var(--paper);
+        padding: 18px;
+      }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .form-grid.two {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .field {
+        margin-bottom: 12px;
+      }
+
+      .field-box {
+        min-height: 42px;
+        display: flex;
+        align-items: center;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--ivory);
+        margin-top: 7px;
+        padding: 0 11px;
+        color: var(--ink);
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .field-box.tall {
+        min-height: 82px;
+        align-items: flex-start;
+        padding-top: 11px;
+        line-height: 1.45;
+      }
+
+      .settings-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .market-card {
+        min-height: 270px;
+        border: 1px solid var(--line-soft);
+        border-radius: 8px;
+        background: var(--paper);
+        padding: 18px;
+      }
+
+      .market-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+
+      .market-title h3 {
+        margin: 0;
+        font-family: var(--display);
+        font-size: 28px;
+        line-height: 1;
+      }
+
+      .config-list {
+        display: grid;
+        gap: 8px;
+      }
+
+      .config-row {
+        display: grid;
+        grid-template-columns: 148px minmax(0, 1fr);
+        gap: 10px;
+        border-top: 1px solid var(--line-soft);
+        padding-top: 10px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.45;
+      }
+
+      .config-row strong {
+        color: var(--ink);
+        font-size: 12px;
+      }
+
+      .mobile-strip {
+        display: grid;
+        grid-template-columns: 390px minmax(0, 1fr);
+        gap: 22px;
+        align-items: start;
+      }
+
+      .phone {
+        width: 390px;
+        min-height: 844px;
+        border: 10px solid var(--black);
+        border-radius: 24px;
+        background: var(--paper);
+        overflow: hidden;
+        box-shadow: var(--shadow);
+      }
+
+      .phone-status {
+        height: 28px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 17px;
+        color: var(--ink);
+        font-size: 10px;
+        font-weight: 800;
+      }
+
+      .phone-top {
+        min-height: 78px;
+        display: grid;
+        grid-template-columns: 40px minmax(0, 1fr) 40px;
+        align-items: center;
+        gap: 10px;
+        border-bottom: 1px solid var(--line-soft);
+        padding: 0 14px;
+      }
+
+      .phone-top img {
+        width: 104px;
+        margin: 0 auto;
+      }
+
+      .phone-body {
+        padding: 16px;
+      }
+
+      .phone-title {
+        margin: 0;
+        font-family: var(--display);
+        font-size: 30px;
+        line-height: 1;
+      }
+
+      .phone-kpi {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 9px;
+        margin: 14px 0;
+      }
+
+      .phone-card {
+        border: 1px solid var(--line-soft);
+        border-radius: 8px;
+        background: var(--ivory);
+        padding: 12px;
+      }
+
+      .phone-card strong {
+        display: block;
+        margin-top: 6px;
+        font-family: var(--display);
+        font-size: 25px;
+      }
+
+      .handoff-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .handoff-panel {
+        padding: 20px;
+        min-width: 0;
+      }
+
+      .handoff-panel h3 {
+        margin: 0;
+        font-family: var(--display);
+        font-size: 26px;
+        line-height: 1;
+      }
+
+      .handoff-panel ul {
+        margin: 13px 0 0;
+        padding: 0 0 0 18px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.65;
+      }
+
+      body.exporting {
+        background: var(--ivory);
+      }
+
+      body.exporting .board {
+        width: max-content;
+        margin: 0;
+        padding: 0;
+      }
+
+      body.exporting .export-target {
+        display: none;
+      }
+
+      body.exporting .export-target.is-exported {
+        display: block;
+        margin: 0;
+        border-radius: 0;
+        border: 0;
+        box-shadow: none;
+      }
+
+      body.exporting .board-header.is-exported,
+      body.exporting .section-title.is-exported {
+        display: grid;
+      }
+
+      body.exporting .export-target.is-exported .screen-title {
+        display: none;
+      }
+
+      body.exporting .export-target.is-exported .desktop-frame,
+      body.exporting .export-target.is-exported .phone {
+        margin: 0;
+        box-shadow: none;
+      }
+
+      body.exporting [data-export="07-mobile-admin"].is-exported {
+        width: 1360px;
+        padding: 18px;
+        background: var(--ivory);
+      }
+
+      body.exporting [data-export="07-mobile-admin"].is-exported .mobile-strip {
+        width: 1324px;
+        grid-template-columns: 390px minmax(0, 1fr);
+      }
+
+      @media (max-width: 1200px) {
+        .board-header,
+        .section-title,
+        .dashboard-grid,
+        .queue-layout,
+        .detail-layout,
+        .editor-layout,
+        .settings-grid,
+        .handoff-grid,
+        .mobile-strip {
+          grid-template-columns: 1fr;
+        }
+
+        .desktop-frame {
+          width: 100%;
+          overflow-x: auto;
+        }
+
+        .admin-shell {
+          min-width: 1120px;
+        }
+
+        .token-panel {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .screen-title {
+          display: block;
+        }
+
+        .screen-title p {
+          text-align: left;
+        }
+      }
+
+      @media (max-width: 760px) {
+        .board {
+          width: min(100% - 24px, 680px);
+          padding-top: 20px;
+        }
+
+        .intro h1 {
+          font-size: 46px;
+        }
+
+        .scope-grid,
+        .metric-row,
+        .two-col,
+        .data-grid,
+        .form-grid,
+        .form-grid.two {
+          grid-template-columns: 1fr;
+        }
+
+        .intro::after {
+          display: none;
+        }
+
+        .phone {
+          width: 100%;
+          min-height: 780px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="board">
+      <section class="board-header export-target" data-export="00-cover">
+        <article class="intro">
+          <div>
+            <p class="eyebrow">Phase 1 Admin High Fidelity</p>
+            <h1>Operations cockpit for launch orders, stock, markets, and manual coordination.</h1>
+            <p>
+              This pack turns the admin wireframes into review-ready, desktop-first screens. It keeps the Phase 1 scope tight:
+              Dashboard, Orders, Products, Settings, and a mobile quick-check reference.
+            </p>
+            <div class="intro-actions">
+              <span class="pill dark">Desktop admin first</span>
+              <span class="pill gold">Angola and Portugal</span>
+              <span class="pill">Figma import ready</span>
+            </div>
+          </div>
+          <div class="intro-actions">
+            <span class="pill">New</span>
+            <span class="pill gold">Payment Review</span>
+            <span class="pill">Processing</span>
+            <span class="pill">Shipped</span>
+            <span class="pill">Delivered</span>
+            <span class="pill">Cancelled</span>
+          </div>
+        </article>
+        <aside class="scope-panel">
+          <img
+            class="scope-logo"
+            src="../public/brand/use-me-logo-black-transparent.png"
+            alt="Use Me With Style"
+          />
+          <div class="scope-grid">
+            <div class="scope-item">
+              <span>Primary viewport</span>
+              <strong>Desktop admin, 1360px workspace</strong>
+            </div>
+            <div class="scope-item">
+              <span>Stretch viewport</span>
+              <strong>Mobile quick-check for urgent order actions</strong>
+            </div>
+            <div class="scope-item">
+              <span>Launch markets</span>
+              <strong>Angola manual coordination, Portugal CTT/courier</strong>
+            </div>
+            <div class="scope-item">
+              <span>Admin entry</span>
+              <strong>Manual products, placeholder media, lightweight order lookup</strong>
+            </div>
+          </div>
+        </aside>
+      </section>
+
+      <section class="section-title export-target" data-export="00-design-system">
+        <div>
+          <p class="eyebrow">Admin design system direction</p>
+          <h2>Calm, dense, and brand-owned.</h2>
+          <p>
+            Storefront luxury becomes quieter in admin: high contrast navigation, warm paper surfaces, compact tables,
+            gold only for priority states, and muted market/payment cues.
+          </p>
+        </div>
+        <div class="token-panel">
+          <div class="swatch">
+            <div class="swatch-color" style="background: var(--black)"></div>
+            <div class="swatch-label">Black<br />#050505</div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background: var(--paper)"></div>
+            <div class="swatch-label">Paper<br />#FFFDF8</div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background: var(--champagne)"></div>
+            <div class="swatch-label">Champagne<br />#E5C24F</div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background: var(--gold)"></div>
+            <div class="swatch-label">Gold<br />#CAA039</div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background: var(--blue)"></div>
+            <div class="swatch-label">Blue<br />#426A70</div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background: var(--sage)"></div>
+            <div class="swatch-label">Sage<br />#78816F</div>
+          </div>
+          <div class="swatch">
+            <div class="swatch-color" style="background: var(--alert)"></div>
+            <div class="swatch-label">Alert<br />#B95545</div>
+          </div>
+        </div>
+      </section>
+
+      <article class="screen-panel export-target" data-export="01-dashboard">
+        <div class="screen-title">
+          <div>
+            <p class="eyebrow">A01</p>
+            <h2>Admin Dashboard</h2>
+          </div>
+          <p>Daily operating view: what happened today, what needs attention, and where Raisa should click next.</p>
+        </div>
+        <div class="desktop-frame">
+          <div class="admin-shell">
+            <aside class="sidebar">
+              <img class="sidebar-logo" src="../public/brand/use-me-logo-gold-transparent.png" alt="Use Me With Style" />
+              <nav class="nav-list" aria-label="Admin navigation">
+                <div class="nav-item active">Dashboard</div>
+                <div class="nav-item">Orders <span class="nav-count">3</span></div>
+                <div class="nav-item">Products <span class="nav-count">7</span></div>
+                <div class="nav-item">Settings</div>
+              </nav>
+              <div class="sidebar-foot">
+                <strong>Phase 1 launch admin</strong>
+                <span>AI campaigns, Meta Ads, advanced analytics, roles, full accounts, wishlist, loyalty, and VIP are deferred.</span>
+              </div>
+            </aside>
+            <section class="admin-main">
+              <header class="admin-topbar">
+                <div>
+                  <p class="page-kicker">Wednesday, June 3, 2026</p>
+                  <h2 class="page-title">Morning check</h2>
+                  <p class="page-subtitle">Angola and Portugal orders, payment review, low stock, and launch setup gaps.</p>
+                </div>
+                <div class="top-actions">
+                  <button class="icon-btn" aria-label="Search">S</button>
+                  <button class="icon-btn" aria-label="Notifications">N</button>
+                  <button class="action-btn primary">Export day summary</button>
+                </div>
+              </header>
+
+              <div class="metric-row">
+                <div class="metric">
+                  <span>Orders today</span>
+                  <strong>12</strong>
+                  <small>7 Angola, 5 Portugal</small>
+                </div>
+                <div class="metric">
+                  <span>Revenue today</span>
+                  <strong>Kz 286K</strong>
+                  <small>EUR 410 equivalent</small>
+                </div>
+                <div class="metric warning">
+                  <span>Payment review</span>
+                  <strong>3</strong>
+                  <small>Manual confirmation needed</small>
+                </div>
+                <div class="metric">
+                  <span>Processing</span>
+                  <strong>8</strong>
+                  <small>4 ready for shipment</small>
+                </div>
+                <div class="metric alert">
+                  <span>Low stock</span>
+                  <strong>7</strong>
+                  <small>Sizes with 2 units or less</small>
+                </div>
+              </div>
+
+              <div class="dashboard-grid">
+                <div>
+                  <section class="panel panel-pad">
+                    <div class="panel-title">
+                      <h3>Attention queue</h3>
+                      <span>Next best actions</span>
+                    </div>
+                    <div class="attention-list">
+                      <div class="attention-row hot">
+                        <span class="priority-dot"></span>
+                        <div class="attention-copy">
+                          <strong>#1045 Mariana Sousa needs payment review</strong>
+                          <span>Angola order, Appy Pay pending confirmation, WhatsApp preferred for follow-up.</span>
+                        </div>
+                        <span class="badge gold">Review</span>
+                      </div>
+                      <div class="attention-row">
+                        <span class="priority-dot"></span>
+                        <div class="attention-copy">
+                          <strong>#1044 Ana Pereira is ready for Portugal fulfilment</strong>
+                          <span>Lisboa, MBWay confirmed, CTT label should be prepared before 16:00.</span>
+                        </div>
+                        <span class="badge blue">Ship</span>
+                      </div>
+                      <div class="attention-row">
+                        <span class="priority-dot"></span>
+                        <div class="attention-copy">
+                          <strong>Mares Dress has a size S stockout</strong>
+                          <span>Keep published for M/L, flag S as unavailable until restock is confirmed.</span>
+                        </div>
+                        <span class="badge red">Stock</span>
+                      </div>
+                    </div>
+                  </section>
+
+                  <div class="two-col">
+                    <section class="panel panel-pad">
+                      <div class="panel-title">
+                        <h3>Revenue trend</h3>
+                        <span>Last 7 days</span>
+                      </div>
+                      <div class="chart-box" aria-label="Daily revenue chart">
+                        <div class="bar-wrap"><span class="bar" style="height: 72px"></span><span>Thu</span></div>
+                        <div class="bar-wrap"><span class="bar" style="height: 86px"></span><span>Fri</span></div>
+                        <div class="bar-wrap"><span class="bar" style="height: 61px"></span><span>Sat</span></div>
+                        <div class="bar-wrap"><span class="bar" style="height: 112px"></span><span>Sun</span></div>
+                        <div class="bar-wrap"><span class="bar" style="height: 96px"></span><span>Mon</span></div>
+                        <div class="bar-wrap"><span class="bar" style="height: 126px"></span><span>Tue</span></div>
+                        <div class="bar-wrap"><span class="bar active" style="height: 150px"></span><span>Wed</span></div>
+                      </div>
+                    </section>
+                    <section class="panel panel-pad">
+                      <div class="panel-title">
+                        <h3>Market setup</h3>
+                        <span>Launch readiness</span>
+                      </div>
+                      <div class="simple-list">
+                        <div class="simple-row">
+                          <div class="list-copy">
+                            <strong>Portugal payments</strong>
+                            <span>PayPal, Stripe, MBWay placeholders ready.</span>
+                          </div>
+                          <span class="badge green">Ready</span>
+                        </div>
+                        <div class="simple-row">
+                          <div class="list-copy">
+                            <strong>Angola payments</strong>
+                            <span>Appy Pay team response pending.</span>
+                          </div>
+                          <span class="badge gold">Open</span>
+                        </div>
+                        <div class="simple-row">
+                          <div class="list-copy">
+                            <strong>Messaging automation</strong>
+                            <span>WhatsApp and Instagram included in Phase 1.</span>
+                          </div>
+                          <span class="badge blue">Build</span>
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </div>
+
+                <aside class="panel panel-pad">
+                  <div class="panel-title">
+                    <h3>Recent orders</h3>
+                    <span>Open queue</span>
+                  </div>
+                  <div class="simple-list">
+                    <div class="simple-row">
+                      <div class="list-copy">
+                        <strong>#1045 Mariana Sousa</strong>
+                        <span>Luanda, Appy Pay, manual delivery</span>
+                      </div>
+                      <span class="badge gold">Payment Review</span>
+                    </div>
+                    <div class="simple-row">
+                      <div class="list-copy">
+                        <strong>#1044 Ana Pereira</strong>
+                        <span>Lisboa, MBWay, CTT</span>
+                      </div>
+                      <span class="badge">New</span>
+                    </div>
+                    <div class="simple-row">
+                      <div class="list-copy">
+                        <strong>#1043 Beatriz Lima</strong>
+                        <span>Luanda, manual coordination</span>
+                      </div>
+                      <span class="badge blue">Processing</span>
+                    </div>
+                    <div class="simple-row">
+                      <div class="list-copy">
+                        <strong>#1042 Sofia Mendes</strong>
+                        <span>Porto, CTT tracking added</span>
+                      </div>
+                      <span class="badge green">Shipped</span>
+                    </div>
+                  </div>
+                </aside>
+              </div>
+            </section>
+          </div>
+        </div>
+      </article>
+
+      <article class="screen-panel export-target" data-export="02-orders">
+        <div class="screen-title">
+          <div>
+            <p class="eyebrow">A02</p>
+            <h2>Orders Queue</h2>
+          </div>
+          <p>Filtered order operations with the payment review case highlighted first.</p>
+        </div>
+        <div class="desktop-frame">
+          <div class="admin-shell">
+            <aside class="sidebar">
+              <img class="sidebar-logo" src="../public/brand/use-me-logo-gold-transparent.png" alt="Use Me With Style" />
+              <nav class="nav-list" aria-label="Admin navigation">
+                <div class="nav-item">Dashboard</div>
+                <div class="nav-item active">Orders <span class="nav-count">3</span></div>
+                <div class="nav-item">Products</div>
+                <div class="nav-item">Settings</div>
+              </nav>
+              <div class="sidebar-foot">
+                <strong>Order status model</strong>
+                <span>New, Payment Review, Processing, Shipped, Delivered, Cancelled.</span>
+              </div>
+            </aside>
+            <section class="admin-main">
+              <header class="admin-topbar">
+                <div>
+                  <p class="page-kicker">Orders</p>
+                  <h2 class="page-title">Order queue</h2>
+                  <p class="page-subtitle">Capture customer details, confirm payment, coordinate delivery, and update status.</p>
+                </div>
+                <div class="top-actions">
+                  <button class="action-btn">Manual order</button>
+                  <button class="action-btn primary">Create WhatsApp update</button>
+                </div>
+              </header>
+              <div class="filter-row">
+                <span class="filter-chip active">All 24</span>
+                <span class="filter-chip">New 6</span>
+                <span class="filter-chip">Payment Review 3</span>
+                <span class="filter-chip">Processing 8</span>
+                <span class="filter-chip">Shipped 5</span>
+                <span class="filter-chip">Delivered 1</span>
+                <span class="filter-chip">Cancelled 1</span>
+              </div>
+              <div class="queue-layout">
+                <div class="table">
+                  <div class="table-head">
+                    <div>Order</div>
+                    <div>Customer</div>
+                    <div>Market</div>
+                    <div>Payment</div>
+                    <div>Delivery</div>
+                    <div>Status</div>
+                    <div>Total</div>
+                  </div>
+                  <div class="table-row selected">
+                    <div><strong>#1045</strong><span>12 min</span></div>
+                    <div><strong>Mariana Sousa</strong><span>+244 923 456 789</span></div>
+                    <div><strong>AO</strong><span>Luanda</span></div>
+                    <div><strong>Appy Pay</strong><span>Manual check</span></div>
+                    <div><strong>Manual</strong><span>Coordination</span></div>
+                    <div><span class="badge gold">Payment Review</span></div>
+                    <div><strong>Kz 18.5K</strong></div>
+                  </div>
+                  <div class="table-row">
+                    <div><strong>#1044</strong><span>38 min</span></div>
+                    <div><strong>Ana Pereira</strong><span>ana.pereira@email.pt</span></div>
+                    <div><strong>PT</strong><span>Lisboa</span></div>
+                    <div><strong>MBWay</strong><span>Confirmed</span></div>
+                    <div><strong>CTT</strong><span>Label needed</span></div>
+                    <div><span class="badge">New</span></div>
+                    <div><strong>EUR 48</strong></div>
+                  </div>
+                  <div class="table-row">
+                    <div><strong>#1043</strong><span>2 h</span></div>
+                    <div><strong>Beatriz Lima</strong><span>WhatsApp preferred</span></div>
+                    <div><strong>AO</strong><span>Luanda</span></div>
+                    <div><strong>Transfer</strong><span>Confirmed</span></div>
+                    <div><strong>Manual</strong><span>Rider booked</span></div>
+                    <div><span class="badge blue">Processing</span></div>
+                    <div><strong>Kz 36K</strong></div>
+                  </div>
+                  <div class="table-row">
+                    <div><strong>#1042</strong><span>4 h</span></div>
+                    <div><strong>Sofia Mendes</strong><span>Porto pickup point</span></div>
+                    <div><strong>PT</strong><span>Porto</span></div>
+                    <div><strong>Stripe</strong><span>Confirmed</span></div>
+                    <div><strong>CTT</strong><span>Tracking sent</span></div>
+                    <div><span class="badge green">Shipped</span></div>
+                    <div><strong>EUR 72</strong></div>
+                  </div>
+                  <div class="table-row">
+                    <div><strong>#1041</strong><span>Yesterday</span></div>
+                    <div><strong>Carla Dias</strong><span>carla@email.com</span></div>
+                    <div><strong>AO</strong><span>Benguela</span></div>
+                    <div><strong>Cash</strong><span>On delivery</span></div>
+                    <div><strong>Manual</strong><span>Delivery done</span></div>
+                    <div><span class="badge green">Delivered</span></div>
+                    <div><strong>Kz 16.5K</strong></div>
+                  </div>
+                </div>
+                <aside class="side-panel">
+                  <span class="side-label">Selected order</span>
+                  <h3 class="side-title">#1045 payment review</h3>
+                  <p class="side-copy">
+                    Mariana sent an Appy Pay confirmation, but Angola payment rules are still being finalized.
+                    Keep the order in Payment Review until the admin manually confirms.
+                  </p>
+                  <div class="simple-list">
+                    <div class="simple-row">
+                      <div class="list-copy">
+                        <strong>Next action</strong>
+                        <span>Check proof, then mark Processing.</span>
+                      </div>
+                      <span class="badge gold">High</span>
+                    </div>
+                    <div class="simple-row">
+                      <div class="list-copy">
+                        <strong>Customer note</strong>
+                        <span>Prefers WhatsApp updates after payment is approved.</span>
+                      </div>
+                    </div>
+                    <div class="simple-row">
+                      <div class="list-copy">
+                        <strong>Automation</strong>
+                        <span>Prepare WhatsApp and Instagram order messages.</span>
+                      </div>
+                      <span class="badge blue">Phase 1</span>
+                    </div>
+                  </div>
+                  <button class="action-btn primary" style="width: 100%; margin-top: 18px">Open order detail</button>
+                </aside>
+              </div>
+            </section>
+          </div>
+        </div>
+      </article>
+
+      <article class="screen-panel export-target" data-export="03-order-detail">
+        <div class="screen-title">
+          <div>
+            <p class="eyebrow">A03</p>
+            <h2>Order Detail and Payment Review</h2>
+          </div>
+          <p>Customer fields, payment method, delivery method, notes, items, and the Phase 1 status timeline.</p>
+        </div>
+        <div class="desktop-frame">
+          <div class="admin-shell">
+            <aside class="sidebar">
+              <img class="sidebar-logo" src="../public/brand/use-me-logo-gold-transparent.png" alt="Use Me With Style" />
+              <nav class="nav-list" aria-label="Admin navigation">
+                <div class="nav-item">Dashboard</div>
+                <div class="nav-item active">Orders <span class="nav-count">3</span></div>
+                <div class="nav-item">Products</div>
+                <div class="nav-item">Settings</div>
+              </nav>
+              <div class="sidebar-foot">
+                <strong>Lightweight lookup</strong>
+                <span>Full accounts are deferred, but every order has a confirmation and lookup path.</span>
+              </div>
+            </aside>
+            <section class="admin-main">
+              <header class="admin-topbar">
+                <div>
+                  <p class="page-kicker">Orders / #1045</p>
+                  <h2 class="page-title">Payment review</h2>
+                  <p class="page-subtitle">Manual payment confirmation before processing and manual Angola coordination.</p>
+                </div>
+                <div class="top-actions">
+                  <button class="action-btn">Send WhatsApp</button>
+                  <button class="action-btn primary">Confirm payment</button>
+                </div>
+              </header>
+
+              <div class="detail-layout">
+                <div>
+                  <section class="panel panel-pad">
+                    <div class="detail-header">
+                      <div>
+                        <p class="page-kicker">Order summary</p>
+                        <h3>#1045 Mariana Sousa</h3>
+                      </div>
+                      <span class="badge gold">Payment Review</span>
+                    </div>
+                    <div class="status-track">
+                      <div class="status-step active"><strong>New</strong><span>12 min ago</span></div>
+                      <div class="status-step active"><strong>Payment Review</strong><span>Current</span></div>
+                      <div class="status-step"><strong>Processing</strong><span>Pending</span></div>
+                      <div class="status-step"><strong>Shipped</strong><span>Pending</span></div>
+                      <div class="status-step"><strong>Delivered</strong><span>Pending</span></div>
+                      <div class="status-step"><strong>Cancelled</strong><span>Available</span></div>
+                    </div>
+                    <div class="data-grid">
+                      <div class="data-card">
+                        <div class="data-label">Name</div>
+                        <div class="data-value">Mariana Sousa</div>
+                      </div>
+                      <div class="data-card">
+                        <div class="data-label">Phone / WhatsApp</div>
+                        <div class="data-value">+244 923 456 789</div>
+                      </div>
+                      <div class="data-card">
+                        <div class="data-label">Email</div>
+                        <div class="data-value">mariana.s@email.com</div>
+                      </div>
+                      <div class="data-card">
+                        <div class="data-label">Address</div>
+                        <div class="data-value">Rua do Cassequel, 123</div>
+                      </div>
+                      <div class="data-card">
+                        <div class="data-label">City / Country</div>
+                        <div class="data-value">Luanda, Angola</div>
+                      </div>
+                      <div class="data-card">
+                        <div class="data-label">Notes</div>
+                        <div class="data-value">Confirm by WhatsApp before delivery.</div>
+                      </div>
+                    </div>
+                    <div class="item-table">
+                      <div class="item-row">
+                        <div class="media-slot">Photo pending</div>
+                        <div>
+                          <strong>Vestido Aurora</strong>
+                          <span style="display: block; color: var(--muted); font-size: 11px; margin-top: 4px">Size M, Areia</span>
+                        </div>
+                        <strong>Qty 1</strong>
+                        <strong>Kz 18.5K</strong>
+                        <span class="badge green">In stock</span>
+                      </div>
+                    </div>
+                  </section>
+                </div>
+                <aside class="side-panel">
+                  <span class="side-label">Payment and delivery</span>
+                  <h3 class="side-title">Manual confirmation needed</h3>
+                  <p class="side-copy">Payment method is Appy Pay placeholder. Delivery method is Angola manual coordination.</p>
+                  <div class="simple-list">
+                    <div class="simple-row">
+                      <div class="list-copy">
+                        <strong>Payment method</strong>
+                        <span>Appy Pay, pending provider rules.</span>
+                      </div>
+                      <span class="badge gold">Review</span>
+                    </div>
+                    <div class="simple-row">
+                      <div class="list-copy">
+                        <strong>Delivery method</strong>
+                        <span>Manual coordination in Luanda.</span>
+                      </div>
+                    </div>
+                    <div class="simple-row">
+                      <div class="list-copy">
+                        <strong>Order total</strong>
+                        <span>Kz 18,500 plus delivery fee TBD.</span>
+                      </div>
+                    </div>
+                    <div class="simple-row">
+                      <div class="list-copy">
+                        <strong>Message automation</strong>
+                        <span>WhatsApp confirmation after approval.</span>
+                      </div>
+                      <span class="badge blue">Ready</span>
+                    </div>
+                  </div>
+                  <button class="action-btn primary" style="width: 100%; margin-top: 18px">Approve and process</button>
+                  <button class="action-btn" style="width: 100%; margin-top: 8px">Cancel order</button>
+                </aside>
+              </div>
+            </section>
+          </div>
+        </div>
+      </article>
+
+      <article class="screen-panel export-target" data-export="04-products">
+        <div class="screen-title">
+          <div>
+            <p class="eyebrow">A04</p>
+            <h2>Products Catalogue</h2>
+          </div>
+          <p>Manual catalogue control with stock pressure, visibility, and placeholder media status.</p>
+        </div>
+        <div class="desktop-frame">
+          <div class="admin-shell">
+            <aside class="sidebar">
+              <img class="sidebar-logo" src="../public/brand/use-me-logo-gold-transparent.png" alt="Use Me With Style" />
+              <nav class="nav-list" aria-label="Admin navigation">
+                <div class="nav-item">Dashboard</div>
+                <div class="nav-item">Orders</div>
+                <div class="nav-item active">Products <span class="nav-count">7</span></div>
+                <div class="nav-item">Settings</div>
+              </nav>
+              <div class="sidebar-foot">
+                <strong>Media placeholder mode</strong>
+                <span>All products can be entered before client photography is ready.</span>
+              </div>
+            </aside>
+            <section class="admin-main">
+              <header class="admin-topbar">
+                <div>
+                  <p class="page-kicker">Products</p>
+                  <h2 class="page-title">Catalogue control</h2>
+                  <p class="page-subtitle">Manual product entry, stock by size, prices for both markets, and publish state.</p>
+                </div>
+                <div class="top-actions">
+                  <button class="action-btn">Import draft list</button>
+                  <button class="action-btn primary">Add product</button>
+                </div>
+              </header>
+              <div class="filter-row">
+                <span class="filter-chip active">All 16</span>
+                <span class="filter-chip">Active 12</span>
+                <span class="filter-chip">Draft 4</span>
+                <span class="filter-chip">Low stock 7</span>
+                <span class="filter-chip">Photo pending 16</span>
+              </div>
+              <div class="products-grid">
+                <article class="product-card">
+                  <div class="product-media"><div class="media-slot" style="width: 124px; height: 112px">Photo pending</div></div>
+                  <div class="product-body">
+                    <h3>Vestido Aurora</h3>
+                    <p>AO Kz 18.5K / PT EUR 42. Active in both markets.</p>
+                    <div class="stock-row">
+                      <span class="stock-cell">XS 4</span>
+                      <span class="stock-cell">S 7</span>
+                      <span class="stock-cell">M 9</span>
+                      <span class="stock-cell">L 11</span>
+                    </div>
+                  </div>
+                </article>
+                <article class="product-card">
+                  <div class="product-media"><div class="media-slot" style="width: 124px; height: 112px">Photo pending</div></div>
+                  <div class="product-body">
+                    <h3>Mares Dress</h3>
+                    <p>AO Kz 22K / PT EUR 48. Size S requires restock.</p>
+                    <div class="stock-row">
+                      <span class="stock-cell low">S 0</span>
+                      <span class="stock-cell">M 3</span>
+                      <span class="stock-cell">L 5</span>
+                      <span class="stock-cell">XL 2</span>
+                    </div>
+                  </div>
+                </article>
+                <article class="product-card">
+                  <div class="product-media"><div class="media-slot" style="width: 124px; height: 112px">Photo pending</div></div>
+                  <div class="product-body">
+                    <h3>Top Brisa</h3>
+                    <p>AO Kz 8.5K / PT EUR 19. Good for bundles.</p>
+                    <div class="stock-row">
+                      <span class="stock-cell">XS 6</span>
+                      <span class="stock-cell">S 8</span>
+                      <span class="stock-cell">M 5</span>
+                      <span class="stock-cell">L 4</span>
+                    </div>
+                  </div>
+                </article>
+                <article class="product-card">
+                  <div class="product-media"><div class="media-slot" style="width: 124px; height: 112px">Photo pending</div></div>
+                  <div class="product-body">
+                    <h3>Conjunto Aurora</h3>
+                    <p>AO Kz 28K / PT EUR 64. Draft copy pending.</p>
+                    <div class="stock-row">
+                      <span class="stock-cell low">S 1</span>
+                      <span class="stock-cell">M 6</span>
+                      <span class="stock-cell">L 4</span>
+                      <span class="stock-cell low">XL 1</span>
+                    </div>
+                  </div>
+                </article>
+                <article class="product-card">
+                  <div class="product-media"><div class="media-slot" style="width: 124px; height: 112px">Photo pending</div></div>
+                  <div class="product-body">
+                    <h3>Leggings Tempo</h3>
+                    <p>AO Kz 12.5K / PT EUR 28. Active.</p>
+                    <div class="stock-row">
+                      <span class="stock-cell">XS 5</span>
+                      <span class="stock-cell">S 6</span>
+                      <span class="stock-cell">M 9</span>
+                      <span class="stock-cell">L 4</span>
+                    </div>
+                  </div>
+                </article>
+                <article class="product-card">
+                  <div class="product-media"><div class="media-slot" style="width: 124px; height: 112px">Photo pending</div></div>
+                  <div class="product-body">
+                    <h3>Sereno Set</h3>
+                    <p>AO Kz 24K / PT EUR 56. Portugal top seller.</p>
+                    <div class="stock-row">
+                      <span class="stock-cell">S 4</span>
+                      <span class="stock-cell">M 10</span>
+                      <span class="stock-cell">L 8</span>
+                      <span class="stock-cell">XL 3</span>
+                    </div>
+                  </div>
+                </article>
+                <article class="product-card">
+                  <div class="product-media"><div class="media-slot" style="width: 124px; height: 112px">Photo pending</div></div>
+                  <div class="product-body">
+                    <h3>Camisa Lua</h3>
+                    <p>AO Kz 16K / PT EUR 36. Draft.</p>
+                    <div class="stock-row">
+                      <span class="stock-cell low">S 2</span>
+                      <span class="stock-cell">M 5</span>
+                      <span class="stock-cell">L 6</span>
+                      <span class="stock-cell">XL 4</span>
+                    </div>
+                  </div>
+                </article>
+                <article class="product-card">
+                  <div class="product-media"><div class="media-slot" style="width: 124px; height: 112px">Photo pending</div></div>
+                  <div class="product-body">
+                    <h3>Saia Alba</h3>
+                    <p>AO Kz 14K / PT EUR 31. Active.</p>
+                    <div class="stock-row">
+                      <span class="stock-cell">XS 3</span>
+                      <span class="stock-cell low">S 1</span>
+                      <span class="stock-cell">M 7</span>
+                      <span class="stock-cell">L 4</span>
+                    </div>
+                  </div>
+                </article>
+              </div>
+            </section>
+          </div>
+        </div>
+      </article>
+
+      <article class="screen-panel export-target" data-export="05-product-editor">
+        <div class="screen-title">
+          <div>
+            <p class="eyebrow">A05</p>
+            <h2>Product Editor</h2>
+          </div>
+          <p>Manual product creation with market pricing, stock by size, placeholder photos, and publish state.</p>
+        </div>
+        <div class="desktop-frame">
+          <div class="admin-shell">
+            <aside class="sidebar">
+              <img class="sidebar-logo" src="../public/brand/use-me-logo-gold-transparent.png" alt="Use Me With Style" />
+              <nav class="nav-list" aria-label="Admin navigation">
+                <div class="nav-item">Dashboard</div>
+                <div class="nav-item">Orders</div>
+                <div class="nav-item active">Products</div>
+                <div class="nav-item">Settings</div>
+              </nav>
+              <div class="sidebar-foot">
+                <strong>Manual admin entry</strong>
+                <span>Catalogue management stays human-controlled for Phase 1.</span>
+              </div>
+            </aside>
+            <section class="admin-main">
+              <header class="admin-topbar">
+                <div>
+                  <p class="page-kicker">Products / Add product</p>
+                  <h2 class="page-title">Create catalogue item</h2>
+                  <p class="page-subtitle">Enter everything needed to sell a piece before final photography arrives.</p>
+                </div>
+                <div class="top-actions">
+                  <button class="action-btn">Save draft</button>
+                  <button class="action-btn primary">Publish product</button>
+                </div>
+              </header>
+              <div class="editor-layout">
+                <aside class="editor-media">
+                  <div style="display: grid; place-items: center; padding: 18px">
+                    <div class="media-slot" style="width: 248px; height: 336px">Client photo pending</div>
+                  </div>
+                  <button class="action-btn" style="width: 100%; border-radius: 0; border-width: 1px 0 0 0">Add photos</button>
+                </aside>
+                <section class="editor-form">
+                  <div class="form-grid">
+                    <div class="field">
+                      <div class="form-label">Product name</div>
+                      <div class="field-box">Vestido Celeste</div>
+                    </div>
+                    <div class="field">
+                      <div class="form-label">Category</div>
+                      <div class="field-box">Dresses</div>
+                    </div>
+                    <div class="field">
+                      <div class="form-label">Status</div>
+                      <div class="field-box">Draft</div>
+                    </div>
+                  </div>
+                  <div class="form-grid">
+                    <div class="field">
+                      <div class="form-label">Angola price</div>
+                      <div class="field-box">Kz 18,500</div>
+                    </div>
+                    <div class="field">
+                      <div class="form-label">Portugal price</div>
+                      <div class="field-box">EUR 42</div>
+                    </div>
+                    <div class="field">
+                      <div class="form-label">Visibility</div>
+                      <div class="field-box">AO + PT</div>
+                    </div>
+                  </div>
+                  <div class="form-grid two">
+                    <div class="field">
+                      <div class="form-label">Colors</div>
+                      <div class="field-box">Areia, Preto, Marfim</div>
+                    </div>
+                    <div class="field">
+                      <div class="form-label">Delivery note</div>
+                      <div class="field-box">Standard rules by market</div>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <div class="form-label">Stock by size</div>
+                    <div class="stock-row" style="margin-top: 7px; grid-template-columns: repeat(5, 1fr)">
+                      <span class="stock-cell">XS 4</span>
+                      <span class="stock-cell">S 7</span>
+                      <span class="stock-cell">M 9</span>
+                      <span class="stock-cell">L 11</span>
+                      <span class="stock-cell">XL 3</span>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <div class="form-label">Description placeholder</div>
+                    <div class="field-box tall">Soft launch copy until client approves final product descriptions. Include fit, care, fabric, and styling notes.</div>
+                  </div>
+                  <div class="field">
+                    <div class="form-label">Phase 1 messaging</div>
+                    <div class="field-box tall">Generate WhatsApp new-arrival alert and Instagram launch message after publishing. Meta Ads automation remains deferred.</div>
+                  </div>
+                </section>
+              </div>
+            </section>
+          </div>
+        </div>
+      </article>
+
+      <article class="screen-panel export-target" data-export="06-settings">
+        <div class="screen-title">
+          <div>
+            <p class="eyebrow">A06</p>
+            <h2>Settings</h2>
+          </div>
+          <p>Market-aware payments, delivery, order statuses, and Phase 1 messaging automation.</p>
+        </div>
+        <div class="desktop-frame">
+          <div class="admin-shell">
+            <aside class="sidebar">
+              <img class="sidebar-logo" src="../public/brand/use-me-logo-gold-transparent.png" alt="Use Me With Style" />
+              <nav class="nav-list" aria-label="Admin navigation">
+                <div class="nav-item">Dashboard</div>
+                <div class="nav-item">Orders</div>
+                <div class="nav-item">Products</div>
+                <div class="nav-item active">Settings</div>
+              </nav>
+              <div class="sidebar-foot">
+                <strong>Environment note</strong>
+                <span>Dev, staging, and production settings stay separated before live integrations.</span>
+              </div>
+            </aside>
+            <section class="admin-main">
+              <header class="admin-topbar">
+                <div>
+                  <p class="page-kicker">Settings</p>
+                  <h2 class="page-title">Launch configuration</h2>
+                  <p class="page-subtitle">Safe placeholders until payment, fulfilment, and client media inputs are final.</p>
+                </div>
+                <div class="top-actions">
+                  <button class="action-btn">Preview checkout</button>
+                  <button class="action-btn primary">Save settings</button>
+                </div>
+              </header>
+              <div class="settings-grid">
+                <article class="market-card">
+                  <div class="market-title">
+                    <h3>Angola</h3>
+                    <span class="badge gold">Manual</span>
+                  </div>
+                  <div class="config-list">
+                    <div class="config-row"><strong>Currency</strong><span>Kwanza, prices shown as Kz.</span></div>
+                    <div class="config-row"><strong>Payment</strong><span>Appy Pay under evaluation, manual review status active.</span></div>
+                    <div class="config-row"><strong>Delivery</strong><span>Manual coordination by admin, city notes required.</span></div>
+                    <div class="config-row"><strong>Order flow</strong><span>New to Payment Review to Processing after confirmation.</span></div>
+                  </div>
+                </article>
+                <article class="market-card">
+                  <div class="market-title">
+                    <h3>Portugal</h3>
+                    <span class="badge green">Configured</span>
+                  </div>
+                  <div class="config-list">
+                    <div class="config-row"><strong>Currency</strong><span>Euro, prices shown as EUR.</span></div>
+                    <div class="config-row"><strong>Payment</strong><span>PayPal, Stripe, MBWay placeholders ready.</span></div>
+                    <div class="config-row"><strong>Delivery</strong><span>CTT and courier, label preparation in admin queue.</span></div>
+                    <div class="config-row"><strong>Order flow</strong><span>New, Processing, Shipped, Delivered, Cancelled.</span></div>
+                  </div>
+                </article>
+                <article class="market-card">
+                  <div class="market-title">
+                    <h3>Messaging</h3>
+                    <span class="badge blue">Phase 1</span>
+                  </div>
+                  <div class="config-list">
+                    <div class="config-row"><strong>WhatsApp</strong><span>Order confirmation, payment review follow-up, shipped update.</span></div>
+                    <div class="config-row"><strong>Instagram</strong><span>Manual-trigger messages for new arrivals and order support.</span></div>
+                    <div class="config-row"><strong>Deferred</strong><span>Meta Ads automation, AI campaigns, advanced analytics.</span></div>
+                    <div class="config-row"><strong>Language</strong><span>Portuguese first, English support copy where needed.</span></div>
+                  </div>
+                </article>
+                <article class="market-card">
+                  <div class="market-title">
+                    <h3>Order Fields</h3>
+                    <span class="badge">Required</span>
+                  </div>
+                  <div class="config-list">
+                    <div class="config-row"><strong>Customer</strong><span>Name, phone/WhatsApp, email, notes.</span></div>
+                    <div class="config-row"><strong>Address</strong><span>Address, city, country.</span></div>
+                    <div class="config-row"><strong>Methods</strong><span>Payment method and delivery method.</span></div>
+                    <div class="config-row"><strong>Lookup</strong><span>Order confirmation and lightweight lookup without full accounts.</span></div>
+                  </div>
+                </article>
+              </div>
+            </section>
+          </div>
+        </div>
+      </article>
+
+      <article class="screen-panel export-target" data-export="07-mobile-admin">
+        <div class="screen-title">
+          <div>
+            <p class="eyebrow">A07</p>
+            <h2>Mobile Admin Quick Check</h2>
+          </div>
+          <p>Stretch reference for urgent admin checks on mobile; desktop remains the primary Phase 1 admin scope.</p>
+        </div>
+        <div class="mobile-strip">
+          <div class="phone">
+            <div class="phone-status"><span>9:41</span><span>5G 100%</span></div>
+            <div class="phone-top">
+              <button class="icon-btn" aria-label="Menu">M</button>
+              <img src="../public/brand/use-me-logo-black-transparent.png" alt="Use Me With Style" />
+              <button class="icon-btn" aria-label="Alerts">N</button>
+            </div>
+            <div class="phone-body">
+              <p class="page-kicker">Admin quick check</p>
+              <h2 class="phone-title">3 payments need review</h2>
+              <div class="phone-kpi">
+                <div class="phone-card"><span class="data-label">Orders</span><strong>12</strong></div>
+                <div class="phone-card"><span class="data-label">Low stock</span><strong>7</strong></div>
+              </div>
+              <div class="attention-list">
+                <div class="attention-row hot" style="grid-template-columns: minmax(0, 1fr)">
+                  <div class="attention-copy">
+                    <strong>#1045 Mariana Sousa</strong>
+                    <span>Appy Pay review, Luanda, WhatsApp follow-up.</span>
+                  </div>
+                  <span class="badge gold" style="width: max-content; margin-top: 10px">Open review</span>
+                </div>
+                <div class="attention-row" style="grid-template-columns: minmax(0, 1fr)">
+                  <div class="attention-copy">
+                    <strong>#1044 Ana Pereira</strong>
+                    <span>MBWay confirmed, CTT label still needed.</span>
+                  </div>
+                  <span class="badge blue" style="width: max-content; margin-top: 10px">Prepare label</span>
+                </div>
+                <div class="attention-row" style="grid-template-columns: minmax(0, 1fr)">
+                  <div class="attention-copy">
+                    <strong>Mares Dress S</strong>
+                    <span>Sold out. Keep M/L available.</span>
+                  </div>
+                  <span class="badge red" style="width: max-content; margin-top: 10px">Stock issue</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="handoff-grid">
+            <section class="handoff-panel">
+              <h3>Mobile admin rule</h3>
+              <p>Mobile is for quick checks and emergency action, not full catalogue work.</p>
+              <ul>
+                <li>Show only urgent counts and top queue items.</li>
+                <li>Keep payment review and shipping actions reachable.</li>
+                <li>Push full product editing back to desktop.</li>
+              </ul>
+            </section>
+            <section class="handoff-panel">
+              <h3>Responsive behavior</h3>
+              <p>Tables become priority cards; filters remain horizontal and scroll-safe.</p>
+              <ul>
+                <li>Dashboard metrics collapse to two columns.</li>
+                <li>Order detail stacks customer, items, payment, and delivery.</li>
+                <li>Settings cards stack by market.</li>
+              </ul>
+            </section>
+            <section class="handoff-panel">
+              <h3>Phase 1 boundary</h3>
+              <p>Admin mobile support is valuable, but storefront mobile remains the launch-critical responsive path.</p>
+              <ul>
+                <li>Desktop admin first.</li>
+                <li>Mobile admin as stretch if time allows.</li>
+                <li>No roles or advanced analytics in Phase 1.</li>
+              </ul>
+            </section>
+          </div>
+        </div>
+      </article>
+
+      <section class="section-title export-target" data-export="08-figma-handoff">
+        <div>
+          <p class="eyebrow">Figma handoff</p>
+          <h2>Prepared for low-call transfer once Pro is active.</h2>
+          <p>
+            The Figma import script mirrors this admin pack with editable primitives for each frame. Use the screenshots as the visual QA reference after transfer.
+          </p>
+        </div>
+        <div class="handoff-grid">
+          <section class="handoff-panel">
+            <h3>Frames</h3>
+            <ul>
+              <li>A01 Admin Dashboard</li>
+              <li>A02 Orders Queue</li>
+              <li>A03 Order Detail</li>
+              <li>A04 Products Catalogue</li>
+              <li>A05 Product Editor</li>
+              <li>A06 Settings</li>
+              <li>A07 Mobile Admin Quick Check</li>
+            </ul>
+          </section>
+          <section class="handoff-panel">
+            <h3>Import assets</h3>
+            <ul>
+              <li>Figma payload JSON in docs/figma.</li>
+              <li>One-call admin import script in docs/figma.</li>
+              <li>Review screenshots in docs/design-review/admin-phase-1.</li>
+            </ul>
+          </section>
+          <section class="handoff-panel">
+            <h3>Open decisions</h3>
+            <ul>
+              <li>Angola Appy Pay final behavior.</li>
+              <li>City-level delivery fee rules.</li>
+              <li>Final client product photography.</li>
+            </ul>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const params = new URLSearchParams(window.location.search);
+      const exportName = params.get("export");
+
+      if (exportName) {
+        const target = document.querySelector(`[data-export="${exportName}"]`);
+        document.body.classList.add("exporting");
+        if (target) {
+          target.classList.add("is-exported");
+          document.title = `Use Me Admin Export - ${exportName}`;
+        }
+      }
+    </script>
+  </body>
+</html>

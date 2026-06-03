@@ -6,7 +6,11 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist', 'docs/figma/phase-1-storefront-import-script.js']),
+  globalIgnores([
+    'dist',
+    'docs/figma/phase-1-storefront-import-script.js',
+    'docs/figma/phase-1-admin-import-script.js',
+  ]),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [

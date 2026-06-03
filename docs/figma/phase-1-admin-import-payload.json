@@ -1,0 +1,180 @@
+{
+  "project": "Use Me With Style",
+  "scope": "Phase 1 Admin High Fidelity",
+  "source": "docs/phase-1-admin-high-fidelity.html",
+  "reviewScreenshots": "docs/design-review/admin-phase-1/",
+  "pageName": "Phase 1 Admin - High Fidelity",
+  "brand": {
+    "positioning": "Quiet, premium operational admin for launch orders, stock, payments, delivery, and market settings.",
+    "logoAssets": [
+      "public/brand/use-me-logo-black-transparent.png",
+      "public/brand/use-me-logo-gold-transparent.png",
+      "public/brand/use-me-logo-white-transparent.png"
+    ],
+    "typography": {
+      "display": "Cormorant Garamond / brand display direction",
+      "body": "Montserrat / Inter-compatible admin UI body"
+    }
+  },
+  "tokens": {
+    "colors": {
+      "black": "#050505",
+      "ink": "#171514",
+      "charcoal": "#2B2927",
+      "muted": "#6C655D",
+      "stone": "#E7DFCF",
+      "line": "#D8CDB7",
+      "lineSoft": "#ECE5D8",
+      "paper": "#FFFDF8",
+      "ivory": "#F8F4EC",
+      "shell": "#F1EADF",
+      "champagne": "#E5C24F",
+      "gold": "#CAA039",
+      "goldDeep": "#937027",
+      "rose": "#A66F63",
+      "sage": "#78816F",
+      "blue": "#426A70",
+      "success": "#3F754D",
+      "alert": "#B95545",
+      "warning": "#B9822F"
+    },
+    "radius": {
+      "panel": 8,
+      "control": 6,
+      "badge": 6
+    },
+    "layout": {
+      "desktopFrame": {
+        "width": 1360,
+        "height": 918,
+        "sidebarWidth": 236
+      },
+      "mobileFrame": {
+        "width": 390,
+        "height": 844
+      }
+    }
+  },
+  "phase1AdminScope": {
+    "modules": [
+      "Dashboard",
+      "Orders",
+      "Order Detail / Payment Review",
+      "Products",
+      "Product Editor",
+      "Settings",
+      "Mobile Admin Quick Check"
+    ],
+    "launchMarkets": [
+      "Angola",
+      "Portugal"
+    ],
+    "orderStatuses": [
+      "New",
+      "Payment Review",
+      "Processing",
+      "Shipped",
+      "Delivered",
+      "Cancelled"
+    ],
+    "customerFields": [
+      "Name",
+      "Phone / WhatsApp",
+      "Email",
+      "Address",
+      "City",
+      "Country",
+      "Payment method",
+      "Delivery method",
+      "Notes"
+    ],
+    "includedAutomation": [
+      "WhatsApp order/status messages",
+      "Instagram message prompts"
+    ],
+    "deferred": [
+      "Full customer accounts",
+      "Advanced analytics",
+      "Meta Ads automation",
+      "AI campaigns",
+      "Team roles",
+      "Wishlist",
+      "Loyalty/VIP"
+    ]
+  },
+  "frames": [
+    {
+      "id": "A01",
+      "name": "Admin Dashboard",
+      "exportName": "01-dashboard",
+      "screenshot": "01-admin-dashboard.png",
+      "size": [1360, 918],
+      "description": "Daily operating view with orders today, revenue, payment review, processing, low stock, attention queue, recent orders, revenue trend, and market setup readiness."
+    },
+    {
+      "id": "A02",
+      "name": "Orders Queue",
+      "exportName": "02-orders",
+      "screenshot": "02-orders-queue.png",
+      "size": [1360, 918],
+      "description": "Operational order table with filters for All, New, Payment Review, Processing, Shipped, Delivered, and Cancelled. Highlights #1045 payment review."
+    },
+    {
+      "id": "A03",
+      "name": "Order Detail and Payment Review",
+      "exportName": "03-order-detail",
+      "screenshot": "03-order-detail-payment-review.png",
+      "size": [1360, 918],
+      "description": "Order detail with customer fields, address, market, payment method, delivery method, notes, items, timeline, and payment review actions."
+    },
+    {
+      "id": "A04",
+      "name": "Products Catalogue",
+      "exportName": "04-products",
+      "screenshot": "04-products-catalogue.png",
+      "size": [1360, 918],
+      "description": "Manual product catalogue with draft/active state, low stock cues, placeholder photo status, prices, and size-level stock."
+    },
+    {
+      "id": "A05",
+      "name": "Product Editor",
+      "exportName": "05-product-editor",
+      "screenshot": "05-product-editor.png",
+      "size": [1360, 918],
+      "description": "Manual product editor for name, category, status, Angola price, Portugal price, market visibility, colors, stock by size, media placeholder, copy, and messaging prompts."
+    },
+    {
+      "id": "A06",
+      "name": "Settings",
+      "exportName": "06-settings",
+      "screenshot": "06-settings.png",
+      "size": [1360, 918],
+      "description": "Market settings for Angola and Portugal, plus messaging automation and required order fields."
+    },
+    {
+      "id": "A07",
+      "name": "Mobile Admin Quick Check",
+      "exportName": "07-mobile-admin",
+      "screenshot": "07-mobile-admin-quick-check.png",
+      "size": [390, 844],
+      "description": "Stretch mobile admin reference for urgent checks and simple action routing."
+    }
+  ],
+  "openDecisions": [
+    {
+      "topic": "Angola payment provider",
+      "status": "Pending Appy Pay team response",
+      "designHandling": "Keep Appy Pay placeholder and Payment Review status."
+    },
+    {
+      "topic": "Delivery fee rules",
+      "status": "Needs market/city pricing",
+      "designHandling": "Show editable market settings and order delivery notes."
+    },
+    {
+      "topic": "Client product photography",
+      "status": "Pending client assets",
+      "designHandling": "Use visible photo-pending state in admin."
+    }
+  ]
+}

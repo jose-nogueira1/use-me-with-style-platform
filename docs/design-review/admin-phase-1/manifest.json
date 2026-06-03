@@ -1,0 +1,105 @@
+{
+  "generatedAt": "2026-06-03T09:51:08.372Z",
+  "source": "docs/phase-1-admin-high-fidelity.html",
+  "targets": [
+    {
+      "title": "Board Overview",
+      "file": "00-board-overview.png",
+      "url": "http://127.0.0.1:4194/docs/phase-1-admin-high-fidelity.html",
+      "size": [
+        1440,
+        1200
+      ]
+    },
+    {
+      "title": "Cover",
+      "file": "00-cover.png",
+      "exportName": "00-cover",
+      "size": [
+        1760,
+        720
+      ]
+    },
+    {
+      "title": "Admin Design System Direction",
+      "file": "00-design-system.png",
+      "exportName": "00-design-system",
+      "size": [
+        1440,
+        560
+      ]
+    },
+    {
+      "title": "Admin Dashboard",
+      "file": "01-admin-dashboard.png",
+      "exportName": "01-dashboard",
+      "size": [
+        1360,
+        918
+      ]
+    },
+    {
+      "title": "Orders Queue",
+      "file": "02-orders-queue.png",
+      "exportName": "02-orders",
+      "size": [
+        1360,
+        918
+      ]
+    },
+    {
+      "title": "Order Detail and Payment Review",
+      "file": "03-order-detail-payment-review.png",
+      "exportName": "03-order-detail",
+      "size": [
+        1360,
+        918
+      ]
+    },
+    {
+      "title": "Products Catalogue",
+      "file": "04-products-catalogue.png",
+      "exportName": "04-products",
+      "size": [
+        1360,
+        918
+      ]
+    },
+    {
+      "title": "Product Editor",
+      "file": "05-product-editor.png",
+      "exportName": "05-product-editor",
+      "size": [
+        1360,
+        918
+      ]
+    },
+    {
+      "title": "Settings",
+      "file": "06-settings.png",
+      "exportName": "06-settings",
+      "size": [
+        1360,
+        918
+      ]
+    },
+    {
+      "title": "Mobile Admin Quick Check",
+      "file": "07-mobile-admin-quick-check.png",
+      "exportName": "07-mobile-admin",
+      "size": [
+        1360,
+        900
+      ]
+    },
+    {
+      "title": "Figma Handoff Checklist",
+      "file": "08-figma-handoff.png",
+      "exportName": "08-figma-handoff",
+      "size": [
+        1360,
+        560
+      ]
+    }
+  ]
+}
