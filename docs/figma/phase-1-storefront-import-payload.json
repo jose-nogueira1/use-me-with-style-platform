@@ -1,0 +1,109 @@
+{
+  "name": "Use Me With Style - Phase 1 Storefront High Fidelity",
+  "sourceHtml": "../phase-1-storefront-high-fidelity.html",
+  "targetFigmaFile": "https://www.figma.com/design/vIsxsnPzYLGFBSsts3yHXO",
+  "createdFor": "Low-call MCP transfer once Figma Pro is active",
+  "tokens": {
+    "colors": {
+      "black": "#050505",
+      "ink": "#171514",
+      "charcoal": "#2B2927",
+      "muted": "#6C655D",
+      "stone": "#E7DFCF",
+      "line": "#D8CDB7",
+      "lineSoft": "#ECE5D8",
+      "paper": "#FFFDF8",
+      "ivory": "#F8F4EC",
+      "champagne": "#E5C24F",
+      "gold": "#CAA039",
+      "goldDeep": "#937027",
+      "rose": "#A66F63",
+      "sage": "#78816F",
+      "blue": "#426A70",
+      "success": "#3F754D",
+      "alert": "#B95545"
+    },
+    "typography": {
+      "brandDisplay": "Soligant / editorial serif mood",
+      "brandScript": "Retro Signature mood",
+      "ui": "Montserrat in HTML, Inter fallback in Figma import"
+    },
+    "radius": {
+      "small": 6,
+      "card": 8,
+      "phone": 28
+    },
+    "spacing": {
+      "xs": 6,
+      "sm": 10,
+      "md": 14,
+      "lg": 20,
+      "xl": 30
+    }
+  },
+  "frames": [
+    {
+      "id": "screen-home",
+      "name": "01. Home",
+      "exportName": "01-mobile-home",
+      "size": "390x844",
+      "purpose": "Storefront entry with dark premium hero, categories, featured products, Angola/PT delivery signal."
+    },
+    {
+      "id": "screen-browse",
+      "name": "02. Browse and Filter",
+      "exportName": "02-mobile-browse-filter",
+      "size": "390x844",
+      "purpose": "Collection browsing, search, filter chips, product tile states, market pricing."
+    },
+    {
+      "id": "screen-product",
+      "name": "03. Product Detail",
+      "exportName": "03-mobile-product-detail",
+      "size": "390x844",
+      "purpose": "Product media, size/color selection, stock hint, Angola/PT delivery/payment panel, sticky add-to-cart."
+    },
+    {
+      "id": "screen-cart",
+      "name": "04. Cart",
+      "exportName": "04-mobile-cart",
+      "size": "390x844",
+      "purpose": "Quantity edits, order estimate, payment preview, delivery market context."
+    },
+    {
+      "id": "screen-checkout",
+      "name": "05. Checkout",
+      "exportName": "05-mobile-checkout",
+      "size": "390x844",
+      "purpose": "Required Phase 1 order fields, Portugal payment/delivery choices, notes."
+    },
+    {
+      "id": "screen-confirmation",
+      "name": "06. Confirmation and Lookup",
+      "exportName": "06-mobile-confirmation-lookup",
+      "size": "390x844",
+      "purpose": "Order received, Payment Review timeline, WhatsApp automation preview, lightweight lookup."
+    },
+    {
+      "id": "screen-desktop-home",
+      "name": "07. Desktop Home and Collection",
+      "exportName": "07-desktop-home-collection",
+      "size": "1440x900",
+      "purpose": "Responsive desktop reference for nav, hero, market switch, and four-column product grid."
+    },
+    {
+      "id": "screen-tablet-product",
+      "name": "08. Tablet Product Detail",
+      "exportName": "08-tablet-product-detail",
+      "size": "834x720",
+      "purpose": "Responsive tablet product detail reference with split media/detail layout."
+    }
+  ],
+  "figmaImportPlan": [
+    "Create or reuse page: Phase 1 Storefront - High Fidelity.",
+    "Create local editable token swatches and component samples.",
+    "Create six mobile frames plus desktop and tablet references.",
+    "Represent product media as editable placeholder art until client photography arrives.",
+    "Use screenshot exports for visual QA against local HTML pack."
+  ]
+}

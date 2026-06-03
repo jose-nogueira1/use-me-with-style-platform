@@ -1631,6 +1631,71 @@
         text-transform: uppercase;
       }
 
+      .export-page {
+        min-height: 100vh;
+        display: grid;
+        place-items: start center;
+        gap: 18px;
+        padding: 32px;
+        background:
+          linear-gradient(180deg, rgba(255, 253, 248, 0.8), rgba(231, 223, 207, 0.58)),
+          var(--ivory);
+      }
+
+      .export-header {
+        width: min(100%, 920px);
+        display: flex;
+        justify-content: space-between;
+        gap: 18px;
+        align-items: end;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .export-header h1 {
+        max-width: none;
+        font-size: 30px;
+        line-height: 1;
+      }
+
+      .export-header p {
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .export-page > [data-export],
+      .export-page .screen-card {
+        width: max-content;
+        max-width: 100%;
+      }
+
+      .export-page .system-grid {
+        width: min(1160px, 100%);
+      }
+
+      .export-page .handoff-grid {
+        width: min(1100px, 100%);
+      }
+
+      .export-page #screen-desktop-home {
+        width: 1540px;
+      }
+
+      .export-page #screen-desktop-home .desktop-shell {
+        width: 1500px;
+        margin: 0 auto;
+      }
+
+      .export-page #screen-desktop-home .desktop-screen {
+        width: 1472px;
+      }
+
+      .export-page #screen-tablet-product {
+        width: 900px;
+      }
+
       @media (max-width: 1240px) {
         .board-header,
         .system-grid,
@@ -1771,11 +1836,41 @@
         }
       }
     </style>
+    <script>
+      window.addEventListener("DOMContentLoaded", () => {
+        const exportName = new URLSearchParams(window.location.search).get("export");
+        if (!exportName) return;
+
+        const target = [...document.querySelectorAll("[data-export]")].find(
+          (node) => node.dataset.export === exportName,
+        );
+
+        if (!target) {
+          document.body.innerHTML = `<main class="export-page"><div class="export-header"><h1>Export target not found</h1><p>${exportName}</p></div></main>`;
+          return;
+        }
+
+        const page = document.createElement("main");
+        page.className = "export-page";
+
+        const header = document.createElement("header");
+        header.className = "export-header";
+        header.innerHTML = `<h1>${target.dataset.exportTitle || exportName}</h1><p>${exportName}</p>`;
+
+        page.append(header, target.cloneNode(true));
+        document.body.replaceChildren(page);
+      });
+    </script>
   </head>
   <body>
     <main class="board">
       <header class="board-header">
-        <section class="intro">
+        <section
+          id="cover"
+          class="intro"
+          data-export="00-cover"
+          data-export-title="Cover"
+        >
           <div class="intro-top">
             <p class="kicker">Phase 1 storefront high fidelity</p>
             <h1>Mobile-first boutique commerce for Angola and Portugal.</h1>
@@ -1794,7 +1889,13 @@
           </div>
         </section>
 
-        <aside class="brand-card" aria-label="Brand assets">
+        <aside
+          id="brand-assets"
+          class="brand-card"
+          aria-label="Brand assets"
+          data-export="00-brand-assets"
+          data-export-title="Brand Assets"
+        >
           <div class="brand-strip">
             <div class="logo-box">
               <img
@@ -1835,7 +1936,12 @@
             commerce states and richer storefront scanning.
           </p>
         </div>
-        <div class="system-grid">
+        <div
+          id="design-system"
+          class="system-grid"
+          data-export="00-design-system"
+          data-export-title="Design System Direction"
+        >
           <div class="system-panel">
             <h3>Color Tokens</h3>
             <div class="palette">
@@ -1929,7 +2035,14 @@
         </div>
 
         <div class="screens-grid">
-          <article class="screen-card">
+          <article
+            id="screen-home"
+            class="screen-card"
+            data-export="01-mobile-home"
+            data-export-title="Mobile Home"
+            data-figma-frame="01. Home"
+            data-figma-size="390x844"
+          >
             <div class="screen-title">
               <h3>01. Home</h3>
               <span>390 x 844</span>
@@ -2020,7 +2133,14 @@
             </div>
           </article>
 
-          <article class="screen-card">
+          <article
+            id="screen-browse"
+            class="screen-card"
+            data-export="02-mobile-browse-filter"
+            data-export-title="Mobile Browse and Filter"
+            data-figma-frame="02. Browse and Filter"
+            data-figma-size="390x844"
+          >
             <div class="screen-title">
               <h3>02. Browse and Filter</h3>
               <span>390 x 844</span>
@@ -2113,7 +2233,14 @@
             </div>
           </article>
 
-          <article class="screen-card">
+          <article
+            id="screen-product"
+            class="screen-card"
+            data-export="03-mobile-product-detail"
+            data-export-title="Mobile Product Detail"
+            data-figma-frame="03. Product Detail"
+            data-figma-size="390x844"
+          >
             <div class="screen-title">
               <h3>03. Product Detail</h3>
               <span>390 x 844</span>
@@ -2184,7 +2311,14 @@
             </div>
           </article>
 
-          <article class="screen-card">
+          <article
+            id="screen-cart"
+            class="screen-card"
+            data-export="04-mobile-cart"
+            data-export-title="Mobile Cart"
+            data-figma-frame="04. Cart"
+            data-figma-size="390x844"
+          >
             <div class="screen-title">
               <h3>04. Cart</h3>
               <span>390 x 844</span>
@@ -2269,7 +2403,14 @@
             </div>
           </article>
 
-          <article class="screen-card">
+          <article
+            id="screen-checkout"
+            class="screen-card"
+            data-export="05-mobile-checkout"
+            data-export-title="Mobile Checkout"
+            data-figma-frame="05. Checkout"
+            data-figma-size="390x844"
+          >
             <div class="screen-title">
               <h3>05. Checkout</h3>
               <span>390 x 844</span>
@@ -2353,7 +2494,14 @@
             </div>
           </article>
 
-          <article class="screen-card">
+          <article
+            id="screen-confirmation"
+            class="screen-card"
+            data-export="06-mobile-confirmation-lookup"
+            data-export-title="Mobile Confirmation and Lookup"
+            data-figma-frame="06. Confirmation and Lookup"
+            data-figma-size="390x844"
+          >
             <div class="screen-title">
               <h3>06. Confirmation and Lookup</h3>
               <span>390 x 844</span>
@@ -2431,7 +2579,14 @@
         </div>
 
         <div class="responsive-grid">
-          <article class="screen-card">
+          <article
+            id="screen-desktop-home"
+            class="screen-card"
+            data-export="07-desktop-home-collection"
+            data-export-title="Desktop Home and Collection"
+            data-figma-frame="07. Desktop Home and Collection"
+            data-figma-size="1440x900"
+          >
             <div class="screen-title">
               <h3>07. Desktop Home and Collection</h3>
               <span>1440 x 900</span>
@@ -2550,7 +2705,15 @@
           </div>
         </div>
 
-        <article class="screen-card" style="margin-top: 28px">
+        <article
+          id="screen-tablet-product"
+          class="screen-card"
+          style="margin-top: 28px"
+          data-export="08-tablet-product-detail"
+          data-export-title="Tablet Product Detail"
+          data-figma-frame="08. Tablet Product Detail"
+          data-figma-size="834x720"
+        >
           <div class="screen-title">
             <h3>08. Tablet Product Detail</h3>
             <span>834 x 720</span>
@@ -2625,7 +2788,12 @@
             and components without revisiting Phase 1 storefront decisions.
           </p>
         </div>
-        <div class="handoff-grid">
+        <div
+          id="figma-handoff"
+          class="handoff-grid"
+          data-export="09-figma-handoff"
+          data-export-title="Figma Handoff Checklist"
+        >
           <div class="handoff-card">
             <span class="tag gold">01</span>
             <h3>Create variables</h3>

@@ -1,0 +1,114 @@
+{
+  "generatedAt": "2026-06-03T09:09:49.875Z",
+  "source": "docs/phase-1-storefront-high-fidelity.html",
+  "targets": [
+    {
+      "title": "Board Overview",
+      "file": "00-board-overview.png",
+      "url": "http://127.0.0.1:4193/docs/phase-1-storefront-high-fidelity.html",
+      "size": [
+        1440,
+        1200
+      ]
+    },
+    {
+      "title": "Cover",
+      "file": "00-cover.png",
+      "exportName": "00-cover",
+      "size": [
+        980,
+        980
+      ]
+    },
+    {
+      "title": "Design System Direction",
+      "file": "00-design-system.png",
+      "exportName": "00-design-system",
+      "size": [
+        1240,
+        760
+      ]
+    },
+    {
+      "title": "Mobile Home",
+      "file": "01-mobile-home.png",
+      "exportName": "01-mobile-home",
+      "size": [
+        760,
+        1120
+      ]
+    },
+    {
+      "title": "Mobile Browse and Filter",
+      "file": "02-mobile-browse-filter.png",
+      "exportName": "02-mobile-browse-filter",
+      "size": [
+        760,
+        1120
+      ]
+    },
+    {
+      "title": "Mobile Product Detail",
+      "file": "03-mobile-product-detail.png",
+      "exportName": "03-mobile-product-detail",
+      "size": [
+        760,
+        1120
+      ]
+    },
+    {
+      "title": "Mobile Cart",
+      "file": "04-mobile-cart.png",
+      "exportName": "04-mobile-cart",
+      "size": [
+        760,
+        1120
+      ]
+    },
+    {
+      "title": "Mobile Checkout",
+      "file": "05-mobile-checkout.png",
+      "exportName": "05-mobile-checkout",
+      "size": [
+        760,
+        1120
+      ]
+    },
+    {
+      "title": "Mobile Confirmation and Lookup",
+      "file": "06-mobile-confirmation-lookup.png",
+      "exportName": "06-mobile-confirmation-lookup",
+      "size": [
+        760,
+        1120
+      ]
+    },
+    {
+      "title": "Desktop Home and Collection",
+      "file": "07-desktop-home-collection.png",
+      "exportName": "07-desktop-home-collection",
+      "size": [
+        1900,
+        1120
+      ]
+    },
+    {
+      "title": "Tablet Product Detail",
+      "file": "08-tablet-product-detail.png",
+      "exportName": "08-tablet-product-detail",
+      "size": [
+        1100,
+        980
+      ]
+    },
+    {
+      "title": "Figma Handoff Checklist",
+      "file": "09-figma-handoff.png",
+      "exportName": "09-figma-handoff",
+      "size": [
+        1180,
+        620
+      ]
+    }
+  ]
+}
