@@ -51,7 +51,7 @@ if (existingPage) {
 
 const page = figma.createPage();
 page.name = PAGE_NAME;
-figma.currentPage = page;
+await figma.setCurrentPageAsync(page);
 
 function hexToRgb(hex) {
   const clean = hex.replace("#", "");
