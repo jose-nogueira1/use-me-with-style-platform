@@ -57,9 +57,32 @@ export function PaypalButton({
   // message left on screen).
   const validationFailedRef = useRef(false);
 
+  // THE actual root cause of "PayPal button does nothing, zero network
+  // calls, no matter what's in the form": the effect below that calls
+  // `window.paypal.Buttons(...).render(...)` only depends on `[ready]`, so
+  // it runs once, right after the SDK loads (near mount) -- and the
+  // `createOrder`/`onApprove`/etc closures it creates capture whatever
+  // `buildOrderInput`/`onSuccess`/`onError` were AT THAT MOMENT. Checkout
+  // re-renders on every keystroke with a *new* `buildOrderInputForPaypal`
+  // closing over the latest `form` state, but the PayPal button itself is
+  // never re-rendered to pick that up -- it keeps calling the original,
+  // stale closure forever, which always sees the empty `form` from
+  // mount-time. That's why validation always "failed" (silently, with zero
+  // requests) regardless of what was actually typed into the form, in both
+  // automated and real manual test attempts this session. Fix: keep the
+  // latest callbacks in refs, updated every render, and have the Buttons
+  // instance (created once) call through the refs instead of closing over
+  // the props directly.
+  const buildOrderInputRef = useRef(buildOrderInput);
+  const onSuccessRef = useRef(onSuccess);
+  const onErrorRef = useRef(onError);
+  buildOrderInputRef.current = buildOrderInput;
+  onSuccessRef.current = onSuccess;
+  onErrorRef.current = onError;
+
   useEffect(() => {
     if (!publicEnv.paypalClientId) {
-      onError('PayPal ainda não está configurado.');
+      onErrorRef.current('PayPal ainda não está configurado.');
       return;
     }
     let cancelled = false;
@@ -67,7 +90,7 @@ export function PaypalButton({
       .then(() => {
         if (!cancelled) setReady(true);
       })
-      .catch(() => onError('Não foi possível carregar o PayPal.'));
+      .catch(() => onErrorRef.current('Não foi possível carregar o PayPal.'));
     return () => {
       cancelled = true;
     };
@@ -85,7 +108,7 @@ export function PaypalButton({
           validationFailedRef.current = false;
           let input: CreateOrderInput;
           try {
-            input = buildOrderInput();
+            input = buildOrderInputRef.current();
           } catch (err) {
             // Required-field validation failed -- Checkout's
             // buildOrderInputForPaypal already called setError() with the
@@ -97,7 +120,7 @@ export function PaypalButton({
             const { paypalOrderId } = await createPaypalOrder(input);
             return paypalOrderId;
           } catch (err) {
-            onError('Não foi possível iniciar o pagamento PayPal.');
+            onErrorRef.current('Não foi possível iniciar o pagamento PayPal.');
             throw err;
           }
         },
@@ -105,15 +128,15 @@ export function PaypalButton({
           try {
             const result = await capturePaypalOrder(data.orderID);
             if (result.status === 'COMPLETED' && result.orderNumber) {
-              onSuccess(result.orderNumber);
+              onSuccessRef.current(result.orderNumber);
             } else {
-              onError('Pagamento não confirmado. Tente novamente.');
+              onErrorRef.current('Pagamento não confirmado. Tente novamente.');
             }
           } catch {
-            onError('Não foi possível confirmar o pagamento PayPal.');
+            onErrorRef.current('Não foi possível confirmar o pagamento PayPal.');
           }
         },
-        onCancel: () => onError('Pagamento PayPal cancelado.'),
+        onCancel: () => onErrorRef.current('Pagamento PayPal cancelado.'),
         onError: () => {
           // The SDK calls this on top of createOrder's own rejection --
           // skip it for our own validation failures (see
@@ -122,7 +145,7 @@ export function PaypalButton({
             validationFailedRef.current = false;
             return;
           }
-          onError('Ocorreu um erro no PayPal.');
+          onErrorRef.current('Ocorreu um erro no PayPal.');
         },
       })
       .render(containerRef.current);
