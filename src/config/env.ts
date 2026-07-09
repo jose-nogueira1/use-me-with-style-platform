@@ -22,6 +22,11 @@ export const publicEnv = {
   cmsUrl: import.meta.env.VITE_CMS_URL || "http://localhost:3000/admin",
   defaultMarket: import.meta.env.VITE_DEFAULT_MARKET || "AO",
   paymentMode: oneOf(import.meta.env.VITE_PAYMENT_MODE, paymentModes, "sandbox"),
+  // Public PayPal client ID (JOS-61) -- used client-side to load the PayPal
+  // JS SDK button. This is a public identifier by design, safe to expose;
+  // the matching secret (PAYPAL_CLIENT_SECRET) stays server-side only, in
+  // the CMS's own env, never here.
+  paypalClientId: import.meta.env.VITE_PAYPAL_CLIENT_ID || "",
   mockDataEnabled: bool(import.meta.env.VITE_ENABLE_MOCK_DATA, true),
   livePaymentsEnabled: bool(import.meta.env.VITE_ENABLE_LIVE_PAYMENTS),
   messagingAutomationEnabled: bool(import.meta.env.VITE_ENABLE_MESSAGING_AUTOMATION),
