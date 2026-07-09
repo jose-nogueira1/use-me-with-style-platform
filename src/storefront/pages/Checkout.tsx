@@ -157,8 +157,16 @@ export function Checkout() {
       }
 
       const order = await createOrder(buildOrderInput());
-      dispatchCart({ type: 'CLEAR' });
+      // Order matters: navigate first, THEN clear the cart. Checkout has its
+      // own `if (cart.length === 0) navigate('/carrinho')` guard (for people
+      // landing here with nothing in cart) -- clearing the cart first
+      // re-renders this still-mounted component with an empty cart and that
+      // guard fires, racing with (and sometimes winning over) this
+      // navigate() call, so the buyer lands on "Your cart is empty" instead
+      // of the confirmation page. Navigating away first means Checkout is
+      // unmounted before the cart ever goes empty, so the guard never fires.
       navigate(`/encomenda-confirmada/${order.orderNumber}`);
+      dispatchCart({ type: 'CLEAR' });
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error('Order/payment creation failed', err);
@@ -169,8 +177,13 @@ export function Checkout() {
   };
 
   const handlePaypalSuccess = (orderNumber: string) => {
-    dispatchCart({ type: 'CLEAR' });
+    // See the comment in handleSubmit above -- same reasoning: navigate
+    // away from Checkout before clearing the cart, not after, so its own
+    // empty-cart guard doesn't fire and hijack this redirect. This was the
+    // actual cause of a real, fully-paid PayPal order landing the buyer on
+    // "Your cart is empty" instead of the order confirmation page.
     navigate(`/encomenda-confirmada/${orderNumber}`);
+    dispatchCart({ type: 'CLEAR' });
   };
 
   /** PayPal's button fires its own createOrder callback on click, outside
