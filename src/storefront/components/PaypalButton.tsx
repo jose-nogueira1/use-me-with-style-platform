@@ -45,6 +45,17 @@ export function PaypalButton({
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [ready, setReady] = useState(false);
+  // Tracks whether the button's createOrder rejected because our own
+  // required-field validation failed (buildOrderInput throws in that case)
+  // -- Checkout already set a specific, actionable error message for that,
+  // so the generic handlers below must not stomp it with a vague PayPal
+  // error. Without this, "click Pay with PayPal before filling the form"
+  // silently overwrites "Please fill in all required fields" with "Ocorreu
+  // um erro no PayPal", making a client-side validation issue look like a
+  // broken PayPal integration (the popup opens optimistically, createOrder
+  // rejects instantly, PayPal closes it -- zero network calls, no useful
+  // message left on screen).
+  const validationFailedRef = useRef(false);
 
   useEffect(() => {
     if (!publicEnv.paypalClientId) {
@@ -71,8 +82,19 @@ export function PaypalButton({
       .Buttons({
         style: { layout: 'vertical', label: 'pay' },
         createOrder: async () => {
+          validationFailedRef.current = false;
+          let input: CreateOrderInput;
           try {
-            const { paypalOrderId } = await createPaypalOrder(buildOrderInput());
+            input = buildOrderInput();
+          } catch (err) {
+            // Required-field validation failed -- Checkout's
+            // buildOrderInputForPaypal already called setError() with the
+            // right message. Reject without touching it.
+            validationFailedRef.current = true;
+            throw err;
+          }
+          try {
+            const { paypalOrderId } = await createPaypalOrder(input);
             return paypalOrderId;
           } catch (err) {
             onError('Não foi possível iniciar o pagamento PayPal.');
@@ -92,7 +114,16 @@ export function PaypalButton({
           }
         },
         onCancel: () => onError('Pagamento PayPal cancelado.'),
-        onError: () => onError('Ocorreu um erro no PayPal.'),
+        onError: () => {
+          // The SDK calls this on top of createOrder's own rejection --
+          // skip it for our own validation failures (see
+          // validationFailedRef above) so the actionable message survives.
+          if (validationFailedRef.current) {
+            validationFailedRef.current = false;
+            return;
+          }
+          onError('Ocorreu um erro no PayPal.');
+        },
       })
       .render(containerRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
