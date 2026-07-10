@@ -57,10 +57,19 @@ export function Checkout() {
     phone: '',
     email: '',
     address: '',
+    addressLine2: '',
+    postalCode: '',
     city: '',
     country: market === 'AO' ? 'Angola' : 'Portugal',
+    taxId: '',
     notes: '',
   });
+
+  // PT CTT postal codes are always 0000-000; NIFs are always 9 digits.
+  // Angola has no equivalent structured postal-code convention in this
+  // checkout, so neither is validated/required there.
+  const PT_POSTAL_CODE_RE = /^\d{4}-\d{3}$/;
+  const PT_TAX_ID_RE = /^\d{9}$/;
 
   const deliveryOptions = market === 'AO' ? settings.angolaDeliveryMethods : settings.portugalDeliveryMethods;
   const paymentOptions = market === 'AO' ? settings.angolaPaymentMethods : settings.portugalPaymentMethods;
@@ -161,8 +170,11 @@ export function Checkout() {
         customerPhone: form.phone,
         customerEmail: form.email,
         address: form.address,
+        addressLine2: form.addressLine2 || undefined,
+        postalCode: market === 'PT' ? form.postalCode : undefined,
         city: form.city,
         country: form.country,
+        taxId: market === 'PT' ? form.taxId || undefined : undefined,
         notes: form.notes || undefined,
         items: eurItems,
         currency: 'EUR',
@@ -181,8 +193,11 @@ export function Checkout() {
       customerPhone: form.phone,
       customerEmail: form.email,
       address: form.address,
+      addressLine2: form.addressLine2 || undefined,
+      postalCode: market === 'PT' ? form.postalCode : undefined,
       city: form.city,
       country: form.country,
+      taxId: market === 'PT' ? form.taxId || undefined : undefined,
       notes: form.notes || undefined,
       items,
       currency: market === 'AO' ? 'Kz' : 'EUR',
@@ -199,6 +214,16 @@ export function Checkout() {
     if (!form.name || !form.phone || !form.email || !form.address || !form.city) {
       setError(t('fillRequiredFields', lang));
       return false;
+    }
+    if (market === 'PT') {
+      if (!form.postalCode || !PT_POSTAL_CODE_RE.test(form.postalCode)) {
+        setError(t('invalidPostalCode', lang));
+        return false;
+      }
+      if (form.taxId && !PT_TAX_ID_RE.test(form.taxId)) {
+        setError(t('invalidTaxId', lang));
+        return false;
+      }
     }
     return true;
   };
@@ -282,8 +307,32 @@ export function Checkout() {
 
         <Section title={t('address', lang)}>
           <Field label={t('address', lang)} value={form.address} onChange={(v) => setForm({ ...form, address: v })} required />
+          {market === 'PT' && (
+            <Field
+              label={t('addressLine2Optional', lang)}
+              value={form.addressLine2}
+              onChange={(v) => setForm({ ...form, addressLine2: v })}
+            />
+          )}
+          {market === 'PT' && (
+            <Field
+              label={t('postalCode', lang)}
+              value={form.postalCode}
+              onChange={(v) => setForm({ ...form, postalCode: v })}
+              placeholder="0000-000"
+              required
+            />
+          )}
           <Field label={t('city', lang)} value={form.city} onChange={(v) => setForm({ ...form, city: v })} required />
           <Field label={t('country', lang)} value={form.country} onChange={(v) => setForm({ ...form, country: v })} required />
+          {market === 'PT' && (
+            <Field
+              label={t('taxIdOptional', lang)}
+              value={form.taxId}
+              onChange={(v) => setForm({ ...form, taxId: v })}
+              hint={t('taxIdHint', lang)}
+            />
+          )}
           <Field label={t('notesOptional', lang)} value={form.notes} onChange={(v) => setForm({ ...form, notes: v })} />
         </Section>
 
@@ -362,12 +411,16 @@ function Field({
   onChange,
   type = 'text',
   required = false,
+  placeholder,
+  hint,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   type?: string;
   required?: boolean;
+  placeholder?: string;
+  hint?: string;
 }) {
   return (
     <label style={{ display: 'block' }}>
@@ -380,8 +433,10 @@ function Field({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         required={required}
+        placeholder={placeholder}
         style={{ width: '100%', padding: '10px 12px', fontSize: 13, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.paper, color: C.ink }}
       />
+      {hint && <div style={{ fontSize: 10, color: C.inkSoft, marginTop: 3 }}>{hint}</div>}
     </label>
   );
 }

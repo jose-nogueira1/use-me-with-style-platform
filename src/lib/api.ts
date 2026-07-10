@@ -78,8 +78,21 @@ export type CreateOrderInput = {
   customerPhone: string;
   customerEmail: string;
   address: string;
+  /** Optional floor/door line (andar/porta) -- common on PT addresses, kept
+   * separate from the free-text `address` line so it renders cleanly on
+   * shipping labels/invoices. Not used for AO (courier coordination is via
+   * WhatsApp, not a structured address). */
+  addressLine2?: string;
+  /** Required for PT (validated client-side against the 0000-000 CTT
+   * format); not collected for AO, which has no equivalent postal-code
+   * convention in this checkout. */
+  postalCode?: string;
   city: string;
   country: string;
+  /** Portuguese NIF (tax number), optional -- collected so it can appear on
+   * the Moloni-issued invoice for PT orders (2026-07-10 addition). Never
+   * collected for AO (SWEG invoicing, out of scope here). */
+  taxId?: string;
   notes?: string;
   items: OrderItemInput[];
   currency: 'Kz' | 'EUR';
