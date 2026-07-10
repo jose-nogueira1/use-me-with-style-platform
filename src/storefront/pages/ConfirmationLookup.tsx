@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Check } from 'lucide-react';
 import { C, F, t } from '../../theme';
@@ -20,12 +20,28 @@ const STATUS_LABEL_KEY: Record<(typeof STATUS_STEPS)[number], string> = {
 };
 
 export function ConfirmationLookup() {
-  const { lang } = useApp();
+  const { lang, dispatchCart } = useApp();
   const { orderNumber: routeOrderNumber } = useParams<{ orderNumber: string }>();
   const [orderNumber, setOrderNumber] = useState(routeOrderNumber ?? '');
   const [email, setEmail] = useState('');
   const [result, setResult] = useState<ApiOrder | null | 'not_found'>(null);
   const [loading, setLoading] = useState(false);
+
+  // Cart is cleared here, once we've actually landed on a real order
+  // confirmation -- not from Checkout before navigating here. Checkout has
+  // its own `if (cart.length === 0) navigate('/carrinho')` guard (for
+  // people who land on /checkout with nothing in cart), and clearing the
+  // cart there raced with navigating away from it: React 19 batches the
+  // route change and the cart-reducer update into the same render pass
+  // regardless of which line runs first in the source, so that guard could
+  // still fire and send the buyer to "Your cart is empty" instead of this
+  // page, even after a real, successfully paid order. Clearing it here
+  // instead -- after Checkout is already unmounted -- sidesteps the race
+  // entirely.
+  useEffect(() => {
+    if (routeOrderNumber) dispatchCart({ type: 'CLEAR' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [routeOrderNumber]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();

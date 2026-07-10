@@ -37,7 +37,7 @@ const DELIVERY_LABEL_KEYS: Record<string, string> = {
 };
 
 export function Checkout() {
-  const { market, setMarket, lang, cart, dispatchCart } = useApp();
+  const { market, setMarket, lang, cart } = useApp();
   const { products } = useProducts(market);
   const navigate = useNavigate();
 
@@ -151,22 +151,14 @@ export function Checkout() {
     try {
       if (paymentMethod === 'stripe') {
         const { sessionUrl } = await createStripeCheckoutSession(buildOrderInput());
-        dispatchCart({ type: 'CLEAR' });
+        // Cart is cleared by the confirmation page itself, not here -- see
+        // the comment on handlePaypalSuccess below for why.
         window.location.href = sessionUrl;
         return; // navigating away -- no need to clear `submitting`
       }
 
       const order = await createOrder(buildOrderInput());
-      // Order matters: navigate first, THEN clear the cart. Checkout has its
-      // own `if (cart.length === 0) navigate('/carrinho')` guard (for people
-      // landing here with nothing in cart) -- clearing the cart first
-      // re-renders this still-mounted component with an empty cart and that
-      // guard fires, racing with (and sometimes winning over) this
-      // navigate() call, so the buyer lands on "Your cart is empty" instead
-      // of the confirmation page. Navigating away first means Checkout is
-      // unmounted before the cart ever goes empty, so the guard never fires.
       navigate(`/encomenda-confirmada/${order.orderNumber}`);
-      dispatchCart({ type: 'CLEAR' });
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error('Order/payment creation failed', err);
@@ -177,13 +169,19 @@ export function Checkout() {
   };
 
   const handlePaypalSuccess = (orderNumber: string) => {
-    // See the comment in handleSubmit above -- same reasoning: navigate
-    // away from Checkout before clearing the cart, not after, so its own
-    // empty-cart guard doesn't fire and hijack this redirect. This was the
-    // actual cause of a real, fully-paid PayPal order landing the buyer on
-    // "Your cart is empty" instead of the order confirmation page.
+    // Cart is cleared by the confirmation page itself (ConfirmationLookup),
+    // not here. Previously this called dispatchCart({type: 'CLEAR'}) before
+    // (then after) navigate() -- but a real, fully-paid PayPal order kept
+    // landing the buyer on "Your cart is empty" instead of the confirmation
+    // page regardless of the order of those two calls: React 19 batches
+    // both the route change and the cart-reducer update into the same
+    // render pass either way, so Checkout's own
+    // `if (cart.length === 0) navigate('/carrinho')` guard could still win
+    // the race against this navigate(), no matter which line ran "first" in
+    // the source. Clearing the cart from Checkout at all was the actual
+    // mistake -- moving it to the destination page sidesteps the race
+    // entirely, since by the time it runs, Checkout is already unmounted.
     navigate(`/encomenda-confirmada/${orderNumber}`);
-    dispatchCart({ type: 'CLEAR' });
   };
 
   /** PayPal's button fires its own createOrder callback on click, outside
