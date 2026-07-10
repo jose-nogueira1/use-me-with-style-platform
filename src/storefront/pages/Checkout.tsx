@@ -128,6 +128,7 @@ export function Checkout() {
     total,
     paymentMethod,
     deliveryMethod,
+    lang,
   });
 
   const validateRequiredFields = (): boolean => {

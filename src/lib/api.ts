@@ -82,6 +82,11 @@ export type CreateOrderInput = {
   total: number;
   paymentMethod: string;
   deliveryMethod: string;
+  // Storefront UI language at checkout ('pt' | 'en') -- drives the language
+  // of the order-confirmation email sent by the CMS. Optional so an older
+  // cached bundle without this field still posts a valid order (CMS default
+  // falls back to 'pt').
+  lang?: 'pt' | 'en';
 };
 
 export type ApiOrder = CreateOrderInput & {
