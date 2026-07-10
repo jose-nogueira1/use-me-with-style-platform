@@ -88,9 +88,8 @@ export function ProductDetail() {
             {t(CAT_LABEL_KEY[product.cat] ?? 'sets', lang)}
           </div>
           <div style={{ fontFamily: F.display, fontSize: 26, color: C.ink, marginTop: 4, fontWeight: 800 }}>{product.name}</div>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'baseline', marginTop: 8 }}>
-            <span style={{ fontSize: 20, fontWeight: 800, color: C.black }}>{`${product.priceKz.toLocaleString('en-US')} Kz`}</span>
-            <span style={{ fontSize: 13, fontWeight: 700, color: C.inkSoft }}>EUR {product.priceEur}</span>
+          <div style={{ marginTop: 8 }}>
+            <span style={{ fontSize: 20, fontWeight: 800, color: C.black }}>{fmtPrice(product)}</span>
           </div>
 
           <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -174,7 +173,7 @@ export function ProductDetail() {
           <div style={{ background: C.subtleBg, borderRadius: 8, padding: 14, marginTop: 4 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, padding: '6px 0' }}>
               <span style={{ color: C.ink, fontWeight: 700 }}>{t('shipping', lang)}</span>
-              <span style={{ color: C.inkSoft }}>{market === 'AO' ? t('manualCoordination', lang) : t('businessDays', lang)}</span>
+              <span style={{ color: C.inkSoft }}>{market === 'AO' ? t('localCourierDelivery', lang) : t('businessDays', lang)}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, padding: '6px 0' }}>
               <span style={{ color: C.ink, fontWeight: 700 }}>{t('returns', lang)}</span>

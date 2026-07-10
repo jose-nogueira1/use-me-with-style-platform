@@ -7,6 +7,8 @@ import { Badge } from '../components/Badge';
 const DEFAULTS: MarketSettings = {
   angolaPaymentLive: false,
   angolaBankTransferInstructions: '',
+  angolaPaymentMethods: ['multicaixa_express', 'stripe', 'paypal'],
+  angolaDeliveryMethods: ['courier_ao'],
   portugalPaymentMethods: ['paypal', 'stripe', 'mbway'],
   portugalDeliveryMethods: ['ctt', 'courier_pt'],
   returnsPolicyText: '',
@@ -51,27 +53,41 @@ export function Settings() {
       {saved && <div style={{ margin: '16px 28px 0', fontSize: 13, color: '#3F754D' }}>Saved.</div>}
 
       <div style={{ padding: '20px 28px 0', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }} className="ump-admin-orders-grid">
-        <Card title="Angola" badge="Manual" tone="gold">
-          <ConfigRow label="Currency" value="Kwanza, prices shown as Kz." />
+        <Card title="Angola" badge="Multicaixa Express" tone="gold">
+          <ConfigRow label="Currency" value="Kwanza, prices shown as Kz. Stripe/PayPal charges settle in EUR (neither gateway supports Kz)." />
           <ConfigRow
             label="Payment"
             value={
               <div>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                   <input type="checkbox" checked={settings.angolaPaymentLive} onChange={(e) => setSettings((s) => ({ ...s, angolaPaymentLive: e.target.checked }))} />
-                  Appy Pay active
+                  AppyPay (Multicaixa Express) integration live
                 </label>
+                <input
+                  value={settings.angolaPaymentMethods.join(', ')}
+                  onChange={(e) => setSettings((s) => ({ ...s, angolaPaymentMethods: e.target.value.split(',').map((v) => v.trim()).filter(Boolean) }))}
+                  style={{ width: '100%', padding: 8, fontSize: 11, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, marginBottom: 8 }}
+                />
                 <textarea
                   value={settings.angolaBankTransferInstructions ?? ''}
                   onChange={(e) => setSettings((s) => ({ ...s, angolaBankTransferInstructions: e.target.value }))}
                   rows={2}
-                  placeholder="Bank transfer instructions"
+                  placeholder="Multicaixa Express manual instructions (shown until AppyPay integration is live)"
                   style={{ width: '100%', padding: 8, fontSize: 11, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, fontFamily: 'inherit' }}
                 />
               </div>
             }
           />
-          <ConfigRow label="Delivery" value="Manual coordination by admin." />
+          <ConfigRow
+            label="Delivery"
+            value={
+              <input
+                value={settings.angolaDeliveryMethods.join(', ')}
+                onChange={(e) => setSettings((s) => ({ ...s, angolaDeliveryMethods: e.target.value.split(',').map((v) => v.trim()).filter(Boolean) }))}
+                style={{ width: '100%', padding: 8, fontSize: 11, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg }}
+              />
+            }
+          />
           <ConfigRow label="Order flow" value="New to Payment Review to Processing." last />
         </Card>
 

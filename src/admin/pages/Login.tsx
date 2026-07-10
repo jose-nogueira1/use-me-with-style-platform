@@ -1,7 +1,8 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { C, F } from '../../theme';
+import { C } from '../../theme';
 import { useAdminAuth } from '../AdminAuthContext';
+import wordmarkGold from '../../assets/brand/wordmark-gold.png';
 
 export function Login() {
   const { user, login } = useAdminAuth();
@@ -38,8 +39,7 @@ export function Login() {
         style={{ width: 340, background: '#0C0A08', padding: 32, borderRadius: 10, border: '1px solid #5F4A1B' }}
       >
         <div style={{ textAlign: 'center', marginBottom: 26 }}>
-          <div style={{ fontFamily: F.display, fontSize: 28, color: C.onDarkGold, lineHeight: 1 }}>Use Me</div>
-          <div style={{ fontSize: 9, fontWeight: 500, color: C.onDarkGold, marginTop: 4 }}>with style</div>
+          <img src={wordmarkGold} alt="Use Me With Style" style={{ height: 42, width: 'auto' }} />
         </div>
         <div style={{ fontSize: 10, color: '#BEB8AE', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 20, textAlign: 'center' }}>
           Admin

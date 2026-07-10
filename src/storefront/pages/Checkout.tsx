@@ -12,12 +12,19 @@ import {
 } from '../../lib/api';
 import { PaypalButton } from '../components/PaypalButton';
 
-const SHIPPING_COST = { AO: 0, PT_ctt: 4, PT_courier_pt: 6 } as const;
+// 2026-07-10 decision: Angola delivery is local courier only; payment is
+// Multicaixa Express (via AppyPay), Stripe, and PayPal. Angola's Stripe/
+// PayPal charges settle in EUR (see the EUR-settlement block in
+// buildOrderInput below) since neither gateway supports AOA -- shipping has
+// no separate EUR leg since AO courier is free either way.
+const SHIPPING_COST = { AO_courier: 0, PT_ctt: 4, PT_courier_pt: 6 } as const;
 
 const DEFAULT_MARKET_SETTINGS: MarketSettings = {
   angolaPaymentLive: false,
   angolaBankTransferInstructions:
-    'Bank transfer (BAI) -- details are sent by WhatsApp once the order is confirmed.',
+    'Multicaixa Express payment instructions are sent by WhatsApp once the order is confirmed.',
+  angolaPaymentMethods: ['multicaixa_express', 'stripe', 'paypal'],
+  angolaDeliveryMethods: ['courier_ao'],
   portugalPaymentMethods: ['paypal', 'stripe', 'mbway'],
   portugalDeliveryMethods: ['ctt', 'courier_pt'],
   returnsPolicyText: '',
@@ -27,17 +34,17 @@ const PAYMENT_LABEL_KEYS: Record<string, string> = {
   paypal: 'paymentPaypal',
   stripe: 'paymentStripe',
   mbway: 'paymentMbway',
-  bank_transfer_ao: 'paymentBankTransfer',
+  multicaixa_express: 'paymentMulticaixaExpress',
 };
 
 const DELIVERY_LABEL_KEYS: Record<string, string> = {
   ctt: 'deliveryCtt',
   courier_pt: 'deliveryCourier',
-  manual_ao: 'deliveryManual',
+  courier_ao: 'deliveryCourierAo',
 };
 
 export function Checkout() {
-  const { market, setMarket, lang, cart } = useApp();
+  const { market, lang, cart } = useApp();
   const { products } = useProducts(market);
   const navigate = useNavigate();
 
@@ -55,8 +62,8 @@ export function Checkout() {
     notes: '',
   });
 
-  const deliveryOptions = market === 'AO' ? ['manual_ao'] : settings.portugalDeliveryMethods;
-  const paymentOptions = market === 'AO' ? ['bank_transfer_ao'] : settings.portugalPaymentMethods;
+  const deliveryOptions = market === 'AO' ? settings.angolaDeliveryMethods : settings.portugalDeliveryMethods;
+  const paymentOptions = market === 'AO' ? settings.angolaPaymentMethods : settings.portugalPaymentMethods;
 
   const [deliveryMethod, setDeliveryMethod] = useState(deliveryOptions[0]);
   const [paymentMethod, setPaymentMethod] = useState(paymentOptions[0]);
@@ -91,6 +98,8 @@ export function Checkout() {
     return null;
   }
 
+  // Displayed to the shopper -- always Kz in Angola, regardless of which
+  // payment method ends up handling the actual charge.
   const items = cart
     .map((item) => {
       const p = products.find((p) => p.id === item.id);
@@ -108,28 +117,83 @@ export function Checkout() {
 
   const subtotal = items.reduce((sum, i) => sum + i.unitPrice * i.qty, 0);
   const shippingCost =
-    market === 'AO' ? SHIPPING_COST.AO : deliveryMethod === 'ctt' ? SHIPPING_COST.PT_ctt : SHIPPING_COST.PT_courier_pt;
+    market === 'AO'
+      ? SHIPPING_COST.AO_courier
+      : deliveryMethod === 'ctt'
+        ? SHIPPING_COST.PT_ctt
+        : SHIPPING_COST.PT_courier_pt;
   const total = subtotal + shippingCost;
   const fmt = (n: number) => (market === 'AO' ? `${n.toLocaleString('en-US')} Kz` : `€${n.toFixed(2)}`);
 
-  const buildOrderInput = (): CreateOrderInput => ({
-    market,
-    customerName: form.name,
-    customerPhone: form.phone,
-    customerEmail: form.email,
-    address: form.address,
-    city: form.city,
-    country: form.country,
-    notes: form.notes || undefined,
-    items,
-    currency: market === 'AO' ? 'Kz' : 'EUR',
-    subtotal,
-    shippingCost,
-    total,
-    paymentMethod,
-    deliveryMethod,
-    lang,
-  });
+  // Angola orders paid via Stripe or PayPal have to actually settle in EUR --
+  // neither gateway supports AOA, and Stripe has no Angola merchant accounts
+  // (2026-07-10 decision). Rather than invent a live FX rate, this reuses
+  // each product's existing `priceEur` (the same Portugal price already in
+  // the catalogue) as the EUR-equivalent unit price. The shopper still sees
+  // Kz throughout the page -- only the payload actually sent to Stripe/
+  // PayPal switches to these EUR figures; `market` stays 'AO' either way,
+  // since it identifies the storefront/customer, not the settlement
+  // currency. Multicaixa Express isn't a real gateway integration yet, so it
+  // stays on the plain Kz order path below, same as before.
+  const usesEurSettlement = market === 'AO' && (paymentMethod === 'stripe' || paymentMethod === 'paypal');
+
+  const buildOrderInput = (): CreateOrderInput => {
+    if (usesEurSettlement) {
+      const eurItems = cart
+        .map((item) => {
+          const p = products.find((p) => p.id === item.id);
+          if (!p) return null;
+          return {
+            product: p.id,
+            productName: p.name,
+            size: item.size,
+            color: item.color,
+            qty: item.qty,
+            unitPrice: p.priceEur,
+          };
+        })
+        .filter((i): i is NonNullable<typeof i> => i !== null);
+      const eurSubtotal = eurItems.reduce((sum, i) => sum + i.unitPrice * i.qty, 0);
+
+      return {
+        market,
+        customerName: form.name,
+        customerPhone: form.phone,
+        customerEmail: form.email,
+        address: form.address,
+        city: form.city,
+        country: form.country,
+        notes: form.notes || undefined,
+        items: eurItems,
+        currency: 'EUR',
+        subtotal: eurSubtotal,
+        shippingCost: 0,
+        total: eurSubtotal,
+        paymentMethod,
+        deliveryMethod,
+        lang,
+      };
+    }
+
+    return {
+      market,
+      customerName: form.name,
+      customerPhone: form.phone,
+      customerEmail: form.email,
+      address: form.address,
+      city: form.city,
+      country: form.country,
+      notes: form.notes || undefined,
+      items,
+      currency: market === 'AO' ? 'Kz' : 'EUR',
+      subtotal,
+      shippingCost,
+      total,
+      paymentMethod,
+      deliveryMethod,
+      lang,
+    };
+  };
 
   const validateRequiredFields = (): boolean => {
     if (!form.name || !form.phone || !form.email || !form.address || !form.city) {
@@ -199,26 +263,13 @@ export function Checkout() {
   return (
     <div className="ump-narrow" style={{ background: C.paper, paddingBottom: 40 }}>
       <div style={{ padding: '20px 20px 12px' }}>
-        <div style={{ fontFamily: F.display, fontSize: 24, color: C.ink, fontWeight: 800, marginBottom: 12 }}>{t('checkout', lang)}</div>
-        <div style={{ display: 'flex', background: C.subtleBg, borderRadius: 8, padding: 4, gap: 4 }}>
-          {(['AO', 'PT'] as const).map((m) => (
-            <button
-              key={m}
-              type="button"
-              onClick={() => setMarket(m)}
-              style={{
-                flex: 1,
-                padding: '9px 12px',
-                borderRadius: 6,
-                fontSize: 12,
-                fontWeight: 800,
-                background: market === m ? C.black : 'transparent',
-                color: market === m ? C.onDarkGold : C.inkSoft,
-              }}
-            >
-              {t(m === 'AO' ? 'angola' : 'portugal', lang)}
-            </button>
-          ))}
+        <div style={{ fontFamily: F.display, fontSize: 24, color: C.ink, fontWeight: 800, marginBottom: 4 }}>{t('checkout', lang)}</div>
+        {/* Market is fixed by the site the buyer is on (ao./pt. subdomain) --
+            no in-checkout toggle anymore, since Angola and Portugal are now
+            separate storefronts (see the header region switch to actually
+            leave for the sibling site). */}
+        <div style={{ fontSize: 11, fontWeight: 800, color: C.goldDeep, textTransform: 'uppercase', letterSpacing: 1 }}>
+          {t(market === 'AO' ? 'angola' : 'portugal', lang)}
         </div>
       </div>
 
@@ -246,7 +297,7 @@ export function Checkout() {
           {paymentOptions.map((opt) => (
             <RadioRow key={opt} checked={paymentMethod === opt} onSelect={() => setPaymentMethod(opt)} label={PAYMENT_LABEL_KEYS[opt] ? t(PAYMENT_LABEL_KEYS[opt], lang) : opt} />
           ))}
-          {market === 'AO' && (
+          {paymentMethod === 'multicaixa_express' && !settings.angolaPaymentLive && (
             <div style={{ marginTop: 8, padding: 12, background: C.subtleBg, borderRadius: 6, fontSize: 12, color: C.inkSoft, lineHeight: 1.5 }}>
               {settings.angolaBankTransferInstructions}
             </div>

@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState, useReducer, ty
 import type { Lang } from '../theme';
 import { publicEnv } from '../config/env';
 import { cartReducer, type CartItem, type CartAction } from './cartReducer';
+import { marketFromHostname, siblingMarketUrl } from '../lib/market';
 
 export type Market = 'AO' | 'PT';
 export type ThemeMode = 'light' | 'dark';
@@ -26,6 +27,19 @@ const LANG_STORAGE_KEY = 'ump-lang-pref';
 const THEME_STORAGE_KEY = 'ump-theme-pref';
 
 const defaultMarket: Market = publicEnv.defaultMarket === 'PT' ? 'PT' : 'AO';
+
+/**
+ * The market subdomain (ao./pt.) is the source of truth once present --
+ * Angola and Portugal are separate storefronts (JOS separation decision,
+ * 2026-07-10), not a free user toggle. `null` here means the current
+ * hostname doesn't carry a market label (localhost, an apex domain, a
+ * Vercel preview URL) and callers should fall back to geo-detection/env
+ * default instead, same as before this change.
+ */
+function hostnameMarket(): Market | null {
+  if (typeof window === 'undefined') return null;
+  return marketFromHostname(window.location.hostname);
+}
 
 function readStoredMarket(): Market | null {
   try {
@@ -60,17 +74,17 @@ function readInitialThemeMode(): ThemeMode {
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>(() => readStoredLang() ?? 'pt');
-  const [market, setMarketState] = useState<Market>(() => readStoredMarket() ?? defaultMarket);
+  const [market, setMarketState] = useState<Market>(() => hostnameMarket() ?? readStoredMarket() ?? defaultMarket);
   const [themeMode, setThemeModeState] = useState<ThemeMode>(readInitialThemeMode);
   const [cart, dispatchCart] = useReducer(cartReducer, []);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
 
-  // Phase 1 markets: Angola (Kz) and Portugal (EUR). If the visitor hasn't
-  // explicitly picked a market before (no stored preference), ask our
-  // /api/geo endpoint (Vercel's IP-country header) and default to Angola
-  // pricing there, Portugal everywhere else. Silently keeps the env-based
-  // default if geo-detection fails or isn't available (e.g. local dev).
+  // Phase 1 markets: Angola (Kz) and Portugal (EUR). Geo-detection only
+  // matters when the hostname itself doesn't already lock the market (i.e.
+  // we're not on ao./pt.) -- on a real market subdomain the URL is the
+  // source of truth and must never be second-guessed by a geo lookup.
   useEffect(() => {
+    if (hostnameMarket()) return;
     if (readStoredMarket()) return;
     let cancelled = false;
     fetch('/api/geo')
@@ -90,6 +104,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const setMarket = (m: Market) => {
+    // On a market subdomain, "switching" means actually leaving this site
+    // for the sibling one -- AO and PT are separate storefronts now, so
+    // there's no in-place state flip that could show PT catalogue/pricing
+    // on ao.* or vice versa.
+    const locked = hostnameMarket();
+    if (locked) {
+      if (m === locked) return;
+      const url = siblingMarketUrl(m, window.location);
+      if (url) {
+        window.location.href = url;
+        return;
+      }
+    }
     setMarketState(m);
     try {
       localStorage.setItem(MARKET_STORAGE_KEY, m);

@@ -40,7 +40,7 @@ export function useProducts(market: Market): UseProductsResult {
     }
 
     setLoading(true);
-    fetchProducts()
+    fetchProducts(market)
       .then((apiProducts) => {
         if (cancelled) return;
         setProducts(apiProducts.map((p, i) => adaptApiProduct(p, market, i)));

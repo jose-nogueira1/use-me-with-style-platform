@@ -19,6 +19,8 @@ export const T: Record<string, Record<Lang, string>> = {
   portugal: { pt: 'Portugal', en: 'Portugal' },
   market: { pt: 'Mercado', en: 'Market' },
   language: { pt: 'Idioma', en: 'Language' },
+  shopAngolaStore: { pt: 'Comprar na loja Angola', en: 'Shop the Angola store' },
+  shopPortugalStore: { pt: 'Comprar na loja Portugal', en: 'Shop the Portugal store' },
 
   // Categories
   dresses: { pt: 'Vestidos', en: 'Dresses' },
@@ -31,15 +33,14 @@ export const T: Record<string, Record<Lang, string>> = {
   ss26Collection: { pt: 'Coleção SS26', en: 'SS26 Collection' },
   heroHeadline: { pt: 'Moda que se move consigo.', en: 'Fashion that moves with you.' },
   heroSubtitle: {
-    pt: 'Peças pensadas para Angola e Portugal, com preços sempre visíveis em Kz e EUR.',
-    en: 'Considered pieces for Angola and Portugal, shipped with prices shown up front in Kz and EUR.',
+    pt: 'Peças pensadas para si, com preços sempre claros e diretos.',
+    en: 'Considered pieces for you, with pricing always shown up front.',
   },
   categories: { pt: 'Categorias', en: 'Categories' },
   loadingProducts: { pt: 'A carregar produtos…', en: 'Loading products…' },
   newArrivals: { pt: 'Novidades', en: 'New arrivals' },
   viewAll: { pt: 'Ver todas', en: 'View all' },
   featured: { pt: 'Em destaque', en: 'Featured' },
-  footerMarkets: { pt: 'Angola · Portugal', en: 'Angola · Portugal' },
 
   // Browse
   filters: { pt: 'Filtros', en: 'Filters' },
@@ -113,11 +114,14 @@ export const T: Record<string, Record<Lang, string>> = {
   },
   deliveryCtt: { pt: 'CTT', en: 'CTT' },
   deliveryCourier: { pt: 'Estafeta', en: 'Courier' },
+  deliveryCourierAo: { pt: 'Estafeta local', en: 'Local courier' },
   deliveryManual: { pt: 'Coordenação manual', en: 'Manual coordination' },
   paymentPaypal: { pt: 'PayPal', en: 'PayPal' },
   paymentStripe: { pt: 'Cartão (Stripe)', en: 'Card (Stripe)' },
   paymentMbway: { pt: 'MB WAY', en: 'MB WAY' },
+  paymentMulticaixaExpress: { pt: 'Multicaixa Express', en: 'Multicaixa Express' },
   paymentBankTransfer: { pt: 'Transferência bancária', en: 'Bank transfer' },
+  localCourierDelivery: { pt: 'Entrega por estafeta local', en: 'Local courier delivery' },
   stripeRedirecting: { pt: 'A redirecionar para o pagamento seguro…', en: 'Redirecting to secure payment…' },
   stripeUnavailable: {
     pt: 'Pagamento por cartão indisponível de momento. Escolha outro método.',
@@ -166,9 +170,9 @@ export const T: Record<string, Record<Lang, string>> = {
   footerShopHeading: { pt: 'Comprar', en: 'Shop' },
   footerSupportHeading: { pt: 'Apoio', en: 'Support' },
   footerInfoHeading: { pt: 'Informação', en: 'Information' },
-  footerShippingNote: { pt: 'PT: {pt} · AO: {ao}', en: 'PT: {pt} · AO: {ao}' },
   footerReturnsNote: { pt: 'Devoluções em {days}', en: 'Returns within {days}' },
-  footerPricesNote: { pt: 'Preços sempre em Kz e EUR', en: 'Prices always shown in Kz and EUR' },
+  footerPricesNoteAo: { pt: 'Preços em Kz', en: 'Prices shown in Kz' },
+  footerPricesNotePt: { pt: 'Preços em EUR', en: 'Prices shown in EUR' },
   prices: { pt: 'Preços', en: 'Prices' },
   copyrightNote: { pt: '© {year} Use Me With Style. Todos os direitos reservados.', en: '© {year} Use Me With Style. All rights reserved.' },
 };

@@ -55,6 +55,12 @@ export type ApiProduct = {
   pricePTEur: number;
   sizes: { size: string; stockAO: number; stockPT: number }[];
   active: boolean;
+  /** Per-market storefront visibility (JOS market-separation decision,
+   * 2026-07-10) -- a product can be sold in one market only. Both default to
+   * true in the CMS, so existing products stay visible everywhere unless an
+   * admin deliberately narrows them. */
+  availableAO: boolean;
+  availablePT: boolean;
 };
 
 export type OrderItemInput = {
@@ -101,6 +107,11 @@ export type ApiOrder = CreateOrderInput & {
 export type MarketSettings = {
   angolaPaymentLive: boolean;
   angolaBankTransferInstructions?: string;
+  /** Per-market payment/delivery method lists (2026-07-10 decision). Angola:
+   * Multicaixa Express (AppyPay) + Stripe + PayPal (Stripe/PayPal settle in
+   * EUR). Portugal: PayPal + Stripe + MB WAY, unchanged. */
+  angolaPaymentMethods: string[];
+  angolaDeliveryMethods: string[];
   portugalPaymentMethods: string[];
   portugalDeliveryMethods: string[];
   returnsPolicyText?: string;
@@ -137,16 +148,24 @@ export type ApiMessage = {
 // ---------------------------------------------------------------------------
 // Public (storefront) endpoints
 // ---------------------------------------------------------------------------
-export async function fetchProducts(): Promise<ApiProduct[]> {
+// Markets are fully separated storefronts (JOS decision, 2026-07-10): each
+// site only ever fetches products flagged available in its own market, so
+// an AO-only or PT-only product simply doesn't exist as far as the other
+// site's API responses are concerned (not just hidden client-side).
+function availabilityField(market: 'AO' | 'PT'): 'availableAO' | 'availablePT' {
+  return market === 'AO' ? 'availableAO' : 'availablePT';
+}
+
+export async function fetchProducts(market: 'AO' | 'PT'): Promise<ApiProduct[]> {
   const data = await request<{ docs: ApiProduct[] }>(
-    '/products?where[active][equals]=true&limit=100&depth=1',
+    `/products?where[active][equals]=true&where[${availabilityField(market)}][equals]=true&limit=100&depth=1`,
   );
   return data.docs;
 }
 
-export async function fetchProductBySlug(slug: string): Promise<ApiProduct | null> {
+export async function fetchProductBySlug(slug: string, market: 'AO' | 'PT'): Promise<ApiProduct | null> {
   const data = await request<{ docs: ApiProduct[] }>(
-    `/products?where[slug][equals]=${encodeURIComponent(slug)}&limit=1&depth=1`,
+    `/products?where[slug][equals]=${encodeURIComponent(slug)}&where[${availabilityField(market)}][equals]=true&limit=1&depth=1`,
   );
   return data.docs[0] ?? null;
 }

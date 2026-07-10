@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { ChevronDown, ChevronLeft, Menu, Moon, Search, ShoppingBag, Sun, X } from 'lucide-react';
-import { C, F, t, type Lang } from '../theme';
-import { useApp, type Market } from '../state/AppContext';
+import { ChevronDown, ChevronLeft, HelpCircle, Menu, Moon, Package, Search, ShoppingBag, Store, Sun, X } from 'lucide-react';
+import { C, t, type Lang } from '../theme';
+import { useApp } from '../state/AppContext';
 import { Footer } from './components/Footer';
+import wordmarkBlack from '../assets/brand/wordmark-black.png';
+import wordmarkWhite from '../assets/brand/wordmark-white.png';
+import wordmarkGold from '../assets/brand/wordmark-gold.png';
 
 // Matches the real Figma design (node 72:2, "Phase 1 Storefront -- High
 // Fidelity"): plain header (logo center, hamburger/back left). Market,
@@ -18,7 +21,7 @@ import { Footer } from './components/Footer';
 const ROOT_PATHS = ['/', '/catalogo'];
 
 export function StorefrontLayout() {
-  const { market, setMarket, lang, setLang, themeMode, setThemeMode, cart } = useApp();
+  const { lang, setLang, themeMode, setThemeMode, cart } = useApp();
   const location = useLocation();
   const navigate = useNavigate();
   const cartCount = cart.reduce((sum, i) => sum + i.qty, 0);
@@ -26,6 +29,13 @@ export function StorefrontLayout() {
   const isCart = location.pathname === '/carrinho';
   const isRoot = ROOT_PATHS.includes(location.pathname);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Real brand wordmark (public/brand -- Logos & Brand Guide/New Logos),
+  // replacing the plain-text "Use Me / with style" placeholder. Gold matches
+  // the original design's use of the accent color for the Home hero header,
+  // in either theme; away from Home it's plain ink-colored like the rest of
+  // the header text -- Black in light mode, White in dark mode.
+  const logoSrc = isHome ? wordmarkGold : themeMode === 'dark' ? wordmarkWhite : wordmarkBlack;
 
   // The hamburger only ever makes sense as a mobile pattern -- the button
   // itself is CSS-hidden at desktop widths (.ump-mobile-menu-btn), but also
@@ -80,11 +90,8 @@ export function StorefrontLayout() {
             </IconButton>
           )}
 
-          <Link to="/" style={{ textAlign: 'center', textDecoration: 'none', flex: 1 }}>
-            <div style={{ fontFamily: F.sans, fontSize: 26, color: isHome ? C.heroAccent : C.ink, lineHeight: 1 }}>Use Me</div>
-            <div style={{ fontFamily: F.sans, fontSize: 9, fontWeight: 500, color: isHome ? C.heroAccent : C.ink, marginTop: 3 }}>
-              with style
-            </div>
+          <Link to="/" style={{ textAlign: 'center', textDecoration: 'none', flex: 1, display: 'flex', justifyContent: 'center' }}>
+            <img src={logoSrc} alt="Use Me With Style" style={{ height: 38, width: 'auto' }} />
           </Link>
 
           <nav className="ump-desktop-nav" style={{ gap: 18, alignItems: 'center' }}>
@@ -105,7 +112,7 @@ export function StorefrontLayout() {
           </nav>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-            <RegionSwitch market={market} setMarket={setMarket} lang={lang} setLang={setLang} dark={isHome} />
+            <LanguageSwitch lang={lang} setLang={setLang} dark={isHome} />
             <ThemeToggle mode={themeMode} onChange={setThemeMode} dark={isHome} />
             <div style={{ position: 'relative' }}>
               <IconButton dark={isHome} onClick={() => navigate(isCart ? '/catalogo' : '/carrinho')} label={isCart ? 'Search' : 'Cart'}>
@@ -185,18 +192,16 @@ const DESKTOP_NAV_ITEMS = [
   { to: '/conta', labelKey: 'orderLookupNav' },
 ];
 
-// Single combined control for market (Angola/Portugal pricing) + language
-// (PT/EN): one compact chip in the header that opens a small panel holding
-// both switches, instead of two separate pill switches sitting side by side.
-function RegionSwitch({
-  market,
-  setMarket,
+// Language-only control (PT/EN). Market used to share this dropdown, but
+// Angola and Portugal are now separate storefronts (ao./pt. subdomains) --
+// "switching" means leaving the site entirely, which deserves its own
+// distinct, explicit control (MarketSwitchLink below) rather than living
+// inside the same same-page toggle as language.
+function LanguageSwitch({
   lang,
   setLang,
   dark,
 }: {
-  market: Market;
-  setMarket: (m: Market) => void;
   lang: Lang;
   setLang: (l: Lang) => void;
   dark?: boolean;
@@ -216,7 +221,7 @@ function RegionSwitch({
     <div ref={ref} style={{ position: 'relative', flexShrink: 0 }}>
       <button
         onClick={() => setOpen((o) => !o)}
-        aria-label="Market and language"
+        aria-label={t('language', lang)}
         aria-expanded={open}
         style={{
           display: 'flex',
@@ -232,10 +237,7 @@ function RegionSwitch({
           fontWeight: 800,
         }}
       >
-        <span aria-hidden>{market === 'AO' ? '🇦🇴' : '🇵🇹'}</span>
-        <span>
-          {market} · {lang.toUpperCase()}
-        </span>
+        <span>{lang.toUpperCase()}</span>
         <ChevronDown size={12} style={{ opacity: 0.6, transform: open ? 'rotate(180deg)' : undefined, transition: 'transform 0.15s ease' }} />
       </button>
 
@@ -247,7 +249,7 @@ function RegionSwitch({
             top: 'calc(100% + 6px)',
             right: 0,
             zIndex: 30,
-            width: 200,
+            width: 160,
             background: C.paper,
             border: `1px solid ${C.rule}`,
             borderRadius: 10,
@@ -256,17 +258,13 @@ function RegionSwitch({
           }}
         >
           <PillGroup
-            heading={t('market', lang)}
-            options={(['AO', 'PT'] as const).map((m) => ({ key: m, label: t(m === 'AO' ? 'angola' : 'portugal', lang) }))}
-            active={market}
-            onSelect={(v) => setMarket(v as Market)}
-          />
-          <div style={{ height: 10 }} />
-          <PillGroup
             heading={t('language', lang)}
             options={(['pt', 'en'] as const).map((l) => ({ key: l, label: l.toUpperCase() }))}
             active={lang}
-            onSelect={(v) => setLang(v as Lang)}
+            onSelect={(v) => {
+              setLang(v as Lang);
+              setOpen(false);
+            }}
           />
         </div>
       )}
@@ -400,10 +398,10 @@ function IconButton({
 }
 
 const BOTTOM_NAV_ITEMS = [
-  { to: '/catalogo', labelKey: 'navShop' },
-  { to: '/catalogo', labelKey: 'navSearch' },
-  { to: '/conta', labelKey: 'navOrders' },
-  { to: '/ajuda', labelKey: 'navHelp' },
+  { to: '/catalogo', labelKey: 'navShop', icon: Store },
+  { to: '/catalogo', labelKey: 'navSearch', icon: Search },
+  { to: '/conta', labelKey: 'navOrders', icon: Package },
+  { to: '/ajuda', labelKey: 'navHelp', icon: HelpCircle },
 ];
 
 function BottomNav({ lang }: { lang: Lang }) {
@@ -416,12 +414,28 @@ function BottomNav({ lang }: { lang: Lang }) {
         background: C.paper,
         display: 'flex',
         padding: '10px 0 16px',
-        position: 'sticky',
+        // Fixed (not sticky) so the bar is always pinned to the viewport
+        // bottom while browsing, the standard mobile app tab-bar pattern --
+        // it used to be `position: sticky`, which only pins while scrolling
+        // through the middle of the page and releases back into normal flow
+        // once the true end of the page (the footer) scrolls into view. At
+        // that point it settled in flow *below* the footer's own 84px
+        // bottom padding (reserved specifically to clear this bar), instead
+        // of overlaying it -- producing a block of dead empty space between
+        // the footer and the bar whenever the page was short enough, or the
+        // user scrolled, to reach the bottom. Fixed removes the bar from
+        // flow entirely, so it only ever overlays that reserved padding,
+        // never stacks after it.
+        position: 'fixed',
+        left: 0,
+        right: 0,
         bottom: 0,
+        zIndex: 10,
       }}
     >
       {BOTTOM_NAV_ITEMS.map((item) => {
         const active = location.pathname === item.to || (item.labelKey === 'navShop' && location.pathname === '/catalogo');
+        const Icon = item.icon;
         return (
           <Link
             key={item.labelKey}
@@ -431,19 +445,11 @@ function BottomNav({ lang }: { lang: Lang }) {
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              gap: 6,
+              gap: 4,
               textDecoration: 'none',
             }}
           >
-            <span
-              style={{
-                width: 18,
-                height: 18,
-                borderRadius: '50%',
-                background: active ? C.gold : 'transparent',
-                border: `1.5px solid ${active ? C.gold : C.rule}`,
-              }}
-            />
+            <Icon size={18} color={active ? C.goldDeep : C.inkSoft} strokeWidth={active ? 2.25 : 1.75} />
             <span style={{ fontSize: 9, fontWeight: 800, color: active ? C.goldDeep : C.inkSoft }}>{t(item.labelKey, lang)}</span>
           </Link>
         );

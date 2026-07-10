@@ -59,6 +59,8 @@ These are server-only and should live in Railway, Vercel environment variables, 
 - Media: `CLOUDINARY_*`, `S3_*`
 - Payments: `STRIPE_*`, `PAYPAL_*`, `MBWAY_*`, `APPY_PAY_*`, `MULTICAIXA_*`
 - Messaging/social: `WHATSAPP_*`, `INSTAGRAM_*`, `META_*`
+- Email: `RESEND_*`
+- PT-market invoicing (Moloni ON): `MOLONI_*` -- see `.env.example` in `use-me-with-style-cms` for the full list and one-time Moloni ON account setup steps
 
 ## Commands
 

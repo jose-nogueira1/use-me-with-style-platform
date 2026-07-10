@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link, Navigate, Outlet, useLocation } from 'react-router-dom';
-import { C, F } from '../theme';
+import { C } from '../theme';
 import { useAdminAuth } from './AdminAuthContext';
 import { adminListOrders, adminListProducts } from '../lib/api';
+import wordmarkGold from '../assets/brand/wordmark-gold.png';
 
 // Sidebar matches the Figma admin design system exactly: only four
 // persistent nav items (Dashboard, Orders, Products, Settings) appear in
@@ -52,8 +53,7 @@ export function AdminLayout() {
     <div className="ump-admin-shell" style={{ background: C.subtleBg }}>
       <div className="ump-admin-sidebar" style={{ background: C.black, padding: '22px 18px' }}>
         <div style={{ textAlign: 'center', marginBottom: 30 }}>
-          <div style={{ fontFamily: F.display, fontSize: 26, color: C.onDarkGold, lineHeight: 1 }}>Use Me</div>
-          <div style={{ fontSize: 9, fontWeight: 500, color: C.onDarkGold, marginTop: 4 }}>with style</div>
+          <img src={wordmarkGold} alt="Use Me With Style" style={{ height: 38, width: 'auto' }} />
         </div>
 
         <div className="ump-admin-groups" style={{ gap: 6, marginBottom: 20 }}>

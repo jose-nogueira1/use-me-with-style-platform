@@ -67,44 +67,59 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
         .ump-narrow { max-width: 480px; margin: 0 auto; }
 
         /* Header: mobile shows the same utility cluster (region + theme +
-           cart) as desktop -- only the text nav links are desktop-only. */
+           cart) as desktop -- only the text nav links are desktop-only.
+           Breakpoint matches .ump-footer-grid/.ump-cat-row below (720px),
+           not the 860px used elsewhere for hero/browse/product layouts --
+           this is the "mobile chrome vs. desktop chrome" cutover
+           specifically, so it can't disagree with the content around it
+           (previously this was 860px while the footer/category grids below
+           already went desktop-style at 720px, so a resized window in that
+           720-860px gap showed a hamburger + bottom tab bar stacked above
+           already-desktop-looking content). */
         .ump-desktop-nav { display: none; }
-        @media (min-width: 860px) {
+        @media (min-width: 720px) {
           .ump-desktop-nav { display: flex; }
         }
 
         /* Hamburger/back button + its dropdown menu are a mobile-only
            pattern -- desktop already has the full text nav above, so both
-           are force-hidden with !important past 860px. !important is
-           needed here, not just a plain override, because the button also
-           carries an inline display:flex style for its own layout --
-           inline styles beat a plain class rule, so a non-important rule
-           would silently lose and the button would keep showing on desktop,
-           same bug as the earlier duplicate theme-toggle issue. */
-        @media (min-width: 860px) {
+           are force-hidden with !important past 720px (same breakpoint as
+           .ump-desktop-nav above -- they're a matched pair, never move one
+           without the other). !important is needed here, not just a plain
+           override, because the button also carries an inline display:flex
+           style for its own layout -- inline styles beat a plain class rule,
+           so a non-important rule would silently lose and the button would
+           keep showing on desktop, same bug as the earlier duplicate
+           theme-toggle issue. */
+        @media (min-width: 720px) {
           .ump-mobile-menu-btn { display: none !important; }
           .ump-mobile-menu { display: none !important; }
         }
 
         /* Bottom tab bar is a mobile pattern; desktop uses the header nav.
-           This wrapper is just a show/hide switch -- it used to be display:
-           flex with no flex-direction (defaults to row), so its one child
-           (the actual nav bar) had no flex-grow and shrank to fit its own
-           content instead of stretching full-width. Barely visible on a
-           true phone-width viewport (shrink-to-fit is close to the screen
-           width by coincidence), but obvious as a small box hugging the
-           left edge at any wider in-between width, e.g. a resized desktop
-           window. Plain block lets the child fill the available width like
-           any normal block-level element. */
+           Same 720px cutover as the header chrome above -- it used to be
+           860px, which left the bar (and the hamburger above) showing
+           alongside the already-desktop-styled 4-column footer/category
+           grids in the 720-860px range. This wrapper is just a show/hide
+           switch -- it used to be display: flex with no flex-direction
+           (defaults to row), so its one child (the actual nav bar) had no
+           flex-grow and shrank to fit its own content instead of stretching
+           full-width. Barely visible on a true phone-width viewport
+           (shrink-to-fit is close to the screen width by coincidence), but
+           obvious as a small box hugging the left edge at any wider
+           in-between width, e.g. a resized desktop window. Plain block lets
+           the child fill the available width like any normal block-level
+           element. */
         .ump-bottom-nav { display: block; }
-        @media (min-width: 860px) { .ump-bottom-nav { display: none; } }
+        @media (min-width: 720px) { .ump-bottom-nav { display: none; } }
 
         /* Site footer: stacked sections on mobile, a 4-column grid (wider
            brand column) on desktop. Extra bottom padding on mobile clears
-           the sticky bottom tab bar so the last footer row never sits
-           underneath it. */
+           the fixed bottom tab bar so the last footer row/copyright never
+           sits underneath it -- matches the bar's own breakpoint (720px)
+           above, not 860px, for the same reason. */
         .ump-footer { padding-bottom: 84px; }
-        @media (min-width: 860px) { .ump-footer { padding-bottom: 0; } }
+        @media (min-width: 720px) { .ump-footer { padding-bottom: 0; } }
         .ump-footer-grid { display: flex; flex-direction: column; gap: 28px; padding: 32px 20px 24px; }
         @media (min-width: 720px) {
           .ump-footer-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 32px; padding: 44px 20px 28px; }
@@ -144,7 +159,14 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
         @media (min-width: 860px) {
           .ump-product-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: flex-start; max-width: 1000px; margin: 0 auto; }
         }
-        .ump-sticky-cta { position: sticky; bottom: 0; }
+        /* Bottom offset clears the fixed bottom tab bar (~58px tall) on true
+           mobile widths, where both this CTA and the tab bar are visible at
+           once -- otherwise the tab bar (position: fixed, always pinned)
+           would sit on top of the Add to Cart button instead of below it.
+           Above 720px the tab bar is hidden entirely (see .ump-bottom-nav),
+           so there's nothing left to clear. */
+        .ump-sticky-cta { position: sticky; bottom: 58px; }
+        @media (min-width: 720px) { .ump-sticky-cta { bottom: 0; } }
         @media (min-width: 860px) { .ump-sticky-cta { position: static; border-top: none !important; box-shadow: none !important; } }
         .ump-pd-width { }
         @media (min-width: 860px) { .ump-pd-width { max-width: 1000px; margin: 0 auto; } }
