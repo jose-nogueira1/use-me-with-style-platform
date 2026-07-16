@@ -31,15 +31,11 @@ export function useProducts(market: Market): UseProductsResult {
 
     if (publicEnv.mockDataEnabled) {
       // Dev mode: mock data is the deliberate choice, don't hit the network.
-      setProducts(MOCK_PRODUCTS.map(adaptMockProduct));
-      setUsingFallback(true);
-      setLoading(false);
       return () => {
         cancelled = true;
       };
     }
 
-    setLoading(true);
     fetchProducts(market)
       .then((apiProducts) => {
         if (cancelled) return;
@@ -48,7 +44,6 @@ export function useProducts(market: Market): UseProductsResult {
       })
       .catch((err) => {
         if (cancelled) return;
-        // eslint-disable-next-line no-console
         console.error('Failed to load products from the CMS API, falling back to mock data.', err);
         setProducts(MOCK_PRODUCTS.map(adaptMockProduct));
         setUsingFallback(true);

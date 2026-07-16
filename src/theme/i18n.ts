@@ -184,6 +184,72 @@ export const T: Record<string, Record<Lang, string>> = {
   footerPricesNotePt: { pt: 'Preços em EUR', en: 'Prices shown in EUR' },
   prices: { pt: 'Preços', en: 'Prices' },
   copyrightNote: { pt: '© {year} Use Me With Style. Todos os direitos reservados.', en: '© {year} Use Me With Style. All rights reserved.' },
+  aboutNav: { pt: 'Sobre nós', en: 'About us' },
+
+  // Home: Editorial section (placeholder copy -- static, no CMS-backed
+  // articles yet; each card links to a related catalogue view instead of a
+  // dedicated article page, per the 2026-07-10 scope decision to ship
+  // placeholder content first).
+  editorialHeading: { pt: 'Editorial', en: 'Editorial' },
+  editorialViewAll: { pt: 'Ver tudo', en: 'View all' },
+  editorial1Tag: { pt: 'GUIA DE ESTILO', en: 'STYLE GUIDE' },
+  editorial1Title: { pt: 'Como usar leggings em qualquer estação', en: 'How to wear leggings in any season' },
+  editorial1Excerpt: {
+    pt: 'Da praia ao escritório -- três formas de vestir a nossa peça mais versátil.',
+    en: 'From the beach to the office -- three ways to style our most versatile piece.',
+  },
+  editorial2Tag: { pt: 'BASTIDORES', en: 'BEHIND THE SCENES' },
+  editorial2Title: { pt: 'A coleção SS26, peça a peça', en: 'The SS26 collection, piece by piece' },
+  editorial2Excerpt: {
+    pt: 'Um olhar sobre as novidades desta estação e a inspiração por trás delas.',
+    en: "A look at this season's new arrivals and the inspiration behind them.",
+  },
+  editorial3Tag: { pt: 'ESTILO', en: 'STYLE' },
+  editorial3Title: { pt: '3 formas de vestir o Vestido Aurora', en: '3 ways to style the Vestido Aurora' },
+  editorial3Excerpt: {
+    pt: 'De dia a noite, sem trocar de roupa -- só de acessórios.',
+    en: 'From day to night, without changing outfits -- just accessories.',
+  },
+
+  // Home: Instagram feed (static curated grid, no live API -- 2026-07-10
+  // scope decision. Client account confirmed 2026-07-16).
+  instagramHeading: { pt: 'Segue-nos', en: 'Follow us' },
+  instagramHandle: { pt: '@use_me_withstyle', en: '@use_me_withstyle' },
+  instagramSubheading: {
+    pt: 'Partilhe o seu look com #UseMeWithStyle para aparecer aqui.',
+    en: 'Share your look with #UseMeWithStyle to be featured here.',
+  },
+  instagramCta: { pt: 'Seguir no Instagram', en: 'Follow on Instagram' },
+
+  // About-page scaffold only -- not routed until approved client copy replaces
+  // this draft content (scope confirmation 2026-07-16).
+  aboutTitle: { pt: 'A nossa história', en: 'Our story' },
+  aboutIntro: {
+    pt: 'A Use Me With Style nasceu da vontade de vestir mulheres em Angola e Portugal com peças versáteis, atuais e com preços diretos -- sem complicações, só moda que veste bem e dura.',
+    en: 'Use Me With Style was born from a simple idea: dress women in Angola and Portugal in versatile, current pieces at honest prices -- no complications, just fashion that fits well and lasts.',
+  },
+  aboutMissionTitle: { pt: 'Missão', en: 'Mission' },
+  aboutMissionBody: {
+    pt: 'Tornar o guarda-roupa do dia a dia mais simples: peças que se adaptam a vários momentos, em tecidos de qualidade, com um processo de compra claro do início ao fim -- seja em Luanda ou em Lisboa.',
+    en: 'Make the everyday wardrobe simpler: pieces that adapt to different moments, in quality fabrics, with a clear buying process from start to finish -- whether in Luanda or Lisbon.',
+  },
+  aboutValuesTitle: { pt: 'O que nos guia', en: 'What guides us' },
+  aboutValue1Title: { pt: 'Qualidade em primeiro lugar', en: 'Quality first' },
+  aboutValue1Body: {
+    pt: 'Cada peça é escolhida para durar mais do que uma estação.',
+    en: 'Every piece is chosen to outlast a single season.',
+  },
+  aboutValue2Title: { pt: 'Preços diretos', en: 'Honest pricing' },
+  aboutValue2Body: {
+    pt: 'Sem letras pequenas -- o preço que vê é o preço que paga.',
+    en: "No fine print -- the price you see is the price you pay.",
+  },
+  aboutValue3Title: { pt: 'Perto de si', en: 'Close to you' },
+  aboutValue3Body: {
+    pt: 'Duas lojas, uma só marca: Angola e Portugal, cada uma com o seu atendimento.',
+    en: 'Two storefronts, one brand: Angola and Portugal, each with its own local service.',
+  },
+  aboutCta: { pt: 'Ver a coleção', en: 'Shop the collection' },
 };
 
 export const t = (key: string, lang: Lang, vars?: Record<string, string | number>): string => {

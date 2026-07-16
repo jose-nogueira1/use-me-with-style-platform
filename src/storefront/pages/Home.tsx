@@ -4,6 +4,7 @@ import { useApp } from '../../state/AppContext';
 import { useProducts } from '../../hooks/useProducts';
 import { ProductCard } from '../components/ProductCard';
 import { ProductPhoto } from '../../components/ProductPhoto';
+import { InstagramFeed } from '../components/InstagramFeed';
 
 const CATEGORIES = [
   { key: 'vestidos', labelKey: 'dresses', tone: 'rose' as const },
@@ -130,6 +131,10 @@ export function Home() {
           </div>
         </div>
       )}
+
+      {/* Editorial is intentionally hidden until approved client content exists.
+          The component remains in source control so it can be enabled later. */}
+      <InstagramFeed />
     </div>
   );
 }

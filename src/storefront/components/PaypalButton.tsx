@@ -76,9 +76,12 @@ export function PaypalButton({
   const buildOrderInputRef = useRef(buildOrderInput);
   const onSuccessRef = useRef(onSuccess);
   const onErrorRef = useRef(onError);
-  buildOrderInputRef.current = buildOrderInput;
-  onSuccessRef.current = onSuccess;
-  onErrorRef.current = onError;
+
+  useEffect(() => {
+    buildOrderInputRef.current = buildOrderInput;
+    onSuccessRef.current = onSuccess;
+    onErrorRef.current = onError;
+  }, [buildOrderInput, onSuccess, onError]);
 
   useEffect(() => {
     if (!publicEnv.paypalClientId) {
@@ -94,7 +97,6 @@ export function PaypalButton({
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -149,7 +151,6 @@ export function PaypalButton({
         },
       })
       .render(containerRef.current);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready]);
 
   return <div ref={containerRef} style={{ marginTop: 12, minHeight: 45 }} />;

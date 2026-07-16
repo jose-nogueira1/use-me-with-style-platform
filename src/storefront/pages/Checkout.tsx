@@ -50,7 +50,10 @@ export function Checkout() {
 
   const [settings, setSettings] = useState<MarketSettings>(DEFAULT_MARKET_SETTINGS);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('stripe') === 'cancelled' ? t('paymentCancelled', lang) : null;
+  });
 
   const [form, setForm] = useState({
     name: '',
@@ -89,16 +92,17 @@ export function Checkout() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('stripe') === 'cancelled') {
-      setError(t('paymentCancelled', lang));
       window.history.replaceState(null, '', window.location.pathname);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
+    // Market settings are external configuration; reset dependent form controls.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDeliveryMethod(deliveryOptions[0]);
     setPaymentMethod(paymentOptions[0]);
     setForm((f) => ({ ...f, country: market === 'AO' ? 'Angola' : 'Portugal' }));
+    // The option arrays are selected from settings above; settings is the stable source.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [market, settings]);
 
@@ -243,14 +247,13 @@ export function Checkout() {
         const { sessionUrl } = await createStripeCheckoutSession(buildOrderInput());
         // Cart is cleared by the confirmation page itself, not here -- see
         // the comment on handlePaypalSuccess below for why.
-        window.location.href = sessionUrl;
+        window.location.assign(sessionUrl);
         return; // navigating away -- no need to clear `submitting`
       }
 
       const order = await createOrder(buildOrderInput());
       navigate(`/encomenda-confirmada/${order.orderNumber}`);
     } catch (err) {
-      // eslint-disable-next-line no-console
       console.error('Order/payment creation failed', err);
       setError(paymentMethod === 'stripe' ? t('stripeUnavailable', lang) : t('orderFailed', lang));
     } finally {
