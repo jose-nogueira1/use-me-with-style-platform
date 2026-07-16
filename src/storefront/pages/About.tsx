@@ -3,10 +3,9 @@ import { C, F, t } from '../../theme';
 import { useApp } from '../../state/AppContext';
 import { ProductPhoto, type ProductTone } from '../../components/ProductPhoto';
 
-// About-page scaffold. It is deliberately not routed or linked yet because
-// the client confirmed on 2026-07-16 that final About content is still
-// outstanding and placeholder copy must not ship. Once approved copy and
-// imagery are supplied, wire this page to /sobre and restore the footer link.
+// Temporary launch copy approved as an interim measure on 2026-07-16.
+// Replace the translations with Raissa's final brand story by the content
+// freeze documented in docs/launch-content-and-catalogue-audit.md.
 const VALUES: { titleKey: string; bodyKey: string; tone: ProductTone }[] = [
   { titleKey: 'aboutValue1Title', bodyKey: 'aboutValue1Body', tone: 'gold' },
   { titleKey: 'aboutValue2Title', bodyKey: 'aboutValue2Body', tone: 'rose' },

@@ -11,7 +11,7 @@ import { ProductPhoto, TONE_CYCLE } from '../../components/ProductPhoto';
 // @use_me_withstyle on 2026-07-16. lucide-react doesn't ship a literal
 // Instagram glyph, so the Camera icon stands in as a generic "photo feed"
 // mark rather than reproducing the brand logo.
-const INSTAGRAM_URL = 'https://instagram.com/use_me_withstyle';
+const INSTAGRAM_URL = 'https://www.instagram.com/use_me_withstyle/';
 const TILE_COUNT = 6;
 
 export function InstagramFeed() {

@@ -9,6 +9,7 @@ import { Cart } from './storefront/pages/Cart';
 import { Checkout } from './storefront/pages/Checkout';
 import { ConfirmationLookup } from './storefront/pages/ConfirmationLookup';
 import { Help } from './storefront/pages/Help';
+import { About } from './storefront/pages/About';
 import { AdminRoutes } from './admin/AdminRoutes';
 
 export default function App() {
@@ -137,12 +138,6 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
 
         .ump-grid-auto { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
 
-        /* Home: Editorial (2026-07-10) -- single column on mobile so each
-           card's excerpt stays readable, 3-up desktop like the rest of the
-           content grids on this page. */
-        .ump-editorial-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
-        @media (min-width: 720px) { .ump-editorial-grid { grid-template-columns: repeat(3, 1fr); } }
-
         /* Home: Instagram feed (2026-07-10) -- 3 columns on mobile (matches
            the real Instagram grid feel at small sizes), 6 on desktop so all
            tiles sit in a single row. */
@@ -231,6 +226,7 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
               <Route path="encomenda-confirmada/:orderNumber" element={<ConfirmationLookup />} />
               <Route path="conta" element={<ConfirmationLookup />} />
               <Route path="ajuda" element={<Help />} />
+              <Route path="sobre" element={<About />} />
             </Route>
             <Route path="admin/*" element={<AdminRoutes />} />
           </Routes>

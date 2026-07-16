@@ -132,8 +132,7 @@ export function Home() {
         </div>
       )}
 
-      {/* Editorial is intentionally hidden until approved client content exists.
-          The component remains in source control so it can be enabled later. */}
+      {/* Editorial remains out of launch scope until client content is approved. */}
       <InstagramFeed />
     </div>
   );

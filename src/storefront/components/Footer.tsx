@@ -63,6 +63,12 @@ export function Footer() {
 
         <div className="ump-footer-col">
           <FooterHeading>{t('footerInfoHeading', lang)}</FooterHeading>
+          <Link
+            to="/sobre"
+            style={{ display: 'inline-block', marginBottom: 12, color: C.ink, fontSize: 11, fontWeight: 800, textDecoration: 'none' }}
+          >
+            {t('aboutNav', lang)}
+          </Link>
           <InfoLine label={t('shipping', lang)} value={market === 'AO' ? t('localCourierDelivery', lang) : t('businessDays', lang)} />
           <InfoLine label={t('returns', lang)} value={t('footerReturnsNote', lang, { days: t('fourteenDays', lang) })} />
           <InfoLine label={t('prices', lang)} value={t(market === 'AO' ? 'footerPricesNoteAo' : 'footerPricesNotePt', lang)} />

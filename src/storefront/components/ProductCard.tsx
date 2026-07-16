@@ -34,7 +34,7 @@ export function ProductCard({ product, size = 'grid' }: { product: Product; size
       }}
     >
       <div style={{ aspectRatio: '174 / 142', width: '100%' }}>
-        <ProductPhoto tone={product.tone} radius={0} />
+        <ProductPhoto tone={product.tone} radius={0} image={product.images[0]} variant="card" />
       </div>
       <div style={{ padding: '10px 8px 12px' }}>
         {tagStyle && (
