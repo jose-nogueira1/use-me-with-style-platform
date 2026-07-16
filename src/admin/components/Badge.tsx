@@ -40,6 +40,8 @@ export function Badge({ label, tone = 'neutral' }: { label: string; tone?: Badge
 // Maps the backend order/message status strings to a badge tone + label,
 // used consistently across Dashboard, Orders queue, Order detail, and
 // Mensagens so a given status always reads the same way.
+// Kept beside Badge so every status consumer uses the same visual mapping.
+// eslint-disable-next-line react-refresh/only-export-components
 export function statusBadgeProps(status: string): { label: string; tone: BadgeTone } {
   switch (status) {
     case 'new':

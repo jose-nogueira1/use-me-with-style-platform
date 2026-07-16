@@ -41,6 +41,8 @@ export function StorefrontLayout() {
   // itself is CSS-hidden at desktop widths (.ump-mobile-menu-btn), but also
   // close any open panel on navigation/resize so it can't get stuck open.
   useEffect(() => {
+    // Route changes are an external navigation event; close the transient UI.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMobileMenuOpen(false);
   }, [location.pathname, location.search]);
 

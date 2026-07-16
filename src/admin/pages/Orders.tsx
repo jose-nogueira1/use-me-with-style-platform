@@ -17,9 +17,9 @@ export function Orders() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    setOrders(null);
     adminListOrders(statusFilter ? { status: statusFilter } : {})
       .then((rows) => {
+        setError(false);
         setOrders(rows);
         setSelected(rows[0] ?? null);
       })

@@ -12,7 +12,13 @@
 //
 // Locally (vercel dev / vite dev) this header is absent, so `country` comes
 // back null and the client just falls back to its env-based default.
-export default function handler(req: any, res: any) {
+type GeoRequest = { headers: Record<string, string | string[] | undefined> };
+type GeoResponse = {
+  setHeader: (name: string, value: string) => void;
+  status: (code: number) => { json: (body: { country: string | string[] | null }) => void };
+};
+
+export default function handler(req: GeoRequest, res: GeoResponse) {
   const country = req.headers['x-vercel-ip-country'] ?? null;
   res.setHeader('Cache-Control', 'no-store');
   res.status(200).json({ country });

@@ -36,6 +36,8 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   return <AdminAuthContext.Provider value={{ user, loading, login, logout }}>{children}</AdminAuthContext.Provider>;
 }
 
+// Provider and its colocated hook intentionally share the same module.
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAdminAuth(): AdminAuthValue {
   const ctx = useContext(AdminAuthContext);
   if (!ctx) throw new Error('useAdminAuth() must be used within <AdminAuthProvider>');

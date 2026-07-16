@@ -18,6 +18,8 @@ const TONE_STYLES: Record<
   blue: { bg: '#7A99A0', highlight: '#E2EBEC', garment: C.blue, stripe: C.champagne, stripeOpacity: 0.36 },
 };
 
+// Static design token colocated with the component that owns its meaning.
+// eslint-disable-next-line react-refresh/only-export-components
 export const TONE_CYCLE: ProductTone[] = ['gold', 'rose', 'sage', 'dark', 'blue'];
 
 export function ProductPhoto({ tone, radius = 8 }: { tone: ProductTone; radius?: number }) {

@@ -100,7 +100,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const setMarket = (m: Market) => {
@@ -160,6 +159,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
 
+// Provider and its colocated hooks intentionally share the same module.
+// eslint-disable-next-line react-refresh/only-export-components
 export function useApp(): AppContextValue {
   const ctx = useContext(AppContext);
   if (!ctx) throw new Error('useApp() must be used within <AppProvider>');
@@ -167,6 +168,7 @@ export function useApp(): AppContextValue {
 }
 
 /** Angola/Portugal-only formatter -- matches the confirmed Phase 1 markets (INTL deferred). */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useFormatPrice() {
   const { market } = useApp();
   return (product: { priceKz: number; priceEur: number }) =>

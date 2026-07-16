@@ -50,7 +50,6 @@ export function ConfirmationLookup() {
       const order = await lookupOrder(orderNumber.trim(), email.trim());
       setResult(order ?? 'not_found');
     } catch (err) {
-      // eslint-disable-next-line no-console
       console.error('Order lookup failed', err);
       setResult('not_found');
     } finally {
