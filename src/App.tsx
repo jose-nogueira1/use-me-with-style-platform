@@ -137,6 +137,20 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
 
         .ump-grid-auto { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
 
+        /* Home: Editorial (2026-07-10) -- single column on mobile so each
+           card's excerpt stays readable, 3-up desktop like the rest of the
+           content grids on this page. */
+        .ump-editorial-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+        @media (min-width: 720px) { .ump-editorial-grid { grid-template-columns: repeat(3, 1fr); } }
+
+        /* Home: Instagram feed (2026-07-10) -- 3 columns on mobile (matches
+           the real Instagram grid feel at small sizes), 6 on desktop so all
+           tiles sit in a single row. */
+        .ump-instagram-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        @media (min-width: 720px) { .ump-instagram-grid { grid-template-columns: repeat(6, 1fr); gap: 10px; } }
+        .ump-instagram-tile-overlay { transition: opacity 0.15s ease; }
+        .ump-instagram-tile:hover .ump-instagram-tile-overlay { opacity: 1 !important; }
+
         .ump-cat-row { display: flex; gap: 10px; overflow-x: auto; }
         @media (min-width: 720px) { .ump-cat-row { display: grid; grid-template-columns: repeat(4, 1fr); overflow-x: visible; } }
 
