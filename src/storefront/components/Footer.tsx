@@ -9,8 +9,8 @@ import wordmarkWhite from '../../assets/brand/wordmark-white.png';
 // every storefront page -- previously the only "footer" was a two-line
 // tagline baked into Home.tsx alone. Links only point at routes that
 // actually exist in this app (no invented /privacy or /terms pages); the
-// WhatsApp link reuses the same placeholder href as Help.tsx pending a real
-// business number.
+// WhatsApp temporarily routes to the developer's number until the client
+// business account is ready for handoff.
 const SHOP_LINKS = [
   { to: '/catalogo?cat=new', labelKey: 'newArrivalsNav' },
   { to: '/catalogo?cat=vestidos', labelKey: 'dresses' },
@@ -37,7 +37,7 @@ export function Footer() {
           <img src={logoSrc} alt="Use Me With Style" style={{ height: 34, width: 'auto', marginBottom: 14 }} />
           <div style={{ fontSize: 12, color: C.inkSoft, lineHeight: 1.6, maxWidth: 260 }}>{t('footerAbout', lang)}</div>
           <a
-            href="https://wa.me/"
+            href="https://wa.me/244939615501"
             style={{
               display: 'inline-flex',
               alignItems: 'center',

@@ -1,8 +1,7 @@
 import type { ProductTone } from '../components/ProductPhoto';
 
-// Unified view-model the storefront UI works with, regardless of whether the
-// data came from the CMS API or the dev-mode mock dataset. Screens should
-// only ever import this type, never ApiProduct or the raw mock shape.
+// Storefront view-model adapted from the CMS API response. Screens should
+// import this type rather than depending on Payload's raw API shape.
 export type Product = {
   id: string;
   name: string;

@@ -27,7 +27,6 @@ export const publicEnv = {
   // the matching secret (PAYPAL_CLIENT_SECRET) stays server-side only, in
   // the CMS's own env, never here.
   paypalClientId: import.meta.env.VITE_PAYPAL_CLIENT_ID || "",
-  mockDataEnabled: bool(import.meta.env.VITE_ENABLE_MOCK_DATA, true),
   livePaymentsEnabled: bool(import.meta.env.VITE_ENABLE_LIVE_PAYMENTS),
   messagingAutomationEnabled: bool(import.meta.env.VITE_ENABLE_MESSAGING_AUTOMATION),
   analyticsEnabled: bool(import.meta.env.VITE_ENABLE_ANALYTICS),
