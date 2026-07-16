@@ -1,5 +1,12 @@
 import type { ProductTone } from '../components/ProductPhoto';
 
+export type ProductImage = {
+  url: string;
+  cardUrl?: string;
+  thumbnailUrl?: string;
+  alt: string;
+};
+
 // Storefront view-model adapted from the CMS API response. Screens should
 // import this type rather than depending on Payload's raw API shape.
 export type Product = {
@@ -15,6 +22,7 @@ export type Product = {
   colors: string[];
   tag?: string;
   description?: string;
+  images: ProductImage[];
   /** Placeholder product-photo tone (see components/ProductPhoto.tsx). */
   tone: ProductTone;
 };

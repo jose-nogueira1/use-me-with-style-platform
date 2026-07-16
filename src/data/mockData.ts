@@ -5,7 +5,7 @@
 // match (Vestido Aurora, Vestido Lume, Top Athena, Top Iris, Conjunto Sereno).
 import type { Product } from '../types/product';
 
-export const PRODUCTS: Omit<Product, 'slug'>[] = [
+export const PRODUCTS: Omit<Product, 'slug' | 'images'>[] = [
   {
     id: "p1",
     name: "Vestido Aurora",
@@ -432,10 +432,10 @@ export const ACCOUNT_ORDERS = ORDERS.slice(0, 4);
 export const DEFAULT_WISHLIST = ["p1", "p5", "p9"];
 
 export const INSTAGRAM_FEED = [
-  { id: "ig1", productId: "p1", handle: "@usemewithstyle", likes: "1.2K", caption: { pt: "Vestido Aurora em movimento.", en: "Aurora Dress in motion." } },
-  { id: "ig2", productId: "p9", handle: "@usemewithstyle", likes: "846", caption: { pt: "Conjunto Sereno para dias longos.", en: "Sereno Set for long days." } },
-  { id: "ig3", productId: "p5", handle: "@usemewithstyle", likes: "672", caption: { pt: "Top Athena, sempre fácil.", en: "Athena Top, always easy." } },
-  { id: "ig4", productId: "p8", handle: "@usemewithstyle", likes: "534", caption: { pt: "Leggings Vento no look de sábado.", en: "Vento Leggings for Saturday." } },
+  { id: "ig1", productId: "p1", handle: "@use_me_withstyle", likes: "1.2K", caption: { pt: "Vestido Aurora em movimento.", en: "Aurora Dress in motion." } },
+  { id: "ig2", productId: "p9", handle: "@use_me_withstyle", likes: "846", caption: { pt: "Conjunto Sereno para dias longos.", en: "Sereno Set for long days." } },
+  { id: "ig3", productId: "p5", handle: "@use_me_withstyle", likes: "672", caption: { pt: "Top Athena, sempre fácil.", en: "Athena Top, always easy." } },
+  { id: "ig4", productId: "p8", handle: "@use_me_withstyle", likes: "534", caption: { pt: "Leggings Vento no look de sábado.", en: "Vento Leggings for Saturday." } },
 ];
 
 export const MARKETING_WEEK = [

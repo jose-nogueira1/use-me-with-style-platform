@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { C } from '../theme';
+import type { ProductImage } from '../types/product';
 
 // Replaces the old category-shaped silhouettes. The real Figma design uses
 // one abstract "placeholder photo" treatment for every product regardless
@@ -22,7 +24,37 @@ const TONE_STYLES: Record<
 // eslint-disable-next-line react-refresh/only-export-components
 export const TONE_CYCLE: ProductTone[] = ['gold', 'rose', 'sage', 'dark', 'blue'];
 
-export function ProductPhoto({ tone, radius = 8 }: { tone: ProductTone; radius?: number }) {
+export function ProductPhoto({
+  tone,
+  radius = 8,
+  image,
+  variant = 'full',
+}: {
+  tone: ProductTone;
+  radius?: number;
+  image?: ProductImage;
+  variant?: 'full' | 'card' | 'thumbnail';
+}) {
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  const imageUrl = variant === 'thumbnail'
+    ? image?.thumbnailUrl || image?.cardUrl || image?.url
+    : variant === 'card'
+      ? image?.cardUrl || image?.url
+      : image?.url;
+
+  if (imageUrl && failedUrl !== imageUrl) {
+    return (
+      <img
+        src={imageUrl}
+        alt={image?.alt || ''}
+        loading="lazy"
+        decoding="async"
+        onError={() => setFailedUrl(imageUrl)}
+        style={{ width: '100%', height: '100%', display: 'block', objectFit: 'cover', borderRadius: radius }}
+      />
+    );
+  }
+
   const s = TONE_STYLES[tone];
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', background: s.bg, overflow: 'hidden', borderRadius: radius }}>

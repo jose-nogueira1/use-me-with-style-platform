@@ -57,7 +57,7 @@ export function ProductDetail() {
     <div style={{ background: C.paper, position: 'relative' }}>
       <div className="ump-product-layout">
         <div style={{ height: 440, borderRadius: 0, overflow: 'hidden', position: 'relative' }}>
-          <ProductPhoto tone={product.tone} radius={0} />
+          <ProductPhoto tone={product.tone} radius={0} image={product.images[0]} />
           <button
             onClick={() => toggleFavorite(product.id)}
             style={{

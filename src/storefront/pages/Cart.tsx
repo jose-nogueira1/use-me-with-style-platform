@@ -51,7 +51,7 @@ export function Cart() {
           return (
             <div key={idx} style={{ display: 'flex', gap: 12, padding: '14px 0', borderTop: `1px solid ${C.ruleLight}` }}>
               <div style={{ width: 72, height: 88, flexShrink: 0, borderRadius: 6, overflow: 'hidden' }}>
-                <ProductPhoto tone={p.tone} radius={6} />
+                <ProductPhoto tone={p.tone} radius={6} image={p.images[0]} variant="thumbnail" />
               </div>
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                 <div>

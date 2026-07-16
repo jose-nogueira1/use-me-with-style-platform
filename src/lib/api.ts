@@ -49,7 +49,18 @@ export type ApiProduct = {
   category: 'vestidos' | 'tops' | 'leggings' | 'conjuntos';
   description?: string;
   tag?: string;
-  images?: { image: { url: string; alt?: string } }[];
+  images?: {
+    image:
+      | string
+      | {
+          url?: string;
+          alt?: string;
+          sizes?: {
+            thumbnail?: { url?: string };
+            card?: { url?: string };
+          };
+        };
+  }[];
   colors: { color: string }[];
   priceAOKz: number;
   pricePTEur: number;
