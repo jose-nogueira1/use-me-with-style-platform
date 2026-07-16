@@ -1,4 +1,4 @@
-// Prototype mock data. Kept as fallback/dev-mode content (VITE_ENABLE_MOCK_DATA)
+// Archived prototype fixture data. Production storefront code must not import this file.
 // for working on the storefront/admin UI without the CMS backend running --
 // NOT the source of truth once wired to the Payload API (see src/lib/api.ts).
 // Tags and tones are aligned with the real Figma designs where product names
