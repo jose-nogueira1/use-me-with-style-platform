@@ -5,11 +5,15 @@ import { useApp } from '../../state/AppContext';
 import { useProducts } from '../../hooks/useProducts';
 import {
   createOrder,
+  createAppyPayOrder,
   createStripeCheckoutSession,
   fetchMarketSettings,
   type CreateOrderInput,
   type MarketSettings,
 } from '../../lib/api';
+import { isAppyPayWidgetConfigured } from '../../config/env';
+import { AppyPayWidget } from '../components/AppyPayWidget';
+import { getMetaOrderContext } from '../../lib/analyticsConsent';
 import { PaypalButton } from '../components/PaypalButton';
 
 // 2026-07-10 decision: Angola delivery is local courier only; payment is
@@ -50,6 +54,10 @@ export function Checkout() {
 
   const [settings, setSettings] = useState<MarketSettings>(DEFAULT_MARKET_SETTINGS);
   const [submitting, setSubmitting] = useState(false);
+  const [appyPayOrder, setAppyPayOrder] = useState<{
+    orderNumber: string;
+    merchantTransactionId: string;
+  } | null>(null);
   const [error, setError] = useState<string | null>(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get('stripe') === 'cancelled' ? t('paymentCancelled', lang) : null;
@@ -188,6 +196,7 @@ export function Checkout() {
         paymentMethod,
         deliveryMethod,
         lang,
+        ...getMetaOrderContext(),
       };
     }
 
@@ -211,6 +220,7 @@ export function Checkout() {
       paymentMethod,
       deliveryMethod,
       lang,
+      ...getMetaOrderContext(),
     };
   };
 
@@ -249,6 +259,15 @@ export function Checkout() {
         // the comment on handlePaypalSuccess below for why.
         window.location.assign(sessionUrl);
         return; // navigating away -- no need to clear `submitting`
+      }
+
+      if (paymentMethod === 'multicaixa_express' && settings.angolaPaymentLive) {
+        if (!isAppyPayWidgetConfigured()) {
+          throw new Error('AppyPay widget credentials are missing');
+        }
+        const order = await createAppyPayOrder(buildOrderInput());
+        setAppyPayOrder(order);
+        return;
       }
 
       const order = await createOrder(buildOrderInput());
@@ -368,7 +387,26 @@ export function Checkout() {
           <div style={{ marginTop: 16, padding: 12, background: '#FBEAE4', color: '#A6483A', fontSize: 12, borderRadius: 6 }}>{error}</div>
         )}
 
-        {paymentMethod === 'paypal' ? (
+        {appyPayOrder && (
+          <div style={{ marginTop: 20, padding: 16, border: `1px solid ${C.rule}`, borderRadius: 8 }}>
+            <AppyPayWidget
+              amount={total}
+              description={`Use Me With Style ${appyPayOrder.orderNumber}`}
+              merchantTransactionId={appyPayOrder.merchantTransactionId}
+              phoneNumber={form.phone}
+              lang={lang}
+            />
+            <button
+              type="button"
+              onClick={() => navigate(`/encomenda-confirmada/${appyPayOrder.orderNumber}`)}
+              style={{ marginTop: 16, width: '100%', padding: 12 }}
+            >
+              Ver estado da encomenda
+            </button>
+          </div>
+        )}
+
+        {appyPayOrder ? null : paymentMethod === 'paypal' ? (
           <PaypalButton
             buildOrderInput={buildOrderInputForPaypal}
             onSuccess={handlePaypalSuccess}

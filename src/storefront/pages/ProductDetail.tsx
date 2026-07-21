@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Check, Heart, Search, X } from 'lucide-react';
 import { C, F, t } from '../../theme';
@@ -6,6 +6,7 @@ import { useApp, useFormatPrice } from '../../state/AppContext';
 import { useProducts } from '../../hooks/useProducts';
 import { ProductPhoto } from '../../components/ProductPhoto';
 import { ProductCard } from '../components/ProductCard';
+import { trackMetaEvent } from '../../lib/metaAnalytics';
 
 const CAT_LABEL_KEY: Record<string, string> = { vestidos: 'dresses', tops: 'tops', leggings: 'leggings', conjuntos: 'sets' };
 
@@ -17,6 +18,17 @@ export function ProductDetail() {
   const fmtPrice = useFormatPrice();
 
   const product = products.find((p) => p.slug === slug);
+
+  useEffect(() => {
+    if (!product) return;
+    trackMetaEvent('ViewContent', {
+      content_ids: [product.id],
+      content_name: product.name,
+      content_type: 'product',
+      value: market === 'AO' ? product.priceKz : product.priceEur,
+      currency: market === 'AO' ? 'AOA' : 'EUR',
+    });
+  }, [market, product]);
 
   const [size, setSize] = useState<string | null>(null);
   const [color, setColor] = useState<string | null>(null);
@@ -49,6 +61,13 @@ export function ProductDetail() {
   const handleAdd = () => {
     if (isOutOfStock) return;
     dispatchCart({ type: 'ADD', id: product.id, size: activeSize, color: activeColor });
+    trackMetaEvent('AddToCart', {
+      content_ids: [product.id],
+      content_name: product.name,
+      content_type: 'product',
+      value: market === 'AO' ? product.priceKz : product.priceEur,
+      currency: market === 'AO' ? 'AOA' : 'EUR',
+    });
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
   };

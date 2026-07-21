@@ -4,6 +4,7 @@ import { C, F, t } from '../../theme';
 import { useApp, useFormatPrice } from '../../state/AppContext';
 import { useProducts } from '../../hooks/useProducts';
 import { ProductPhoto } from '../../components/ProductPhoto';
+import { trackMetaEvent } from '../../lib/metaAnalytics';
 
 export function Cart() {
   const { market, lang, cart, dispatchCart } = useApp();
@@ -93,7 +94,16 @@ export function Cart() {
           <span>{market === 'AO' ? `${subtotal.toLocaleString('en-US')} Kz` : `€${subtotal.toFixed(2)}`}</span>
         </div>
         <button
-          onClick={() => navigate('/checkout')}
+          onClick={() => {
+            trackMetaEvent('InitiateCheckout', {
+              content_ids: cart.map((item) => item.id),
+              content_type: 'product',
+              num_items: cart.reduce((sum, item) => sum + item.qty, 0),
+              value: subtotal,
+              currency: market === 'AO' ? 'AOA' : 'EUR',
+            });
+            navigate('/checkout');
+          }}
           style={{ width: '100%', padding: 14, background: C.black, color: C.onDarkGold, fontSize: 12, fontWeight: 800, letterSpacing: 1.5, textTransform: 'uppercase', borderRadius: 8 }}
         >
           {t('checkout', lang)}

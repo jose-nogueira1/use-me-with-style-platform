@@ -4,6 +4,7 @@ import { C, t, type Lang } from '../../theme';
 import { useApp, type Market } from '../../state/AppContext';
 import wordmarkBlack from '../../assets/brand/wordmark-black.png';
 import wordmarkWhite from '../../assets/brand/wordmark-white.png';
+import { clearAnalyticsConsent } from '../../lib/analyticsConsent';
 
 // Site-wide footer, rendered once from StorefrontLayout so it appears on
 // every storefront page -- previously the only "footer" was a two-line
@@ -83,6 +84,9 @@ export function Footer() {
         style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}
       >
         <div style={{ fontSize: 11, color: C.inkSoft }}>{t('copyrightNote', lang, { year })}</div>
+        <button onClick={clearAnalyticsConsent} style={{ fontSize: 11, color: C.inkSoft, textDecoration: 'underline' }}>
+          {lang === 'pt' ? 'Preferências de cookies' : 'Cookie preferences'}
+        </button>
         <MarketSwitchLink market={market} setMarket={setMarket} lang={lang} />
       </div>
     </footer>

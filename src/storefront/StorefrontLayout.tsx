@@ -7,6 +7,7 @@ import { Footer } from './components/Footer';
 import wordmarkBlack from '../assets/brand/wordmark-black.png';
 import wordmarkWhite from '../assets/brand/wordmark-white.png';
 import wordmarkGold from '../assets/brand/wordmark-gold.png';
+import { AnalyticsConsentManager } from './components/AnalyticsConsent';
 
 // Matches the real Figma design (node 72:2, "Phase 1 Storefront -- High
 // Fidelity"): plain header (logo center, hamburger/back left). Market,
@@ -178,6 +179,7 @@ export function StorefrontLayout() {
       </div>
 
       <Footer />
+      <AnalyticsConsentManager />
 
       <div className="ump-bottom-nav">
         <BottomNav lang={lang} />

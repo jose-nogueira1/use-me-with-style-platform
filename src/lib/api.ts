@@ -117,6 +117,10 @@ export type CreateOrderInput = {
   // cached bundle without this field still posts a valid order (CMS default
   // falls back to 'pt').
   lang?: 'pt' | 'en';
+  analyticsConsent?: boolean;
+  metaFbp?: string;
+  metaFbc?: string;
+  metaEventSourceUrl?: string;
 };
 
 export type ApiOrder = CreateOrderInput & {
@@ -213,6 +217,10 @@ export async function createOrder(input: CreateOrderInput): Promise<ApiOrder> {
 export type StripeCheckoutSessionResult = { orderNumber: string; sessionUrl: string };
 export type PaypalCreateOrderResult = { orderNumber: string; paypalOrderId: string };
 export type PaypalCaptureResult = { orderNumber?: string; status: string };
+export type AppyPayCreateOrderResult = {
+  orderNumber: string;
+  merchantTransactionId: string;
+};
 
 /** Creates the order (pending) + a Stripe Checkout Session in one call.
  * Caller should redirect the browser to `sessionUrl`. */
@@ -239,6 +247,14 @@ export async function capturePaypalOrder(paypalOrderId: string): Promise<PaypalC
   return request<PaypalCaptureResult>('/payments/paypal/capture-order', {
     method: 'POST',
     body: JSON.stringify({ paypalOrderId }),
+  });
+}
+
+/** Creates the pending CMS order before mounting AppyPay's hosted widget. */
+export async function createAppyPayOrder(input: CreateOrderInput): Promise<AppyPayCreateOrderResult> {
+  return request<AppyPayCreateOrderResult>('/payments/appypay/create-order', {
+    method: 'POST',
+    body: JSON.stringify(input),
   });
 }
 

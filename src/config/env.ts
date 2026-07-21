@@ -27,10 +27,21 @@ export const publicEnv = {
   // the matching secret (PAYPAL_CLIENT_SECRET) stays server-side only, in
   // the CMS's own env, never here.
   paypalClientId: import.meta.env.VITE_PAYPAL_CLIENT_ID || "",
+  // AppyPay explicitly requires these public values as data attributes on
+  // its hosted Charges Widget. Server-to-server credentials never belong in
+  // VITE_ variables and remain in the CMS environment only.
+  appyPayApiKey: import.meta.env.VITE_APPYPAY_WIDGET_API_KEY || "",
+  appyPayClientId: import.meta.env.VITE_APPYPAY_WIDGET_CLIENT_ID || "",
+  appyPayMerchantName: import.meta.env.VITE_APPYPAY_MERCHANT_NAME || "",
   livePaymentsEnabled: bool(import.meta.env.VITE_ENABLE_LIVE_PAYMENTS),
   messagingAutomationEnabled: bool(import.meta.env.VITE_ENABLE_MESSAGING_AUTOMATION),
   analyticsEnabled: bool(import.meta.env.VITE_ENABLE_ANALYTICS),
+  metaPixelId: import.meta.env.VITE_META_PIXEL_ID || "",
 };
+
+export function isAppyPayWidgetConfigured() {
+  return Boolean(publicEnv.appyPayApiKey && publicEnv.appyPayClientId && publicEnv.appyPayMerchantName);
+}
 
 export function applyRuntimeEnvMetadata() {
   document.documentElement.dataset.appEnv = publicEnv.appEnv;
