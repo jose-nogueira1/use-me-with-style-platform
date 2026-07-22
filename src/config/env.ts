@@ -33,6 +33,8 @@ export const publicEnv = {
   appyPayApiKey: import.meta.env.VITE_APPYPAY_WIDGET_API_KEY || "",
   appyPayClientId: import.meta.env.VITE_APPYPAY_WIDGET_CLIENT_ID || "",
   appyPayMerchantName: import.meta.env.VITE_APPYPAY_MERCHANT_NAME || "",
+  appyPayWidgetSrc: import.meta.env.VITE_APPYPAY_WIDGET_SRC || "https://widget.appypay.co.ao/main.js",
+  appyPayRedirectUri: import.meta.env.VITE_APPYPAY_REDIRECT_URI || "",
   livePaymentsEnabled: bool(import.meta.env.VITE_ENABLE_LIVE_PAYMENTS),
   messagingAutomationEnabled: bool(import.meta.env.VITE_ENABLE_MESSAGING_AUTOMATION),
   analyticsEnabled: bool(import.meta.env.VITE_ENABLE_ANALYTICS),

@@ -2,8 +2,6 @@ import { useEffect, useState } from 'react';
 import { publicEnv } from '../../config/env';
 
 const SCRIPT_ID = 'appyPay-charges-widget-v2';
-const WIDGET_SRC = 'https://widget.appypay.co.ao/main.js';
-
 type AppyPayWidgetProps = {
   amount: number;
   description: string;
@@ -31,12 +29,18 @@ export function AppyPayWidget({
 
     const script = document.createElement('script');
     script.id = SCRIPT_ID;
-    script.src = WIDGET_SRC;
+    script.src = publicEnv.appyPayWidgetSrc;
     script.async = true;
     script.dataset.merchantName = publicEnv.appyPayMerchantName;
     script.dataset.apiKey = publicEnv.appyPayApiKey;
     script.dataset.clientId = publicEnv.appyPayClientId;
-    script.dataset.requestType = 'sync';
+    // Async is the authoritative AppyPay flow: the CMS receives a webhook
+    // and verifies the charge server-to-server before it marks the AO order
+    // paid. Widget completion alone never proves settlement.
+    script.dataset.requestType = 'async';
+    if (publicEnv.appyPayRedirectUri) {
+      script.dataset.redirectUri = publicEnv.appyPayRedirectUri;
+    }
     script.dataset.paymentAmount = String(amount);
     script.dataset.paymentDescription = description;
     script.dataset.phoneNumber = phoneNumber.replace(/\D/g, '');
