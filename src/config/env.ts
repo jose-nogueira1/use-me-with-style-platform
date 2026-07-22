@@ -35,8 +35,11 @@ export const publicEnv = {
   appyPayMerchantName: import.meta.env.VITE_APPYPAY_MERCHANT_NAME || "",
   appyPayWidgetSrc: import.meta.env.VITE_APPYPAY_WIDGET_SRC || "https://widget.appypay.co.ao/main.js",
   appyPayRedirectUri: import.meta.env.VITE_APPYPAY_REDIRECT_URI || "",
-  // Explicitly bind the widget to the active GPO and REF application keys.
+  appyPayMerchantLogoUrl: import.meta.env.VITE_APPYPAY_MERCHANT_LOGO_URL || "",
   appyPayPaymentMethods: import.meta.env.VITE_APPYPAY_PAYMENT_METHODS || "",
+  // JSON object containing optional custom keys configured in the AppyPay
+  // portal. The official widget exposes this through `data-options`.
+  appyPayOptions: import.meta.env.VITE_APPYPAY_OPTIONS || "",
   livePaymentsEnabled: bool(import.meta.env.VITE_ENABLE_LIVE_PAYMENTS),
   messagingAutomationEnabled: bool(import.meta.env.VITE_ENABLE_MESSAGING_AUTOMATION),
   analyticsEnabled: bool(import.meta.env.VITE_ENABLE_ANALYTICS),
@@ -44,7 +47,7 @@ export const publicEnv = {
 };
 
 export function isAppyPayWidgetConfigured() {
-  return Boolean(publicEnv.appyPayApiKey && publicEnv.appyPayClientId && publicEnv.appyPayMerchantName && publicEnv.appyPayPaymentMethods);
+  return Boolean(publicEnv.appyPayApiKey && publicEnv.appyPayClientId && publicEnv.appyPayMerchantName);
 }
 
 export function applyRuntimeEnvMetadata() {

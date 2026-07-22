@@ -4,7 +4,12 @@ import { publicEnv } from '../config/env';
 // default REST shape: collections return { docs, totalDocs, ... } on list,
 // and a single document object on find-by-id/create/update. Globals return
 // the global's fields directly (no `docs` wrapper).
-const API_BASE = `${publicEnv.apiBaseUrl.replace(/\/$/, '')}/api`;
+// Production uses the same-origin `/api` proxy configured in vercel.json.
+// Besides avoiding a hard dependency on an API subdomain, this keeps browser
+// requests same-origin and therefore independent of CMS CORS configuration.
+const API_BASE = publicEnv.apiBaseUrl === '/'
+  ? '/api'
+  : `${publicEnv.apiBaseUrl.replace(/\/$/, '')}/api`;
 
 export class ApiError extends Error {
   status: number;
@@ -83,7 +88,7 @@ export type ApiProduct = {
 };
 
 export type OrderItemInput = {
-  product: string;
+  product: string | number;
   productName: string;
   size: string;
   color?: string;

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { publicEnv } from '../../config/env';
 
 const SCRIPT_ID = 'appyPay-charges-widget-v2';
+const CONTAINER_ID = 'appyPay-charges-v2';
 type AppyPayWidgetProps = {
   amount: number;
   description: string;
@@ -45,7 +46,15 @@ export function AppyPayWidget({
     script.dataset.paymentDescription = description;
     script.dataset.phoneNumber = phoneNumber.replace(/\D/g, '');
     script.dataset.merchantTxId = merchantTransactionId;
-    script.dataset.paymentMethods = publicEnv.appyPayPaymentMethods;
+    if (publicEnv.appyPayMerchantLogoUrl) {
+      script.dataset.merchantLogoUrl = publicEnv.appyPayMerchantLogoUrl;
+    }
+    if (publicEnv.appyPayOptions) {
+      script.dataset.options = publicEnv.appyPayOptions;
+    }
+    if (publicEnv.appyPayPaymentMethods) {
+      script.dataset.paymentMethods = publicEnv.appyPayPaymentMethods;
+    }
     script.dataset.lang = lang === 'en' ? 'en' : 'pt-PT';
     script.onerror = () => setLoadFailed(true);
     document.head.appendChild(script);
@@ -59,5 +68,11 @@ export function AppyPayWidget({
     return <p role="alert">{lang === 'pt' ? 'Não foi possível carregar o pagamento AppyPay. Tente novamente.' : 'AppyPay could not be loaded. Please try again.'}</p>;
   }
 
-  return <div aria-live="polite">{lang === 'pt' ? 'A carregar Multicaixa Express e Referência…' : 'Loading Multicaixa Express and Reference…'}</div>;
+  // AppyPay's production script renders directly into this exact element ID.
+  // Keep the loading copy inside it so the widget replaces it on mount.
+  return (
+    <div id={CONTAINER_ID} aria-live="polite">
+      {lang === 'pt' ? 'A carregar Multicaixa Express e Referência…' : 'Loading Multicaixa Express and Reference…'}
+    </div>
+  );
 }

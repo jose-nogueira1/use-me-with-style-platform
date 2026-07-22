@@ -47,6 +47,13 @@ const DELIVERY_LABEL_KEYS: Record<string, string> = {
   courier_ao: 'deliveryCourierAo',
 };
 
+// Payload's Postgres relationship IDs are numbers. Product models keep IDs
+// as strings so the UI also supports UUID/string-backed installations, but
+// payment endpoints use Payload's Local API and therefore need numeric IDs
+// restored before the order payload is sent.
+const cmsRelationshipId = (id: string): string | number =>
+  /^\d+$/.test(id) ? Number(id) : id;
+
 export function Checkout() {
   const { market, lang, cart } = useApp();
   const { products } = useProducts(market, lang);
@@ -84,6 +91,10 @@ export function Checkout() {
 
   const deliveryOptions = market === 'AO' ? settings.angolaDeliveryMethods : settings.portugalDeliveryMethods;
   const paymentOptions = market === 'AO' ? settings.angolaPaymentMethods : settings.portugalPaymentMethods;
+  // Deployed widget credentials are the authoritative readiness signal. The
+  // CMS toggle remains backwards-compatible, but a stale `false` must not
+  // force a configured production checkout back to the manual fallback.
+  const appyPayLive = settings.angolaPaymentLive || isAppyPayWidgetConfigured();
 
   const [deliveryMethod, setDeliveryMethod] = useState(deliveryOptions[0]);
   const [paymentMethod, setPaymentMethod] = useState(paymentOptions[0]);
@@ -126,7 +137,7 @@ export function Checkout() {
       const p = products.find((p) => p.id === item.id);
       if (!p) return null;
       return {
-        product: p.id,
+        product: cmsRelationshipId(p.id),
         productName: p.name,
         size: item.size,
         color: item.color,
@@ -165,7 +176,7 @@ export function Checkout() {
           const p = products.find((p) => p.id === item.id);
           if (!p) return null;
           return {
-            product: p.id,
+            product: cmsRelationshipId(p.id),
             productName: p.name,
             size: item.size,
             color: item.color,
@@ -261,7 +272,7 @@ export function Checkout() {
         return; // navigating away -- no need to clear `submitting`
       }
 
-      if (paymentMethod === 'multicaixa_express' && settings.angolaPaymentLive) {
+      if (paymentMethod === 'multicaixa_express' && appyPayLive) {
         if (!isAppyPayWidgetConfigured()) {
           throw new Error('AppyPay widget credentials are missing');
         }
@@ -368,7 +379,7 @@ export function Checkout() {
           {paymentOptions.map((opt) => (
             <RadioRow key={opt} checked={paymentMethod === opt} onSelect={() => setPaymentMethod(opt)} label={PAYMENT_LABEL_KEYS[opt] ? t(PAYMENT_LABEL_KEYS[opt], lang) : opt} />
           ))}
-          {paymentMethod === 'multicaixa_express' && !settings.angolaPaymentLive && (
+          {paymentMethod === 'multicaixa_express' && !appyPayLive && (
             <div style={{ marginTop: 8, padding: 12, background: C.subtleBg, borderRadius: 6, fontSize: 12, color: C.inkSoft, lineHeight: 1.5 }}>
               {settings.angolaBankTransferInstructions}
             </div>

@@ -32,6 +32,10 @@ Do not commit real API keys, tokens, database URLs, webhook secrets, merchant cr
 | `staging` | Vercel Preview, usually `staging` branch | Railway staging | Staging PostgreSQL | Sandbox/test | Staging Cloudinary/S3 folder |
 | `production` | Vercel Production | Railway production | Production PostgreSQL | Live | Production Cloudinary/S3 folder |
 
+The production storefront uses the same-origin `/api` route. Vercel proxies
+that route to the Railway CMS according to `vercel.json`; the browser does not
+call a separate API hostname directly.
+
 ## Frontend Variables
 
 These are exposed to the browser bundle because they use the `VITE_` prefix:
@@ -46,8 +50,18 @@ These are exposed to the browser bundle because they use the `VITE_` prefix:
 - `VITE_ENABLE_LIVE_PAYMENTS`
 - `VITE_ENABLE_MESSAGING_AUTOMATION`
 - `VITE_ENABLE_ANALYTICS`
+- `VITE_APPYPAY_WIDGET_API_KEY`
+- `VITE_APPYPAY_WIDGET_CLIENT_ID`
+- `VITE_APPYPAY_MERCHANT_NAME`
+- `VITE_APPYPAY_WIDGET_SRC`
+- `VITE_APPYPAY_REDIRECT_URI`
+- `VITE_APPYPAY_MERCHANT_LOGO_URL` (optional)
+- `VITE_APPYPAY_PAYMENT_METHODS` (optional)
+- `VITE_APPYPAY_OPTIONS` (optional JSON object configured in the AppyPay portal)
 
-Never put secrets in `VITE_` variables.
+The AppyPay widget API key and client ID are browser-visible by design because
+the official widget requires them as script `data-*` attributes. Never put the
+server-side AppyPay client secret or OAuth credentials in `VITE_` variables.
 
 ## Backend / Integration Variables
 
