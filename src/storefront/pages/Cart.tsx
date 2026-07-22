@@ -8,7 +8,7 @@ import { trackMetaEvent } from '../../lib/metaAnalytics';
 
 export function Cart() {
   const { market, lang, cart, dispatchCart } = useApp();
-  const { products } = useProducts(market);
+  const { products } = useProducts(market, lang);
   const fmtPrice = useFormatPrice();
   const navigate = useNavigate();
 

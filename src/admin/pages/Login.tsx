@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { C } from '../../theme';
 import { useAdminAuth } from '../AdminAuthContext';
 import wordmarkGold from '../../assets/brand/wordmark-gold.png';
+import { AdminLanguageSwitch } from '../AdminTranslation';
 
 export function Login() {
   const { user, login } = useAdminAuth();
@@ -38,6 +39,7 @@ export function Login() {
         onSubmit={handleSubmit}
         style={{ width: 340, background: '#0C0A08', padding: 32, borderRadius: 10, border: '1px solid #5F4A1B' }}
       >
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}><AdminLanguageSwitch dark /></div>
         <div style={{ textAlign: 'center', marginBottom: 26 }}>
           <img src={wordmarkGold} alt="Use Me With Style" style={{ height: 42, width: 'auto' }} />
         </div>

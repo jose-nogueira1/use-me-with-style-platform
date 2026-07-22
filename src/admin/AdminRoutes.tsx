@@ -12,11 +12,12 @@ import { Mensagens } from './pages/Mensagens';
 import { Settings } from './pages/Settings';
 import { ComingSoon } from './pages/ComingSoon';
 import { Roadmap } from './pages/Roadmap';
+import { AdminTranslationBoundary } from './AdminTranslation';
 
 export function AdminRoutes() {
   return (
     <AdminAuthProvider>
-      <Routes>
+      <AdminTranslationBoundary><Routes>
         <Route path="login" element={<Login />} />
         <Route element={<AdminLayout />}>
           <Route index element={<Dashboard />} />
@@ -34,7 +35,7 @@ export function AdminRoutes() {
           <Route path="inventario" element={<ComingSoon />} />
           <Route path="automacao" element={<ComingSoon />} />
         </Route>
-      </Routes>
+      </Routes></AdminTranslationBoundary>
     </AdminAuthProvider>
   );
 }

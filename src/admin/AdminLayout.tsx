@@ -4,6 +4,7 @@ import { C } from '../theme';
 import { useAdminAuth } from './AdminAuthContext';
 import { adminListOrders, adminListProducts } from '../lib/api';
 import wordmarkGold from '../assets/brand/wordmark-gold.png';
+import { AdminLanguageSwitch } from './AdminTranslation';
 
 // Sidebar matches the Figma admin design system exactly: only four
 // persistent nav items (Dashboard, Orders, Products, Settings) appear in
@@ -30,7 +31,7 @@ export function AdminLayout() {
       .then((rows) => setOrdersCount(rows.length))
       .catch(() => setOrdersCount(null));
     adminListProducts()
-      .then((rows) => setProductsCount(rows.filter((p) => p.sizes.some((s) => s.stockAO <= 2 || s.stockPT <= 2)).length))
+      .then((rows) => setProductsCount(rows.length))
       .catch(() => setProductsCount(null));
   }, [user]);
 
@@ -54,6 +55,7 @@ export function AdminLayout() {
       <div className="ump-admin-sidebar" style={{ background: C.black, padding: '22px 18px' }}>
         <div style={{ textAlign: 'center', marginBottom: 30 }}>
           <img src={wordmarkGold} alt="Use Me With Style" style={{ height: 38, width: 'auto' }} />
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 14 }}><AdminLanguageSwitch dark /></div>
         </div>
 
         <div className="ump-admin-groups" style={{ gap: 6, marginBottom: 20 }}>

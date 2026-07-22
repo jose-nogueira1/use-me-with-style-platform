@@ -45,6 +45,7 @@ export function AppyPayWidget({
     script.dataset.paymentDescription = description;
     script.dataset.phoneNumber = phoneNumber.replace(/\D/g, '');
     script.dataset.merchantTxId = merchantTransactionId;
+    script.dataset.paymentMethods = publicEnv.appyPayPaymentMethods;
     script.dataset.lang = lang === 'en' ? 'en' : 'pt-PT';
     script.onerror = () => setLoadFailed(true);
     document.head.appendChild(script);
@@ -55,8 +56,8 @@ export function AppyPayWidget({
   }, [amount, description, merchantTransactionId, phoneNumber, lang]);
 
   if (loadFailed) {
-    return <p role="alert">Não foi possível carregar o pagamento AppyPay. Tente novamente.</p>;
+    return <p role="alert">{lang === 'pt' ? 'Não foi possível carregar o pagamento AppyPay. Tente novamente.' : 'AppyPay could not be loaded. Please try again.'}</p>;
   }
 
-  return <div aria-live="polite">A carregar o pagamento Multicaixa Express…</div>;
+  return <div aria-live="polite">{lang === 'pt' ? 'A carregar Multicaixa Express e Referência…' : 'Loading Multicaixa Express and Reference…'}</div>;
 }

@@ -16,7 +16,7 @@ const CATS = [
 
 export function Browse() {
   const { market, lang } = useApp();
-  const { products, loading } = useProducts(market);
+  const { products, loading } = useProducts(market, lang);
   const [searchParams] = useSearchParams();
   const initialCat = searchParams.get('cat') || 'all';
 
@@ -200,4 +200,3 @@ function FilterGroup({
     </div>
   );
 }
-

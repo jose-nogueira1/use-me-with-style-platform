@@ -14,7 +14,7 @@ type UseProductsResult = {
  * an unavailable API produces an empty catalogue and a visible console error,
  * never a silent local-data fallback.
  */
-export function useProducts(market: Market): UseProductsResult {
+export function useProducts(market: Market, lang: 'pt' | 'en'): UseProductsResult {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -24,7 +24,7 @@ export function useProducts(market: Market): UseProductsResult {
     fetchProducts(market)
       .then((apiProducts) => {
         if (cancelled) return;
-        setProducts(apiProducts.map((p, i) => adaptApiProduct(p, market, i)));
+        setProducts(apiProducts.map((p, i) => adaptApiProduct(p, market, lang, i)));
       })
       .catch((err) => {
         if (cancelled) return;
@@ -38,7 +38,7 @@ export function useProducts(market: Market): UseProductsResult {
     return () => {
       cancelled = true;
     };
-  }, [market]);
+  }, [market, lang]);
 
   return { products, loading };
 }

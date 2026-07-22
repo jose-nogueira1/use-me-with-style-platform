@@ -12,22 +12,24 @@ function absoluteMediaUrl(url?: string): string | undefined {
   }
 }
 
-export function adaptApiProduct(api: ApiProduct, market: 'AO' | 'PT', index = 0): Product {
+export function adaptApiProduct(api: ApiProduct, market: 'AO' | 'PT', lang: 'pt' | 'en', index = 0): Product {
+  const localizedName = (lang === 'en' ? api.nameEN : api.namePT)?.trim() || api.name;
+  const localizedDescription = (lang === 'en' ? api.descriptionEN : api.descriptionPT)?.trim() || api.description;
   const images = (api.images ?? []).flatMap(({ image }) => {
-    if (!image || typeof image === 'string') return [];
+    if (!image || typeof image !== 'object') return [];
     const url = absoluteMediaUrl(image.url);
     if (!url) return [];
     return [{
       url,
       cardUrl: absoluteMediaUrl(image.sizes?.card?.url),
       thumbnailUrl: absoluteMediaUrl(image.sizes?.thumbnail?.url),
-      alt: image.alt?.trim() || api.name,
+      alt: image.alt?.trim() || localizedName,
     }];
   });
 
   return {
-    id: api.id,
-    name: api.name,
+    id: String(api.id),
+    name: localizedName,
     slug: api.slug,
     cat: api.category,
     priceKz: api.priceAOKz,
@@ -38,7 +40,7 @@ export function adaptApiProduct(api: ApiProduct, market: 'AO' | 'PT', index = 0)
     ),
     colors: api.colors.map((c) => c.color),
     tag: api.tag,
-    description: api.description,
+    description: localizedDescription,
     images,
     tone: TONE_CYCLE[index % TONE_CYCLE.length],
   };

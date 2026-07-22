@@ -128,7 +128,7 @@ export const T: Record<string, Record<Lang, string>> = {
   paymentPaypal: { pt: 'PayPal', en: 'PayPal' },
   paymentStripe: { pt: 'Cartão (Stripe)', en: 'Card (Stripe)' },
   paymentMbway: { pt: 'MB WAY', en: 'MB WAY' },
-  paymentMulticaixaExpress: { pt: 'Multicaixa Express', en: 'Multicaixa Express' },
+  paymentMulticaixaExpress: { pt: 'AppyPay — Multicaixa Express ou Referência', en: 'AppyPay — Multicaixa Express or Reference' },
   paymentBankTransfer: { pt: 'Transferência bancária', en: 'Bank transfer' },
   localCourierDelivery: { pt: 'Entrega por estafeta local', en: 'Local courier delivery' },
   stripeRedirecting: { pt: 'A redirecionar para o pagamento seguro…', en: 'Redirecting to secure payment…' },

@@ -49,7 +49,7 @@ const DELIVERY_LABEL_KEYS: Record<string, string> = {
 
 export function Checkout() {
   const { market, lang, cart } = useApp();
-  const { products } = useProducts(market);
+  const { products } = useProducts(market, lang);
   const navigate = useNavigate();
 
   const [settings, setSettings] = useState<MarketSettings>(DEFAULT_MARKET_SETTINGS);

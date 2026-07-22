@@ -43,16 +43,24 @@ async function request<T>(
 // workspace, or copy that file over manually).
 // ---------------------------------------------------------------------------
 export type ApiProduct = {
-  id: string;
+  // Payload returns numeric IDs with the local SQLite adapter and string IDs
+  // with PostgreSQL. Treat both as valid so admin routes work in every env.
+  id: string | number;
   name: string;
+  namePT?: string;
+  nameEN?: string;
   slug: string;
   category: 'vestidos' | 'tops' | 'leggings' | 'conjuntos';
   description?: string;
+  descriptionPT?: string;
+  descriptionEN?: string;
   tag?: string;
   images?: {
     image:
       | string
+      | number
       | {
+          id?: string | number;
           url?: string;
           alt?: string;
           sizes?: {
@@ -356,12 +364,22 @@ export async function adminCreateProduct(input: Partial<ApiProduct>): Promise<Ap
   return data.doc;
 }
 
-export async function adminUpdateProduct(id: string, input: Partial<ApiProduct>): Promise<ApiProduct> {
+export async function adminUpdateProduct(id: string | number, input: Partial<ApiProduct>): Promise<ApiProduct> {
   const data = await request<{ doc: ApiProduct }>(
     `/products/${id}`,
     { method: 'PATCH', body: JSON.stringify(input) },
     { auth: true },
   );
+  return data.doc;
+}
+
+export async function adminUploadProductImage(file: File, alt: string): Promise<{ id: string | number; url?: string; alt?: string }> {
+  const body = new FormData();
+  body.append('file', file);
+  body.append('_payload', JSON.stringify({ alt }));
+  const res = await fetch(`${API_BASE}/media`, { method: 'POST', body, credentials: 'include' });
+  if (!res.ok) throw new ApiError(`Image upload failed (${res.status}): ${await res.text().catch(() => '')}`, res.status);
+  const data = await res.json() as { doc: { id: string | number; url?: string; alt?: string } };
   return data.doc;
 }
 

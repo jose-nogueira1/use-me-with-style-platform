@@ -15,7 +15,7 @@ const CATEGORIES = [
 
 export function Home() {
   const { market, lang } = useApp();
-  const { products, loading } = useProducts(market);
+  const { products, loading } = useProducts(market, lang);
   const newArrivals = products.filter((p) => p.tag === 'New').slice(0, 4);
   const featured = products.slice(0, 8);
 

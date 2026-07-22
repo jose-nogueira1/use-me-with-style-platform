@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { C } from '../../theme';
-import { adminCreateProduct, adminListProducts, adminUpdateProduct, type ApiProduct } from '../../lib/api';
+import { adminCreateProduct, adminListProducts, adminUpdateProduct, adminUploadProductImage, type ApiProduct } from '../../lib/api';
 import { PageHeader } from '../components/PageHeader';
 
 const CATEGORIES: ApiProduct['category'][] = ['vestidos', 'tops', 'leggings', 'conjuntos'];
@@ -9,15 +9,24 @@ const CATEGORY_LABEL: Record<ApiProduct['category'], string> = { vestidos: 'Dres
 
 type FormState = {
   name: string;
+  namePT: string;
+  nameEN: string;
   slug: string;
   category: ApiProduct['category'];
   description: string;
+  descriptionPT: string;
+  descriptionEN: string;
+  tag: string;
+  colors: string;
+  sizes: ApiProduct['sizes'];
   priceAOKz: string;
   pricePTEur: string;
   active: boolean;
+  availableAO: boolean;
+  availablePT: boolean;
 };
 
-const EMPTY: FormState = { name: '', slug: '', category: 'vestidos', description: '', priceAOKz: '', pricePTEur: '', active: false };
+const EMPTY: FormState = { name: '', namePT: '', nameEN: '', slug: '', category: 'vestidos', description: '', descriptionPT: '', descriptionEN: '', tag: '', colors: '', sizes: [{ size: 'S', stockAO: 0, stockPT: 0 }], priceAOKz: '', pricePTEur: '', active: false, availableAO: true, availablePT: true };
 
 export function ProductEditor() {
   const { id } = useParams<{ id: string }>();
@@ -33,7 +42,7 @@ export function ProductEditor() {
     if (isNew) return;
     adminListProducts()
       .then((products) => {
-        const p = products.find((x) => x.id === id);
+        const p = products.find((x) => String(x.id) === id);
         if (!p) {
           setError('Product not found.');
           return;
@@ -41,12 +50,21 @@ export function ProductEditor() {
         setExisting(p);
         setForm({
           name: p.name,
+          namePT: p.namePT ?? p.name,
+          nameEN: p.nameEN ?? p.name,
           slug: p.slug,
           category: p.category,
           description: p.description ?? '',
+          descriptionPT: p.descriptionPT ?? p.description ?? '',
+          descriptionEN: p.descriptionEN ?? '',
+          tag: p.tag ?? '',
+          colors: p.colors.map((c) => c.color).join(', '),
+          sizes: p.sizes,
           priceAOKz: String(p.priceAOKz),
           pricePTEur: String(p.pricePTEur),
           active: p.active,
+          availableAO: p.availableAO,
+          availablePT: p.availablePT,
         });
       })
       .catch(() => setError("Couldn't connect to the backend."))
@@ -59,13 +77,22 @@ export function ProductEditor() {
     setSaving(true);
     setError(null);
     const payload: Partial<ApiProduct> = {
-      name: form.name,
+      name: form.namePT || form.name,
+      namePT: form.namePT,
+      nameEN: form.nameEN,
       slug: form.slug,
       category: form.category,
-      description: form.description,
+      description: form.descriptionPT || form.description,
+      descriptionPT: form.descriptionPT,
+      descriptionEN: form.descriptionEN,
+      tag: form.tag || undefined,
+      colors: form.colors.split(',').map((color) => color.trim()).filter(Boolean).map((color) => ({ color })),
+      sizes: form.sizes,
       priceAOKz: Number(form.priceAOKz) || 0,
       pricePTEur: Number(form.pricePTEur) || 0,
       active: form.active,
+      availableAO: form.availableAO,
+      availablePT: form.availablePT,
     };
     try {
       if (isNew) {
@@ -76,6 +103,25 @@ export function ProductEditor() {
       }
     } catch {
       setError("Couldn't save. Make sure the backend is running.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleImageUpload = async (file?: File) => {
+    if (!file || !existing) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const media = await adminUploadProductImage(file, form.namePT || form.name || file.name);
+      const images = [
+        ...(existing.images ?? []).map(({ image }) => ({ image: typeof image === 'object' ? image.id! : image })),
+        { image: media.id },
+      ];
+      const updated = await adminUpdateProduct(existing.id, { images });
+      setExisting(updated);
+    } catch {
+      setError("Couldn't upload the image.");
     } finally {
       setSaving(false);
     }
@@ -119,14 +165,16 @@ export function ProductEditor() {
               'Client photo pending'
             )}
           </div>
-          <button style={{ width: '100%', marginTop: 12, padding: 12, background: C.paper, border: `1px solid ${C.rule}`, borderRadius: 6, fontSize: 11, fontWeight: 800, color: C.ink }}>
+          <label style={{ display: 'block', width: '100%', marginTop: 12, padding: 12, background: C.paper, border: `1px solid ${C.rule}`, borderRadius: 6, fontSize: 11, fontWeight: 800, color: C.ink, textAlign: 'center', cursor: 'pointer' }}>
             Add photos
-          </button>
+            <input type="file" accept="image/*" hidden onChange={(e) => void handleImageUpload(e.target.files?.[0])} />
+          </label>
         </div>
 
         <div style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }} className="ump-admin-fields-grid">
-            <FieldInput label="Product name" value={form.name} onChange={(v) => set('name', v)} />
+            <FieldInput label="Product name — Portuguese" value={form.namePT} onChange={(v) => set('namePT', v)} />
+            <FieldInput label="Product name — English" value={form.nameEN} onChange={(v) => set('nameEN', v)} />
             <label style={{ display: 'block' }}>
               <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>Category</div>
               <select
@@ -154,39 +202,53 @@ export function ProductEditor() {
             </label>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }} className="ump-admin-fields-grid">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }} className="ump-admin-fields-grid">
+            <FieldInput label="Slug" value={form.slug} onChange={(v) => set('slug', v)} />
             <FieldInput label="Angola price (Kz)" value={form.priceAOKz} onChange={(v) => set('priceAOKz', v)} type="number" />
             <FieldInput label="Portugal price (EUR)" value={form.pricePTEur} onChange={(v) => set('pricePTEur', v)} type="number" />
           </div>
 
-          {existing && existing.sizes.length > 0 && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }} className="ump-admin-fields-grid">
+            <FieldInput label="Colours (comma separated)" value={form.colors} onChange={(v) => set('colors', v)} />
+            <label><div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>Merchandising tag</div><select value={form.tag} onChange={(e) => set('tag', e.target.value)} style={{ width: '100%', padding: 11, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg }}><option value="">None</option><option value="NOVIDADE">Novidade</option><option value="BESTSELLER">Bestseller</option><option value="QUASE ESGOTADO">Quase esgotado</option></select></label>
+          </div>
+
+          <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
+            <CheckField label="Published" checked={form.active} onChange={(v) => set('active', v)} />
+            <CheckField label="Available in Angola" checked={form.availableAO} onChange={(v) => set('availableAO', v)} />
+            <CheckField label="Available in Portugal" checked={form.availablePT} onChange={(v) => set('availablePT', v)} />
+          </div>
+
+          {form.sizes.length > 0 && (
             <div>
               <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>Stock by size</div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {existing.sizes.map((s) => (
-                  <div key={s.size} style={{ padding: '10px 12px', borderRadius: 6, background: C.subtleBg, border: `1px solid ${C.ruleLight}`, fontSize: 11, fontWeight: 800, color: C.ink }}>
-                    {s.size} · AO {s.stockAO} / PT {s.stockPT}
+                {form.sizes.map((s, index) => (
+                  <div key={`${s.size}-${index}`} style={{ padding: '10px 12px', borderRadius: 6, background: C.subtleBg, border: `1px solid ${C.ruleLight}`, fontSize: 11, fontWeight: 800, color: C.ink, display: 'flex', gap: 6, alignItems: 'center' }}>
+                    <select value={s.size} onChange={(e) => set('sizes', form.sizes.map((row, i) => i === index ? { ...row, size: e.target.value } : row))}>{['XS','S','M','L','XL'].map((size) => <option key={size}>{size}</option>)}</select>
+                    AO <input aria-label={`${s.size} Angola stock`} type="number" min="0" value={s.stockAO} onChange={(e) => set('sizes', form.sizes.map((row, i) => i === index ? { ...row, stockAO: Number(e.target.value) } : row))} style={{ width: 55 }} />
+                    PT <input aria-label={`${s.size} Portugal stock`} type="number" min="0" value={s.stockPT} onChange={(e) => set('sizes', form.sizes.map((row, i) => i === index ? { ...row, stockPT: Number(e.target.value) } : row))} style={{ width: 55 }} />
+                    <button type="button" onClick={() => set('sizes', form.sizes.filter((_, i) => i !== index))}>×</button>
                   </div>
                 ))}
+                <button type="button" onClick={() => set('sizes', [...form.sizes, { size: 'S', stockAO: 0, stockPT: 0 }])}>+ Add size</button>
               </div>
             </div>
           )}
 
           <label style={{ display: 'block' }}>
-            <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>Description placeholder</div>
+            <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>Description — Portuguese</div>
             <textarea
-              value={form.description}
-              onChange={(e) => set('description', e.target.value)}
+              value={form.descriptionPT}
+              onChange={(e) => set('descriptionPT', e.target.value)}
               rows={3}
               placeholder="Soft launch copy until client approves final product descriptions. Include fit, care, fabric, and styling notes."
               style={{ width: '100%', padding: '11px 12px', fontSize: 12, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, color: C.ink, fontFamily: 'inherit' }}
             />
           </label>
 
-          <div style={{ fontSize: 10, color: C.inkSoft }}>
-            Full colour and size/stock-by-market editing is available directly in the Payload admin (localhost:3000/admin) --
-            this view covers the essential Phase 1 fields.
-          </div>
+          <label style={{ display: 'block' }}><div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>Description — English</div><textarea value={form.descriptionEN} onChange={(e) => set('descriptionEN', e.target.value)} rows={3} style={{ width: '100%', padding: '11px 12px', fontSize: 12, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, color: C.ink, fontFamily: 'inherit' }} /></label>
+
 
           <button
             onClick={handleSave}
@@ -213,4 +275,8 @@ function FieldInput({ label, value, onChange, type = 'text' }: { label: string; 
       />
     </label>
   );
+}
+
+function CheckField({ label, checked, onChange }: { label: string; checked: boolean; onChange: (value: boolean) => void }) {
+  return <label style={{ display: 'flex', gap: 7, alignItems: 'center', fontSize: 11, fontWeight: 800, color: C.ink }}><input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} />{label}</label>;
 }

@@ -14,7 +14,7 @@ export function ProductDetail() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { market, lang, dispatchCart, favorites, toggleFavorite } = useApp();
-  const { products, loading } = useProducts(market);
+  const { products, loading } = useProducts(market, lang);
   const fmtPrice = useFormatPrice();
 
   const product = products.find((p) => p.slug === slug);
