@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { C, F, t } from '../../theme';
 import { useApp } from '../../state/AppContext';
 import { useProducts } from '../../hooks/useProducts';
@@ -126,8 +126,7 @@ export function Checkout() {
   }, [market, settings]);
 
   if (cart.length === 0) {
-    navigate('/carrinho');
-    return null;
+    return <Navigate to="/carrinho" replace />;
   }
 
   // Displayed to the shopper -- always Kz in Angola, regardless of which

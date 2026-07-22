@@ -14,6 +14,8 @@ function bool(value: string | undefined, fallback = false) {
   return fallback;
 }
 
+const paymentMode = oneOf(import.meta.env.VITE_PAYMENT_MODE, paymentModes, "sandbox");
+
 export const publicEnv = {
   appEnv: oneOf(import.meta.env.VITE_APP_ENV, appEnvs, "development"),
   appName: import.meta.env.VITE_APP_NAME || "Use Me With Style",
@@ -21,7 +23,7 @@ export const publicEnv = {
   apiBaseUrl: import.meta.env.VITE_API_BASE_URL || "http://localhost:4000",
   cmsUrl: import.meta.env.VITE_CMS_URL || "http://localhost:3000/admin",
   defaultMarket: import.meta.env.VITE_DEFAULT_MARKET || "AO",
-  paymentMode: oneOf(import.meta.env.VITE_PAYMENT_MODE, paymentModes, "sandbox"),
+  paymentMode,
   // Public PayPal client ID (JOS-61) -- used client-side to load the PayPal
   // JS SDK button. This is a public identifier by design, safe to expose;
   // the matching secret (PAYPAL_CLIENT_SECRET) stays server-side only, in
@@ -33,7 +35,11 @@ export const publicEnv = {
   appyPayApiKey: import.meta.env.VITE_APPYPAY_WIDGET_API_KEY || "",
   appyPayClientId: import.meta.env.VITE_APPYPAY_WIDGET_CLIENT_ID || "",
   appyPayMerchantName: import.meta.env.VITE_APPYPAY_MERCHANT_NAME || "",
-  appyPayWidgetSrc: import.meta.env.VITE_APPYPAY_WIDGET_SRC || "https://widget.appypay.co.ao/main.js",
+  appyPayWidgetSrc:
+    import.meta.env.VITE_APPYPAY_WIDGET_SRC ||
+    (paymentMode === "sandbox"
+      ? "https://widget-tst.appypay.co.ao/main.js"
+      : "https://widget.appypay.co.ao/main.js"),
   appyPayRedirectUri: import.meta.env.VITE_APPYPAY_REDIRECT_URI || "",
   appyPayMerchantLogoUrl: import.meta.env.VITE_APPYPAY_MERCHANT_LOGO_URL || "",
   appyPayPaymentMethods: import.meta.env.VITE_APPYPAY_PAYMENT_METHODS || "",

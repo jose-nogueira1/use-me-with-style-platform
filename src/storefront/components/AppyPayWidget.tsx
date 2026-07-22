@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { publicEnv } from '../../config/env';
 
 const SCRIPT_ID = 'appyPay-charges-widget-v2';
@@ -24,11 +24,31 @@ export function AppyPayWidget({
   lang,
 }: AppyPayWidgetProps) {
   const [loadFailed, setLoadFailed] = useState(false);
+  const frameRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
-    document.getElementById(SCRIPT_ID)?.remove();
+    const frameDocument = frameRef.current?.contentDocument;
+    if (!frameDocument) return;
 
-    const script = document.createElement('script');
+    setLoadFailed(false);
+    frameDocument.open();
+    frameDocument.write('<!doctype html><html><head></head><body></body></html>');
+    frameDocument.close();
+
+    const viewport = frameDocument.createElement('meta');
+    viewport.name = 'viewport';
+    viewport.content = 'width=device-width, initial-scale=1';
+    frameDocument.head.appendChild(viewport);
+
+    const container = frameDocument.createElement('div');
+    container.id = CONTAINER_ID;
+    container.setAttribute('aria-live', 'polite');
+    container.textContent = lang === 'pt'
+      ? 'A carregar Multicaixa Express e Referência…'
+      : 'Loading Multicaixa Express and Reference…';
+    frameDocument.body.appendChild(container);
+
+    const script = frameDocument.createElement('script');
     script.id = SCRIPT_ID;
     script.src = publicEnv.appyPayWidgetSrc;
     script.async = true;
@@ -57,7 +77,7 @@ export function AppyPayWidget({
     }
     script.dataset.lang = lang === 'en' ? 'en' : 'pt-PT';
     script.onerror = () => setLoadFailed(true);
-    document.head.appendChild(script);
+    frameDocument.head.appendChild(script);
 
     return () => {
       script.remove();
@@ -68,11 +88,14 @@ export function AppyPayWidget({
     return <p role="alert">{lang === 'pt' ? 'Não foi possível carregar o pagamento AppyPay. Tente novamente.' : 'AppyPay could not be loaded. Please try again.'}</p>;
   }
 
-  // AppyPay's production script renders directly into this exact element ID.
-  // Keep the loading copy inside it so the widget replaces it on mount.
+  // AppyPay injects unscoped styles for body, headings, links, and buttons.
+  // A same-origin frame contains those styles while preserving the hosted
+  // widget's normal script configuration and payment flow.
   return (
-    <div id={CONTAINER_ID} aria-live="polite">
-      {lang === 'pt' ? 'A carregar Multicaixa Express e Referência…' : 'Loading Multicaixa Express and Reference…'}
-    </div>
+    <iframe
+      ref={frameRef}
+      title={lang === 'pt' ? 'Pagamento AppyPay' : 'AppyPay payment'}
+      style={{ display: 'block', width: '100%', height: 720, border: 0 }}
+    />
   );
 }
