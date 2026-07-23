@@ -200,7 +200,7 @@ export function ProductDetail() {
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, padding: '6px 0' }}>
               <span style={{ color: C.ink, fontWeight: 700 }}>{t('returns', lang)}</span>
-              <span style={{ color: C.inkSoft }}>{t('fourteenDays', lang)}</span>
+              <span style={{ color: C.inkSoft }}>{t(market === 'AO' ? 'fortyEightHours' : 'fourteenDays', lang)}</span>
             </div>
           </div>
         </div>

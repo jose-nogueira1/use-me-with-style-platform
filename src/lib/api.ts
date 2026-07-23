@@ -160,7 +160,12 @@ export type MarketSettings = {
   angolaDeliveryMethods: string[];
   portugalPaymentMethods: string[];
   portugalDeliveryMethods: string[];
-  returnsPolicyText?: string;
+  /** Client-provided legal copy (JOS-64, added 2026-07-23). Angola and
+   * Portugal/EU have materially different terms (48h exchange-only vs.
+   * 14-day statutory withdrawal with refund), so these are separate fields
+   * rather than a translation of one shared policy. */
+  angolaReturnsPolicyText?: string;
+  portugalReturnsPolicyText?: string;
 };
 
 export type ApiCustomer = {

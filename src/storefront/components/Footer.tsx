@@ -71,7 +71,11 @@ export function Footer() {
             {t('aboutNav', lang)}
           </Link>
           <InfoLine label={t('shipping', lang)} value={market === 'AO' ? t('localCourierDelivery', lang) : t('businessDays', lang)} />
-          <InfoLine label={t('returns', lang)} value={t('footerReturnsNote', lang, { days: t('fourteenDays', lang) })} />
+          <InfoLine
+            label={t('returns', lang)}
+            value={t('footerReturnsNote', lang, { days: t(market === 'AO' ? 'fortyEightHours' : 'fourteenDays', lang) })}
+            to="/ajuda"
+          />
           <InfoLine label={t('prices', lang)} value={t(market === 'AO' ? 'footerPricesNoteAo' : 'footerPricesNotePt', lang)} />
           <div style={{ marginTop: 4, fontSize: 9, letterSpacing: 2, color: C.inkSoft, textTransform: 'uppercase' }}>
             {t(market === 'AO' ? 'angola' : 'portugal', lang)}
@@ -166,12 +170,19 @@ function FooterCol({
   );
 }
 
-function InfoLine({ label, value }: { label: string; value: string }) {
+function InfoLine({ label, value, to }: { label: string; value: string; to?: string }) {
   if (!label) return null;
+  const valueStyle = { fontSize: 12, color: C.ink, marginTop: 2, lineHeight: 1.4 };
   return (
     <div style={{ marginBottom: 10 }}>
       <div style={{ fontSize: 9, color: C.inkSoft, textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</div>
-      <div style={{ fontSize: 12, color: C.ink, marginTop: 2, lineHeight: 1.4 }}>{value}</div>
+      {to ? (
+        <Link to={to} style={{ ...valueStyle, textDecoration: 'underline', display: 'inline-block' }}>
+          {value}
+        </Link>
+      ) : (
+        <div style={valueStyle}>{value}</div>
+      )}
     </div>
   );
 }

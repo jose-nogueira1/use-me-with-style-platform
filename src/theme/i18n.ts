@@ -74,6 +74,10 @@ export const T: Record<string, Record<Lang, string>> = {
   businessDays: { pt: '1–2 dias úteis', en: '1–2 business days' },
   returns: { pt: 'Devoluções', en: 'Returns' },
   fourteenDays: { pt: '14 dias', en: '14 days' },
+  // Angola's exchange window is 48h (exchange-only, no refunds) -- materially
+  // different from Portugal/EU's 14-day statutory withdrawal, so this is a
+  // separate key rather than reusing fourteenDays (JOS-64, 2026-07-23).
+  fortyEightHours: { pt: '48 horas', en: '48 hours' },
   added: { pt: 'Adicionado', en: 'Added' },
   addToCart: { pt: 'Adicionar ao carrinho', en: 'Add to cart' },
   completeTheLook: { pt: 'Complete o look', en: 'Complete the look' },
@@ -170,6 +174,12 @@ export const T: Record<string, Record<Lang, string>> = {
     en: "Message us on WhatsApp and we'll get back to you shortly, or track an existing order below.",
   },
   chatOnWhatsapp: { pt: 'Conversar no WhatsApp', en: 'Chat on WhatsApp' },
+  returnsPolicyHeading: { pt: 'Política de trocas e devoluções', en: 'Returns & exchanges policy' },
+  returnsPolicyLoading: { pt: 'A carregar política…', en: 'Loading policy…' },
+  returnsPolicyUnavailable: {
+    pt: 'A política de trocas e devoluções está a ser atualizada. Contacte-nos no WhatsApp para qualquer pedido.',
+    en: "Our returns & exchanges policy is being updated. Message us on WhatsApp for any request.",
+  },
 
   // Footer
   footerAbout: {
