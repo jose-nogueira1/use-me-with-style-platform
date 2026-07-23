@@ -71,6 +71,16 @@ const EN: Record<string, string> = {
 };
 
 const originals = new WeakMap<Node, string>();
+// Tracks the last string we actually wrote into each text node. If the DOM
+// no longer matches what we last wrote, something else (React re-rendering
+// with fresh data -- an order status change, product counts loading in,
+// etc.) changed it, and the cached "original" is stale and must be replaced
+// rather than reapplied over the new content.
+const lastApplied = new WeakMap<Node, string>();
+
+type TranslatableAttr = 'placeholder' | 'aria-label' | 'title';
+const attrOriginals = new WeakMap<HTMLElement, Partial<Record<TranslatableAttr, string>>>();
+const attrLastApplied = new WeakMap<HTMLElement, Partial<Record<TranslatableAttr, string>>>();
 
 function translate(value: string, lang: 'pt' | 'en'): string {
   const trimmed = value.trim();
@@ -112,19 +122,30 @@ export function AdminTranslationBoundary({ children }: { children: ReactNode }) 
       const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
       let node: Node | null;
       while ((node = walker.nextNode())) {
-        if (!originals.has(node)) originals.set(node, node.textContent ?? '');
+        const current = node.textContent ?? '';
+        if (!originals.has(node) || current !== lastApplied.get(node)) {
+          originals.set(node, current);
+        }
         const original = originals.get(node) ?? '';
         const next = translate(original, lang);
         if (node.textContent !== next) node.textContent = next;
+        lastApplied.set(node, next);
       }
       element.querySelectorAll<HTMLElement>('[placeholder],[aria-label],[title]').forEach((item) => {
-        for (const attribute of ['placeholder', 'aria-label', 'title']) {
+        for (const attribute of ['placeholder', 'aria-label', 'title'] as const) {
           const value = item.getAttribute(attribute);
           if (!value) continue;
-          const key = `data-admin-original-${attribute}`;
-          if (!item.hasAttribute(key)) item.setAttribute(key, value);
-          const original = item.getAttribute(key) ?? value;
-          item.setAttribute(attribute, translate(original, lang));
+          const cachedOriginals = attrOriginals.get(item) ?? {};
+          const cachedApplied = attrLastApplied.get(item) ?? {};
+          if (cachedOriginals[attribute] === undefined || value !== cachedApplied[attribute]) {
+            cachedOriginals[attribute] = value;
+            attrOriginals.set(item, cachedOriginals);
+          }
+          const original = cachedOriginals[attribute] ?? value;
+          const next = translate(original, lang);
+          if (value !== next) item.setAttribute(attribute, next);
+          cachedApplied[attribute] = next;
+          attrLastApplied.set(item, cachedApplied);
         }
       });
     };
