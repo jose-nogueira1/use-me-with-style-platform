@@ -220,6 +220,31 @@ export async function fetchMarketSettings(): Promise<MarketSettings> {
   return request<MarketSettings>('/globals/market-settings');
 }
 
+export type ApiInstagramPost = {
+  id: string;
+  imageUrl: string;
+  permalink: string;
+  caption: string;
+};
+
+/**
+ * Real posts from the client's Instagram Business account, via the CMS's
+ * Graph API proxy (GET /api/instagram-feed). Returns an empty array --
+ * never throws -- when Instagram credentials aren't configured yet (JOS-58)
+ * or the CMS is unreachable, so callers can treat "no posts" as a normal
+ * state and fall back to the static placeholder grid.
+ */
+export async function fetchInstagramFeed(limit = 6): Promise<ApiInstagramPost[]> {
+  try {
+    const data = await request<{ configured: boolean; posts: ApiInstagramPost[] }>(
+      `/instagram-feed?limit=${limit}`,
+    );
+    return data.posts ?? [];
+  } catch {
+    return [];
+  }
+}
+
 export async function createOrder(input: CreateOrderInput): Promise<ApiOrder> {
   const data = await request<{ doc: ApiOrder }>('/orders', {
     method: 'POST',
