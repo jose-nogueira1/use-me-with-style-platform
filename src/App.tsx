@@ -1,16 +1,20 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { C, F, LIGHT_VARS, DARK_VARS } from './theme';
 import { AppProvider } from './state/AppContext';
-import { StorefrontLayout } from './storefront/StorefrontLayout';
-import { Home } from './storefront/pages/Home';
-import { Browse } from './storefront/pages/Browse';
-import { ProductDetail } from './storefront/pages/ProductDetail';
-import { Cart } from './storefront/pages/Cart';
-import { Checkout } from './storefront/pages/Checkout';
-import { ConfirmationLookup } from './storefront/pages/ConfirmationLookup';
-import { Help } from './storefront/pages/Help';
-import { About } from './storefront/pages/About';
-import { AdminRoutes } from './admin/AdminRoutes';
+import { AppErrorBoundary } from './components/AppErrorBoundary';
+
+const StorefrontLayout = lazy(() => import('./storefront/StorefrontLayout').then((m) => ({ default: m.StorefrontLayout })));
+const Home = lazy(() => import('./storefront/pages/Home').then((m) => ({ default: m.Home })));
+const Browse = lazy(() => import('./storefront/pages/Browse').then((m) => ({ default: m.Browse })));
+const ProductDetail = lazy(() => import('./storefront/pages/ProductDetail').then((m) => ({ default: m.ProductDetail })));
+const Cart = lazy(() => import('./storefront/pages/Cart').then((m) => ({ default: m.Cart })));
+const Checkout = lazy(() => import('./storefront/pages/Checkout').then((m) => ({ default: m.Checkout })));
+const ConfirmationLookup = lazy(() => import('./storefront/pages/ConfirmationLookup').then((m) => ({ default: m.ConfirmationLookup })));
+const Help = lazy(() => import('./storefront/pages/Help').then((m) => ({ default: m.Help })));
+const About = lazy(() => import('./storefront/pages/About').then((m) => ({ default: m.About })));
+const AdminRoutes = lazy(() => import('./admin/AdminRoutes').then((m) => ({ default: m.AdminRoutes })));
+const NotFound = lazy(() => import('./storefront/pages/NotFound').then((m) => ({ default: m.NotFound })));
 
 export default function App() {
   return (
@@ -46,6 +50,12 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
 
         button { cursor: pointer; border: none; background: none; font-family: inherit; }
         a { color: inherit; }
+        :focus-visible { outline: 3px solid ${C.gold}; outline-offset: 3px; }
+        .ump-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+        @media (prefers-reduced-motion: reduce) {
+          *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+        }
 
         /* --- Responsive storefront: mobile-first, desktop-ready --- */
         /* The shell itself is full-bleed on desktop (header/hero/footer
@@ -214,9 +224,10 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
         }
       `}</style>
 
-      <BrowserRouter>
-        <AppProvider>
-          <Routes>
+      <AppErrorBoundary>
+        <BrowserRouter>
+          <AppProvider>
+          <Suspense fallback={<div role="status" style={{ padding: 40, textAlign: 'center', color: C.inkSoft }}>…</div>}><Routes>
             <Route element={<StorefrontLayout />}>
               <Route index element={<Home />} />
               <Route path="catalogo" element={<Browse />} />
@@ -227,11 +238,13 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
               <Route path="conta" element={<ConfirmationLookup />} />
               <Route path="ajuda" element={<Help />} />
               <Route path="sobre" element={<About />} />
+              <Route path="*" element={<NotFound />} />
             </Route>
             <Route path="admin/*" element={<AdminRoutes />} />
-          </Routes>
-        </AppProvider>
-      </BrowserRouter>
+          </Routes></Suspense>
+          </AppProvider>
+        </BrowserRouter>
+      </AppErrorBoundary>
     </div>
   );
 }

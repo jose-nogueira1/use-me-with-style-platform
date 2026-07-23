@@ -79,6 +79,8 @@ export function ProductDetail() {
           <ProductPhoto tone={product.tone} radius={0} image={product.images[0]} />
           <button
             onClick={() => toggleFavorite(product.id)}
+            aria-label={isFav ? (lang === 'pt' ? `Remover ${product.name} dos favoritos` : `Remove ${product.name} from favorites`) : (lang === 'pt' ? `Adicionar ${product.name} aos favoritos` : `Add ${product.name} to favorites`)}
+            aria-pressed={isFav}
             style={{
               position: 'absolute',
               top: 16,
@@ -106,7 +108,7 @@ export function ProductDetail() {
           <div style={{ fontSize: 9, letterSpacing: 2, color: C.goldDeep, fontWeight: 800, textTransform: 'uppercase' }}>
             {t(CAT_LABEL_KEY[product.cat] ?? 'sets', lang)}
           </div>
-          <div style={{ fontFamily: F.display, fontSize: 26, color: C.ink, marginTop: 4, fontWeight: 800 }}>{product.name}</div>
+          <h1 style={{ fontFamily: F.display, fontSize: 26, color: C.ink, margin: '4px 0 0', fontWeight: 800 }}>{product.name}</h1>
           <div style={{ marginTop: 8 }}>
             <span style={{ fontSize: 20, fontWeight: 800, color: C.black }}>{fmtPrice(product)}</span>
           </div>
@@ -136,6 +138,7 @@ export function ProductDetail() {
                     key={s}
                     onClick={() => !outForThisSize && setSize(s)}
                     disabled={outForThisSize}
+                    aria-pressed={activeSize === s}
                     style={{
                       flex: 1,
                       padding: '10px 4px',
@@ -166,6 +169,7 @@ export function ProductDetail() {
                 <button
                   key={co}
                   onClick={() => setColor(co)}
+                  aria-pressed={activeColor === co}
                   style={{
                     padding: '6px 12px',
                     fontSize: 11,
@@ -204,10 +208,10 @@ export function ProductDetail() {
 
       {showSizeGuide && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(5,5,5,0.4)', zIndex: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <div style={{ background: C.paper, borderRadius: 10, padding: 20, width: '100%', maxWidth: 360, boxShadow: '0 20px 50px rgba(0,0,0,0.24)' }}>
+          <div role="dialog" aria-modal="true" aria-labelledby="size-guide-title" style={{ background: C.paper, borderRadius: 10, padding: 20, width: '100%', maxWidth: 360, boxShadow: '0 20px 50px rgba(0,0,0,0.24)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
-              <div style={{ fontFamily: F.display, fontSize: 20, fontWeight: 800 }}>{t('sizeGuide', lang)}</div>
-              <button onClick={() => setShowSizeGuide(false)}>
+              <div id="size-guide-title" style={{ fontFamily: F.display, fontSize: 20, fontWeight: 800 }}>{t('sizeGuide', lang)}</div>
+              <button aria-label={lang === 'pt' ? 'Fechar guia de tamanhos' : 'Close size guide'} onClick={() => setShowSizeGuide(false)}>
                 <X size={18} />
               </button>
             </div>
@@ -224,7 +228,7 @@ export function ProductDetail() {
       <div className="ump-sticky-cta ump-pd-width" style={{ background: C.paper, padding: '14px 20px', borderTop: `1px solid ${C.ruleLight}`, boxShadow: '0 -4px 12px rgba(0,0,0,0.04)', display: 'flex', gap: 10 }}>
         <button
           onClick={() => navigate('/catalogo')}
-          aria-label="Search"
+          aria-label={lang === 'pt' ? 'Explorar catálogo' : 'Browse catalogue'}
           style={{ width: 44, height: 44, flexShrink: 0, borderRadius: 8, border: `1px solid ${C.rule}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.ink }}
         >
           <Search size={16} />

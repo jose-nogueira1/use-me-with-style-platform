@@ -84,6 +84,7 @@ export function Browse() {
       </div>
 
       <div className="ump-browse-main">
+        <h1 className="ump-sr-only">{t('shopAll', lang)}</h1>
         <div style={{ padding: '12px 20px', borderBottom: `1px solid ${C.ruleLight}` }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: C.paper, borderRadius: 8, border: `1px solid ${C.rule}` }}>
             <Search size={16} color={C.inkSoft} />
@@ -95,7 +96,7 @@ export function Browse() {
               style={{ flex: 1, border: 'none', outline: 'none', fontSize: 13, color: C.ink, background: 'transparent' }}
             />
             {searchTerm && (
-              <button onClick={() => setSearchTerm('')}>
+              <button aria-label={lang === 'pt' ? 'Limpar pesquisa' : 'Clear search'} onClick={() => setSearchTerm('')}>
                 <X size={14} color={C.inkSoft} />
               </button>
             )}

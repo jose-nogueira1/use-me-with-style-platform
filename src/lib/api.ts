@@ -145,6 +145,11 @@ export type ApiOrder = CreateOrderInput & {
   updatedAt: string;
 };
 
+export type PublicOrderStatus = Pick<
+  ApiOrder,
+  'orderNumber' | 'status' | 'paymentStatus' | 'total' | 'currency' | 'updatedAt'
+>;
+
 export type MarketSettings = {
   angolaPaymentLive: boolean;
   angolaBankTransferInstructions?: string;
@@ -272,11 +277,12 @@ export async function createAppyPayOrder(input: CreateOrderInput): Promise<AppyP
 }
 
 /** Lightweight order lookup (Phase 1 scope -- no customer accounts). */
-export async function lookupOrder(orderNumber: string, email: string): Promise<ApiOrder | null> {
-  const data = await request<{ docs: ApiOrder[] }>(
-    `/orders?where[orderNumber][equals]=${encodeURIComponent(orderNumber)}&where[customerEmail][equals]=${encodeURIComponent(email)}&limit=1`,
-  );
-  return data.docs[0] ?? null;
+export async function lookupOrder(orderNumber: string, email: string): Promise<PublicOrderStatus | null> {
+  const data = await request<{ order: PublicOrderStatus | null }>('/order-lookup', {
+    method: 'POST',
+    body: JSON.stringify({ orderNumber, email }),
+  });
+  return data.order;
 }
 
 // ---------------------------------------------------------------------------

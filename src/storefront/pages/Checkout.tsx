@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { C, F, t } from '../../theme';
 import { useApp } from '../../state/AppContext';
@@ -69,6 +69,11 @@ export function Checkout() {
     const params = new URLSearchParams(window.location.search);
     return params.get('stripe') === 'cancelled' ? t('paymentCancelled', lang) : null;
   });
+  const errorRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (error) errorRef.current?.focus();
+  }, [error]);
 
   const [form, setForm] = useState({
     name: '',
@@ -320,7 +325,7 @@ export function Checkout() {
   return (
     <div className="ump-narrow" style={{ background: C.paper, paddingBottom: 40 }}>
       <div style={{ padding: '20px 20px 12px' }}>
-        <div style={{ fontFamily: F.display, fontSize: 24, color: C.ink, fontWeight: 800, marginBottom: 4 }}>{t('checkout', lang)}</div>
+        <h1 style={{ fontFamily: F.display, fontSize: 24, color: C.ink, fontWeight: 800, margin: '0 0 4px' }}>{t('checkout', lang)}</h1>
         {/* Market is fixed by the site the buyer is on (ao./pt. subdomain) --
             no in-checkout toggle anymore, since Angola and Portugal are now
             separate storefronts (see the header region switch to actually
@@ -370,13 +375,13 @@ export function Checkout() {
 
         <Section title={t('delivery', lang)}>
           {deliveryOptions.map((opt) => (
-            <RadioRow key={opt} checked={deliveryMethod === opt} onSelect={() => setDeliveryMethod(opt)} label={DELIVERY_LABEL_KEYS[opt] ? t(DELIVERY_LABEL_KEYS[opt], lang) : opt} />
+            <RadioRow key={opt} name="delivery" value={opt} checked={deliveryMethod === opt} onSelect={() => setDeliveryMethod(opt)} label={DELIVERY_LABEL_KEYS[opt] ? t(DELIVERY_LABEL_KEYS[opt], lang) : opt} />
           ))}
         </Section>
 
         <Section title={t('payment', lang)}>
           {paymentOptions.map((opt) => (
-            <RadioRow key={opt} checked={paymentMethod === opt} onSelect={() => setPaymentMethod(opt)} label={PAYMENT_LABEL_KEYS[opt] ? t(PAYMENT_LABEL_KEYS[opt], lang) : opt} />
+            <RadioRow key={opt} name="payment" value={opt} checked={paymentMethod === opt} onSelect={() => setPaymentMethod(opt)} label={PAYMENT_LABEL_KEYS[opt] ? t(PAYMENT_LABEL_KEYS[opt], lang) : opt} />
           ))}
           {paymentMethod === 'multicaixa_express' && !appyPayLive && (
             <div style={{ marginTop: 8, padding: 12, background: C.subtleBg, borderRadius: 6, fontSize: 12, color: C.inkSoft, lineHeight: 1.5 }}>
@@ -394,7 +399,7 @@ export function Checkout() {
         </div>
 
         {error && (
-          <div style={{ marginTop: 16, padding: 12, background: '#FBEAE4', color: '#A6483A', fontSize: 12, borderRadius: 6 }}>{error}</div>
+          <div ref={errorRef} role="alert" tabIndex={-1} style={{ marginTop: 16, padding: 12, background: '#FBEAE4', color: '#A6483A', fontSize: 12, borderRadius: 6 }}>{error}</div>
         )}
 
         {appyPayOrder && (
@@ -449,10 +454,10 @@ export function Checkout() {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div style={{ marginBottom: 20 }}>
-      <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1, color: C.goldDeep, textTransform: 'uppercase', marginBottom: 10 }}>{title}</div>
+    <fieldset style={{ margin: '0 0 20px', padding: 0, border: 0 }}>
+      <legend style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1, color: C.goldDeep, textTransform: 'uppercase', marginBottom: 10 }}>{title}</legend>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{children}</div>
-    </div>
+    </fieldset>
   );
 }
 
@@ -492,11 +497,9 @@ function Field({
   );
 }
 
-function RadioRow({ checked, onSelect, label }: { checked: boolean; onSelect: () => void; label: string }) {
+function RadioRow({ checked, onSelect, label, name, value }: { checked: boolean; onSelect: () => void; label: string; name: string; value: string }) {
   return (
-    <button
-      type="button"
-      onClick={onSelect}
+    <label
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -509,9 +512,9 @@ function RadioRow({ checked, onSelect, label }: { checked: boolean; onSelect: ()
         width: '100%',
       }}
     >
-      <span style={{ width: 16, height: 16, borderRadius: 8, border: `2px solid ${checked ? C.gold : C.rule}`, background: checked ? C.gold : 'transparent' }} />
+      <input type="radio" name={name} value={value} checked={checked} onChange={onSelect} style={{ accentColor: C.gold }} />
       <span style={{ fontSize: 13, color: C.ink }}>{label}</span>
-    </button>
+    </label>
   );
 }
 

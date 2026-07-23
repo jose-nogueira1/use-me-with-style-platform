@@ -25,6 +25,8 @@ const AppContext = createContext<AppContextValue | null>(null);
 const MARKET_STORAGE_KEY = 'ump-market-pref';
 const LANG_STORAGE_KEY = 'ump-lang-pref';
 const THEME_STORAGE_KEY = 'ump-theme-pref';
+const CART_STORAGE_PREFIX = 'ump-cart-v1';
+const FAVORITES_STORAGE_PREFIX = 'ump-favorites-v1';
 
 const defaultMarket: Market = publicEnv.defaultMarket === 'PT' ? 'PT' : 'AO';
 
@@ -72,12 +74,49 @@ function readInitialThemeMode(): ThemeMode {
   return 'light';
 }
 
+function cartStorageKey(market: Market) {
+  return `${CART_STORAGE_PREFIX}:${market}`;
+}
+
+function isCartItem(value: unknown): value is CartItem {
+  if (!value || typeof value !== 'object') return false;
+  const item = value as Partial<CartItem>;
+  return typeof item.id === 'string'
+    && typeof item.size === 'string'
+    && typeof item.color === 'string'
+    && Number.isInteger(item.qty)
+    && Number(item.qty) > 0
+    && Number(item.qty) <= 20;
+}
+
+function readStoredCart(market: Market): CartItem[] {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(cartStorageKey(market)) || '[]') as unknown;
+    return Array.isArray(parsed) ? parsed.filter(isCartItem).slice(0, 50) : [];
+  } catch {
+    return [];
+  }
+}
+
+function favoritesStorageKey(market: Market) {
+  return `${FAVORITES_STORAGE_PREFIX}:${market}`;
+}
+
+function readStoredFavorites(market: Market): Set<string> {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(favoritesStorageKey(market)) || '[]') as unknown;
+    return new Set(Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string').slice(0, 200) : []);
+  } catch {
+    return new Set();
+  }
+}
+
 export function AppProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>(() => readStoredLang() ?? 'pt');
   const [market, setMarketState] = useState<Market>(() => hostnameMarket() ?? readStoredMarket() ?? defaultMarket);
   const [themeMode, setThemeModeState] = useState<ThemeMode>(readInitialThemeMode);
-  const [cart, dispatchCart] = useReducer(cartReducer, []);
-  const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [cart, dispatchCart] = useReducer(cartReducer, market, readStoredCart);
+  const [favorites, setFavorites] = useState<Set<string>>(() => readStoredFavorites(market));
 
   // Phase 1 markets: Angola (Kz) and Portugal (EUR). Geo-detection only
   // matters when the hostname itself doesn't already lock the market (i.e.
@@ -102,6 +141,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem(cartStorageKey(market), JSON.stringify(cart));
+    } catch {
+      // Storage can be unavailable in private browsing; the in-memory cart still works.
+    }
+  }, [cart, market]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(favoritesStorageKey(market), JSON.stringify([...favorites]));
+    } catch {
+      // Storage can be unavailable; favorites still work for the current session.
+    }
+  }, [favorites, market]);
+
   const setMarket = (m: Market) => {
     // On a market subdomain, "switching" means actually leaving this site
     // for the sibling one -- AO and PT are separate storefronts now, so
@@ -116,6 +171,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return;
       }
     }
+    dispatchCart({ type: 'HYDRATE', items: readStoredCart(m) });
+    setFavorites(readStoredFavorites(m));
     setMarketState(m);
     try {
       localStorage.setItem(MARKET_STORAGE_KEY, m);

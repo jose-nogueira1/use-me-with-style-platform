@@ -34,9 +34,9 @@ export function Home() {
             <div style={{ fontSize: 10, letterSpacing: 3, color: C.heroAccent, fontWeight: 800, textTransform: 'uppercase', marginBottom: 14 }}>
               {t('ss26Collection', lang)}
             </div>
-            <div style={{ fontFamily: F.display, fontSize: 34, fontWeight: 800, lineHeight: 1.12, letterSpacing: '-0.01em', marginBottom: 16 }}>
+            <h1 style={{ fontFamily: F.display, fontSize: 34, fontWeight: 800, lineHeight: 1.12, letterSpacing: '-0.01em', margin: '0 0 16px' }}>
               {t('heroHeadline', lang)}
-            </div>
+            </h1>
             <div style={{ fontSize: 13, color: C.heroSubtitle, lineHeight: 1.6, marginBottom: 22, maxWidth: 420 }}>
               {t('heroSubtitle', lang)}
             </div>

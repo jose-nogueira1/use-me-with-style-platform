@@ -18,7 +18,7 @@ export function Cart() {
         <div style={{ width: 60, height: 60, margin: '0 auto 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 30, background: C.subtleBg }}>
           <ShoppingBag size={28} color={C.goldDeep} />
         </div>
-        <div style={{ fontFamily: F.display, fontSize: 22, color: C.ink, marginBottom: 8, fontWeight: 800 }}>{t('cartEmpty', lang)}</div>
+        <h1 style={{ fontFamily: F.display, fontSize: 22, color: C.ink, margin: '0 0 8px', fontWeight: 800 }}>{t('cartEmpty', lang)}</h1>
         <div style={{ fontSize: 13, color: C.inkSoft, marginBottom: 24, lineHeight: 1.5 }}>{t('cartEmptyHint', lang)}</div>
         <Link
           to="/"
@@ -39,7 +39,7 @@ export function Cart() {
   return (
     <div className="ump-narrow" style={{ background: C.paper }}>
       <div style={{ padding: '20px 20px 12px' }}>
-        <div style={{ fontFamily: F.display, fontSize: 24, color: C.ink, fontWeight: 800 }}>{t('cart', lang)}</div>
+        <h1 style={{ fontFamily: F.display, fontSize: 24, color: C.ink, fontWeight: 800, margin: 0 }}>{t('cart', lang)}</h1>
         <div style={{ fontSize: 11, color: C.inkSoft, marginTop: 2 }}>
           {cart.length} {t(cart.length === 1 ? 'itemSingular' : 'itemPlural', lang)}
         </div>
@@ -50,7 +50,7 @@ export function Cart() {
           const p = products.find((p) => p.id === item.id);
           if (!p) return null;
           return (
-            <div key={idx} style={{ display: 'flex', gap: 12, padding: '14px 0', borderTop: `1px solid ${C.ruleLight}` }}>
+            <div key={`${item.id}:${item.size}:${item.color}`} style={{ display: 'flex', gap: 12, padding: '14px 0', borderTop: `1px solid ${C.ruleLight}` }}>
               <div style={{ width: 72, height: 88, flexShrink: 0, borderRadius: 6, overflow: 'hidden' }}>
                 <ProductPhoto tone={p.tone} radius={6} image={p.images[0]} variant="thumbnail" />
               </div>
@@ -58,7 +58,7 @@ export function Cart() {
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <div style={{ fontFamily: F.display, fontSize: 14, color: C.ink, fontWeight: 700 }}>{p.name}</div>
-                    <button onClick={() => dispatchCart({ type: 'REMOVE', idx })} style={{ color: C.inkSoft }}>
+                    <button aria-label={`${lang === 'pt' ? 'Remover' : 'Remove'} ${p.name}`} onClick={() => dispatchCart({ type: 'REMOVE', idx })} style={{ color: C.inkSoft }}>
                       <X size={14} />
                     </button>
                   </div>
@@ -68,11 +68,11 @@ export function Cart() {
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, border: `1px solid ${C.rule}`, borderRadius: 6, padding: '4px 8px' }}>
-                    <button onClick={() => dispatchCart({ type: 'DEC', idx })}>
+                    <button aria-label={`${lang === 'pt' ? 'Diminuir quantidade de' : 'Decrease quantity of'} ${p.name}`} onClick={() => dispatchCart({ type: 'DEC', idx })}>
                       <Minus size={12} />
                     </button>
                     <span style={{ fontSize: 12, minWidth: 14, textAlign: 'center' }}>{item.qty}</span>
-                    <button onClick={() => dispatchCart({ type: 'INC', idx })}>
+                    <button aria-label={`${lang === 'pt' ? 'Aumentar quantidade de' : 'Increase quantity of'} ${p.name}`} onClick={() => dispatchCart({ type: 'INC', idx })}>
                       <Plus size={12} />
                     </button>
                   </div>

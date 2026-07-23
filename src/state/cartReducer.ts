@@ -10,7 +10,8 @@ export type CartAction =
   | { type: 'INC'; idx: number }
   | { type: 'DEC'; idx: number }
   | { type: 'REMOVE'; idx: number }
-  | { type: 'CLEAR' };
+  | { type: 'CLEAR' }
+  | { type: 'HYDRATE'; items: CartItem[] };
 
 export function cartReducer(state: CartItem[], action: CartAction): CartItem[] {
   switch (action.type) {
@@ -33,6 +34,8 @@ export function cartReducer(state: CartItem[], action: CartAction): CartItem[] {
       return state.filter((_, idx) => idx !== action.idx);
     case 'CLEAR':
       return [];
+    case 'HYDRATE':
+      return action.items;
     default:
       return state;
   }

@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { Check } from 'lucide-react';
 import { C, F, t } from '../../theme';
 import { useApp } from '../../state/AppContext';
-import { lookupOrder, type ApiOrder } from '../../lib/api';
+import { lookupOrder, type PublicOrderStatus } from '../../lib/api';
 
 // Figma's "06. Confirmation and Lookup" combines the order-received hero
 // with a status timeline AND an order-lookup form on one screen -- not two
@@ -11,12 +11,12 @@ import { lookupOrder, type ApiOrder } from '../../lib/api';
 // /encomenda-confirmada/:orderNumber we pre-fill the hero + timeline for
 // that order; when arriving via /conta directly, only the lookup form
 // shows (no order in context yet).
-const STATUS_STEPS = ['novo', 'processando', 'enviado', 'entregue'] as const;
+const STATUS_STEPS = ['new', 'processing', 'shipped', 'delivered'] as const;
 const STATUS_LABEL_KEY: Record<(typeof STATUS_STEPS)[number], string> = {
-  novo: 'statusReceived',
-  processando: 'statusProcessing',
-  enviado: 'statusShipped',
-  entregue: 'statusDelivered',
+  new: 'statusReceived',
+  processing: 'statusProcessing',
+  shipped: 'statusShipped',
+  delivered: 'statusDelivered',
 };
 
 export function ConfirmationLookup() {
@@ -24,7 +24,7 @@ export function ConfirmationLookup() {
   const { orderNumber: routeOrderNumber } = useParams<{ orderNumber: string }>();
   const [orderNumber, setOrderNumber] = useState(routeOrderNumber ?? '');
   const [email, setEmail] = useState('');
-  const [result, setResult] = useState<ApiOrder | null | 'not_found'>(null);
+  const [result, setResult] = useState<PublicOrderStatus | null | 'not_found' | 'service_error'>(null);
   const [loading, setLoading] = useState(false);
 
   // Cart is cleared here, once we've actually landed on a real order
@@ -51,13 +51,15 @@ export function ConfirmationLookup() {
       setResult(order ?? 'not_found');
     } catch (err) {
       console.error('Order lookup failed', err);
-      setResult('not_found');
+      setResult('service_error');
     } finally {
       setLoading(false);
     }
   };
 
-  const activeStatusIdx = result && result !== 'not_found' ? STATUS_STEPS.findIndex((s) => s === result.status) : -1;
+  const activeStatusIdx = result && result !== 'not_found' && result !== 'service_error'
+    ? STATUS_STEPS.findIndex((s) => s === result.status)
+    : -1;
 
   return (
     <div>
@@ -77,7 +79,7 @@ export function ConfirmationLookup() {
           >
             <Check size={28} color={C.black} />
           </div>
-          <div style={{ fontFamily: F.display, fontSize: 24, fontWeight: 800, marginBottom: 8 }}>{t('orderConfirmed', lang)}</div>
+          <h1 style={{ fontFamily: F.display, fontSize: 24, fontWeight: 800, margin: '0 0 8px' }}>{t('orderConfirmed', lang)}</h1>
           <div style={{ fontSize: 13, color: C.heroSubtitle, marginBottom: 20 }}>{t('thankYou', lang)}</div>
           <div style={{ background: C.heroFieldBg, border: `1px solid ${C.heroFieldBorder}`, borderRadius: 8, padding: 16, display: 'inline-block' }}>
             <div style={{ fontSize: 10, color: C.heroSubtitle, textTransform: 'uppercase', letterSpacing: 1 }}>{t('orderNumber', lang)}</div>
@@ -132,7 +134,11 @@ export function ConfirmationLookup() {
           </div>
         )}
 
-        <div style={{ fontFamily: F.display, fontSize: 22, color: C.ink, fontWeight: 800, marginBottom: 4 }}>{t('trackAnotherOrder', lang)}</div>
+        {routeOrderNumber ? (
+          <h2 style={{ fontFamily: F.display, fontSize: 22, color: C.ink, fontWeight: 800, margin: '0 0 4px' }}>{t('trackAnotherOrder', lang)}</h2>
+        ) : (
+          <h1 style={{ fontFamily: F.display, fontSize: 22, color: C.ink, fontWeight: 800, margin: '0 0 4px' }}>{t('trackAnotherOrder', lang)}</h1>
+        )}
         <div style={{ fontSize: 12, color: C.inkSoft, marginBottom: 20 }}>{t('lookupOrderStatus', lang)}</div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -161,10 +167,18 @@ export function ConfirmationLookup() {
         </form>
 
         {result === 'not_found' && (
-          <div style={{ marginTop: 20, fontSize: 13, color: '#A6483A' }}>{t('orderNotFound', lang)}</div>
+          <div role="status" style={{ marginTop: 20, fontSize: 13, color: '#A6483A' }}>{t('orderNotFound', lang)}</div>
         )}
 
-        {result && result !== 'not_found' && (
+        {result === 'service_error' && (
+          <div role="alert" style={{ marginTop: 20, fontSize: 13, color: '#A6483A' }}>
+            {lang === 'pt'
+              ? 'Não foi possível consultar a encomenda agora. Tente novamente dentro de instantes.'
+              : 'We could not check the order right now. Please try again shortly.'}
+          </div>
+        )}
+
+        {result && result !== 'not_found' && result !== 'service_error' && (
           <div style={{ marginTop: 20, background: C.subtleBg, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 16 }}>
             <div style={{ fontFamily: F.display, fontSize: 16, color: C.ink, fontWeight: 800 }}>{result.orderNumber}</div>
             <div style={{ fontSize: 11, color: C.goldDeep, fontWeight: 800, marginTop: 4, textTransform: 'uppercase' }}>{result.status}</div>

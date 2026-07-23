@@ -43,14 +43,15 @@ export function Login() {
         <div style={{ textAlign: 'center', marginBottom: 26 }}>
           <img src={wordmarkGold} alt="Use Me With Style" style={{ height: 42, width: 'auto' }} />
         </div>
-        <div style={{ fontSize: 10, color: '#BEB8AE', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 20, textAlign: 'center' }}>
+        <h1 style={{ fontSize: 10, color: '#BEB8AE', letterSpacing: 2, textTransform: 'uppercase', margin: '0 0 20px', textAlign: 'center' }}>
           Admin
-        </div>
+        </h1>
 
         <label style={{ display: 'block', marginBottom: 12 }}>
           <div style={{ fontSize: 11, color: '#BEB8AE', marginBottom: 4 }}>Email</div>
           <input
             type="email"
+            autoComplete="username"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -61,6 +62,7 @@ export function Login() {
           <div style={{ fontSize: 11, color: '#BEB8AE', marginBottom: 4 }}>Password</div>
           <input
             type="password"
+            autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
@@ -68,7 +70,7 @@ export function Login() {
           />
         </label>
 
-        {error && <div style={{ fontSize: 12, color: '#E1B3AA', marginBottom: 16 }}>{error}</div>}
+        {error && <div role="alert" style={{ fontSize: 12, color: '#E1B3AA', marginBottom: 16 }}>{error}</div>}
 
         <button
           type="submit"

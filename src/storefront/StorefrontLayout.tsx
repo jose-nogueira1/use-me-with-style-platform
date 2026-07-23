@@ -82,13 +82,13 @@ export function StorefrontLayout() {
             <IconButton
               dark={isHome}
               onClick={() => setMobileMenuOpen((o) => !o)}
-              label={mobileMenuOpen ? 'Close menu' : 'Menu'}
+              label={mobileMenuOpen ? (lang === 'pt' ? 'Fechar menu' : 'Close menu') : 'Menu'}
               className="ump-mobile-menu-btn"
             >
               {mobileMenuOpen ? <X size={16} /> : <Menu size={16} />}
             </IconButton>
           ) : (
-            <IconButton dark={isHome} onClick={() => navigate(-1)} label="Back" className="ump-mobile-menu-btn">
+            <IconButton dark={isHome} onClick={() => navigate(-1)} label={lang === 'pt' ? 'Voltar' : 'Back'} className="ump-mobile-menu-btn">
               <ChevronLeft size={20} />
             </IconButton>
           )}
@@ -116,9 +116,9 @@ export function StorefrontLayout() {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
             <LanguageSwitch lang={lang} setLang={setLang} dark={isHome} />
-            <ThemeToggle mode={themeMode} onChange={setThemeMode} dark={isHome} />
+            <ThemeToggle mode={themeMode} onChange={setThemeMode} dark={isHome} lang={lang} />
             <div style={{ position: 'relative' }}>
-              <IconButton dark={isHome} onClick={() => navigate(isCart ? '/catalogo' : '/carrinho')} label={isCart ? 'Search' : 'Cart'}>
+              <IconButton dark={isHome} onClick={() => navigate(isCart ? '/catalogo' : '/carrinho')} label={isCart ? (lang === 'pt' ? 'Explorar catálogo' : 'Browse catalogue') : t('cart', lang)}>
                 {isCart ? <Search size={16} /> : <ShoppingBag size={16} />}
               </IconButton>
               {!isCart && cartCount > 0 && (
@@ -174,9 +174,9 @@ export function StorefrontLayout() {
         )}
       </div>
 
-      <div style={{ flex: 1 }}>
+      <main style={{ flex: 1 }}>
         <Outlet />
-      </div>
+      </main>
 
       <Footer />
       <AnalyticsConsentManager />
@@ -322,16 +322,18 @@ function ThemeToggle({
   mode,
   onChange,
   dark,
+  lang,
 }: {
   mode: 'light' | 'dark';
   onChange: (m: 'light' | 'dark') => void;
   dark?: boolean;
+  lang: Lang;
 }) {
   const isDark = mode === 'dark';
   return (
     <button
       onClick={() => onChange(isDark ? 'light' : 'dark')}
-      aria-label="Toggle dark mode"
+      aria-label={mode === 'dark' ? (lang === 'pt' ? 'Usar tema claro' : 'Use light theme') : (lang === 'pt' ? 'Usar tema escuro' : 'Use dark theme')}
       aria-pressed={isDark}
       style={{
         position: 'relative',

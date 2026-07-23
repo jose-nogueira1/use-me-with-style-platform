@@ -1,4 +1,4 @@
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import { AdminAuthProvider } from './AdminAuthContext';
 import { AdminLayout } from './AdminLayout';
 import { Login } from './pages/Login';
@@ -10,7 +10,6 @@ import { ProductEditor } from './pages/ProductEditor';
 import { Customers } from './pages/Customers';
 import { Mensagens } from './pages/Mensagens';
 import { Settings } from './pages/Settings';
-import { ComingSoon } from './pages/ComingSoon';
 import { Roadmap } from './pages/Roadmap';
 import { AdminTranslationBoundary } from './AdminTranslation';
 
@@ -29,11 +28,10 @@ export function AdminRoutes() {
           <Route path="mensagens" element={<Mensagens />} />
           <Route path="definicoes" element={<Settings />} />
           <Route path="roadmap" element={<Roadmap />} />
-          <Route path="analytics" element={<ComingSoon />} />
-          <Route path="marketing" element={<ComingSoon />} />
-          <Route path="meta-ads" element={<ComingSoon />} />
-          <Route path="inventario" element={<ComingSoon />} />
-          <Route path="automacao" element={<ComingSoon />} />
+          {['analytics', 'marketing', 'meta-ads', 'inventario', 'automacao'].map((path) => (
+            <Route key={path} path={path} element={<Navigate to="/admin/roadmap" replace />} />
+          ))}
+          <Route path="*" element={<Navigate to="/admin" replace />} />
         </Route>
       </Routes></AdminTranslationBoundary>
     </AdminAuthProvider>

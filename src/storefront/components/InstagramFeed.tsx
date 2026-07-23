@@ -33,6 +33,7 @@ export function InstagramFeed() {
             href={INSTAGRAM_URL}
             target="_blank"
             rel="noopener noreferrer"
+            aria-label={lang === 'pt' ? `Abrir publicação ${i + 1} no Instagram` : `Open Instagram post ${i + 1}`}
             className="ump-instagram-tile"
             style={{ position: 'relative', display: 'block', borderRadius: 8, overflow: 'hidden', aspectRatio: '1 / 1' }}
           >
