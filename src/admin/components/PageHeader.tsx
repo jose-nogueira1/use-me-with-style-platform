@@ -138,6 +138,7 @@ function IconButton({ label, active, badge, onClick, children }: { label: string
 function Popover({ children }: { children: ReactNode }) {
   return (
     <div
+      className="ump-admin-popover"
       style={{
         position: 'absolute',
         top: 'calc(100% + 6px)',

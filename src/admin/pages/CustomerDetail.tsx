@@ -93,6 +93,7 @@ export function CustomerDetail() {
         {orders === null && <div style={{ fontSize: 12, color: C.inkSoft }}>Loading…</div>}
         {orders && orders.length === 0 && <div style={{ fontSize: 12, color: C.inkSoft }}>No orders yet.</div>}
         {orders && orders.length > 0 && (
+          <div className="ump-admin-table-wrap">
           <div style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, overflow: 'hidden' }}>
             {orders.map((o) => {
               const b = statusBadgeProps(o.status);
@@ -119,6 +120,7 @@ export function CustomerDetail() {
                 </Link>
               );
             })}
+          </div>
           </div>
         )}
       </div>

@@ -34,10 +34,10 @@ export function Login() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: C.black }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: C.black, padding: 16 }}>
       <form
         onSubmit={handleSubmit}
-        style={{ width: 340, background: '#0C0A08', padding: 32, borderRadius: 10, border: '1px solid #5F4A1B' }}
+        style={{ width: 'min(340px, 100%)', boxSizing: 'border-box', background: '#0C0A08', padding: 32, borderRadius: 10, border: '1px solid #5F4A1B' }}
       >
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}><AdminLanguageSwitch dark /></div>
         <div style={{ textAlign: 'center', marginBottom: 26 }}>

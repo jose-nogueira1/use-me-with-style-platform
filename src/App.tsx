@@ -208,6 +208,19 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
         .ump-admin-table-wrap { overflow-x: auto; }
         @media (max-width: 860px) { .ump-admin-table-wrap > * { min-width: 640px; } }
 
+        /* PageHeader's search/notification popovers are positioned
+           right: 0 relative to their own icon button so they line up under
+           the icon on desktop, where the button cluster sits at the far
+           right of the header row. Below 860px the header row wraps and the
+           icon cluster moves to the left edge (see PageHeader.tsx's
+           space-between layout with only one item on the wrapped line), so a
+           fixed 360px-wide, right-anchored popover would extend off-screen
+           to the left. Re-anchor to the button's left edge and cap the width
+           to the viewport instead. */
+        @media (max-width: 860px) {
+          .ump-admin-popover { left: 0 !important; right: auto !important; width: min(340px, calc(100vw - 56px)) !important; }
+        }
+
         /* Admin two/three-column card grids (dashboard, orders + side panel,
            settings cards, product editor fields): stack to one column below
            the point where columns would get too cramped to read. */
