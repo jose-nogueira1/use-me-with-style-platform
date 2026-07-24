@@ -306,35 +306,66 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
         @media (min-width: 861px) {
           .ump-admin-sidebar { position: sticky; top: 0; height: 100vh; overflow-y: auto; }
         }
-        /* "More" dropdown toggle for the secondary nav group (Customers,
-           Messages, Invoices, Media): a normal inline list on desktop, a
-           single toggle button + dropdown panel on mobile. Added
-           2026-07-24 (admin responsive audit, Finding 1).
-           The panel is positioned via inline style (position: fixed, with
-           top/left computed from the toggle button's own on-screen rect in
-           AdminLayout.tsx) rather than CSS anchoring -- the mobile sidebar
-           has overflow-x: auto, which per the CSS spec silently forces its
-           other axis (overflow-y) to 'auto' too as soon as one axis is
-           non-visible, so a plain position: absolute panel nested inside
-           it was getting clipped to the bar's own height instead of
-           floating over the page content below. position: fixed escapes
-           that clipping entirely, since its containing block is the
-           viewport, not the scrolling sidebar. */
-
-        .ump-admin-more-toggle { display: none; }
-        .ump-admin-more-panel { z-index: 40; min-width: 190px; }
+        /* Mobile nav: hamburger + off-canvas drawer. Added 2026-07-24
+           (admin responsive audit, Finding 1), reworked same day from an
+           earlier horizontal-scrolling-bar attempt after a real-device
+           recording (Safari, true phone width) showed it still didn't read
+           as "responsive" -- a scrolling top bar is an unusual pattern users
+           have to discover, where a hamburger opening a full list is
+           instantly recognisable. Below 861px the sidebar (same JSX/content
+           as desktop, unchanged) becomes a fixed, full-height off-canvas
+           panel; a separate slim .ump-admin-mobile-bar takes its place in
+           normal document flow with just the logo and the hamburger
+           trigger. .ump-admin-sidebar-open (toggled by React state) slides
+           it in with a transform, and a semi-transparent backdrop behind it
+           closes it on tap -- both are inert (display: none) above 861px so
+           resizing back to desktop can't leave the drawer's fixed
+           positioning or backdrop engaged. */
+        .ump-admin-mobile-bar { display: none; }
+        .ump-admin-nav-backdrop { display: none; }
+        .ump-admin-drawer-close { display: none; }
         @media (max-width: 860px) {
           .ump-admin-shell { flex-direction: column; }
-          .ump-admin-sidebar { width: 100%; flex-direction: row; align-items: center; overflow-x: auto; padding: 10px 12px; }
-          .ump-admin-groups { flex-direction: row; gap: 2px; margin-bottom: 0 !important; }
-          .ump-admin-group-label { display: none; }
-          .ump-admin-user-block { display: none; }
-          .ump-admin-nav-item { border-left: none !important; border-bottom: 3px solid transparent; white-space: nowrap; }
-          .ump-admin-secondary-list { display: none !important; }
-          .ump-admin-more-toggle { display: inline-flex !important; }
+          .ump-admin-mobile-bar { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; position: sticky; top: 0; z-index: 20; }
+          .ump-admin-nav-backdrop { display: block; position: fixed; inset: 0; background: rgba(11, 10, 8, 0.55); z-index: 45; }
+          .ump-admin-drawer-close { display: flex !important; }
+          .ump-admin-sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: min(300px, 84vw);
+            height: 100vh;
+            z-index: 50;
+            overflow-y: auto;
+            transform: translateX(-100%);
+            transition: transform 220ms ease;
+          }
+          .ump-admin-sidebar-open { transform: translateX(0); }
         }
         .ump-admin-table-wrap { overflow-x: auto; }
         @media (max-width: 860px) { .ump-admin-table-wrap > * { min-width: 640px; } }
+
+        /* Dashboard's metric cards, the Products grid, and the Media grid
+           each used an inline repeat(auto-fit/auto-fill, minmax(Npx, 1fr))
+           with no CSS class and no mobile override -- unlike every other
+           admin grid, they were never brought under the
+           .ump-admin-*-grid / minmax(0, 1fr) treatment (2026-07-24, admin
+           responsive audit, Finding 2), because auto-fit/auto-fill is
+           *supposed* to be self-sufficient: it's designed to keep reducing
+           the column count as the container shrinks, never intentionally
+           overflowing. A real-device recording (Safari, true phone width)
+           showed that assumption failing in practice -- the metric row
+           rendered two 160px+ cards side by side and ran off the right edge
+           of the screen instead of collapsing to one column. Rather than
+           chase the exact browser-specific cause, these three now get an
+           explicit, deterministic column count below 480px
+           (minmax(0, 1fr), not auto-fit's own sizing), which can't depend on
+           any particular browser's auto-fit implementation to get it right. */
+        @media (max-width: 480px) {
+          .ump-admin-metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+          .ump-admin-media-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+          .ump-admin-product-grid { grid-template-columns: minmax(0, 1fr) !important; }
+        }
 
         /* PageHeader's search/notification popovers are positioned
            right: 0 relative to their own icon button so they line up under

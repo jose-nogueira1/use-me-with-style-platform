@@ -76,3 +76,21 @@ Worth also adding `min-width: 0` to the grid items' own inline styles (the photo
 ## Suggested next step
 
 Finding 1 (nav discoverability) is the one worth fixing first — it's the most likely explanation for "not responsive" on a real device, and Finding 2 is a small, contained CSS fix that can ride along with it. Both are ready to implement whenever you'd like me to proceed.
+
+---
+
+## Addendum, same day: real-device recording surfaced two more gaps
+
+Both findings above were fixed and verified in Chrome. A follow-up screen recording (Safari's Responsive Design Mode, true phone width) showed the admin still didn't read as responsive, for two reasons this Chrome-only pass had missed:
+
+**The Finding-1 fix (horizontal-scrolling bar + "More" dropdown) was itself a non-standard pattern.** It technically worked — nothing was unreachable — but a horizontally-scrolling top nav bar isn't a pattern most users recognize on sight, and discovering "swipe sideways, then tap More" isn't obvious. Replaced it outright with the standard pattern: a slim top bar with just the logo and a hamburger icon, which opens a full off-canvas drawer containing the complete nav (identical content to the desktop sidebar). This also fixed a bug the old mobile layout had from the start: the user-info-and-logout block was `display: none` below 861px, meaning there was previously no way to log out from a phone at all — it's now part of the drawer.
+
+**Three grids had no responsive treatment at all and weren't caught by the source review**, because they use an inline `repeat(auto-fit/auto-fill, minmax(Npx, 1fr))` directly with no CSS class — every other admin grid in this codebase goes through one of three shared `.ump-admin-*-grid` classes, which is what the original audit checked. These three were invisible to that search:
+
+- Dashboard's 5 metric cards (`minmax(160px, 1fr)`)
+- The Products page's product-card grid (`minmax(220px, 1fr)`)
+- The Media library's thumbnail grid (`minmax(160px, 1fr)`)
+
+`auto-fit`/`auto-fill` is designed to reduce its own column count as the container shrinks and never intentionally overflow — so on paper these should have been safe without any extra work, and Chrome testing at every width from 320–2560px found nothing wrong with them. The recording showed that assumption breaking in practice on Safari: the metric row rendered two cards side by side and ran off the screen edge instead of collapsing to one column. Rather than chase the exact cause, all three now get an explicit, deterministic column count below 480px (`minmax(0, 1fr)`, not auto-fit's own sizing) that doesn't depend on any particular browser's auto-fit implementation.
+
+Both fixed, verified (tsc/eslint/tests/build clean, full 320–2560px overflow re-scan clean on every route, drawer open/close/backdrop/Escape/navigation all confirmed), and committed.

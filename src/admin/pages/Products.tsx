@@ -54,7 +54,7 @@ export function Products() {
 
       {error && <div style={{ margin: '20px 28px', fontSize: 13, color: '#B95545' }}>Couldn't connect to the backend.</div>}
 
-      <div style={{ padding: '20px 28px 0', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+      <div style={{ padding: '20px 28px 0', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }} className="ump-admin-product-grid">
         {filtered.map((p) => (
           <Link key={p.id} to={`/admin/produtos/${p.id}`} style={{ textDecoration: 'none', display: 'block', background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 16 }}>
             <div style={{ height: 110, borderRadius: 6, background: '#F1EADF', border: `1px solid ${C.rule}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

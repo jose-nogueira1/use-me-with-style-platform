@@ -126,7 +126,7 @@ export function Dashboard() {
         </div>
       )}
 
-      <div style={{ padding: '20px 28px 0', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
+      <div style={{ padding: '20px 28px 0', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }} className="ump-admin-metric-grid">
         <Metric label="Orders today" value={String(todayOrders.length)} sub={`${todayAO} Angola, ${todayPT} Portugal`} />
         <Metric label="Revenue today" value={`${revenueTodayKz.toLocaleString('en-US')} Kz`} sub={`EUR ${revenueTodayEur.toFixed(0)} separately`} />
         <Metric label="Payment review" value={String(reviewCount)} sub="Manual confirmation needed" tone="gold" />
