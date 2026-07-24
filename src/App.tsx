@@ -175,10 +175,19 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
         @media (min-width: 720px) { .ump-cat-row { display: grid; grid-template-columns: repeat(4, 1fr); overflow-x: visible; } }
 
         /* Browse: sidebar filter panel on desktop (per "D02. Desktop Browse
-           and Filter"), inline pills + slide-down panel on mobile. */
+           and Filter"), inline pills + slide-down panel on mobile. Breakpoint
+           lowered from 860px to 720px 2026-07-24 (responsive audit, Finding
+           3): 720px is where the header/footer/nav chrome already switches
+           to its desktop form (.ump-desktop-nav, .ump-footer-grid, etc), so
+           860px left a real tablet-portrait gap (iPad portrait is 768px,
+           most Android tablets 744-800px) where the header looked "desktop"
+           but Browse still rendered the mobile category-pill row and
+           slide-down filter panel instead of the sidebar, even though there
+           was clearly enough width for it. Verified at 768px: 220px sidebar
+           + auto-fill product grid both fit comfortably at that width. */
         .ump-browse-layout { display: block; }
         .ump-browse-sidebar { display: none; }
-        @media (min-width: 860px) {
+        @media (min-width: 720px) {
           .ump-browse-layout { display: grid; grid-template-columns: 220px 1fr; gap: 0; max-width: 1240px; margin: 0 auto; }
           .ump-browse-sidebar { display: block; padding: 20px; border-right: 1px solid ${C.ruleLight}; }
           .ump-browse-catpills { display: none !important; }
@@ -188,9 +197,18 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
         @media (min-width: 1800px) { .ump-browse-layout { max-width: 1900px; } }
 
         /* Product detail: stacked image-then-info on mobile, side-by-side on
-           desktop (per "D03. Desktop Product Detail"). */
+           desktop (per "D03. Desktop Product Detail"). Breakpoint lowered
+           860px -> 720px 2026-07-24 for the same reason as Browse above --
+           at 768px (tablet portrait) the product photo was rendering as a
+           near-full-width square dominating the whole screen with a
+           cramped info column stacked underneath, when the side-by-side
+           layout (two ~340px columns at 720px viewport) reads much better
+           and fits fine. Kept in lockstep with .ump-sticky-cta/.ump-pd-width
+           below, and with the header/footer's own 720px cutover, so there's
+           no width range where some chrome looks desktop and some looks
+           mobile at once. */
         .ump-product-layout { display: block; }
-        @media (min-width: 860px) {
+        @media (min-width: 720px) {
           .ump-product-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: flex-start; max-width: 1000px; margin: 0 auto; }
         }
         /* Bottom offset clears the fixed bottom tab bar (~58px tall) on true
@@ -200,16 +218,27 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
            Above 720px the tab bar is hidden entirely (see .ump-bottom-nav),
            so there's nothing left to clear. */
         .ump-sticky-cta { position: sticky; bottom: 58px; }
-        @media (min-width: 720px) { .ump-sticky-cta { bottom: 0; } }
-        @media (min-width: 860px) { .ump-sticky-cta { position: static; border-top: none !important; box-shadow: none !important; } }
+        @media (min-width: 720px) { .ump-sticky-cta { bottom: 0; position: static; border-top: none !important; box-shadow: none !important; } }
         .ump-pd-width { }
-        @media (min-width: 860px) { .ump-pd-width { max-width: 1000px; margin: 0 auto; } }
+        @media (min-width: 720px) { .ump-pd-width { max-width: 1000px; margin: 0 auto; } }
 
         /* --- Admin: desktop-first, degrades gracefully on narrower screens. --- */
         .ump-admin-shell { display: flex; min-height: 100vh; }
         .ump-admin-sidebar { width: 220px; flex-shrink: 0; display: flex; flex-direction: column; }
         .ump-admin-groups { display: flex; flex-direction: column; }
         .ump-admin-user-block { margin-top: auto; }
+        /* Admin content had no upper width bound at all -- unlike the
+           storefront (.ump-content-width caps at 1240-1900px depending on
+           breakpoint), the column next to the sidebar was plain flex: 1
+           with nothing capping the top end. Harmless up to ~1800px (verified
+           up to ~1560px this session -- metric cards, tables, and grids all
+           still read fine), but on a genuine ultra-wide monitor everything
+           in it (Dashboard's metric cards, every table row) would stretch
+           very wide with no real benefit, hurting scannability. Added
+           2026-07-24 (responsive audit, Finding 4) as a no-downside cap: it
+           only ever engages above 1800px, well past what was actually
+           tested. */
+        .ump-admin-content-width { max-width: 1800px; margin: 0 auto; }
         /* Sticky sidebar (added 2026-07-24, responsive audit): without this,
            the sidebar is just a normal flex child that scrolls away with the
            rest of the page -- on any admin screen taller than one viewport

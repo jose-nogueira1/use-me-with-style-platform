@@ -98,7 +98,9 @@ export function AdminLayout() {
       </div>
 
       <div style={{ flex: 1, minWidth: 0 }}>
-        <Outlet />
+        <div className="ump-admin-content-width">
+          <Outlet />
+        </div>
       </div>
     </div>
   );
