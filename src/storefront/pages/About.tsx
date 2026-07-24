@@ -3,9 +3,10 @@ import { C, F, t } from '../../theme';
 import { useApp } from '../../state/AppContext';
 import { ProductPhoto, type ProductTone } from '../../components/ProductPhoto';
 
-// Temporary launch copy approved as an interim measure on 2026-07-16.
-// Replace the translations with Raissa's final brand story by the content
-// freeze documented in docs/launch-content-and-catalogue-audit.md.
+// Real client-provided brand story, wired in 2026-07-24 (JOS-64 follow-up).
+// Replaces the interim launch copy approved 2026-07-16. Hero photo pending --
+// client sent a portrait but no file has reached the repo/CMS media library
+// yet, so the layout below doesn't reference an image asset.
 const VALUES: { titleKey: string; bodyKey: string; tone: ProductTone }[] = [
   { titleKey: 'aboutValue1Title', bodyKey: 'aboutValue1Body', tone: 'gold' },
   { titleKey: 'aboutValue2Title', bodyKey: 'aboutValue2Body', tone: 'rose' },
@@ -33,7 +34,15 @@ export function About() {
         <div style={{ fontSize: 10, letterSpacing: 2, color: C.goldDeep, fontWeight: 800, textTransform: 'uppercase', marginBottom: 10 }}>
           {t('aboutMissionTitle', lang)}
         </div>
-        <div style={{ fontSize: 14, color: C.ink, lineHeight: 1.7, marginBottom: 32 }}>{t('aboutMissionBody', lang)}</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 32 }}>
+          {t('aboutMissionBody', lang)
+            .split(/\n{2,}/)
+            .map((paragraph, i) => (
+              <p key={i} style={{ fontSize: 14, color: C.ink, lineHeight: 1.7, margin: 0 }}>
+                {paragraph}
+              </p>
+            ))}
+        </div>
 
         <div style={{ fontSize: 10, letterSpacing: 2, color: C.goldDeep, fontWeight: 800, textTransform: 'uppercase', marginBottom: 16 }}>
           {t('aboutValuesTitle', lang)}

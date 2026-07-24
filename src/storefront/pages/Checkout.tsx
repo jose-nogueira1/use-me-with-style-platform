@@ -35,6 +35,14 @@ const DEFAULT_MARKET_SETTINGS: MarketSettings = {
   angolaReturnsPolicyTextEN: '',
   portugalReturnsPolicyTextPT: '',
   portugalReturnsPolicyTextEN: '',
+  businessHoursTextPT: '',
+  businessHoursTextEN: '',
+  angolaShippingTextPT: '',
+  angolaShippingTextEN: '',
+  portugalShippingTextPT: '',
+  portugalShippingTextEN: '',
+  internationalShippingTextPT: '',
+  internationalShippingTextEN: '',
 };
 
 const PAYMENT_LABEL_KEYS: Record<string, string> = {

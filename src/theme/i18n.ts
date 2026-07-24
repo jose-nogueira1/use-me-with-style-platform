@@ -180,6 +180,8 @@ export const T: Record<string, Record<Lang, string>> = {
     pt: 'A política de trocas e devoluções está a ser atualizada. Contacte-nos no WhatsApp para qualquer pedido.',
     en: "Our returns & exchanges policy is being updated. Message us on WhatsApp for any request.",
   },
+  businessHoursHeading: { pt: 'Horário de atendimento', en: 'Business hours' },
+  shippingHeading: { pt: 'Entregas e envios', en: 'Shipping & delivery' },
 
   // Footer
   footerAbout: {
@@ -206,17 +208,29 @@ export const T: Record<string, Record<Lang, string>> = {
   },
   instagramCta: { pt: 'Seguir no Instagram', en: 'Follow on Instagram' },
 
-  // Temporary About copy. Replace with Raissa's final approved brand story
-  // by the launch content freeze documented in the catalogue audit.
+  // Real client-provided brand story (JOS-64 follow-up, added 2026-07-24) --
+  // replaces the interim launch copy approved 2026-07-16. EN is our
+  // translation of the client's PT text, not client-certified.
   aboutTitle: { pt: 'A nossa história', en: 'Our story' },
   aboutIntro: {
-    pt: 'A Use Me With Style nasceu da vontade de vestir mulheres em Angola e Portugal com peças versáteis, atuais e com preços diretos -- sem complicações, só moda que veste bem e dura.',
-    en: 'Use Me With Style was born from a simple idea: dress women in Angola and Portugal in versatile, current pieces at honest prices -- no complications, just fashion that fits well and lasts.',
+    pt: 'A USE ME WITH STYLE é uma marca de activewear, moda feminina e lifestyle, criada para mulheres que valorizam conforto, confiança, elegância e versatilidade.',
+    en: 'USE ME WITH STYLE is an activewear, women’s fashion, and lifestyle brand created for women who value comfort, confidence, elegance, and versatility.',
   },
   aboutMissionTitle: { pt: 'Missão', en: 'Mission' },
+  // Multi-paragraph (rendered split on blank lines, same pattern as the
+  // Help page's CMS-driven sections) -- three paragraphs of the client's
+  // brand story that follow the shorter hero intro above.
   aboutMissionBody: {
-    pt: 'Tornar o guarda-roupa do dia a dia mais simples: peças que se adaptam a vários momentos, em tecidos de qualidade, com um processo de compra claro do início ao fim -- seja em Luanda ou em Lisboa.',
-    en: 'Make the everyday wardrobe simpler: pieces that adapt to different moments, in quality fabrics, with a clear buying process from start to finish -- whether in Luanda or Lisbon.',
+    pt: [
+      'A marca disponibiliza peças pensadas para diferentes momentos da rotina feminina, desde o treino e o dia a dia até ocasiões que pedem um visual mais elegante. O nosso catálogo inclui conjuntos desportivos, peças casuais, vestidos e outros artigos selecionados para proporcionar conforto sem perder o estilo.',
+      'Com atuação em Angola e Portugal e possibilidade de envios internacionais, a USE ME WITH STYLE procura aproximar mulheres de diferentes lugares através de coleções cuidadosamente selecionadas e disponibilizadas em quantidades limitadas.',
+      'Mais do que roupa, a USE ME WITH STYLE representa uma forma de vestir com confiança, personalidade e liberdade.',
+    ].join('\n\n'),
+    en: [
+      "The brand offers pieces designed for different moments in a woman's routine, from workouts and everyday life to occasions that call for a more elegant look. Our catalogue includes activewear sets, casual pieces, dresses, and other selected items designed to deliver comfort without compromising on style.",
+      'With a presence in Angola and Portugal and international shipping available, USE ME WITH STYLE brings women from different places closer together through carefully curated collections released in limited quantities.',
+      'More than just clothing, USE ME WITH STYLE represents a way of dressing with confidence, personality, and freedom.',
+    ].join('\n\n'),
   },
   aboutValuesTitle: { pt: 'O que nos guia', en: 'What guides us' },
   aboutValue1Title: { pt: 'Qualidade em primeiro lugar', en: 'Quality first' },

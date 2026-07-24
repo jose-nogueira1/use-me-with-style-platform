@@ -1,46 +1,81 @@
 import { useEffect, useState } from 'react';
-import { C, F, t } from '../../theme';
+import { C, F, t, type Lang } from '../../theme';
 import { useApp } from '../../state/AppContext';
-import { fetchMarketSettings } from '../../lib/api';
+import { fetchMarketSettings, type MarketSettings } from '../../lib/api';
 
 // Minimal Phase 1 placeholder -- the Figma inventory names "Help" as a
 // bottom-nav destination but doesn't design its content in the high-fidelity
 // screens fetched so far. Points customers to WhatsApp, matching the
 // messaging automation already live (see JOS-58).
 //
-// Returns & exchanges policy (JOS-64, added 2026-07-23, bilingual
-// 2026-07-24): pulled from MarketSettings rather than hardcoded, since
-// Angola and Portugal/EU have materially different legal terms (48h
-// exchange-only vs. 14-day statutory withdrawal with refund). PT is the
-// client-provided legal text; EN is our translation of it -- selected by
-// the storefront's language toggle like everything else, falling back to
-// whichever one is actually filled in (e.g. if the EN field is still empty
-// in the admin) rather than showing nothing.
+// Business hours, shipping & delivery, and returns & exchanges policy (JOS-64,
+// added 2026-07-23/24): pulled from MarketSettings rather than hardcoded, all
+// bilingual PT/EN -- PT is client-provided copy, EN is our translation of it.
+// Each section picks the field matching the storefront's language toggle,
+// falling back to whichever language is actually filled in (e.g. if an EN
+// field is still empty in the admin) rather than showing nothing.
+function pickBilingual(pt: string | undefined, en: string | undefined, lang: Lang): string | null {
+  const ptTrimmed = pt?.trim();
+  const enTrimmed = en?.trim();
+  const preferred = lang === 'en' ? enTrimmed : ptTrimmed;
+  return preferred || enTrimmed || ptTrimmed || null;
+}
+
+function InfoSection({ heading, text, loading }: { heading: string; text: string | null; loading: boolean }) {
+  if (!loading && !text) return null;
+  return (
+    <div style={{ marginTop: 32, paddingTop: 32, borderTop: `1px solid ${C.rule}`, textAlign: 'left' }}>
+      <div style={{ fontFamily: F.display, fontSize: 16, color: C.ink, fontWeight: 800, marginBottom: 14, textAlign: 'center' }}>
+        {heading}
+      </div>
+      {loading ? null : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {(text ?? '').split(/\n{2,}/).map((paragraph, i) => (
+            <p key={i} style={{ fontSize: 12.5, color: C.inkSoft, lineHeight: 1.65, margin: 0 }}>
+              {paragraph}
+            </p>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function Help() {
   const { lang, market } = useApp();
-  const [policyText, setPolicyText] = useState<string | null>(null);
-  const [policyLoading, setPolicyLoading] = useState(true);
+  const [settings, setSettings] = useState<MarketSettings | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     fetchMarketSettings()
-      .then((settings) => {
-        if (cancelled) return;
-        const pt = (market === 'AO' ? settings.angolaReturnsPolicyTextPT : settings.portugalReturnsPolicyTextPT)?.trim();
-        const en = (market === 'AO' ? settings.angolaReturnsPolicyTextEN : settings.portugalReturnsPolicyTextEN)?.trim();
-        const preferred = lang === 'en' ? en : pt;
-        setPolicyText(preferred || en || pt || null);
+      .then((data) => {
+        if (!cancelled) setSettings(data);
       })
       .catch(() => {
-        if (!cancelled) setPolicyText(null);
+        if (!cancelled) setSettings(null);
       })
       .finally(() => {
-        if (!cancelled) setPolicyLoading(false);
+        if (!cancelled) setLoading(false);
       });
     return () => {
       cancelled = true;
     };
-  }, [market, lang]);
+  }, []);
+
+  const hoursText = pickBilingual(settings?.businessHoursTextPT, settings?.businessHoursTextEN, lang);
+
+  const marketShippingText =
+    market === 'AO'
+      ? pickBilingual(settings?.angolaShippingTextPT, settings?.angolaShippingTextEN, lang)
+      : pickBilingual(settings?.portugalShippingTextPT, settings?.portugalShippingTextEN, lang);
+  const internationalShippingText = pickBilingual(settings?.internationalShippingTextPT, settings?.internationalShippingTextEN, lang);
+  const shippingText = [marketShippingText, internationalShippingText].filter(Boolean).join('\n\n') || null;
+
+  const returnsText =
+    market === 'AO'
+      ? pickBilingual(settings?.angolaReturnsPolicyTextPT, settings?.angolaReturnsPolicyTextEN, lang)
+      : pickBilingual(settings?.portugalReturnsPolicyTextPT, settings?.portugalReturnsPolicyTextEN, lang);
 
   return (
     <div className="ump-narrow" style={{ padding: '40px 20px', textAlign: 'center' }}>
@@ -66,24 +101,14 @@ export function Help() {
         {t('chatOnWhatsapp', lang)}
       </a>
 
-      <div style={{ marginTop: 40, paddingTop: 32, borderTop: `1px solid ${C.rule}`, textAlign: 'left' }}>
-        <div style={{ fontFamily: F.display, fontSize: 16, color: C.ink, fontWeight: 800, marginBottom: 14, textAlign: 'center' }}>
-          {t('returnsPolicyHeading', lang)}
+      <InfoSection heading={t('businessHoursHeading', lang)} text={hoursText} loading={loading} />
+      <InfoSection heading={t('shippingHeading', lang)} text={shippingText} loading={loading} />
+      <InfoSection heading={t('returnsPolicyHeading', lang)} text={returnsText} loading={loading} />
+      {!loading && !returnsText && (
+        <div style={{ marginTop: 32, paddingTop: 32, borderTop: `1px solid ${C.rule}`, fontSize: 12.5, color: C.inkSoft, textAlign: 'center' }}>
+          {t('returnsPolicyUnavailable', lang)}
         </div>
-        {policyLoading ? (
-          <div style={{ fontSize: 12.5, color: C.inkSoft, textAlign: 'center' }}>{t('returnsPolicyLoading', lang)}</div>
-        ) : policyText ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {policyText.split(/\n{2,}/).map((paragraph, i) => (
-              <p key={i} style={{ fontSize: 12.5, color: C.inkSoft, lineHeight: 1.65, margin: 0 }}>
-                {paragraph}
-              </p>
-            ))}
-          </div>
-        ) : (
-          <div style={{ fontSize: 12.5, color: C.inkSoft, textAlign: 'center' }}>{t('returnsPolicyUnavailable', lang)}</div>
-        )}
-      </div>
+      )}
     </div>
   );
 }

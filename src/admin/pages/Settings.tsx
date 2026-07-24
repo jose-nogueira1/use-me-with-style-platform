@@ -15,6 +15,14 @@ const DEFAULTS: MarketSettings = {
   angolaReturnsPolicyTextEN: '',
   portugalReturnsPolicyTextPT: '',
   portugalReturnsPolicyTextEN: '',
+  businessHoursTextPT: '',
+  businessHoursTextEN: '',
+  angolaShippingTextPT: '',
+  angolaShippingTextEN: '',
+  portugalShippingTextPT: '',
+  portugalShippingTextEN: '',
+  internationalShippingTextPT: '',
+  internationalShippingTextEN: '',
 };
 
 export function Settings() {
@@ -159,6 +167,61 @@ export function Settings() {
             label="English"
             value={settings.portugalReturnsPolicyTextEN ?? ''}
             onChange={(v) => setSettings((s) => ({ ...s, portugalReturnsPolicyTextEN: v }))}
+          />
+        </div>
+      </div>
+
+      <div style={{ padding: '20px 28px 0', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }} className="ump-admin-orders-grid">
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>Business hours (shared, both markets)</div>
+          <PolicyTextarea
+            label="Portuguese"
+            value={settings.businessHoursTextPT ?? ''}
+            onChange={(v) => setSettings((s) => ({ ...s, businessHoursTextPT: v }))}
+          />
+          <PolicyTextarea
+            label="English"
+            value={settings.businessHoursTextEN ?? ''}
+            onChange={(v) => setSettings((s) => ({ ...s, businessHoursTextEN: v }))}
+          />
+        </div>
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>International shipping (shared, both markets)</div>
+          <PolicyTextarea
+            label="Portuguese"
+            value={settings.internationalShippingTextPT ?? ''}
+            onChange={(v) => setSettings((s) => ({ ...s, internationalShippingTextPT: v }))}
+          />
+          <PolicyTextarea
+            label="English"
+            value={settings.internationalShippingTextEN ?? ''}
+            onChange={(v) => setSettings((s) => ({ ...s, internationalShippingTextEN: v }))}
+          />
+        </div>
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>Angola: shipping &amp; delivery info</div>
+          <PolicyTextarea
+            label="Portuguese"
+            value={settings.angolaShippingTextPT ?? ''}
+            onChange={(v) => setSettings((s) => ({ ...s, angolaShippingTextPT: v }))}
+          />
+          <PolicyTextarea
+            label="English"
+            value={settings.angolaShippingTextEN ?? ''}
+            onChange={(v) => setSettings((s) => ({ ...s, angolaShippingTextEN: v }))}
+          />
+        </div>
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>Portugal: shipping &amp; delivery info</div>
+          <PolicyTextarea
+            label="Portuguese"
+            value={settings.portugalShippingTextPT ?? ''}
+            onChange={(v) => setSettings((s) => ({ ...s, portugalShippingTextPT: v }))}
+          />
+          <PolicyTextarea
+            label="English"
+            value={settings.portugalShippingTextEN ?? ''}
+            onChange={(v) => setSettings((s) => ({ ...s, portugalShippingTextEN: v }))}
           />
         </div>
       </div>

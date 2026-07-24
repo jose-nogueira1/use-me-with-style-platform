@@ -169,6 +169,18 @@ export type MarketSettings = {
   angolaReturnsPolicyTextEN?: string;
   portugalReturnsPolicyTextPT?: string;
   portugalReturnsPolicyTextEN?: string;
+  /** Business hours + shipping info (JOS-64 follow-up, added 2026-07-24).
+   * Same bilingual PT/EN pattern as the returns policy. Business hours are
+   * shared across both markets (one WhatsApp support line); shipping is
+   * per-market, plus a shared international-shipping note. */
+  businessHoursTextPT?: string;
+  businessHoursTextEN?: string;
+  angolaShippingTextPT?: string;
+  angolaShippingTextEN?: string;
+  portugalShippingTextPT?: string;
+  portugalShippingTextEN?: string;
+  internationalShippingTextPT?: string;
+  internationalShippingTextEN?: string;
 };
 
 export type ApiCustomer = {
