@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { C, F } from '../../theme';
-import { adminListProducts, resolveProductImage, type ApiProduct } from '../../lib/api';
+import { adminListProducts, productIsLowStock, resolveProductImage, type ApiProduct } from '../../lib/api';
 import { PageHeader } from '../components/PageHeader';
 
 export function Products() {
@@ -16,13 +16,12 @@ export function Products() {
       .catch(() => setError(true));
   }, []);
 
-  const isLowStock = (p: ApiProduct) => p.sizes.some((s) => s.stockAO + s.stockPT <= 2);
   const hasPhoto = (p: ApiProduct) => (p.images?.length ?? 0) > 0;
 
   const filtered = (products ?? []).filter((p) => {
     if (filter === 'active') return p.active;
     if (filter === 'draft') return !p.active;
-    if (filter === 'low') return isLowStock(p);
+    if (filter === 'low') return productIsLowStock(p);
     if (filter === 'photo') return !hasPhoto(p);
     return true;
   });
@@ -31,7 +30,7 @@ export function Products() {
     all: products?.length ?? 0,
     active: products?.filter((p) => p.active).length ?? 0,
     draft: products?.filter((p) => !p.active).length ?? 0,
-    low: products?.filter(isLowStock).length ?? 0,
+    low: products?.filter(productIsLowStock).length ?? 0,
     photo: products?.filter((p) => !hasPhoto(p)).length ?? 0,
   };
 

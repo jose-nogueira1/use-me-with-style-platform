@@ -103,6 +103,13 @@ export function resolveProductImage(image: ApiProductImageRef | undefined): { ur
   return {};
 }
 
+/** Shared with the admin notifications bell (PageHeader.tsx) and the
+ * Products list page's "Low stock" filter, so the two can't silently drift
+ * out of sync on what "low" means. */
+export function productIsLowStock(p: ApiProduct): boolean {
+  return p.sizes.some((s) => s.stockAO + s.stockPT <= 2);
+}
+
 export type OrderItemInput = {
   product: string | number;
   productName: string;
