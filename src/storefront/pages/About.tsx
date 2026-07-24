@@ -4,9 +4,9 @@ import { useApp } from '../../state/AppContext';
 import { ProductPhoto, type ProductTone } from '../../components/ProductPhoto';
 
 // Real client-provided brand story, wired in 2026-07-24 (JOS-64 follow-up).
-// Replaces the interim launch copy approved 2026-07-16. Hero photo pending --
-// client sent a portrait but no file has reached the repo/CMS media library
-// yet, so the layout below doesn't reference an image asset.
+// Replaces the interim launch copy approved 2026-07-16. Hero photo added
+// from public/brand/about-photo.jpg (re-encoded from the original PNG-as-.jpg
+// upload, 1.6MB -> 128KB, to keep the page light).
 const VALUES: { titleKey: string; bodyKey: string; tone: ProductTone }[] = [
   { titleKey: 'aboutValue1Title', bodyKey: 'aboutValue1Body', tone: 'gold' },
   { titleKey: 'aboutValue2Title', bodyKey: 'aboutValue2Body', tone: 'rose' },
@@ -28,6 +28,22 @@ export function About() {
           </div>
           <div style={{ fontSize: 14, color: C.heroSubtitle, lineHeight: 1.7 }}>{t('aboutIntro', lang)}</div>
         </div>
+      </div>
+
+      <div className="ump-content-width ump-narrow" style={{ padding: '0 20px' }}>
+        <img
+          src="/brand/about-photo.jpg"
+          alt="Use Me With Style"
+          style={{
+            display: 'block',
+            width: '100%',
+            maxHeight: 480,
+            objectFit: 'cover',
+            objectPosition: 'top center',
+            borderRadius: 14,
+            marginTop: -24,
+          }}
+        />
       </div>
 
       <div className="ump-content-width ump-narrow" style={{ padding: '32px 20px' }}>
