@@ -37,8 +37,8 @@ export function Cart() {
   }, 0);
 
   return (
-    <div className="ump-form-width" style={{ background: C.paper }}>
-      <div style={{ padding: '20px 20px 12px' }}>
+    <div className="ump-cart-layout" style={{ background: C.paper }}>
+      <div style={{ padding: '20px 20px 12px', gridColumn: '1 / -1' }}>
         <h1 style={{ fontFamily: F.display, fontSize: 24, color: C.ink, fontWeight: 800, margin: 0 }}>{t('cart', lang)}</h1>
         <div style={{ fontSize: 11, color: C.inkSoft, marginTop: 2 }}>
           {cart.length} {t(cart.length === 1 ? 'itemSingular' : 'itemPlural', lang)}
@@ -84,30 +84,32 @@ export function Cart() {
         })}
       </div>
 
-      <div style={{ padding: 20, background: C.subtleBg, borderTop: `1px solid ${C.ruleLight}`, marginTop: 20 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: C.inkSoft, marginBottom: 8 }}>
-          <span>{t('subtotal', lang)}</span>
-          <span>{market === 'AO' ? `${subtotal.toLocaleString('en-US')} Kz` : `€${subtotal.toFixed(2)}`}</span>
+      <div className="ump-cart-summary" style={{ padding: '0 20px' }}>
+        <div style={{ padding: 16, background: C.subtleBg, border: `1px solid ${C.ruleLight}`, borderRadius: 8 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: C.inkSoft, marginBottom: 8 }}>
+            <span>{t('subtotal', lang)}</span>
+            <span>{market === 'AO' ? `${subtotal.toLocaleString('en-US')} Kz` : `€${subtotal.toFixed(2)}`}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 16, fontWeight: 800, color: C.ink, marginBottom: 16 }}>
+            <span>{t('total', lang)}</span>
+            <span>{market === 'AO' ? `${subtotal.toLocaleString('en-US')} Kz` : `€${subtotal.toFixed(2)}`}</span>
+          </div>
+          <button
+            onClick={() => {
+              trackMetaEvent('InitiateCheckout', {
+                content_ids: cart.map((item) => item.id),
+                content_type: 'product',
+                num_items: cart.reduce((sum, item) => sum + item.qty, 0),
+                value: subtotal,
+                currency: market === 'AO' ? 'AOA' : 'EUR',
+              });
+              navigate('/checkout');
+            }}
+            style={{ width: '100%', padding: 14, background: C.black, color: C.onDarkGold, fontSize: 12, fontWeight: 800, letterSpacing: 1.5, textTransform: 'uppercase', borderRadius: 8 }}
+          >
+            {t('checkout', lang)}
+          </button>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 16, fontWeight: 800, color: C.ink, marginBottom: 16 }}>
-          <span>{t('total', lang)}</span>
-          <span>{market === 'AO' ? `${subtotal.toLocaleString('en-US')} Kz` : `€${subtotal.toFixed(2)}`}</span>
-        </div>
-        <button
-          onClick={() => {
-            trackMetaEvent('InitiateCheckout', {
-              content_ids: cart.map((item) => item.id),
-              content_type: 'product',
-              num_items: cart.reduce((sum, item) => sum + item.qty, 0),
-              value: subtotal,
-              currency: market === 'AO' ? 'AOA' : 'EUR',
-            });
-            navigate('/checkout');
-          }}
-          style={{ width: '100%', padding: 14, background: C.black, color: C.onDarkGold, fontSize: 12, fontWeight: 800, letterSpacing: 1.5, textTransform: 'uppercase', borderRadius: 8 }}
-        >
-          {t('checkout', lang)}
-        </button>
       </div>
     </div>
   );

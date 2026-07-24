@@ -92,6 +92,45 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
         .ump-form-width { max-width: 480px; margin: 0 auto; width: 100%; box-sizing: border-box; }
         @media (min-width: 860px) { .ump-form-width { max-width: 640px; } }
 
+        /* Cart & Checkout: two-column desktop layout (Phase 4, 2026-07-24 --
+           follow-up to the .ump-form-width fix above). Figma's screen
+           inventory doesn't include desktop mockups for either page, so
+           this is an original layout built from the same Section/Field/
+           card components and spacing already used everywhere else, not a
+           literal design handoff -- item list/form on the left, order
+           summary + the checkout/pay button sticky on the right, the
+           pattern most ecommerce sites use so the total and CTA stay
+           visible while scrolling a long form or cart.
+           Two steps, not one: single-column widening at 720px (matching
+           .ump-form-width's own cutover, so a page using one class doesn't
+           visually seam against a page using the other), then the actual
+           grid split at 860px -- later than Browse/Product Detail's 720px
+           cutover on purpose. Their sidebar is a slim 220px; the summary
+           column here is 360px, proportionally much wider, so it needs more
+           total width before splitting into two columns reads as
+           comfortable rather than cramped. */
+        .ump-checkout-layout,
+        .ump-cart-layout { max-width: 480px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+        @media (min-width: 720px) {
+          .ump-checkout-layout,
+          .ump-cart-layout { max-width: 640px; }
+        }
+        @media (min-width: 860px) {
+          .ump-checkout-layout,
+          .ump-cart-layout { display: grid; grid-template-columns: 1fr 360px; gap: 48px; align-items: start; max-width: 1040px; }
+        }
+        .ump-checkout-summary,
+        .ump-cart-summary { margin-top: 20px; }
+        @media (min-width: 860px) {
+          /* top: 90px clears the storefront header, which is
+             position: sticky; top: 0 and roughly 68-70px tall (14px
+             vertical padding + a 38px logo) -- 90px leaves a little
+             breathing room below it rather than the summary card touching
+             the header on scroll. */
+          .ump-checkout-summary,
+          .ump-cart-summary { margin-top: 0; position: sticky; top: 90px; }
+        }
+
         /* Header: mobile shows the same utility cluster (region + theme +
            cart) as desktop -- only the text nav links are desktop-only.
            Breakpoint matches .ump-footer-grid/.ump-cat-row below (720px),

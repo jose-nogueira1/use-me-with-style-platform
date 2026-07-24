@@ -646,8 +646,8 @@ export function Checkout() {
   };
 
   return (
-    <div className="ump-form-width" style={{ background: C.paper, paddingBottom: 40 }}>
-      <div style={{ padding: '20px 20px 12px' }}>
+    <div className="ump-checkout-layout" style={{ background: C.paper, paddingBottom: 40 }}>
+      <div style={{ padding: '20px 20px 12px', gridColumn: '1 / -1' }}>
         <h1 style={{ fontFamily: F.display, fontSize: 24, color: C.ink, fontWeight: 800, margin: '0 0 4px' }}>{t('checkout', lang)}</h1>
         {/* Market is fixed by the site the buyer is on (ao./pt. subdomain) --
             no in-checkout toggle anymore, since Angola and Portugal are now
@@ -658,7 +658,16 @@ export function Checkout() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} style={{ padding: '0 20px' }}>
+      {/* Two-column desktop layout (Phase 4, 2026-07-24, see
+          .ump-checkout-layout in App.tsx): form sections in this column,
+          order summary + submit sticky in the .ump-checkout-summary column
+          below. The submit button physically lives in that second column
+          but still submits this form via the form="checkout-form"
+          attribute -- a native HTML button doesn't need to be a DOM
+          descendant of its form, just reference its id -- which is what
+          makes splitting them into separate grid columns possible at all
+          without reaching for extra state/refs. */}
+      <form id="checkout-form" onSubmit={handleSubmit} style={{ padding: '0 20px', minWidth: 0 }}>
         <Section title={t('contact', lang)}>
           <Field label={t('name', lang)} value={form.name} onChange={(v) => setForm({ ...form, name: v })} required />
           <PhoneField
@@ -729,8 +738,10 @@ export function Checkout() {
             </div>
           )}
         </Section>
+      </form>
 
-        <div style={{ background: C.subtleBg, borderRadius: 8, padding: 16, marginTop: 20, border: `1px solid ${C.ruleLight}` }}>
+      <div className="ump-checkout-summary" style={{ padding: '0 20px' }}>
+        <div style={{ background: C.subtleBg, borderRadius: 8, padding: 16, border: `1px solid ${C.ruleLight}` }}>
           <Row label={t('subtotal', lang)} value={fmt(subtotal)} />
           <Row label={t('shipping', lang)} value={shippingCost === 0 ? t('free', lang) : fmt(shippingCost)} />
           <div style={{ borderTop: `1px solid ${C.rule}`, marginTop: 8, paddingTop: 8 }}>
@@ -770,6 +781,7 @@ export function Checkout() {
         ) : (
           <button
             type="submit"
+            form="checkout-form"
             disabled={submitting}
             style={{
               width: '100%',
@@ -787,7 +799,7 @@ export function Checkout() {
             {submitting ? (paymentMethod === 'stripe' ? t('stripeRedirecting', lang) : '…') : `${t('payNow', lang)} · ${fmt(total)}`}
           </button>
         )}
-      </form>
+      </div>
     </div>
   );
 }
