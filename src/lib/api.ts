@@ -330,6 +330,14 @@ export async function lookupOrder(orderNumber: string, email: string): Promise<P
   return data.order;
 }
 
+/** Help page "send us an email" form (JOS-64 follow-up). */
+export async function submitContactMessage(input: { name: string; email: string; message: string }): Promise<void> {
+  await request<{ ok: true }>('/contact', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Admin endpoints -- require a logged-in Payload session (cookie-based).
 // ---------------------------------------------------------------------------

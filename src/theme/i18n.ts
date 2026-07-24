@@ -182,6 +182,23 @@ export const T: Record<string, Record<Lang, string>> = {
   },
   businessHoursHeading: { pt: 'Horário de atendimento', en: 'Business hours' },
   shippingHeading: { pt: 'Entregas e envios', en: 'Shipping & delivery' },
+  emailUsHeading: { pt: 'Enviar-nos um email', en: 'Send us an email' },
+  emailUsBody: {
+    pt: 'Prefere email? Escreva-nos abaixo e respondemos assim que possível.',
+    en: "Prefer email? Write to us below and we'll get back to you as soon as we can.",
+  },
+  contactNamePlaceholder: { pt: 'Nome', en: 'Name' },
+  contactEmailPlaceholder: { pt: 'O seu email', en: 'Your email' },
+  contactMessagePlaceholder: { pt: 'A sua mensagem', en: 'Your message' },
+  sendMessage: { pt: 'Enviar mensagem', en: 'Send message' },
+  contactMessageSent: {
+    pt: 'Mensagem enviada! Responderemos assim que possível.',
+    en: "Message sent! We'll get back to you as soon as we can.",
+  },
+  contactMessageFailed: {
+    pt: 'Não foi possível enviar a mensagem agora. Tente novamente ou use o WhatsApp.',
+    en: 'Could not send your message right now. Please try again or use WhatsApp.',
+  },
 
   // Footer
   footerAbout: {
