@@ -14,6 +14,15 @@ import { ProductPhoto, type ProductTone } from '../../components/ProductPhoto';
 // (an Instagram screenshot) had its UI chrome cropped off and its grey
 // studio backdrop swapped for the brand cream (matches C.heroBg) via a
 // GrabCut cutout, so it reads as an intentional brand asset.
+//
+// The overlap amount is capped below HERO_BOTTOM_PADDING (not a value
+// guessed against 2-line intro copy): CSS padding is content-independent,
+// so anything within that padding is guaranteed empty regardless of how
+// many lines the intro wraps to (it wrapped to 3 lines at desktop width,
+// not the 2 assumed on the first pass, and a bigger negative margin ate
+// into the actual text).
+const HERO_BOTTOM_PADDING = 32;
+const PHOTO_OVERLAP = 20;
 const PHOTO_SIZE = 220;
 const VALUES: { titleKey: string; bodyKey: string; tone: ProductTone }[] = [
   { titleKey: 'aboutValue1Title', bodyKey: 'aboutValue1Body', tone: 'gold' },
@@ -26,7 +35,7 @@ export function About() {
 
   return (
     <div>
-      <div style={{ background: C.heroBg, color: C.heroText, padding: '40px 0 32px' }}>
+      <div style={{ background: C.heroBg, color: C.heroText, padding: `40px 0 ${HERO_BOTTOM_PADDING}px` }}>
         <div className="ump-content-width ump-narrow" style={{ padding: '0 20px' }}>
           <div style={{ fontSize: 10, letterSpacing: 3, color: C.heroAccent, fontWeight: 800, textTransform: 'uppercase', marginBottom: 14 }}>
             Use Me With Style
@@ -38,7 +47,7 @@ export function About() {
         </div>
       </div>
 
-      <div className="ump-content-width ump-narrow" style={{ padding: '0 20px', textAlign: 'center', marginTop: -56 }}>
+      <div className="ump-content-width ump-narrow" style={{ padding: '0 20px', textAlign: 'center', marginTop: -PHOTO_OVERLAP }}>
         <div
           style={{
             display: 'inline-block',
