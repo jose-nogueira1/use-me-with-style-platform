@@ -521,7 +521,7 @@ export function Checkout() {
         postalCode: market === 'PT' ? form.postalCode : undefined,
         city: form.city,
         country: form.country,
-        taxId: market === 'PT' ? form.taxId || undefined : undefined,
+        taxId: form.taxId || undefined,
         notes: form.notes || undefined,
         items: eurItems,
         currency: 'EUR',
@@ -545,7 +545,7 @@ export function Checkout() {
       postalCode: market === 'PT' ? form.postalCode : undefined,
       city: form.city,
       country: form.country,
-      taxId: market === 'PT' ? form.taxId || undefined : undefined,
+      taxId: form.taxId || undefined,
       notes: form.notes || undefined,
       items,
       currency: market === 'AO' ? 'Kz' : 'EUR',
@@ -701,14 +701,12 @@ export function Checkout() {
           ) : (
             <Field label={t('country', lang)} value={form.country} onChange={(v) => setForm({ ...form, country: v })} required />
           )}
-          {market === 'PT' && (
-            <Field
-              label={t('taxIdOptional', lang)}
-              value={form.taxId}
-              onChange={(v) => setForm({ ...form, taxId: v })}
-              hint={t('taxIdHint', lang)}
-            />
-          )}
+          <Field
+            label={t('taxIdOptional', lang)}
+            value={form.taxId}
+            onChange={(v) => setForm({ ...form, taxId: v })}
+            hint={t('taxIdHint', lang)}
+          />
           <Field label={t('notesOptional', lang)} value={form.notes} onChange={(v) => setForm({ ...form, notes: v })} />
         </Section>
 
@@ -850,12 +848,16 @@ function Field({
 
 // Country-code + local-number pair for the phone/WhatsApp field (added
 // 2026-07-24, user request; expanded from 15 curated countries to the full
-// ~250-country list the same day per follow-up feedback). Defaults to
-// PT/AO based on market (see the form-state init and the market-change
-// effect in Checkout above); the dropdown itself stays changeable in both
-// markets since a buyer's own phone might not match the storefront's
-// market (diaspora, international shipping, etc.). Selection is keyed by
-// iso2 rather than dial code -- see the ALL_COUNTRY_CODES comment for why
+// ~250-country list the same day per follow-up feedback, then converted
+// from a native <select> to this custom searchable combobox once the
+// native select's own text-truncation started clipping longer names like
+// "Antígua e Barbuda" mid-word inside its fixed-width box -- a native
+// <select> can't be given a search input either way. Defaults to PT/AO
+// based on market (see the form-state init and the market-change effect in
+// Checkout above); the dropdown itself stays changeable in both markets
+// since a buyer's own phone might not match the storefront's market
+// (diaspora, international shipping, etc.). Selection is keyed by iso2
+// rather than dial code -- see the ALL_COUNTRY_CODES comment for why
 // (several countries share a dial code, e.g. +1).
 function PhoneField({
   label,
@@ -875,6 +877,40 @@ function PhoneField({
   required?: boolean;
 }) {
   const options = useMemo(() => countryCodeOptionsFor(lang), [lang]);
+  const selected = options.find((c) => c.iso2 === countryIso2) ?? options[0];
+
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    searchRef.current?.focus();
+    const onDocMouseDown = (e: MouseEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
+        setOpen(false);
+        setQuery('');
+      }
+    };
+    document.addEventListener('mousedown', onDocMouseDown);
+    return () => document.removeEventListener('mousedown', onDocMouseDown);
+  }, [open]);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return options;
+    return options.filter(
+      (c) => c.nameEN.toLowerCase().includes(q) || c.namePT.toLowerCase().includes(q) || c.code.includes(q) || c.iso2.toLowerCase() === q,
+    );
+  }, [options, query]);
+
+  const selectAndClose = (iso2: string) => {
+    onCountryIso2Change(iso2);
+    setOpen(false);
+    setQuery('');
+  };
+
   return (
     <label style={{ display: 'block' }}>
       <div style={{ fontSize: 11, color: C.inkSoft, marginBottom: 4 }}>
@@ -882,27 +918,109 @@ function PhoneField({
         {required && ' *'}
       </div>
       <div style={{ display: 'flex', gap: 8 }}>
-        <select
-          value={countryIso2}
-          onChange={(e) => onCountryIso2Change(e.target.value)}
-          aria-label="Country code"
-          style={{
-            flexShrink: 0,
-            width: 130,
-            padding: '10px 6px',
-            fontSize: 13,
-            border: `1px solid ${C.rule}`,
-            borderRadius: 6,
-            background: C.paper,
-            color: C.ink,
-          }}
-        >
-          {options.map((c) => (
-            <option key={c.iso2} value={c.iso2}>
-              {flagEmoji(c.iso2)} {lang === 'pt' ? c.namePT : c.nameEN} ({c.code})
-            </option>
-          ))}
-        </select>
+        <div ref={wrapRef} style={{ position: 'relative', flexShrink: 0 }}>
+          <button
+            type="button"
+            onClick={() => setOpen((o) => !o)}
+            aria-label="Country code"
+            aria-haspopup="listbox"
+            aria-expanded={open}
+            style={{
+              width: 96,
+              padding: '10px 6px',
+              fontSize: 13,
+              border: `1px solid ${C.rule}`,
+              borderRadius: 6,
+              background: C.paper,
+              color: C.ink,
+              textAlign: 'left',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+            }}
+          >
+            {selected ? `${flagEmoji(selected.iso2)} ${selected.code}` : ''}
+          </button>
+          {open && (
+            <div
+              role="listbox"
+              style={{
+                position: 'absolute',
+                top: 'calc(100% + 4px)',
+                left: 0,
+                width: 270,
+                background: C.paper,
+                border: `1px solid ${C.rule}`,
+                borderRadius: 8,
+                boxShadow: '0 10px 28px rgba(0,0,0,0.16)',
+                zIndex: 50,
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              <input
+                ref={searchRef}
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') {
+                    setOpen(false);
+                    setQuery('');
+                  } else if (e.key === 'Enter' && filtered.length > 0) {
+                    e.preventDefault();
+                    selectAndClose(filtered[0].iso2);
+                  }
+                }}
+                placeholder={lang === 'pt' ? 'Pesquisar país…' : 'Search country…'}
+                style={{
+                  margin: 8,
+                  padding: '8px 10px',
+                  fontSize: 13,
+                  border: `1px solid ${C.rule}`,
+                  borderRadius: 6,
+                  background: C.paper,
+                  color: C.ink,
+                }}
+              />
+              <div style={{ overflowY: 'auto', maxHeight: 260 }}>
+                {filtered.length === 0 && (
+                  <div style={{ padding: '10px 12px', fontSize: 12, color: C.inkSoft }}>
+                    {lang === 'pt' ? 'Nenhum país encontrado.' : 'No countries found.'}
+                  </div>
+                )}
+                {filtered.map((c) => (
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={c.iso2 === countryIso2}
+                    key={c.iso2}
+                    onClick={() => selectAndClose(c.iso2)}
+                    style={{
+                      display: 'flex',
+                      width: '100%',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '8px 12px',
+                      fontSize: 13,
+                      textAlign: 'left',
+                      background: c.iso2 === countryIso2 ? C.subtleBg : 'transparent',
+                      color: C.ink,
+                      border: 'none',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <span>{flagEmoji(c.iso2)}</span>
+                    <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {lang === 'pt' ? c.namePT : c.nameEN}
+                    </span>
+                    <span style={{ color: C.inkSoft, flexShrink: 0 }}>{c.code}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
         <input
           type="tel"
           value={value}
