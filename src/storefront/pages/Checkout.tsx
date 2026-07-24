@@ -58,6 +58,30 @@ const DELIVERY_LABEL_KEYS: Record<string, string> = {
   courier_ao: 'deliveryCourierAo',
 };
 
+// Phone country-code dropdown (added 2026-07-24, user request). Portugal and
+// Angola pinned first since those are the two markets this storefront
+// serves; the rest are the Lusophone countries plus a handful of common
+// international ones, for the international-shipping case (see the Help
+// page's "International shipping" section) where a buyer's phone might not
+// match either market's own code.
+const PHONE_COUNTRY_CODES = [
+  { code: '+351', flag: '🇵🇹' }, // Portugal
+  { code: '+244', flag: '🇦🇴' }, // Angola
+  { code: '+55', flag: '🇧🇷' }, // Brazil
+  { code: '+238', flag: '🇨🇻' }, // Cape Verde
+  { code: '+245', flag: '🇬🇼' }, // Guinea-Bissau
+  { code: '+258', flag: '🇲🇿' }, // Mozambique
+  { code: '+239', flag: '🇸🇹' }, // São Tomé and Príncipe
+  { code: '+34', flag: '🇪🇸' }, // Spain
+  { code: '+33', flag: '🇫🇷' }, // France
+  { code: '+44', flag: '🇬🇧' }, // United Kingdom
+  { code: '+49', flag: '🇩🇪' }, // Germany
+  { code: '+39', flag: '🇮🇹' }, // Italy
+  { code: '+31', flag: '🇳🇱' }, // Netherlands
+  { code: '+41', flag: '🇨🇭' }, // Switzerland
+  { code: '+1', flag: '🇺🇸' }, // United States
+] as const;
+
 // Payload's Postgres relationship IDs are numbers. Product models keep IDs
 // as strings so the UI also supports UUID/string-backed installations, but
 // payment endpoints use Payload's Local API and therefore need numeric IDs
@@ -88,6 +112,7 @@ export function Checkout() {
 
   const [form, setForm] = useState({
     name: '',
+    phoneCountryCode: market === 'AO' ? '+244' : '+351',
     phone: '',
     email: '',
     address: '',
@@ -136,7 +161,11 @@ export function Checkout() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setDeliveryMethod(deliveryOptions[0]);
     setPaymentMethod(paymentOptions[0]);
-    setForm((f) => ({ ...f, country: market === 'AO' ? 'Angola' : 'Portugal' }));
+    setForm((f) => ({
+      ...f,
+      country: market === 'AO' ? 'Angola' : 'Portugal',
+      phoneCountryCode: market === 'AO' ? '+244' : '+351',
+    }));
     // The option arrays are selected from settings above; settings is the stable source.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [market, settings]);
@@ -184,6 +213,12 @@ export function Checkout() {
   // stays on the plain Kz order path below, same as before.
   const usesEurSettlement = market === 'AO' && (paymentMethod === 'stripe' || paymentMethod === 'paypal');
 
+  // Combined phone number sent to the CMS and to the AppyPay widget (which
+  // strips non-digits itself) -- the country-code dropdown and the local
+  // number are separate form fields for editing, but everywhere else in the
+  // app just wants one phone string.
+  const fullPhone = `${form.phoneCountryCode} ${form.phone}`.trim();
+
   const buildOrderInput = (): CreateOrderInput => {
     if (usesEurSettlement) {
       const eurItems = cart
@@ -205,7 +240,7 @@ export function Checkout() {
       return {
         market,
         customerName: form.name,
-        customerPhone: form.phone,
+        customerPhone: fullPhone,
         customerEmail: form.email,
         address: form.address,
         addressLine2: form.addressLine2 || undefined,
@@ -229,7 +264,7 @@ export function Checkout() {
     return {
       market,
       customerName: form.name,
-      customerPhone: form.phone,
+      customerPhone: fullPhone,
       customerEmail: form.email,
       address: form.address,
       addressLine2: form.addressLine2 || undefined,
@@ -349,7 +384,14 @@ export function Checkout() {
       <form onSubmit={handleSubmit} style={{ padding: '0 20px' }}>
         <Section title={t('contact', lang)}>
           <Field label={t('name', lang)} value={form.name} onChange={(v) => setForm({ ...form, name: v })} required />
-          <Field label={t('phoneWhatsapp', lang)} value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} required />
+          <PhoneField
+            label={t('phoneWhatsapp', lang)}
+            countryCode={form.phoneCountryCode}
+            onCountryCodeChange={(v) => setForm({ ...form, phoneCountryCode: v })}
+            value={form.phone}
+            onChange={(v) => setForm({ ...form, phone: v })}
+            required
+          />
           <Field label={t('email', lang)} type="email" value={form.email} onChange={(v) => setForm({ ...form, email: v })} required />
         </Section>
 
@@ -372,7 +414,18 @@ export function Checkout() {
             />
           )}
           <Field label={t('city', lang)} value={form.city} onChange={(v) => setForm({ ...form, city: v })} required />
-          <Field label={t('country', lang)} value={form.country} onChange={(v) => setForm({ ...form, country: v })} required />
+          {market === 'AO' ? (
+            <Field
+              label={t('country', lang)}
+              value={form.country}
+              onChange={() => {}}
+              required
+              disabled
+              hint={t('countryLockedAO', lang)}
+            />
+          ) : (
+            <Field label={t('country', lang)} value={form.country} onChange={(v) => setForm({ ...form, country: v })} required />
+          )}
           {market === 'PT' && (
             <Field
               label={t('taxIdOptional', lang)}
@@ -419,7 +472,7 @@ export function Checkout() {
               amount={total}
               description={`Use Me With Style ${appyPayOrder.orderNumber}`}
               merchantTransactionId={appyPayOrder.merchantTransactionId}
-              phoneNumber={form.phone}
+              phoneNumber={fullPhone}
               lang={lang}
             />
             <button
@@ -478,6 +531,7 @@ function Field({
   onChange,
   type = 'text',
   required = false,
+  disabled = false,
   placeholder,
   hint,
 }: {
@@ -486,6 +540,7 @@ function Field({
   onChange: (v: string) => void;
   type?: string;
   required?: boolean;
+  disabled?: boolean;
   placeholder?: string;
   hint?: string;
 }) {
@@ -500,10 +555,81 @@ function Field({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         required={required}
+        disabled={disabled}
         placeholder={placeholder}
-        style={{ width: '100%', padding: '10px 12px', fontSize: 13, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.paper, color: C.ink }}
+        style={{
+          width: '100%',
+          padding: '10px 12px',
+          fontSize: 13,
+          border: `1px solid ${C.rule}`,
+          borderRadius: 6,
+          background: disabled ? C.subtleBg : C.paper,
+          color: disabled ? C.inkSoft : C.ink,
+          cursor: disabled ? 'not-allowed' : 'text',
+        }}
       />
       {hint && <div style={{ fontSize: 10, color: C.inkSoft, marginTop: 3 }}>{hint}</div>}
+    </label>
+  );
+}
+
+// Country-code + local-number pair for the phone/WhatsApp field (added
+// 2026-07-24, user request). Defaults to +351/+244 based on market (see the
+// form-state init and the market-change effect in Checkout above); the
+// dropdown itself stays changeable in both markets since a buyer's own phone
+// might not match the storefront's market (diaspora, international
+// shipping, etc.).
+function PhoneField({
+  label,
+  countryCode,
+  onCountryCodeChange,
+  value,
+  onChange,
+  required = false,
+}: {
+  label: string;
+  countryCode: string;
+  onCountryCodeChange: (v: string) => void;
+  value: string;
+  onChange: (v: string) => void;
+  required?: boolean;
+}) {
+  return (
+    <label style={{ display: 'block' }}>
+      <div style={{ fontSize: 11, color: C.inkSoft, marginBottom: 4 }}>
+        {label}
+        {required && ' *'}
+      </div>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <select
+          value={countryCode}
+          onChange={(e) => onCountryCodeChange(e.target.value)}
+          aria-label="Country code"
+          style={{
+            flexShrink: 0,
+            width: 96,
+            padding: '10px 6px',
+            fontSize: 13,
+            border: `1px solid ${C.rule}`,
+            borderRadius: 6,
+            background: C.paper,
+            color: C.ink,
+          }}
+        >
+          {PHONE_COUNTRY_CODES.map((c) => (
+            <option key={c.code} value={c.code}>
+              {c.flag} {c.code}
+            </option>
+          ))}
+        </select>
+        <input
+          type="tel"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          required={required}
+          style={{ flex: 1, minWidth: 0, padding: '10px 12px', fontSize: 13, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.paper, color: C.ink }}
+        />
+      </div>
     </label>
   );
 }

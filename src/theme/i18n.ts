@@ -108,6 +108,10 @@ export const T: Record<string, Record<Lang, string>> = {
   postalCode: { pt: 'Código Postal', en: 'Postal Code' },
   city: { pt: 'Cidade', en: 'City' },
   country: { pt: 'País', en: 'Country' },
+  countryLockedAO: {
+    pt: 'Entregamos apenas dentro de Angola.',
+    en: 'We currently only deliver within Angola.',
+  },
   taxIdOptional: { pt: 'NIF (opcional)', en: 'Tax ID / NIF (optional)' },
   taxIdHint: { pt: 'Para efeitos de fatura.', en: 'For invoicing purposes.' },
   notesOptional: { pt: 'Notas (opcional)', en: 'Notes (optional)' },
