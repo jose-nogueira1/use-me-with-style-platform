@@ -518,7 +518,10 @@ export function Checkout() {
         customerEmail: form.email,
         address: form.address,
         addressLine2: form.addressLine2 || undefined,
-        postalCode: market === 'PT' ? form.postalCode : undefined,
+        // This branch only runs when usesEurSettlement is true, which by
+        // definition requires market === 'AO' -- postalCode is a PT-only
+        // field, so it's always absent here.
+        postalCode: undefined,
         city: form.city,
         country: form.country,
         taxId: form.taxId || undefined,
