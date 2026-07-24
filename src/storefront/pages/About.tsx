@@ -6,24 +6,9 @@ import { ProductPhoto, type ProductTone } from '../../components/ProductPhoto';
 // Real client-provided brand story, wired in 2026-07-24 (JOS-64 follow-up).
 // Replaces the interim launch copy approved 2026-07-16.
 //
-// Photo layout, revised same day per feedback ("don't like image-right/
-// text-left, figure out another structure"): rather than a full-bleed
-// banner or a side-by-side split, the portrait is a small centered framed
-// card that overlaps the bottom of the hero band -- a "signature photo"
-// treatment instead of an editorial two-column layout. The source image
-// (an Instagram screenshot) had its UI chrome cropped off and its grey
-// studio backdrop swapped for the brand cream (matches C.heroBg) via a
-// GrabCut cutout, so it reads as an intentional brand asset.
-//
-// The overlap amount is capped below HERO_BOTTOM_PADDING (not a value
-// guessed against 2-line intro copy): CSS padding is content-independent,
-// so anything within that padding is guaranteed empty regardless of how
-// many lines the intro wraps to (it wrapped to 3 lines at desktop width,
-// not the 2 assumed on the first pass, and a bigger negative margin ate
-// into the actual text).
-const HERO_BOTTOM_PADDING = 32;
-const PHOTO_OVERLAP = 20;
-const PHOTO_SIZE = 220;
+// Photo removed same day per feedback -- text-only hero again. The asset
+// itself (public/brand/about-photo.jpg) is left in place in case it's
+// wanted again later; it's just not referenced from this page anymore.
 const VALUES: { titleKey: string; bodyKey: string; tone: ProductTone }[] = [
   { titleKey: 'aboutValue1Title', bodyKey: 'aboutValue1Body', tone: 'gold' },
   { titleKey: 'aboutValue2Title', bodyKey: 'aboutValue2Body', tone: 'rose' },
@@ -35,7 +20,7 @@ export function About() {
 
   return (
     <div>
-      <div style={{ background: C.heroBg, color: C.heroText, padding: `40px 0 ${HERO_BOTTOM_PADDING}px` }}>
+      <div style={{ background: C.heroBg, color: C.heroText, padding: '40px 0 32px' }}>
         <div className="ump-content-width ump-narrow" style={{ padding: '0 20px' }}>
           <div style={{ fontSize: 10, letterSpacing: 3, color: C.heroAccent, fontWeight: 800, textTransform: 'uppercase', marginBottom: 14 }}>
             Use Me With Style
@@ -47,33 +32,7 @@ export function About() {
         </div>
       </div>
 
-      <div className="ump-content-width ump-narrow" style={{ padding: '0 20px', textAlign: 'center', marginTop: -PHOTO_OVERLAP }}>
-        <div
-          style={{
-            display: 'inline-block',
-            padding: 6,
-            borderRadius: '50%',
-            background: `linear-gradient(160deg, ${C.champagne}, ${C.gold})`,
-            boxShadow: '0 12px 28px rgba(5,5,5,0.18)',
-          }}
-        >
-          <img
-            src="/brand/about-photo.jpg"
-            alt="Use Me With Style"
-            style={{
-              display: 'block',
-              width: PHOTO_SIZE,
-              height: PHOTO_SIZE,
-              objectFit: 'cover',
-              objectPosition: 'top center',
-              borderRadius: '50%',
-              border: `4px solid ${C.paper}`,
-            }}
-          />
-        </div>
-      </div>
-
-      <div className="ump-content-width ump-narrow" style={{ padding: '24px 20px 32px' }}>
+      <div className="ump-content-width ump-narrow" style={{ padding: '32px 20px' }}>
         <div style={{ fontSize: 10, letterSpacing: 2, color: C.goldDeep, fontWeight: 800, textTransform: 'uppercase', marginBottom: 10, textAlign: 'center' }}>
           {t('aboutMissionTitle', lang)}
         </div>
