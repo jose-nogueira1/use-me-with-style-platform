@@ -35,7 +35,30 @@ const DEFAULTS: MarketSettings = {
   internationalShippingTextEN: '',
 };
 
+const TABS = [
+  { key: 'markets', label: 'Markets' },
+  { key: 'policies', label: 'Policies & content' },
+  { key: 'invoicing', label: 'Invoicing' },
+  { key: 'legal', label: 'Legal pages' },
+] as const;
+type SettingsTab = (typeof TABS)[number]['key'];
+
+const TAB_META: Record<SettingsTab, { title: string; subtitle: string }> = {
+  markets: { title: 'Launch configuration', subtitle: 'Safe placeholders until payment, fulfilment, and client media inputs are final.' },
+  policies: { title: 'Policies & content', subtitle: 'Returns, business hours, and shipping copy shown on the Help page and at checkout.' },
+  invoicing: { title: 'Internal invoicing', subtitle: 'Commercial (non-fiscal) invoice generation, per market.' },
+  legal: { title: 'Legal pages', subtitle: "Shown on the storefront's Privacy Policy and Terms & Conditions pages." },
+};
+
+// Split into tabs (2026-07-25, user feedback: the previous single-page
+// layout stacked Markets + Policies + Invoicing + Legal pages into one very
+// long scroll, which read as cluttered rather than organized). Markets and
+// Policies still share the MarketSettings global/state and the page-level
+// Save button, since they were always saved together; Invoicing and Legal
+// pages are separate globals and keep their own self-contained save actions
+// (each section already had its own fetch/save before this change).
 export function Settings() {
+  const [tab, setTab] = useState<SettingsTab>('markets');
   const [settings, setSettings] = useState<MarketSettings>(DEFAULTS);
   const [loading, setLoading] = useState(true);
   const [, setSaving] = useState(false);
@@ -66,179 +89,218 @@ export function Settings() {
 
   if (loading) return <div style={{ padding: '32px 28px', fontSize: 13, color: C.inkSoft }}>Loading…</div>;
 
+  const showsMarketSettingsCta = tab === 'markets' || tab === 'policies';
+
   return (
     <div style={{ paddingBottom: 32 }}>
-      <PageHeader eyebrow="Settings" title="Launch configuration" subtitle="Safe placeholders until payment, fulfilment, and client media inputs are final." cta="Save settings" onCta={handleSave} />
+      <PageHeader
+        eyebrow="Settings"
+        title={TAB_META[tab].title}
+        subtitle={TAB_META[tab].subtitle}
+        cta={showsMarketSettingsCta ? 'Save settings' : undefined}
+        onCta={showsMarketSettingsCta ? handleSave : undefined}
+      />
 
-      {error && <div style={{ margin: '16px 28px 0', fontSize: 13, color: '#B95545' }}>{error}</div>}
-      {saved && <div style={{ margin: '16px 28px 0', fontSize: 13, color: '#3F754D' }}>Saved.</div>}
+      <div style={{ padding: '20px 28px 0', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        {TABS.map((t) => (
+          <TabPill key={t.key} label={t.label} active={tab === t.key} onClick={() => setTab(t.key)} />
+        ))}
+      </div>
 
-      <div style={{ padding: '20px 28px 0', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }} className="ump-admin-orders-grid">
-        <Card title="Angola" badge="Multicaixa Express" tone="gold">
-          <ConfigRow label="Currency" value="Kwanza, prices shown as Kz. Stripe/PayPal charges settle in EUR (neither gateway supports Kz)." />
-          <ConfigRow
-            label="Payment"
-            value={
-              <div>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                  <input type="checkbox" checked={settings.angolaPaymentLive} onChange={(e) => setSettings((s) => ({ ...s, angolaPaymentLive: e.target.checked }))} />
-                  AppyPay (Multicaixa Express) integration live
-                </label>
+      {showsMarketSettingsCta && error && <div style={{ margin: '16px 28px 0', fontSize: 13, color: '#B95545' }}>{error}</div>}
+      {showsMarketSettingsCta && saved && <div style={{ margin: '16px 28px 0', fontSize: 13, color: '#3F754D' }}>Saved.</div>}
+
+      {tab === 'markets' && (
+        <div style={{ padding: '20px 28px 0', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }} className="ump-admin-orders-grid">
+          <Card title="Angola" badge="Multicaixa Express" tone="gold">
+            <ConfigRow label="Currency" value="Kwanza, prices shown as Kz. Stripe/PayPal charges settle in EUR (neither gateway supports Kz)." />
+            <ConfigRow
+              label="Payment"
+              value={
+                <div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                    <input type="checkbox" checked={settings.angolaPaymentLive} onChange={(e) => setSettings((s) => ({ ...s, angolaPaymentLive: e.target.checked }))} />
+                    AppyPay (Multicaixa Express) integration live
+                  </label>
+                  <input
+                    value={settings.angolaPaymentMethods.join(', ')}
+                    onChange={(e) => setSettings((s) => ({ ...s, angolaPaymentMethods: e.target.value.split(',').map((v) => v.trim()).filter(Boolean) }))}
+                    style={{ width: '100%', padding: 8, fontSize: 11, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, marginBottom: 8 }}
+                  />
+                  <textarea
+                    value={settings.angolaBankTransferInstructions ?? ''}
+                    onChange={(e) => setSettings((s) => ({ ...s, angolaBankTransferInstructions: e.target.value }))}
+                    rows={2}
+                    placeholder="Multicaixa Express manual instructions (shown until AppyPay integration is live)"
+                    style={{ width: '100%', padding: 8, fontSize: 11, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, fontFamily: 'inherit' }}
+                  />
+                </div>
+              }
+            />
+            <ConfigRow
+              label="Delivery"
+              value={
                 <input
-                  value={settings.angolaPaymentMethods.join(', ')}
-                  onChange={(e) => setSettings((s) => ({ ...s, angolaPaymentMethods: e.target.value.split(',').map((v) => v.trim()).filter(Boolean) }))}
-                  style={{ width: '100%', padding: 8, fontSize: 11, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, marginBottom: 8 }}
+                  value={settings.angolaDeliveryMethods.join(', ')}
+                  onChange={(e) => setSettings((s) => ({ ...s, angolaDeliveryMethods: e.target.value.split(',').map((v) => v.trim()).filter(Boolean) }))}
+                  style={{ width: '100%', padding: 8, fontSize: 11, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg }}
                 />
-                <textarea
-                  value={settings.angolaBankTransferInstructions ?? ''}
-                  onChange={(e) => setSettings((s) => ({ ...s, angolaBankTransferInstructions: e.target.value }))}
-                  rows={2}
-                  placeholder="Multicaixa Express manual instructions (shown until AppyPay integration is live)"
-                  style={{ width: '100%', padding: 8, fontSize: 11, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, fontFamily: 'inherit' }}
+              }
+            />
+            <ConfigRow label="Order flow" value="New to Payment Review to Processing." last />
+          </Card>
+
+          <Card title="Portugal" badge="Configured" tone="green">
+            <ConfigRow label="Currency" value="Euro, prices shown as EUR." />
+            <ConfigRow
+              label="Payment"
+              value={
+                <input
+                  value={settings.portugalPaymentMethods.join(', ')}
+                  onChange={(e) => setSettings((s) => ({ ...s, portugalPaymentMethods: e.target.value.split(',').map((v) => v.trim()).filter(Boolean) }))}
+                  style={{ width: '100%', padding: 8, fontSize: 11, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg }}
                 />
-              </div>
-            }
-          />
-          <ConfigRow
-            label="Delivery"
-            value={
-              <input
-                value={settings.angolaDeliveryMethods.join(', ')}
-                onChange={(e) => setSettings((s) => ({ ...s, angolaDeliveryMethods: e.target.value.split(',').map((v) => v.trim()).filter(Boolean) }))}
-                style={{ width: '100%', padding: 8, fontSize: 11, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg }}
+              }
+            />
+            <ConfigRow
+              label="Delivery"
+              value={
+                <input
+                  value={settings.portugalDeliveryMethods.join(', ')}
+                  onChange={(e) => setSettings((s) => ({ ...s, portugalDeliveryMethods: e.target.value.split(',').map((v) => v.trim()).filter(Boolean) }))}
+                  style={{ width: '100%', padding: 8, fontSize: 11, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg }}
+                />
+              }
+            />
+            <ConfigRow label="Order flow" value="New, Processing, Shipped, Delivered, Cancelled." last />
+          </Card>
+
+          <Card title="Messaging" badge="Phase 1" tone="blue">
+            <ConfigRow label="WhatsApp" value="Keyword-based auto-replies (order status, payment, delivery FAQs); sensitive topics always escalate to you." />
+            <ConfigRow label="Instagram" value="Same rule-based classification via Instagram DM; escalates to you when unmatched." />
+            <ConfigRow label="Deferred" value="AI-drafted replies, campaign generation, Meta Ads, segmentation, and analytics." />
+            <ConfigRow label="Storefront language" value="Bilingual PT/EN (Portuguese default); admin stays English-only." last />
+          </Card>
+
+          <Card title="Order Fields" badge="Required" tone="neutral">
+            <ConfigRow label="Customer" value="Name, phone/WhatsApp, email, notes." />
+            <ConfigRow label="Address" value="Address, city, country." />
+            <ConfigRow label="Methods" value="Payment method and delivery method." />
+            <ConfigRow label="Lookup" value="Confirmation and lookup without full accounts." last />
+          </Card>
+        </div>
+      )}
+
+      {tab === 'policies' && (
+        <>
+          <div style={{ padding: '20px 28px 0', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }} className="ump-admin-orders-grid">
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>Angola: returns &amp; exchanges policy</div>
+              <PolicyTextarea
+                label="Portuguese"
+                value={settings.angolaReturnsPolicyTextPT ?? ''}
+                onChange={(v) => setSettings((s) => ({ ...s, angolaReturnsPolicyTextPT: v }))}
               />
-            }
-          />
-          <ConfigRow label="Order flow" value="New to Payment Review to Processing." last />
-        </Card>
-
-        <Card title="Portugal" badge="Configured" tone="green">
-          <ConfigRow label="Currency" value="Euro, prices shown as EUR." />
-          <ConfigRow
-            label="Payment"
-            value={
-              <input
-                value={settings.portugalPaymentMethods.join(', ')}
-                onChange={(e) => setSettings((s) => ({ ...s, portugalPaymentMethods: e.target.value.split(',').map((v) => v.trim()).filter(Boolean) }))}
-                style={{ width: '100%', padding: 8, fontSize: 11, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg }}
+              <PolicyTextarea
+                label="English"
+                value={settings.angolaReturnsPolicyTextEN ?? ''}
+                onChange={(v) => setSettings((s) => ({ ...s, angolaReturnsPolicyTextEN: v }))}
               />
-            }
-          />
-          <ConfigRow
-            label="Delivery"
-            value={
-              <input
-                value={settings.portugalDeliveryMethods.join(', ')}
-                onChange={(e) => setSettings((s) => ({ ...s, portugalDeliveryMethods: e.target.value.split(',').map((v) => v.trim()).filter(Boolean) }))}
-                style={{ width: '100%', padding: 8, fontSize: 11, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg }}
+            </div>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>Portugal/EU: returns &amp; exchanges policy</div>
+              <PolicyTextarea
+                label="Portuguese"
+                value={settings.portugalReturnsPolicyTextPT ?? ''}
+                onChange={(v) => setSettings((s) => ({ ...s, portugalReturnsPolicyTextPT: v }))}
               />
-            }
-          />
-          <ConfigRow label="Order flow" value="New, Processing, Shipped, Delivered, Cancelled." last />
-        </Card>
+              <PolicyTextarea
+                label="English"
+                value={settings.portugalReturnsPolicyTextEN ?? ''}
+                onChange={(v) => setSettings((s) => ({ ...s, portugalReturnsPolicyTextEN: v }))}
+              />
+            </div>
+          </div>
 
-        <Card title="Messaging" badge="Phase 1" tone="blue">
-          <ConfigRow label="WhatsApp" value="Keyword-based auto-replies (order status, payment, delivery FAQs); sensitive topics always escalate to you." />
-          <ConfigRow label="Instagram" value="Same rule-based classification via Instagram DM; escalates to you when unmatched." />
-          <ConfigRow label="Deferred" value="AI-drafted replies, campaign generation, Meta Ads, segmentation, and analytics." />
-          <ConfigRow label="Storefront language" value="Bilingual PT/EN (Portuguese default); admin stays English-only." last />
-        </Card>
+          <div style={{ padding: '20px 28px 0', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }} className="ump-admin-orders-grid">
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>Business hours (shared, both markets)</div>
+              <PolicyTextarea
+                label="Portuguese"
+                value={settings.businessHoursTextPT ?? ''}
+                onChange={(v) => setSettings((s) => ({ ...s, businessHoursTextPT: v }))}
+              />
+              <PolicyTextarea
+                label="English"
+                value={settings.businessHoursTextEN ?? ''}
+                onChange={(v) => setSettings((s) => ({ ...s, businessHoursTextEN: v }))}
+              />
+            </div>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>International shipping (shared, both markets)</div>
+              <PolicyTextarea
+                label="Portuguese"
+                value={settings.internationalShippingTextPT ?? ''}
+                onChange={(v) => setSettings((s) => ({ ...s, internationalShippingTextPT: v }))}
+              />
+              <PolicyTextarea
+                label="English"
+                value={settings.internationalShippingTextEN ?? ''}
+                onChange={(v) => setSettings((s) => ({ ...s, internationalShippingTextEN: v }))}
+              />
+            </div>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>Angola: shipping &amp; delivery info</div>
+              <PolicyTextarea
+                label="Portuguese"
+                value={settings.angolaShippingTextPT ?? ''}
+                onChange={(v) => setSettings((s) => ({ ...s, angolaShippingTextPT: v }))}
+              />
+              <PolicyTextarea
+                label="English"
+                value={settings.angolaShippingTextEN ?? ''}
+                onChange={(v) => setSettings((s) => ({ ...s, angolaShippingTextEN: v }))}
+              />
+            </div>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>Portugal: shipping &amp; delivery info</div>
+              <PolicyTextarea
+                label="Portuguese"
+                value={settings.portugalShippingTextPT ?? ''}
+                onChange={(v) => setSettings((s) => ({ ...s, portugalShippingTextPT: v }))}
+              />
+              <PolicyTextarea
+                label="English"
+                value={settings.portugalShippingTextEN ?? ''}
+                onChange={(v) => setSettings((s) => ({ ...s, portugalShippingTextEN: v }))}
+              />
+            </div>
+          </div>
+        </>
+      )}
 
-        <Card title="Order Fields" badge="Required" tone="neutral">
-          <ConfigRow label="Customer" value="Name, phone/WhatsApp, email, notes." />
-          <ConfigRow label="Address" value="Address, city, country." />
-          <ConfigRow label="Methods" value="Payment method and delivery method." />
-          <ConfigRow label="Lookup" value="Confirmation and lookup without full accounts." last />
-        </Card>
-      </div>
-
-      <div style={{ padding: '20px 28px 0', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }} className="ump-admin-orders-grid">
-        <div>
-          <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>Angola: returns &amp; exchanges policy</div>
-          <PolicyTextarea
-            label="Portuguese"
-            value={settings.angolaReturnsPolicyTextPT ?? ''}
-            onChange={(v) => setSettings((s) => ({ ...s, angolaReturnsPolicyTextPT: v }))}
-          />
-          <PolicyTextarea
-            label="English"
-            value={settings.angolaReturnsPolicyTextEN ?? ''}
-            onChange={(v) => setSettings((s) => ({ ...s, angolaReturnsPolicyTextEN: v }))}
-          />
-        </div>
-        <div>
-          <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>Portugal/EU: returns &amp; exchanges policy</div>
-          <PolicyTextarea
-            label="Portuguese"
-            value={settings.portugalReturnsPolicyTextPT ?? ''}
-            onChange={(v) => setSettings((s) => ({ ...s, portugalReturnsPolicyTextPT: v }))}
-          />
-          <PolicyTextarea
-            label="English"
-            value={settings.portugalReturnsPolicyTextEN ?? ''}
-            onChange={(v) => setSettings((s) => ({ ...s, portugalReturnsPolicyTextEN: v }))}
-          />
-        </div>
-      </div>
-
-      <div style={{ padding: '20px 28px 0', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }} className="ump-admin-orders-grid">
-        <div>
-          <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>Business hours (shared, both markets)</div>
-          <PolicyTextarea
-            label="Portuguese"
-            value={settings.businessHoursTextPT ?? ''}
-            onChange={(v) => setSettings((s) => ({ ...s, businessHoursTextPT: v }))}
-          />
-          <PolicyTextarea
-            label="English"
-            value={settings.businessHoursTextEN ?? ''}
-            onChange={(v) => setSettings((s) => ({ ...s, businessHoursTextEN: v }))}
-          />
-        </div>
-        <div>
-          <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>International shipping (shared, both markets)</div>
-          <PolicyTextarea
-            label="Portuguese"
-            value={settings.internationalShippingTextPT ?? ''}
-            onChange={(v) => setSettings((s) => ({ ...s, internationalShippingTextPT: v }))}
-          />
-          <PolicyTextarea
-            label="English"
-            value={settings.internationalShippingTextEN ?? ''}
-            onChange={(v) => setSettings((s) => ({ ...s, internationalShippingTextEN: v }))}
-          />
-        </div>
-        <div>
-          <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>Angola: shipping &amp; delivery info</div>
-          <PolicyTextarea
-            label="Portuguese"
-            value={settings.angolaShippingTextPT ?? ''}
-            onChange={(v) => setSettings((s) => ({ ...s, angolaShippingTextPT: v }))}
-          />
-          <PolicyTextarea
-            label="English"
-            value={settings.angolaShippingTextEN ?? ''}
-            onChange={(v) => setSettings((s) => ({ ...s, angolaShippingTextEN: v }))}
-          />
-        </div>
-        <div>
-          <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>Portugal: shipping &amp; delivery info</div>
-          <PolicyTextarea
-            label="Portuguese"
-            value={settings.portugalShippingTextPT ?? ''}
-            onChange={(v) => setSettings((s) => ({ ...s, portugalShippingTextPT: v }))}
-          />
-          <PolicyTextarea
-            label="English"
-            value={settings.portugalShippingTextEN ?? ''}
-            onChange={(v) => setSettings((s) => ({ ...s, portugalShippingTextEN: v }))}
-          />
-        </div>
-      </div>
-
-      <InvoicingSettingsSection />
-      <LegalPagesSection />
+      {tab === 'invoicing' && <InvoicingSettingsSection />}
+      {tab === 'legal' && <LegalPagesSection />}
     </div>
+  );
+}
+
+function TabPill({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        padding: '9px 16px',
+        fontSize: 11,
+        fontWeight: 800,
+        borderRadius: 6,
+        border: `1px solid ${active ? C.black : C.rule}`,
+        background: active ? C.black : C.paper,
+        color: active ? C.onDarkGold : C.ink,
+      }}
+    >
+      {label}
+    </button>
   );
 }
 
@@ -297,19 +359,18 @@ function InvoicingSettingsSection() {
   };
 
   return (
-    <div style={{ padding: '28px 28px 0' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-        <div style={{ fontFamily: F.display, fontSize: 22, fontWeight: 800, color: C.ink }}>Internal invoicing</div>
+    <div style={{ padding: '20px 28px 0' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+        <div style={{ fontSize: 11, color: C.inkSoft, maxWidth: 560 }}>
+          Snapshotted onto each invoice at issue time -- editing here doesn't rewrite invoices already generated.
+        </div>
         <button
           onClick={handleSave}
           disabled={loading || saving}
-          style={{ padding: '9px 18px', background: C.black, color: C.onDarkGold, fontSize: 11, fontWeight: 800, borderRadius: 6 }}
+          style={{ padding: '9px 18px', background: C.black, color: C.onDarkGold, fontSize: 11, fontWeight: 800, borderRadius: 6, flexShrink: 0 }}
         >
           {saving ? '…' : 'Save invoicing settings'}
         </button>
-      </div>
-      <div style={{ fontSize: 11, color: C.inkSoft, marginBottom: 14 }}>
-        Commercial (non-fiscal) invoice generation. Snapshotted onto each invoice at issue time -- editing here doesn't rewrite invoices already generated.
       </div>
       {error && <div style={{ fontSize: 12, color: '#B95545', marginBottom: 12 }}>{error}</div>}
       {saved && <div style={{ fontSize: 12, color: '#3F754D', marginBottom: 12 }}>Saved.</div>}
@@ -441,19 +502,18 @@ function LegalPagesSection() {
   };
 
   return (
-    <div style={{ padding: '28px 28px 32px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-        <div style={{ fontFamily: F.display, fontSize: 22, fontWeight: 800, color: C.ink }}>Legal pages</div>
+    <div style={{ padding: '20px 28px 32px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+        <div style={{ fontSize: 11, color: C.inkSoft, maxWidth: 560 }}>
+          The seeded text is an AI-drafted generic template -- have it reviewed by a lawyer before treating it as final.
+        </div>
         <button
           onClick={handleSave}
           disabled={loading || saving}
-          style={{ padding: '9px 18px', background: C.black, color: C.onDarkGold, fontSize: 11, fontWeight: 800, borderRadius: 6 }}
+          style={{ padding: '9px 18px', background: C.black, color: C.onDarkGold, fontSize: 11, fontWeight: 800, borderRadius: 6, flexShrink: 0 }}
         >
           {saving ? '…' : 'Save legal pages'}
         </button>
-      </div>
-      <div style={{ fontSize: 11, color: C.inkSoft, marginBottom: 14 }}>
-        Shown on the storefront's Privacy Policy and Terms &amp; Conditions pages. The seeded text is an AI-drafted generic template -- have it reviewed by a lawyer before treating it as final.
       </div>
       {error && <div style={{ fontSize: 12, color: '#B95545', marginBottom: 12 }}>{error}</div>}
       {saved && <div style={{ fontSize: 12, color: '#3F754D', marginBottom: 12 }}>Saved.</div>}
