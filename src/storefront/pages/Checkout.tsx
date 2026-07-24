@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { C, F, t } from '../../theme';
+import { C, F, t, type Lang } from '../../theme';
 import { useApp } from '../../state/AppContext';
 import { useProducts } from '../../hooks/useProducts';
 import {
@@ -58,29 +58,300 @@ const DELIVERY_LABEL_KEYS: Record<string, string> = {
   courier_ao: 'deliveryCourierAo',
 };
 
-// Phone country-code dropdown (added 2026-07-24, user request). Portugal and
-// Angola pinned first since those are the two markets this storefront
-// serves; the rest are the Lusophone countries plus a handful of common
-// international ones, for the international-shipping case (see the Help
-// page's "International shipping" section) where a buyer's phone might not
-// match either market's own code.
-const PHONE_COUNTRY_CODES = [
-  { code: '+351', flag: '🇵🇹' }, // Portugal
-  { code: '+244', flag: '🇦🇴' }, // Angola
-  { code: '+55', flag: '🇧🇷' }, // Brazil
-  { code: '+238', flag: '🇨🇻' }, // Cape Verde
-  { code: '+245', flag: '🇬🇼' }, // Guinea-Bissau
-  { code: '+258', flag: '🇲🇿' }, // Mozambique
-  { code: '+239', flag: '🇸🇹' }, // São Tomé and Príncipe
-  { code: '+34', flag: '🇪🇸' }, // Spain
-  { code: '+33', flag: '🇫🇷' }, // France
-  { code: '+44', flag: '🇬🇧' }, // United Kingdom
-  { code: '+49', flag: '🇩🇪' }, // Germany
-  { code: '+39', flag: '🇮🇹' }, // Italy
-  { code: '+31', flag: '🇳🇱' }, // Netherlands
-  { code: '+41', flag: '🇨🇭' }, // Switzerland
-  { code: '+1', flag: '🇺🇸' }, // United States
+// Phone country-code dropdown (added 2026-07-24, user request; expanded to
+// all countries the same day per follow-up feedback -- the first pass only
+// had ~15 curated entries). Data generated from the `country-telephone-data`
+// npm package (dial codes/ISO2, the same dataset react-phone-input-2 uses)
+// merged with `world-countries` for Portuguese country names, since the
+// storefront needs both languages -- see the generation script referenced
+// in the PR description if this ever needs regenerating.
+//
+// Selection is keyed by iso2, NOT by dial code: several countries share a
+// code (Canada/US/Dominican Republic/Puerto Rico/US Minor Outlying Islands
+// are all +1). A <select> is controlled by matching an option's `value` --
+// if two options shared the literal "+1" value, picking the second one
+// would visually snap back to whichever "+1" option comes first in the
+// list, because the DOM resolves a value to the first matching option
+// regardless of which one the user actually clicked. iso2 has no
+// duplicates, so this can't happen.
+const ALL_COUNTRY_CODES = [
+  { code: '+93', iso2: 'AF', nameEN: 'Afghanistan', namePT: 'Afeganistão' },
+  { code: '+358', iso2: 'AX', nameEN: 'Åland Islands', namePT: 'Alândia' },
+  { code: '+355', iso2: 'AL', nameEN: 'Albania', namePT: 'Albânia' },
+  { code: '+213', iso2: 'DZ', nameEN: 'Algeria', namePT: 'Argélia' },
+  { code: '+1684', iso2: 'AS', nameEN: 'American Samoa', namePT: 'Samoa Americana' },
+  { code: '+376', iso2: 'AD', nameEN: 'Andorra', namePT: 'Andorra' },
+  { code: '+244', iso2: 'AO', nameEN: 'Angola', namePT: 'Angola' },
+  { code: '+1264', iso2: 'AI', nameEN: 'Anguilla', namePT: 'Anguilla' },
+  { code: '+672', iso2: 'AQ', nameEN: 'Antarctica', namePT: 'Antártida' },
+  { code: '+1268', iso2: 'AG', nameEN: 'Antigua and Barbuda', namePT: 'Antígua e Barbuda' },
+  { code: '+54', iso2: 'AR', nameEN: 'Argentina', namePT: 'Argentina' },
+  { code: '+374', iso2: 'AM', nameEN: 'Armenia', namePT: 'Arménia' },
+  { code: '+297', iso2: 'AW', nameEN: 'Aruba', namePT: 'Aruba' },
+  { code: '+61', iso2: 'AU', nameEN: 'Australia', namePT: 'Austrália' },
+  { code: '+43', iso2: 'AT', nameEN: 'Austria', namePT: 'Áustria' },
+  { code: '+994', iso2: 'AZ', nameEN: 'Azerbaijan', namePT: 'Azerbeijão' },
+  { code: '+1242', iso2: 'BS', nameEN: 'Bahamas', namePT: 'Bahamas' },
+  { code: '+973', iso2: 'BH', nameEN: 'Bahrain', namePT: 'Bahrein' },
+  { code: '+880', iso2: 'BD', nameEN: 'Bangladesh', namePT: 'Bangladesh' },
+  { code: '+1246', iso2: 'BB', nameEN: 'Barbados', namePT: 'Barbados' },
+  { code: '+375', iso2: 'BY', nameEN: 'Belarus', namePT: 'Bielorússia' },
+  { code: '+32', iso2: 'BE', nameEN: 'Belgium', namePT: 'Bélgica' },
+  { code: '+501', iso2: 'BZ', nameEN: 'Belize', namePT: 'Belize' },
+  { code: '+229', iso2: 'BJ', nameEN: 'Benin', namePT: 'Benin' },
+  { code: '+1441', iso2: 'BM', nameEN: 'Bermuda', namePT: 'Bermudas' },
+  { code: '+975', iso2: 'BT', nameEN: 'Bhutan', namePT: 'Butão' },
+  { code: '+591', iso2: 'BO', nameEN: 'Bolivia', namePT: 'Bolívia' },
+  { code: '+387', iso2: 'BA', nameEN: 'Bosnia and Herzegovina', namePT: 'Bósnia e Herzegovina' },
+  { code: '+267', iso2: 'BW', nameEN: 'Botswana', namePT: 'Botswana' },
+  { code: '+47', iso2: 'BV', nameEN: 'Bouvet Island', namePT: 'Ilha Bouvet' },
+  { code: '+55', iso2: 'BR', nameEN: 'Brazil', namePT: 'Brasil' },
+  { code: '+246', iso2: 'IO', nameEN: 'British Indian Ocean Territory', namePT: 'Território Britânico do Oceano Índico' },
+  { code: '+1284', iso2: 'VG', nameEN: 'British Virgin Islands', namePT: 'Ilhas Virgens' },
+  { code: '+673', iso2: 'BN', nameEN: 'Brunei', namePT: 'Brunei' },
+  { code: '+359', iso2: 'BG', nameEN: 'Bulgaria', namePT: 'Bulgária' },
+  { code: '+226', iso2: 'BF', nameEN: 'Burkina Faso', namePT: 'Burkina Faso' },
+  { code: '+257', iso2: 'BI', nameEN: 'Burundi', namePT: 'Burundi' },
+  { code: '+855', iso2: 'KH', nameEN: 'Cambodia', namePT: 'Camboja' },
+  { code: '+237', iso2: 'CM', nameEN: 'Cameroon', namePT: 'Camarões' },
+  { code: '+1', iso2: 'CA', nameEN: 'Canada', namePT: 'Canadá' },
+  { code: '+238', iso2: 'CV', nameEN: 'Cape Verde', namePT: 'Cabo Verde' },
+  { code: '+599', iso2: 'BQ', nameEN: 'Caribbean Netherlands', namePT: 'Países Baixos Caribenhos' },
+  { code: '+1345', iso2: 'KY', nameEN: 'Cayman Islands', namePT: 'Ilhas Caimão' },
+  { code: '+236', iso2: 'CF', nameEN: 'Central African Republic', namePT: 'República Centro-Africana' },
+  { code: '+235', iso2: 'TD', nameEN: 'Chad', namePT: 'Chade' },
+  { code: '+56', iso2: 'CL', nameEN: 'Chile', namePT: 'Chile' },
+  { code: '+86', iso2: 'CN', nameEN: 'China', namePT: 'China' },
+  { code: '+61', iso2: 'CX', nameEN: 'Christmas Island', namePT: 'Ilha do Natal' },
+  { code: '+61', iso2: 'CC', nameEN: 'Cocos (Keeling) Islands', namePT: 'Ilhas Cocos (Keeling)' },
+  { code: '+57', iso2: 'CO', nameEN: 'Colombia', namePT: 'Colômbia' },
+  { code: '+269', iso2: 'KM', nameEN: 'Comoros', namePT: 'Comores' },
+  { code: '+682', iso2: 'CK', nameEN: 'Cook Islands', namePT: 'Ilhas Cook' },
+  { code: '+506', iso2: 'CR', nameEN: 'Costa Rica', namePT: 'Costa Rica' },
+  { code: '+385', iso2: 'HR', nameEN: 'Croatia', namePT: 'Croácia' },
+  { code: '+53', iso2: 'CU', nameEN: 'Cuba', namePT: 'Cuba' },
+  { code: '+599', iso2: 'CW', nameEN: 'Curaçao', namePT: 'ilha da Curação' },
+  { code: '+357', iso2: 'CY', nameEN: 'Cyprus', namePT: 'Chipre' },
+  { code: '+420', iso2: 'CZ', nameEN: 'Czechia', namePT: 'Chéquia' },
+  { code: '+45', iso2: 'DK', nameEN: 'Denmark', namePT: 'Dinamarca' },
+  { code: '+253', iso2: 'DJ', nameEN: 'Djibouti', namePT: 'Djibouti' },
+  { code: '+1767', iso2: 'DM', nameEN: 'Dominica', namePT: 'Dominica' },
+  { code: '+1', iso2: 'DO', nameEN: 'Dominican Republic', namePT: 'República Dominicana' },
+  { code: '+243', iso2: 'CD', nameEN: 'DR Congo', namePT: 'República Democrática do Congo' },
+  { code: '+593', iso2: 'EC', nameEN: 'Ecuador', namePT: 'Equador' },
+  { code: '+20', iso2: 'EG', nameEN: 'Egypt', namePT: 'Egito' },
+  { code: '+503', iso2: 'SV', nameEN: 'El Salvador', namePT: 'El Salvador' },
+  { code: '+240', iso2: 'GQ', nameEN: 'Equatorial Guinea', namePT: 'Guiné Equatorial' },
+  { code: '+291', iso2: 'ER', nameEN: 'Eritrea', namePT: 'Eritreia' },
+  { code: '+372', iso2: 'EE', nameEN: 'Estonia', namePT: 'Estónia' },
+  { code: '+268', iso2: 'SZ', nameEN: 'Eswatini', namePT: 'Suazilândia' },
+  { code: '+251', iso2: 'ET', nameEN: 'Ethiopia', namePT: 'Etiópia' },
+  { code: '+500', iso2: 'FK', nameEN: 'Falkland Islands', namePT: 'Ilhas Malvinas' },
+  { code: '+298', iso2: 'FO', nameEN: 'Faroe Islands', namePT: 'Ilhas Faroé' },
+  { code: '+679', iso2: 'FJ', nameEN: 'Fiji', namePT: 'Fiji' },
+  { code: '+358', iso2: 'FI', nameEN: 'Finland', namePT: 'Finlândia' },
+  { code: '+33', iso2: 'FR', nameEN: 'France', namePT: 'França' },
+  { code: '+594', iso2: 'GF', nameEN: 'French Guiana', namePT: 'Guiana Francesa' },
+  { code: '+689', iso2: 'PF', nameEN: 'French Polynesia', namePT: 'Polinésia Francesa' },
+  { code: '+262', iso2: 'TF', nameEN: 'French Southern and Antarctic Lands', namePT: 'Terras Austrais e Antárticas Francesas' },
+  { code: '+241', iso2: 'GA', nameEN: 'Gabon', namePT: 'Gabão' },
+  { code: '+220', iso2: 'GM', nameEN: 'Gambia', namePT: 'Gâmbia' },
+  { code: '+995', iso2: 'GE', nameEN: 'Georgia', namePT: 'Geórgia' },
+  { code: '+49', iso2: 'DE', nameEN: 'Germany', namePT: 'Alemanha' },
+  { code: '+233', iso2: 'GH', nameEN: 'Ghana', namePT: 'Gana' },
+  { code: '+350', iso2: 'GI', nameEN: 'Gibraltar', namePT: 'Gibraltar' },
+  { code: '+30', iso2: 'GR', nameEN: 'Greece', namePT: 'Grécia' },
+  { code: '+299', iso2: 'GL', nameEN: 'Greenland', namePT: 'Gronelândia' },
+  { code: '+1473', iso2: 'GD', nameEN: 'Grenada', namePT: 'Granada' },
+  { code: '+590', iso2: 'GP', nameEN: 'Guadeloupe', namePT: 'Guadalupe' },
+  { code: '+1671', iso2: 'GU', nameEN: 'Guam', namePT: 'Guam' },
+  { code: '+502', iso2: 'GT', nameEN: 'Guatemala', namePT: 'Guatemala' },
+  { code: '+44', iso2: 'GG', nameEN: 'Guernsey', namePT: 'Guernsey' },
+  { code: '+224', iso2: 'GN', nameEN: 'Guinea', namePT: 'Guiné' },
+  { code: '+245', iso2: 'GW', nameEN: 'Guinea-Bissau', namePT: 'Guiné-Bissau' },
+  { code: '+592', iso2: 'GY', nameEN: 'Guyana', namePT: 'Guiana' },
+  { code: '+509', iso2: 'HT', nameEN: 'Haiti', namePT: 'Haiti' },
+  { code: '+672', iso2: 'HM', nameEN: 'Heard Island and McDonald Islands', namePT: 'Ilha Heard e Ilhas McDonald' },
+  { code: '+504', iso2: 'HN', nameEN: 'Honduras', namePT: 'Honduras' },
+  { code: '+852', iso2: 'HK', nameEN: 'Hong Kong', namePT: 'Hong Kong' },
+  { code: '+36', iso2: 'HU', nameEN: 'Hungary', namePT: 'Hungria' },
+  { code: '+354', iso2: 'IS', nameEN: 'Iceland', namePT: 'Islândia' },
+  { code: '+91', iso2: 'IN', nameEN: 'India', namePT: 'Índia' },
+  { code: '+62', iso2: 'ID', nameEN: 'Indonesia', namePT: 'Indonésia' },
+  { code: '+98', iso2: 'IR', nameEN: 'Iran', namePT: 'Irão' },
+  { code: '+964', iso2: 'IQ', nameEN: 'Iraq', namePT: 'Iraque' },
+  { code: '+353', iso2: 'IE', nameEN: 'Ireland', namePT: 'Irlanda' },
+  { code: '+44', iso2: 'IM', nameEN: 'Isle of Man', namePT: 'Ilha de Man' },
+  { code: '+972', iso2: 'IL', nameEN: 'Israel', namePT: 'Israel' },
+  { code: '+39', iso2: 'IT', nameEN: 'Italy', namePT: 'Itália' },
+  { code: '+225', iso2: 'CI', nameEN: 'Ivory Coast', namePT: 'Costa do Marfim' },
+  { code: '+1876', iso2: 'JM', nameEN: 'Jamaica', namePT: 'Jamaica' },
+  { code: '+81', iso2: 'JP', nameEN: 'Japan', namePT: 'Japão' },
+  { code: '+44', iso2: 'JE', nameEN: 'Jersey', namePT: 'Jersey' },
+  { code: '+962', iso2: 'JO', nameEN: 'Jordan', namePT: 'Jordânia' },
+  { code: '+7', iso2: 'KZ', nameEN: 'Kazakhstan', namePT: 'Cazaquistão' },
+  { code: '+254', iso2: 'KE', nameEN: 'Kenya', namePT: 'Quénia' },
+  { code: '+686', iso2: 'KI', nameEN: 'Kiribati', namePT: 'Kiribati' },
+  { code: '+383', iso2: 'XK', nameEN: 'Kosovo', namePT: 'Kosovo' },
+  { code: '+965', iso2: 'KW', nameEN: 'Kuwait', namePT: 'Kuwait' },
+  { code: '+996', iso2: 'KG', nameEN: 'Kyrgyzstan', namePT: 'Quirguistão' },
+  { code: '+856', iso2: 'LA', nameEN: 'Laos', namePT: 'Laos' },
+  { code: '+371', iso2: 'LV', nameEN: 'Latvia', namePT: 'Letónia' },
+  { code: '+961', iso2: 'LB', nameEN: 'Lebanon', namePT: 'Líbano' },
+  { code: '+266', iso2: 'LS', nameEN: 'Lesotho', namePT: 'Lesoto' },
+  { code: '+231', iso2: 'LR', nameEN: 'Liberia', namePT: 'Libéria' },
+  { code: '+218', iso2: 'LY', nameEN: 'Libya', namePT: 'Líbia' },
+  { code: '+423', iso2: 'LI', nameEN: 'Liechtenstein', namePT: 'Liechtenstein' },
+  { code: '+370', iso2: 'LT', nameEN: 'Lithuania', namePT: 'Lituânia' },
+  { code: '+352', iso2: 'LU', nameEN: 'Luxembourg', namePT: 'Luxemburgo' },
+  { code: '+853', iso2: 'MO', nameEN: 'Macau', namePT: 'Macau' },
+  { code: '+261', iso2: 'MG', nameEN: 'Madagascar', namePT: 'Madagáscar' },
+  { code: '+265', iso2: 'MW', nameEN: 'Malawi', namePT: 'Malawi' },
+  { code: '+60', iso2: 'MY', nameEN: 'Malaysia', namePT: 'Malásia' },
+  { code: '+960', iso2: 'MV', nameEN: 'Maldives', namePT: 'Maldivas' },
+  { code: '+223', iso2: 'ML', nameEN: 'Mali', namePT: 'Mali' },
+  { code: '+356', iso2: 'MT', nameEN: 'Malta', namePT: 'Malta' },
+  { code: '+692', iso2: 'MH', nameEN: 'Marshall Islands', namePT: 'Ilhas Marshall' },
+  { code: '+596', iso2: 'MQ', nameEN: 'Martinique', namePT: 'Martinica' },
+  { code: '+222', iso2: 'MR', nameEN: 'Mauritania', namePT: 'Mauritânia' },
+  { code: '+230', iso2: 'MU', nameEN: 'Mauritius', namePT: 'Maurício' },
+  { code: '+262', iso2: 'YT', nameEN: 'Mayotte', namePT: 'Mayotte' },
+  { code: '+52', iso2: 'MX', nameEN: 'Mexico', namePT: 'México' },
+  { code: '+691', iso2: 'FM', nameEN: 'Micronesia', namePT: 'Micronésia' },
+  { code: '+373', iso2: 'MD', nameEN: 'Moldova', namePT: 'Moldávia' },
+  { code: '+377', iso2: 'MC', nameEN: 'Monaco', namePT: 'Mónaco' },
+  { code: '+976', iso2: 'MN', nameEN: 'Mongolia', namePT: 'Mongólia' },
+  { code: '+382', iso2: 'ME', nameEN: 'Montenegro', namePT: 'Montenegro' },
+  { code: '+1664', iso2: 'MS', nameEN: 'Montserrat', namePT: 'Montserrat' },
+  { code: '+212', iso2: 'MA', nameEN: 'Morocco', namePT: 'Marrocos' },
+  { code: '+258', iso2: 'MZ', nameEN: 'Mozambique', namePT: 'Moçambique' },
+  { code: '+95', iso2: 'MM', nameEN: 'Myanmar', namePT: 'Myanmar' },
+  { code: '+264', iso2: 'NA', nameEN: 'Namibia', namePT: 'Namíbia' },
+  { code: '+674', iso2: 'NR', nameEN: 'Nauru', namePT: 'Nauru' },
+  { code: '+977', iso2: 'NP', nameEN: 'Nepal', namePT: 'Nepal' },
+  { code: '+31', iso2: 'NL', nameEN: 'Netherlands', namePT: 'Holanda' },
+  { code: '+687', iso2: 'NC', nameEN: 'New Caledonia', namePT: 'Nova Caledónia' },
+  { code: '+64', iso2: 'NZ', nameEN: 'New Zealand', namePT: 'Nova Zelândia' },
+  { code: '+505', iso2: 'NI', nameEN: 'Nicaragua', namePT: 'Nicarágua' },
+  { code: '+227', iso2: 'NE', nameEN: 'Niger', namePT: 'Níger' },
+  { code: '+234', iso2: 'NG', nameEN: 'Nigeria', namePT: 'Nigéria' },
+  { code: '+683', iso2: 'NU', nameEN: 'Niue', namePT: 'Niue' },
+  { code: '+672', iso2: 'NF', nameEN: 'Norfolk Island', namePT: 'Ilha Norfolk' },
+  { code: '+850', iso2: 'KP', nameEN: 'North Korea', namePT: 'Coreia do Norte' },
+  { code: '+389', iso2: 'MK', nameEN: 'North Macedonia', namePT: 'Macedónia do Norte' },
+  { code: '+1670', iso2: 'MP', nameEN: 'Northern Mariana Islands', namePT: 'Marianas Setentrionais' },
+  { code: '+47', iso2: 'NO', nameEN: 'Norway', namePT: 'Noruega' },
+  { code: '+968', iso2: 'OM', nameEN: 'Oman', namePT: 'Omã' },
+  { code: '+92', iso2: 'PK', nameEN: 'Pakistan', namePT: 'Paquistão' },
+  { code: '+680', iso2: 'PW', nameEN: 'Palau', namePT: 'Palau' },
+  { code: '+970', iso2: 'PS', nameEN: 'Palestine', namePT: 'Palestina' },
+  { code: '+507', iso2: 'PA', nameEN: 'Panama', namePT: 'Panamá' },
+  { code: '+675', iso2: 'PG', nameEN: 'Papua New Guinea', namePT: 'Papua Nova Guiné' },
+  { code: '+595', iso2: 'PY', nameEN: 'Paraguay', namePT: 'Paraguai' },
+  { code: '+51', iso2: 'PE', nameEN: 'Peru', namePT: 'Perú' },
+  { code: '+63', iso2: 'PH', nameEN: 'Philippines', namePT: 'Filipinas' },
+  { code: '+64', iso2: 'PN', nameEN: 'Pitcairn Islands', namePT: 'Ilhas Pitcairn' },
+  { code: '+48', iso2: 'PL', nameEN: 'Poland', namePT: 'Polónia' },
+  { code: '+351', iso2: 'PT', nameEN: 'Portugal', namePT: 'Portugal' },
+  { code: '+1', iso2: 'PR', nameEN: 'Puerto Rico', namePT: 'Porto Rico' },
+  { code: '+974', iso2: 'QA', nameEN: 'Qatar', namePT: 'Catar' },
+  { code: '+242', iso2: 'CG', nameEN: 'Republic of the Congo', namePT: 'Congo' },
+  { code: '+262', iso2: 'RE', nameEN: 'Réunion', namePT: 'Reunião' },
+  { code: '+40', iso2: 'RO', nameEN: 'Romania', namePT: 'Roménia' },
+  { code: '+7', iso2: 'RU', nameEN: 'Russia', namePT: 'Rússia' },
+  { code: '+250', iso2: 'RW', nameEN: 'Rwanda', namePT: 'Ruanda' },
+  { code: '+590', iso2: 'BL', nameEN: 'Saint Barthélemy', namePT: 'São Bartolomeu' },
+  { code: '+290', iso2: 'SH', nameEN: 'Saint Helena, Ascension and Tristan da Cunha', namePT: 'Santa Helena, Ascensão e Tristão da Cunha' },
+  { code: '+1869', iso2: 'KN', nameEN: 'Saint Kitts and Nevis', namePT: 'São Cristóvão e Nevis' },
+  { code: '+1758', iso2: 'LC', nameEN: 'Saint Lucia', namePT: 'Santa Lúcia' },
+  { code: '+590', iso2: 'MF', nameEN: 'Saint Martin', namePT: 'São Martinho' },
+  { code: '+508', iso2: 'PM', nameEN: 'Saint Pierre and Miquelon', namePT: 'Saint-Pierre e Miquelon' },
+  { code: '+1784', iso2: 'VC', nameEN: 'Saint Vincent and the Grenadines', namePT: 'São Vincente e Granadinas' },
+  { code: '+685', iso2: 'WS', nameEN: 'Samoa', namePT: 'Samoa' },
+  { code: '+378', iso2: 'SM', nameEN: 'San Marino', namePT: 'San Marino' },
+  { code: '+239', iso2: 'ST', nameEN: 'São Tomé and Príncipe', namePT: 'São Tomé e Príncipe' },
+  { code: '+966', iso2: 'SA', nameEN: 'Saudi Arabia', namePT: 'Arábia Saudita' },
+  { code: '+221', iso2: 'SN', nameEN: 'Senegal', namePT: 'Senegal' },
+  { code: '+381', iso2: 'RS', nameEN: 'Serbia', namePT: 'Sérvia' },
+  { code: '+248', iso2: 'SC', nameEN: 'Seychelles', namePT: 'Seicheles' },
+  { code: '+232', iso2: 'SL', nameEN: 'Sierra Leone', namePT: 'Serra Leoa' },
+  { code: '+65', iso2: 'SG', nameEN: 'Singapore', namePT: 'Singapura' },
+  { code: '+1721', iso2: 'SX', nameEN: 'Sint Maarten', namePT: 'São Martinho' },
+  { code: '+421', iso2: 'SK', nameEN: 'Slovakia', namePT: 'Eslováquia' },
+  { code: '+386', iso2: 'SI', nameEN: 'Slovenia', namePT: 'Eslovénia' },
+  { code: '+677', iso2: 'SB', nameEN: 'Solomon Islands', namePT: 'Ilhas Salomão' },
+  { code: '+252', iso2: 'SO', nameEN: 'Somalia', namePT: 'Somália' },
+  { code: '+27', iso2: 'ZA', nameEN: 'South Africa', namePT: 'África do Sul' },
+  { code: '+500', iso2: 'GS', nameEN: 'South Georgia', namePT: 'Ilhas Geórgia do Sul e Sandwich do Sul' },
+  { code: '+82', iso2: 'KR', nameEN: 'South Korea', namePT: 'Coreia do Sul' },
+  { code: '+211', iso2: 'SS', nameEN: 'South Sudan', namePT: 'Sudão do Sul' },
+  { code: '+34', iso2: 'ES', nameEN: 'Spain', namePT: 'Espanha' },
+  { code: '+94', iso2: 'LK', nameEN: 'Sri Lanka', namePT: 'Sri Lanka' },
+  { code: '+249', iso2: 'SD', nameEN: 'Sudan', namePT: 'Sudão' },
+  { code: '+597', iso2: 'SR', nameEN: 'Suriname', namePT: 'Suriname' },
+  { code: '+47', iso2: 'SJ', nameEN: 'Svalbard and Jan Mayen', namePT: 'Ilhas Svalbard e Jan Mayen' },
+  { code: '+46', iso2: 'SE', nameEN: 'Sweden', namePT: 'Suécia' },
+  { code: '+41', iso2: 'CH', nameEN: 'Switzerland', namePT: 'Suíça' },
+  { code: '+963', iso2: 'SY', nameEN: 'Syria', namePT: 'Síria' },
+  { code: '+886', iso2: 'TW', nameEN: 'Taiwan', namePT: 'Ilha Formosa' },
+  { code: '+992', iso2: 'TJ', nameEN: 'Tajikistan', namePT: 'Tajiquistão' },
+  { code: '+255', iso2: 'TZ', nameEN: 'Tanzania', namePT: 'Tanzânia' },
+  { code: '+66', iso2: 'TH', nameEN: 'Thailand', namePT: 'Tailândia' },
+  { code: '+670', iso2: 'TL', nameEN: 'Timor-Leste', namePT: 'Timor-Leste' },
+  { code: '+228', iso2: 'TG', nameEN: 'Togo', namePT: 'Togo' },
+  { code: '+690', iso2: 'TK', nameEN: 'Tokelau', namePT: 'Tokelau' },
+  { code: '+676', iso2: 'TO', nameEN: 'Tonga', namePT: 'Tonga' },
+  { code: '+1868', iso2: 'TT', nameEN: 'Trinidad and Tobago', namePT: 'Trinidade e Tobago' },
+  { code: '+216', iso2: 'TN', nameEN: 'Tunisia', namePT: 'Tunísia' },
+  { code: '+90', iso2: 'TR', nameEN: 'Türkiye', namePT: 'Turquia' },
+  { code: '+993', iso2: 'TM', nameEN: 'Turkmenistan', namePT: 'Turquemenistão' },
+  { code: '+1649', iso2: 'TC', nameEN: 'Turks and Caicos Islands', namePT: 'Ilhas Turks e Caicos' },
+  { code: '+688', iso2: 'TV', nameEN: 'Tuvalu', namePT: 'Tuvalu' },
+  { code: '+256', iso2: 'UG', nameEN: 'Uganda', namePT: 'Uganda' },
+  { code: '+380', iso2: 'UA', nameEN: 'Ukraine', namePT: 'Ucrânia' },
+  { code: '+971', iso2: 'AE', nameEN: 'United Arab Emirates', namePT: 'Emirados Árabes Unidos' },
+  { code: '+44', iso2: 'GB', nameEN: 'United Kingdom', namePT: 'Reino Unido' },
+  { code: '+1', iso2: 'US', nameEN: 'United States', namePT: 'Estados Unidos' },
+  { code: '+1', iso2: 'UM', nameEN: 'United States Minor Outlying Islands', namePT: 'Ilhas Menores Distantes dos Estados Unidos' },
+  { code: '+1340', iso2: 'VI', nameEN: 'United States Virgin Islands', namePT: 'Ilhas Virgens dos Estados Unidos' },
+  { code: '+598', iso2: 'UY', nameEN: 'Uruguay', namePT: 'Uruguai' },
+  { code: '+998', iso2: 'UZ', nameEN: 'Uzbekistan', namePT: 'Uzbequistão' },
+  { code: '+678', iso2: 'VU', nameEN: 'Vanuatu', namePT: 'Vanuatu' },
+  { code: '+39', iso2: 'VA', nameEN: 'Vatican City', namePT: 'Cidade do Vaticano' },
+  { code: '+58', iso2: 'VE', nameEN: 'Venezuela', namePT: 'Venezuela' },
+  { code: '+84', iso2: 'VN', nameEN: 'Vietnam', namePT: 'Vietname' },
+  { code: '+681', iso2: 'WF', nameEN: 'Wallis and Futuna', namePT: 'Wallis e Futuna' },
+  { code: '+212', iso2: 'EH', nameEN: 'Western Sahara', namePT: 'Saara Ocidental' },
+  { code: '+967', iso2: 'YE', nameEN: 'Yemen', namePT: 'Iémen' },
+  { code: '+260', iso2: 'ZM', nameEN: 'Zambia', namePT: 'Zâmbia' },
+  { code: '+263', iso2: 'ZW', nameEN: 'Zimbabwe', namePT: 'Zimbabwe' },
 ] as const;
+
+// Regional-indicator flag emoji from an ISO 3166-1 alpha-2 code -- computed
+// rather than stored per-entry above, so the 250-country list stays one
+// line per country.
+function flagEmoji(iso2: string): string {
+  return iso2
+    .toUpperCase()
+    .replace(/./g, (char) => String.fromCodePoint(127397 + char.charCodeAt(0)));
+}
+
+// Portugal and Angola pinned first (the two markets this storefront
+// serves), then the rest alphabetically by name in whichever language is
+// currently selected.
+function countryCodeOptionsFor(lang: Lang) {
+  const pinnedIso2 = ['PT', 'AO'];
+  const pinned = pinnedIso2
+    .map((iso2) => ALL_COUNTRY_CODES.find((c) => c.iso2 === iso2))
+    .filter((c): c is (typeof ALL_COUNTRY_CODES)[number] => Boolean(c));
+  const rest = ALL_COUNTRY_CODES.filter((c) => !pinnedIso2.includes(c.iso2)).slice();
+  rest.sort((a, b) => {
+    const nameA = lang === 'pt' ? a.namePT : a.nameEN;
+    const nameB = lang === 'pt' ? b.namePT : b.nameEN;
+    return nameA.localeCompare(nameB, lang);
+  });
+  return [...pinned, ...rest];
+}
 
 // Payload's Postgres relationship IDs are numbers. Product models keep IDs
 // as strings so the UI also supports UUID/string-backed installations, but
@@ -112,7 +383,7 @@ export function Checkout() {
 
   const [form, setForm] = useState({
     name: '',
-    phoneCountryCode: market === 'AO' ? '+244' : '+351',
+    phoneCountryIso2: market === 'AO' ? 'AO' : 'PT',
     phone: '',
     email: '',
     address: '',
@@ -164,7 +435,7 @@ export function Checkout() {
     setForm((f) => ({
       ...f,
       country: market === 'AO' ? 'Angola' : 'Portugal',
-      phoneCountryCode: market === 'AO' ? '+244' : '+351',
+      phoneCountryIso2: market === 'AO' ? 'AO' : 'PT',
     }));
     // The option arrays are selected from settings above; settings is the stable source.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -216,8 +487,11 @@ export function Checkout() {
   // Combined phone number sent to the CMS and to the AppyPay widget (which
   // strips non-digits itself) -- the country-code dropdown and the local
   // number are separate form fields for editing, but everywhere else in the
-  // app just wants one phone string.
-  const fullPhone = `${form.phoneCountryCode} ${form.phone}`.trim();
+  // app just wants one phone string. The dropdown stores an iso2, not the
+  // dial code directly (see ALL_COUNTRY_CODES comment above), so look the
+  // code up here.
+  const phoneDialCode = ALL_COUNTRY_CODES.find((c) => c.iso2 === form.phoneCountryIso2)?.code ?? '';
+  const fullPhone = `${phoneDialCode} ${form.phone}`.trim();
 
   const buildOrderInput = (): CreateOrderInput => {
     if (usesEurSettlement) {
@@ -386,8 +660,9 @@ export function Checkout() {
           <Field label={t('name', lang)} value={form.name} onChange={(v) => setForm({ ...form, name: v })} required />
           <PhoneField
             label={t('phoneWhatsapp', lang)}
-            countryCode={form.phoneCountryCode}
-            onCountryCodeChange={(v) => setForm({ ...form, phoneCountryCode: v })}
+            lang={lang}
+            countryIso2={form.phoneCountryIso2}
+            onCountryIso2Change={(v) => setForm({ ...form, phoneCountryIso2: v })}
             value={form.phone}
             onChange={(v) => setForm({ ...form, phone: v })}
             required
@@ -574,26 +849,32 @@ function Field({
 }
 
 // Country-code + local-number pair for the phone/WhatsApp field (added
-// 2026-07-24, user request). Defaults to +351/+244 based on market (see the
-// form-state init and the market-change effect in Checkout above); the
-// dropdown itself stays changeable in both markets since a buyer's own phone
-// might not match the storefront's market (diaspora, international
-// shipping, etc.).
+// 2026-07-24, user request; expanded from 15 curated countries to the full
+// ~250-country list the same day per follow-up feedback). Defaults to
+// PT/AO based on market (see the form-state init and the market-change
+// effect in Checkout above); the dropdown itself stays changeable in both
+// markets since a buyer's own phone might not match the storefront's
+// market (diaspora, international shipping, etc.). Selection is keyed by
+// iso2 rather than dial code -- see the ALL_COUNTRY_CODES comment for why
+// (several countries share a dial code, e.g. +1).
 function PhoneField({
   label,
-  countryCode,
-  onCountryCodeChange,
+  lang,
+  countryIso2,
+  onCountryIso2Change,
   value,
   onChange,
   required = false,
 }: {
   label: string;
-  countryCode: string;
-  onCountryCodeChange: (v: string) => void;
+  lang: Lang;
+  countryIso2: string;
+  onCountryIso2Change: (v: string) => void;
   value: string;
   onChange: (v: string) => void;
   required?: boolean;
 }) {
+  const options = useMemo(() => countryCodeOptionsFor(lang), [lang]);
   return (
     <label style={{ display: 'block' }}>
       <div style={{ fontSize: 11, color: C.inkSoft, marginBottom: 4 }}>
@@ -602,12 +883,12 @@ function PhoneField({
       </div>
       <div style={{ display: 'flex', gap: 8 }}>
         <select
-          value={countryCode}
-          onChange={(e) => onCountryCodeChange(e.target.value)}
+          value={countryIso2}
+          onChange={(e) => onCountryIso2Change(e.target.value)}
           aria-label="Country code"
           style={{
             flexShrink: 0,
-            width: 96,
+            width: 130,
             padding: '10px 6px',
             fontSize: 13,
             border: `1px solid ${C.rule}`,
@@ -616,9 +897,9 @@ function PhoneField({
             color: C.ink,
           }}
         >
-          {PHONE_COUNTRY_CODES.map((c) => (
-            <option key={c.code} value={c.code}>
-              {c.flag} {c.code}
+          {options.map((c) => (
+            <option key={c.iso2} value={c.iso2}>
+              {flagEmoji(c.iso2)} {lang === 'pt' ? c.namePT : c.nameEN} ({c.code})
             </option>
           ))}
         </select>
