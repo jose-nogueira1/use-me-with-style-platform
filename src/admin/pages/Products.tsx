@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { C, F } from '../../theme';
-import { adminListProducts, type ApiProduct } from '../../lib/api';
+import { adminListProducts, resolveProductImage, type ApiProduct } from '../../lib/api';
 import { PageHeader } from '../components/PageHeader';
 
 export function Products() {
@@ -60,7 +60,7 @@ export function Products() {
           <Link key={p.id} to={`/admin/produtos/${p.id}`} style={{ textDecoration: 'none', display: 'block', background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 16 }}>
             <div style={{ height: 110, borderRadius: 6, background: '#F1EADF', border: `1px solid ${C.rule}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <span style={{ fontSize: 10, fontWeight: 800, color: C.goldDeep }}>{hasPhoto(p) ? '' : 'Photo pending'}</span>
-              {hasPhoto(p) && <img src={p.images![0].image.url} alt={p.images![0].image.alt ?? p.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 6 }} />}
+              {hasPhoto(p) && <img src={resolveProductImage(p.images![0].image).url} alt={resolveProductImage(p.images![0].image).alt ?? p.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 6 }} />}
             </div>
             <div style={{ fontFamily: F.display, fontSize: 18, fontWeight: 800, color: C.ink, marginTop: 12 }}>{p.name}</div>
             <div style={{ fontSize: 10, color: C.inkSoft, marginTop: 4 }}>

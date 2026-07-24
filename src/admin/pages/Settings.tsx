@@ -1,6 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 import { C, F } from '../../theme';
-import { adminUpdateMarketSettings, fetchMarketSettings, type MarketSettings } from '../../lib/api';
+import {
+  adminFetchInvoiceSettings,
+  adminUpdateInvoiceSettings,
+  adminUpdateLegalContent,
+  adminUpdateMarketSettings,
+  fetchLegalContent,
+  fetchMarketSettings,
+  type InvoiceSettings,
+  type LegalContent,
+  type MarketSettings,
+} from '../../lib/api';
 import { PageHeader } from '../components/PageHeader';
 import { Badge } from '../components/Badge';
 
@@ -225,6 +235,245 @@ export function Settings() {
           />
         </div>
       </div>
+
+      <InvoicingSettingsSection />
+      <LegalPagesSection />
+    </div>
+  );
+}
+
+// Internal (non-fiscal) invoicing configuration -- CMS global `invoice-
+// settings`, previously only editable directly in Payload admin. Added
+// 2026-07-25 for storefront-admin/Payload-admin parity. Self-contained
+// (own fetch/save) rather than folded into the page-level Save button above,
+// since it's a different global with its own endpoint.
+const INVOICE_SETTINGS_DEFAULTS: InvoiceSettings = {
+  phaseOneDisclaimer: '',
+  invoicingEnabledAO: true,
+  issuerNameAO: 'Use Me With Style',
+  issuerTaxIdAO: '',
+  issuerAddressAO: '',
+  vatRateAO: 0,
+  taxNoteAO: '',
+  invoicePrefixAO: 'UMWS-AO',
+  invoiceFooterAO: '',
+  invoicingEnabledPT: true,
+  issuerNamePT: 'Use Me With Style',
+  issuerTaxIdPT: '',
+  issuerAddressPT: '',
+  vatRatePT: 0,
+  taxNotePT: '',
+  invoicePrefixPT: 'UMWS-PT',
+  invoiceFooterPT: '',
+};
+
+function InvoicingSettingsSection() {
+  const [settings, setSettings] = useState<InvoiceSettings>(INVOICE_SETTINGS_DEFAULTS);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    adminFetchInvoiceSettings()
+      .then(setSettings)
+      .catch(() => setError("Couldn't load invoicing settings."))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    setSaved(false);
+    try {
+      const updated = await adminUpdateInvoiceSettings(settings);
+      setSettings(updated);
+      setSaved(true);
+    } catch {
+      setError("Couldn't save invoicing settings.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div style={{ padding: '28px 28px 0' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+        <div style={{ fontFamily: F.display, fontSize: 22, fontWeight: 800, color: C.ink }}>Internal invoicing</div>
+        <button
+          onClick={handleSave}
+          disabled={loading || saving}
+          style={{ padding: '9px 18px', background: C.black, color: C.onDarkGold, fontSize: 11, fontWeight: 800, borderRadius: 6 }}
+        >
+          {saving ? '…' : 'Save invoicing settings'}
+        </button>
+      </div>
+      <div style={{ fontSize: 11, color: C.inkSoft, marginBottom: 14 }}>
+        Commercial (non-fiscal) invoice generation. Snapshotted onto each invoice at issue time -- editing here doesn't rewrite invoices already generated.
+      </div>
+      {error && <div style={{ fontSize: 12, color: '#B95545', marginBottom: 12 }}>{error}</div>}
+      {saved && <div style={{ fontSize: 12, color: '#3F754D', marginBottom: 12 }}>Saved.</div>}
+
+      {loading ? (
+        <div style={{ fontSize: 12, color: C.inkSoft }}>Loading…</div>
+      ) : (
+        <>
+          <label style={{ display: 'block', marginBottom: 16 }}>
+            <div style={{ fontSize: 10, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>Required non-fiscal disclaimer</div>
+            <textarea
+              value={settings.phaseOneDisclaimer}
+              onChange={(e) => setSettings((s) => ({ ...s, phaseOneDisclaimer: e.target.value }))}
+              rows={2}
+              style={{ width: '100%', padding: 10, fontSize: 12, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.paper, fontFamily: 'inherit', lineHeight: 1.5 }}
+            />
+          </label>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }} className="ump-admin-orders-grid">
+            <InvoiceMarketCard label="Angola" market="AO" settings={settings} setSettings={setSettings} />
+            <InvoiceMarketCard label="Portugal" market="PT" settings={settings} setSettings={setSettings} />
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function InvoiceMarketCard({
+  label,
+  market,
+  settings,
+  setSettings,
+}: {
+  label: string;
+  market: 'AO' | 'PT';
+  settings: InvoiceSettings;
+  setSettings: Dispatch<SetStateAction<InvoiceSettings>>;
+}) {
+  const set = <K extends keyof InvoiceSettings>(key: K, value: InvoiceSettings[K]) => setSettings((s) => ({ ...s, [key]: value }));
+  const enabledKey = `invoicingEnabled${market}` as const;
+  const nameKey = `issuerName${market}` as const;
+  const taxIdKey = `issuerTaxId${market}` as const;
+  const addressKey = `issuerAddress${market}` as const;
+  const vatKey = `vatRate${market}` as const;
+  const taxNoteKey = `taxNote${market}` as const;
+  const prefixKey = `invoicePrefix${market}` as const;
+  const footerKey = `invoiceFooter${market}` as const;
+
+  return (
+    <div style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 16 }}>
+      <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>{label}</div>
+      <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, fontSize: 11, fontWeight: 700, color: C.ink }}>
+        <input type="checkbox" checked={settings[enabledKey]} onChange={(e) => set(enabledKey, e.target.checked)} />
+        Generate internal invoices automatically
+      </label>
+      <SettingsField label="Issuer name" value={settings[nameKey] ?? ''} onChange={(v) => set(nameKey, v)} />
+      <SettingsField label="Issuer tax ID" value={settings[taxIdKey] ?? ''} onChange={(v) => set(taxIdKey, v)} />
+      <SettingsTextarea label="Issuer address" value={settings[addressKey] ?? ''} onChange={(v) => set(addressKey, v)} rows={2} />
+      <SettingsField label="VAT rate (%) included in prices" value={String(settings[vatKey] ?? 0)} onChange={(v) => set(vatKey, Number(v) || 0)} type="number" />
+      <SettingsField label="VAT / exemption note" value={settings[taxNoteKey] ?? ''} onChange={(v) => set(taxNoteKey, v)} />
+      <SettingsField label="Invoice prefix" value={settings[prefixKey] ?? ''} onChange={(v) => set(prefixKey, v)} />
+      <SettingsTextarea label="PDF footer" value={settings[footerKey] ?? ''} onChange={(v) => set(footerKey, v)} rows={2} />
+    </div>
+  );
+}
+
+function SettingsField({ label, value, onChange, type = 'text' }: { label: string; value: string; onChange: (v: string) => void; type?: string }) {
+  return (
+    <label style={{ display: 'block', marginBottom: 10 }}>
+      <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 5 }}>{label}</div>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        style={{ width: '100%', padding: '8px 10px', fontSize: 12, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, color: C.ink }}
+      />
+    </label>
+  );
+}
+
+function SettingsTextarea({ label, value, onChange, rows = 2 }: { label: string; value: string; onChange: (v: string) => void; rows?: number }) {
+  return (
+    <label style={{ display: 'block', marginBottom: 10 }}>
+      <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 5 }}>{label}</div>
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        rows={rows}
+        style={{ width: '100%', padding: '8px 10px', fontSize: 12, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, color: C.ink, fontFamily: 'inherit', lineHeight: 1.4 }}
+      />
+    </label>
+  );
+}
+
+// Privacy Policy + Terms & Conditions -- CMS global `legal-content`,
+// previously only editable directly in Payload admin. Added 2026-07-25 for
+// storefront-admin/Payload-admin parity. The seeded text is an AI-drafted
+// generic template (see LegalContent.ts) -- editable here like everything
+// else, but that provenance caveat doesn't change just because there's now a
+// storefront UI for it.
+function LegalPagesSection() {
+  const [content, setContent] = useState<LegalContent>({ privacyPolicyTextPT: '', privacyPolicyTextEN: '', termsTextPT: '', termsTextEN: '' });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    fetchLegalContent()
+      .then(setContent)
+      .catch(() => setError("Couldn't load legal pages."))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    setSaved(false);
+    try {
+      const updated = await adminUpdateLegalContent(content);
+      setContent(updated);
+      setSaved(true);
+    } catch {
+      setError("Couldn't save. Make sure you're logged in.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div style={{ padding: '28px 28px 32px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+        <div style={{ fontFamily: F.display, fontSize: 22, fontWeight: 800, color: C.ink }}>Legal pages</div>
+        <button
+          onClick={handleSave}
+          disabled={loading || saving}
+          style={{ padding: '9px 18px', background: C.black, color: C.onDarkGold, fontSize: 11, fontWeight: 800, borderRadius: 6 }}
+        >
+          {saving ? '…' : 'Save legal pages'}
+        </button>
+      </div>
+      <div style={{ fontSize: 11, color: C.inkSoft, marginBottom: 14 }}>
+        Shown on the storefront's Privacy Policy and Terms &amp; Conditions pages. The seeded text is an AI-drafted generic template -- have it reviewed by a lawyer before treating it as final.
+      </div>
+      {error && <div style={{ fontSize: 12, color: '#B95545', marginBottom: 12 }}>{error}</div>}
+      {saved && <div style={{ fontSize: 12, color: '#3F754D', marginBottom: 12 }}>Saved.</div>}
+
+      {loading ? (
+        <div style={{ fontSize: 12, color: C.inkSoft }}>Loading…</div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }} className="ump-admin-orders-grid">
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>Privacy Policy</div>
+            <PolicyTextarea label="Portuguese" value={content.privacyPolicyTextPT ?? ''} onChange={(v) => setContent((c) => ({ ...c, privacyPolicyTextPT: v }))} />
+            <PolicyTextarea label="English" value={content.privacyPolicyTextEN ?? ''} onChange={(v) => setContent((c) => ({ ...c, privacyPolicyTextEN: v }))} />
+          </div>
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>Terms &amp; Conditions</div>
+            <PolicyTextarea label="Portuguese" value={content.termsTextPT ?? ''} onChange={(v) => setContent((c) => ({ ...c, termsTextPT: v }))} />
+            <PolicyTextarea label="English" value={content.termsTextEN ?? ''} onChange={(v) => setContent((c) => ({ ...c, termsTextEN: v }))} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

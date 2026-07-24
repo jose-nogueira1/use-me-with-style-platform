@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { C } from '../../theme';
 import { adminListCustomers, type ApiCustomer } from '../../lib/api';
 import { PageHeader } from '../components/PageHeader';
@@ -25,7 +26,9 @@ export function Customers() {
           <div style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, overflow: 'hidden' }}>
             <Row header cells={['Name', 'Email', 'Phone', 'Market', 'Orders']} />
             {customers.map((c) => (
-              <Row key={c.id} cells={[c.name, c.email, c.phone ?? '—', c.market, String(c.orderCount)]} />
+              <Link key={c.id} to={`/admin/clientes/${c.id}`} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
+                <Row cells={[c.name, c.email, c.phone ?? '—', c.market, String(c.orderCount)]} />
+              </Link>
             ))}
           </div>
         </div>

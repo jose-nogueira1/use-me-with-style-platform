@@ -17,6 +17,8 @@ import { AdminLanguageSwitch } from './AdminTranslation';
 const SECONDARY_NAV = [
   { to: '/admin/clientes', label: 'Customers' },
   { to: '/admin/mensagens', label: 'Messages' },
+  { to: '/admin/faturas', label: 'Invoices' },
+  { to: '/admin/media', label: 'Media' },
 ];
 
 export function AdminLayout() {

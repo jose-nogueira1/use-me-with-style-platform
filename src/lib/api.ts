@@ -11,6 +11,11 @@ const API_BASE = publicEnv.apiBaseUrl === '/'
   ? '/api'
   : `${publicEnv.apiBaseUrl.replace(/\/$/, '')}/api`;
 
+// Exported so admin pages that need a plain URL (file downloads via <a href>,
+// not a fetch() call the request() helper can wrap) can still point at the
+// right origin -- e.g. the internal-invoice PDF download link.
+export const apiBase = API_BASE;
+
 export class ApiError extends Error {
   status: number;
   constructor(message: string, status: number) {
@@ -47,6 +52,22 @@ async function request<T>(
 // `payload-types.ts` generated types once the CMS and frontend share a
 // workspace, or copy that file over manually).
 // ---------------------------------------------------------------------------
+/** Payload relationship shape: a plain id (string/number) at depth 0, or the
+ * populated media object at depth>=1. Admin product calls always use
+ * depth=1, but the type still has to allow for the unpopulated shape. */
+export type ApiProductImageRef =
+  | string
+  | number
+  | {
+      id?: string | number;
+      url?: string;
+      alt?: string;
+      sizes?: {
+        thumbnail?: { url?: string };
+        card?: { url?: string };
+      };
+    };
+
 export type ApiProduct = {
   // Payload returns numeric IDs with the local SQLite adapter and string IDs
   // with PostgreSQL. Treat both as valid so admin routes work in every env.
@@ -60,20 +81,7 @@ export type ApiProduct = {
   descriptionPT?: string;
   descriptionEN?: string;
   tag?: string;
-  images?: {
-    image:
-      | string
-      | number
-      | {
-          id?: string | number;
-          url?: string;
-          alt?: string;
-          sizes?: {
-            thumbnail?: { url?: string };
-            card?: { url?: string };
-          };
-        };
-  }[];
+  images?: { image: ApiProductImageRef }[];
   colors: { color: string }[];
   priceAOKz: number;
   pricePTEur: number;
@@ -86,6 +94,14 @@ export type ApiProduct = {
   availableAO: boolean;
   availablePT: boolean;
 };
+
+/** Safely reads url/alt off an ApiProductImageRef, instead of every call
+ * site repeating the same `typeof === 'object'` guard against the
+ * unpopulated (depth-0) id-only shape. */
+export function resolveProductImage(image: ApiProductImageRef | undefined): { url?: string; alt?: string } {
+  if (image && typeof image === 'object') return { url: image.url, alt: image.alt };
+  return {};
+}
 
 export type OrderItemInput = {
   product: string | number;
@@ -143,6 +159,23 @@ export type ApiOrder = CreateOrderInput & {
   paymentStatus: string;
   createdAt: string;
   updatedAt: string;
+  // Provider/diagnostic fields -- all admin-set or admin-read-only in
+  // Payload (see Orders.ts), surfaced here so the storefront admin's order
+  // detail can display the same troubleshooting info Payload admin shows.
+  paymentReference?: string;
+  appyPayMerchantTransactionId?: string;
+  appyPayTransactionId?: string;
+  appyPayStatus?: string;
+  appyPayPaymentMethod?: string;
+  appyPayResponseCode?: number;
+  appyPayResponseMessage?: string;
+  appyPayReferenceEntity?: string;
+  appyPayReferenceNumber?: string;
+  appyPayReferenceDueDate?: string;
+  appyPayVerifiedAt?: string;
+  inventoryReservationStatus?: string;
+  inventoryReservationExpiresAt?: string;
+  inventoryReservationReleasedAt?: string;
 };
 
 export type PublicOrderStatus = Pick<
@@ -200,6 +233,64 @@ export type ApiCustomer = {
   market: 'AO' | 'PT';
   orderCount: number;
   createdAt: string;
+};
+
+/** Internal (non-fiscal) invoicing configuration, per market -- admin-only
+ * global (added 2026-07-25 for storefront-admin/Payload-admin parity). */
+export type InvoiceSettings = {
+  phaseOneDisclaimer: string;
+  invoicingEnabledAO: boolean;
+  issuerNameAO?: string;
+  issuerTaxIdAO?: string;
+  issuerAddressAO?: string;
+  vatRateAO: number;
+  taxNoteAO?: string;
+  invoicePrefixAO?: string;
+  invoiceFooterAO?: string;
+  invoicingEnabledPT: boolean;
+  issuerNamePT?: string;
+  issuerTaxIdPT?: string;
+  issuerAddressPT?: string;
+  vatRatePT: number;
+  taxNotePT?: string;
+  invoicePrefixPT?: string;
+  invoiceFooterPT?: string;
+};
+
+/** Issued internal invoice snapshot (read-only in the admin -- these are
+ * immutable once generated, see Invoices.ts's `update: () => false`). Added
+ * 2026-07-25 for storefront-admin/Payload-admin parity. */
+export type ApiInvoice = {
+  id: string;
+  relatedOrder: string | { id: string; orderNumber?: string };
+  invoiceNumber: string;
+  sequence: number;
+  year: number;
+  status: 'issued' | 'failed';
+  market: 'AO' | 'PT';
+  issuedAt: string;
+  orderNumber: string;
+  customerName: string;
+  customerEmail: string;
+  currency: 'Kz' | 'EUR';
+  total: number;
+  errorMessage?: string;
+};
+
+/** Media library entry (product photos, etc.) -- added 2026-07-25 for
+ * storefront-admin/Payload-admin parity. */
+export type ApiMedia = {
+  id: string | number;
+  alt: string;
+  url?: string;
+  filename?: string;
+  mimeType?: string;
+  filesize?: number;
+  createdAt?: string;
+  sizes?: {
+    thumbnail?: { url?: string };
+    card?: { url?: string };
+  };
 };
 
 export type MessageChannel = 'whatsapp' | 'instagram';
@@ -392,6 +483,10 @@ export async function adminListCustomers(): Promise<ApiCustomer[]> {
   return data.docs;
 }
 
+export async function adminGetCustomer(id: string): Promise<ApiCustomer> {
+  return request<ApiCustomer>(`/customers/${id}`, {}, { auth: true });
+}
+
 /** JOS-58 Phase 1 messaging foundation: conversation log (WhatsApp + Instagram). */
 export async function adminListMessages(): Promise<ApiMessage[]> {
   const data = await request<{ docs: ApiMessage[] }>('/messages?limit=300&sort=-createdAt&depth=0', {}, { auth: true });
@@ -466,4 +561,108 @@ export async function adminUpdateMarketSettings(input: Partial<MarketSettings>):
     { method: 'POST', body: JSON.stringify(input) },
     { auth: true },
   );
+}
+
+export async function adminDeleteProduct(id: string | number): Promise<void> {
+  await request<{ doc: ApiProduct }>(`/products/${id}`, { method: 'DELETE' }, { auth: true });
+}
+
+// General-purpose order update (address/contact/payment-status edits, on top
+// of the status-only adminUpdateOrderStatus above) -- added 2026-07-25 for
+// storefront-admin/Payload-admin parity. Deliberately does NOT expose line
+// items/subtotal/total editing: those feed the inventory-reservation hook
+// (see use-me-with-style-cms/src/lib/inventoryReservation.ts), and editing
+// them from here without reproducing that logic risks a stock/order-total
+// mismatch that isn't worth the rare use case. Payload's own raw admin has
+// the same risk if used carelessly; this just doesn't offer the footgun.
+export async function adminUpdateOrder(id: string, input: Record<string, unknown>): Promise<ApiOrder> {
+  const data = await request<{ doc: ApiOrder }>(
+    `/orders/${id}`,
+    { method: 'PATCH', body: JSON.stringify(input) },
+    { auth: true },
+  );
+  return data.doc;
+}
+
+export async function adminListOrdersByEmail(email: string): Promise<ApiOrder[]> {
+  const search = new URLSearchParams({
+    limit: '200',
+    sort: '-createdAt',
+    'where[customerEmail][equals]': email,
+  });
+  const data = await request<{ docs: ApiOrder[] }>(`/orders?${search.toString()}`, {}, { auth: true });
+  return data.docs;
+}
+
+export async function adminUpdateCustomer(id: string, input: Partial<ApiCustomer>): Promise<ApiCustomer> {
+  const data = await request<{ doc: ApiCustomer }>(
+    `/customers/${id}`,
+    { method: 'PATCH', body: JSON.stringify(input) },
+    { auth: true },
+  );
+  return data.doc;
+}
+
+// ---------------------------------------------------------------------------
+// Admin: internal invoicing settings + issued invoices (2026-07-25, storefront-
+// admin/Payload-admin parity). InvoiceSettings' own read/update access
+// requires req.user (see globals/InvoiceSettings.ts), so unlike
+// fetchMarketSettings/fetchLegalContent above these are admin-only reads too.
+// ---------------------------------------------------------------------------
+export async function adminFetchInvoiceSettings(): Promise<InvoiceSettings> {
+  return request<InvoiceSettings>('/globals/invoice-settings', {}, { auth: true });
+}
+
+export async function adminUpdateInvoiceSettings(input: Partial<InvoiceSettings>): Promise<InvoiceSettings> {
+  return request<InvoiceSettings>(
+    '/globals/invoice-settings',
+    { method: 'POST', body: JSON.stringify(input) },
+    { auth: true },
+  );
+}
+
+export async function adminUpdateLegalContent(input: Partial<LegalContent>): Promise<LegalContent> {
+  return request<LegalContent>(
+    '/globals/legal-content',
+    { method: 'POST', body: JSON.stringify(input) },
+    { auth: true },
+  );
+}
+
+export async function adminListInvoices(): Promise<ApiInvoice[]> {
+  const data = await request<{ docs: ApiInvoice[] }>('/invoices?limit=200&sort=-issuedAt&depth=0', {}, { auth: true });
+  return data.docs;
+}
+
+/** Direct download URL for an issued invoice's PDF -- see
+ * use-me-with-style-cms/src/endpoints/internalInvoices.ts. Requires an
+ * authenticated admin session cookie, sent automatically by the browser on a
+ * normal link navigation. */
+export function adminInvoicePdfUrl(id: string): string {
+  return `${apiBase}/internal-invoices/${id}/pdf`;
+}
+
+// ---------------------------------------------------------------------------
+// Admin: media library (2026-07-25, storefront-admin/Payload-admin parity).
+// Standalone browse/upload/delete, independent of the per-product upload
+// flow in ProductEditor (adminUploadProductImage above, kept as-is since
+// it's still used there).
+// ---------------------------------------------------------------------------
+export async function adminListMedia(): Promise<ApiMedia[]> {
+  const data = await request<{ docs: ApiMedia[] }>('/media?limit=200&sort=-createdAt', {}, { auth: true });
+  return data.docs;
+}
+
+export async function adminUploadMedia(file: File, alt: string): Promise<ApiMedia> {
+  const body = new FormData();
+  body.append('file', file);
+  body.append('_payload', JSON.stringify({ alt }));
+  const res = await fetch(`${API_BASE}/media`, { method: 'POST', body, credentials: 'include' });
+  if (!res.ok) throw new ApiError(`Upload failed (${res.status}): ${await res.text().catch(() => '')}`, res.status);
+  const data = (await res.json()) as { doc: ApiMedia };
+  return data.doc;
+}
+
+export async function adminDeleteMedia(id: string | number): Promise<void> {
+  await request<{ doc: ApiMedia }>(`/media/${id}`, { method: 'DELETE' }, { auth: true });
 }

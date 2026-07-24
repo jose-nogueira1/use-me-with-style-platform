@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { C } from '../../theme';
-import { adminCreateProduct, adminListProducts, adminUpdateProduct, adminUploadProductImage, type ApiProduct } from '../../lib/api';
+import { adminCreateProduct, adminDeleteProduct, adminListProducts, adminUpdateProduct, adminUploadProductImage, resolveProductImage, type ApiProduct } from '../../lib/api';
 import { PageHeader } from '../components/PageHeader';
 
 const CATEGORIES: ApiProduct['category'][] = ['vestidos', 'tops', 'leggings', 'conjuntos'];
@@ -108,6 +108,20 @@ export function ProductEditor() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!existing) return;
+    if (!window.confirm(`Delete "${form.name}"? This can't be undone.`)) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await adminDeleteProduct(existing.id);
+      navigate('/admin/produtos');
+    } catch {
+      setError("Couldn't delete this product.");
+      setSaving(false);
+    }
+  };
+
   const handleImageUpload = async (file?: File) => {
     if (!file || !existing) return;
     setSaving(true);
@@ -160,7 +174,7 @@ export function ProductEditor() {
             }}
           >
             {existing?.images?.length ? (
-              <img src={existing.images[0].image.url} alt={existing.images[0].image.alt ?? form.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }} />
+              <img src={resolveProductImage(existing.images[0].image).url} alt={resolveProductImage(existing.images[0].image).alt ?? form.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }} />
             ) : (
               'Client photo pending'
             )}
@@ -250,13 +264,24 @@ export function ProductEditor() {
           <label style={{ display: 'block' }}><div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>Description — English</div><textarea value={form.descriptionEN} onChange={(e) => set('descriptionEN', e.target.value)} rows={3} style={{ width: '100%', padding: '11px 12px', fontSize: 12, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, color: C.ink, fontFamily: 'inherit' }} /></label>
 
 
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            style={{ padding: 12, background: C.black, color: C.onDarkGold, fontSize: 11, fontWeight: 800, borderRadius: 6, alignSelf: 'flex-start', minWidth: 160 }}
-          >
-            {saving ? '…' : isNew ? 'Publish product' : 'Save changes'}
-          </button>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              style={{ padding: 12, background: C.black, color: C.onDarkGold, fontSize: 11, fontWeight: 800, borderRadius: 6, alignSelf: 'flex-start', minWidth: 160 }}
+            >
+              {saving ? '…' : isNew ? 'Publish product' : 'Save changes'}
+            </button>
+            {!isNew && existing && (
+              <button
+                onClick={handleDelete}
+                disabled={saving}
+                style={{ padding: 12, background: 'transparent', color: '#B95545', border: '1px solid #E1B3AA', fontSize: 11, fontWeight: 800, borderRadius: 6, alignSelf: 'flex-start' }}
+              >
+                Delete product
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

@@ -8,8 +8,11 @@ import { OrderDetail } from './pages/OrderDetail';
 import { Products } from './pages/Products';
 import { ProductEditor } from './pages/ProductEditor';
 import { Customers } from './pages/Customers';
+import { CustomerDetail } from './pages/CustomerDetail';
 import { Mensagens } from './pages/Mensagens';
 import { Settings } from './pages/Settings';
+import { Invoices } from './pages/Invoices';
+import { Media } from './pages/Media';
 import { Roadmap } from './pages/Roadmap';
 import { AdminTranslationBoundary } from './AdminTranslation';
 
@@ -25,8 +28,11 @@ export function AdminRoutes() {
           <Route path="produtos" element={<Products />} />
           <Route path="produtos/:id" element={<ProductEditor />} />
           <Route path="clientes" element={<Customers />} />
+          <Route path="clientes/:id" element={<CustomerDetail />} />
           <Route path="mensagens" element={<Mensagens />} />
           <Route path="definicoes" element={<Settings />} />
+          <Route path="faturas" element={<Invoices />} />
+          <Route path="media" element={<Media />} />
           <Route path="roadmap" element={<Roadmap />} />
           {['analytics', 'marketing', 'meta-ads', 'inventario', 'automacao'].map((path) => (
             <Route key={path} path={path} element={<Navigate to="/admin/roadmap" replace />} />
