@@ -162,6 +162,19 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
         }
 
         .ump-grid-auto { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+        /* Product grid (Browse, Home featured, recommendations): 150px is
+           deliberately low so two cards still fit on the narrowest phones
+           this app targets (150*2 + 10px gap fits inside a 320px screen's
+           ~280px content width) -- raising that floor would break mobile,
+           so it can't just be bumped everywhere. At the very wide end
+           (.ump-content-width caps out at 1900px), a 150px floor works out
+           to ~12 columns of fairly small, dense cards. Verified fine at
+           ~1560px (7 comfortable columns); this override only engages above
+           1800px -- past what could be checked directly in this environment
+           -- as a light safeguard against cards getting too small/cramped
+           on a genuine ultra-wide monitor (2026-07-24, responsive audit,
+           Finding 7). */
+        @media (min-width: 1800px) { .ump-grid-auto { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); } }
 
         /* Home: Instagram feed (2026-07-10) -- 3 columns on mobile (matches
            the real Instagram grid feel at small sizes), 6 on desktop so all

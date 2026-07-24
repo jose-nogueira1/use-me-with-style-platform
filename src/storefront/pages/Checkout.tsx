@@ -951,7 +951,16 @@ function PhoneField({
                 position: 'absolute',
                 top: 'calc(100% + 4px)',
                 left: 0,
-                width: 270,
+                // Fixed at 270px, which fits with room to spare on every
+                // phone width actually verified (down to ~360-375px) -- but
+                // is anchored left:0 to this button, which itself sits right
+                // after the page's 20px padding. On a genuinely tiny/old
+                // device (~310px or narrower) a bare 270px could crowd the
+                // right edge of the screen. min() keeps the same 270px on
+                // every device that's been tested while adding a safety
+                // margin for anything narrower (2026-07-24, responsive
+                // audit, Finding 5).
+                width: 'min(270px, calc(100vw - 48px))',
                 background: C.paper,
                 border: `1px solid ${C.rule}`,
                 borderRadius: 8,

@@ -91,11 +91,20 @@ export function AppyPayWidget({
   // AppyPay injects unscoped styles for body, headings, links, and buttons.
   // A same-origin frame contains those styles while preserving the hosted
   // widget's normal script configuration and payment flow.
+  //
+  // Height was a flat 720px regardless of viewport (2026-07-24, responsive
+  // audit, Finding 6) -- on a short viewport (landscape phone, a laptop with
+  // a lot of browser chrome) that forced a lot of scrolling just to reach
+  // the widget's own payment buttons, which sit near the bottom of its
+  // (assumed) 720px design. min(720px, 85vh) keeps the exact same 720px on
+  // any normal-height screen (no regression there) while capping it to 85%
+  // of the visible viewport on short ones; the iframe's own content scrolls
+  // internally if AppyPay's widget ends up taller than that.
   return (
     <iframe
       ref={frameRef}
       title={lang === 'pt' ? 'Pagamento AppyPay' : 'AppyPay payment'}
-      style={{ display: 'block', width: '100%', height: 720, border: 0 }}
+      style={{ display: 'block', width: '100%', height: 'min(720px, 85vh)', border: 0 }}
     />
   );
 }
