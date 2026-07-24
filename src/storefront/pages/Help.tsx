@@ -8,12 +8,14 @@ import { fetchMarketSettings } from '../../lib/api';
 // screens fetched so far. Points customers to WhatsApp, matching the
 // messaging automation already live (see JOS-58).
 //
-// Returns & exchanges policy (JOS-64, added 2026-07-23): pulled from
-// MarketSettings rather than hardcoded, since Angola and Portugal/EU have
-// materially different legal terms (48h exchange-only vs. 14-day statutory
-// withdrawal with refund). Client-provided copy is Portuguese-only, so it's
-// shown as-is regardless of the storefront's selected language rather than
-// risking an inaccurate machine translation of legal text.
+// Returns & exchanges policy (JOS-64, added 2026-07-23, bilingual
+// 2026-07-24): pulled from MarketSettings rather than hardcoded, since
+// Angola and Portugal/EU have materially different legal terms (48h
+// exchange-only vs. 14-day statutory withdrawal with refund). PT is the
+// client-provided legal text; EN is our translation of it -- selected by
+// the storefront's language toggle like everything else, falling back to
+// whichever one is actually filled in (e.g. if the EN field is still empty
+// in the admin) rather than showing nothing.
 export function Help() {
   const { lang, market } = useApp();
   const [policyText, setPolicyText] = useState<string | null>(null);
@@ -24,8 +26,10 @@ export function Help() {
     fetchMarketSettings()
       .then((settings) => {
         if (cancelled) return;
-        const text = market === 'AO' ? settings.angolaReturnsPolicyText : settings.portugalReturnsPolicyText;
-        setPolicyText(text?.trim() || null);
+        const pt = (market === 'AO' ? settings.angolaReturnsPolicyTextPT : settings.portugalReturnsPolicyTextPT)?.trim();
+        const en = (market === 'AO' ? settings.angolaReturnsPolicyTextEN : settings.portugalReturnsPolicyTextEN)?.trim();
+        const preferred = lang === 'en' ? en : pt;
+        setPolicyText(preferred || en || pt || null);
       })
       .catch(() => {
         if (!cancelled) setPolicyText(null);
@@ -36,7 +40,7 @@ export function Help() {
     return () => {
       cancelled = true;
     };
-  }, [market]);
+  }, [market, lang]);
 
   return (
     <div className="ump-narrow" style={{ padding: '40px 20px', textAlign: 'center' }}>

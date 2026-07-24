@@ -31,8 +31,10 @@ const DEFAULT_MARKET_SETTINGS: MarketSettings = {
   angolaDeliveryMethods: ['courier_ao'],
   portugalPaymentMethods: ['paypal', 'stripe', 'mbway'],
   portugalDeliveryMethods: ['ctt', 'courier_pt'],
-  angolaReturnsPolicyText: '',
-  portugalReturnsPolicyText: '',
+  angolaReturnsPolicyTextPT: '',
+  angolaReturnsPolicyTextEN: '',
+  portugalReturnsPolicyTextPT: '',
+  portugalReturnsPolicyTextEN: '',
 };
 
 const PAYMENT_LABEL_KEYS: Record<string, string> = {

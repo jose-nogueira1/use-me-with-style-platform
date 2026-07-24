@@ -11,8 +11,10 @@ const DEFAULTS: MarketSettings = {
   angolaDeliveryMethods: ['courier_ao'],
   portugalPaymentMethods: ['paypal', 'stripe', 'mbway'],
   portugalDeliveryMethods: ['ctt', 'courier_pt'],
-  angolaReturnsPolicyText: '',
-  portugalReturnsPolicyText: '',
+  angolaReturnsPolicyTextPT: '',
+  angolaReturnsPolicyTextEN: '',
+  portugalReturnsPolicyTextPT: '',
+  portugalReturnsPolicyTextEN: '',
 };
 
 export function Settings() {
@@ -134,26 +136,47 @@ export function Settings() {
 
       <div style={{ padding: '20px 28px 0', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }} className="ump-admin-orders-grid">
         <div>
-          <div style={{ fontSize: 10, fontWeight: 800, color: C.goldDeep, marginBottom: 8 }}>Angola: returns &amp; exchanges policy</div>
-          <textarea
-            value={settings.angolaReturnsPolicyText ?? ''}
-            onChange={(e) => setSettings((s) => ({ ...s, angolaReturnsPolicyText: e.target.value }))}
-            rows={10}
-            placeholder="Client-provided legal copy -- shown on the storefront Help page and at checkout."
-            style={{ width: '100%', padding: 10, fontSize: 12, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.paper, fontFamily: 'inherit', lineHeight: 1.5 }}
+          <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>Angola: returns &amp; exchanges policy</div>
+          <PolicyTextarea
+            label="Portuguese"
+            value={settings.angolaReturnsPolicyTextPT ?? ''}
+            onChange={(v) => setSettings((s) => ({ ...s, angolaReturnsPolicyTextPT: v }))}
+          />
+          <PolicyTextarea
+            label="English"
+            value={settings.angolaReturnsPolicyTextEN ?? ''}
+            onChange={(v) => setSettings((s) => ({ ...s, angolaReturnsPolicyTextEN: v }))}
           />
         </div>
         <div>
-          <div style={{ fontSize: 10, fontWeight: 800, color: C.goldDeep, marginBottom: 8 }}>Portugal/EU: returns &amp; exchanges policy</div>
-          <textarea
-            value={settings.portugalReturnsPolicyText ?? ''}
-            onChange={(e) => setSettings((s) => ({ ...s, portugalReturnsPolicyText: e.target.value }))}
-            rows={10}
-            placeholder="Client-provided legal copy -- shown on the storefront Help page and at checkout."
-            style={{ width: '100%', padding: 10, fontSize: 12, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.paper, fontFamily: 'inherit', lineHeight: 1.5 }}
+          <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>Portugal/EU: returns &amp; exchanges policy</div>
+          <PolicyTextarea
+            label="Portuguese"
+            value={settings.portugalReturnsPolicyTextPT ?? ''}
+            onChange={(v) => setSettings((s) => ({ ...s, portugalReturnsPolicyTextPT: v }))}
+          />
+          <PolicyTextarea
+            label="English"
+            value={settings.portugalReturnsPolicyTextEN ?? ''}
+            onChange={(v) => setSettings((s) => ({ ...s, portugalReturnsPolicyTextEN: v }))}
           />
         </div>
       </div>
+    </div>
+  );
+}
+
+function PolicyTextarea({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <div style={{ fontSize: 10, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>{label}</div>
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        rows={8}
+        placeholder="Client-provided legal copy -- shown on the storefront Help page and at checkout."
+        style={{ width: '100%', padding: 10, fontSize: 12, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.paper, fontFamily: 'inherit', lineHeight: 1.5 }}
+      />
     </div>
   );
 }
