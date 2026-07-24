@@ -45,7 +45,7 @@ export function LegalPage({ heading, pendingNotice, loadingNotice, getTextPT, ge
   const text = content ? pickBilingual(getTextPT(content), getTextEN(content), lang) : null;
 
   return (
-    <div className="ump-narrow" style={{ padding: '40px 20px 56px', textAlign: 'left' }}>
+    <div className="ump-form-width" style={{ padding: '40px 20px 56px', textAlign: 'left' }}>
       <div style={{ fontFamily: F.display, fontSize: 22, color: C.ink, fontWeight: 800, marginBottom: 24, textAlign: 'center' }}>
         {heading}
       </div>

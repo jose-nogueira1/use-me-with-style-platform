@@ -77,7 +77,20 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
         @media (min-width: 1400px) { .ump-content-width { max-width: 1600px; } }
         @media (min-width: 1800px) { .ump-content-width { max-width: 1900px; } }
 
-        .ump-narrow { max-width: 480px; margin: 0 auto; }
+        /* Form/reading-width pages (Cart, Checkout, About, Help, order
+           lookup/confirmation, Privacy Policy, Terms, 404) -- added
+           2026-07-24 per the responsive audit. These pages all used
+           .ump-narrow directly, which never widens past 480px at any
+           breakpoint (unlike .ump-shell/.ump-content-width above), so on a
+           real desktop monitor each one rendered as a narrow column pinned
+           to the left with roughly two-thirds of the screen empty --
+           especially noticeable on Checkout, the page most likely to be
+           open on a customer's desktop right before they pay. This isn't
+           meant to be a full bespoke desktop layout like Home/Browse/Product
+           Detail (Figma's inventory doesn't design desktop versions of these
+           screens) -- just enough width to stop the page looking abandoned. */
+        .ump-form-width { max-width: 480px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+        @media (min-width: 860px) { .ump-form-width { max-width: 640px; } }
 
         /* Header: mobile shows the same utility cluster (region + theme +
            cart) as desktop -- only the text nav links are desktop-only.
@@ -197,6 +210,21 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
         .ump-admin-sidebar { width: 220px; flex-shrink: 0; display: flex; flex-direction: column; }
         .ump-admin-groups { display: flex; flex-direction: column; }
         .ump-admin-user-block { margin-top: auto; }
+        /* Sticky sidebar (added 2026-07-24, responsive audit): without this,
+           the sidebar is just a normal flex child that scrolls away with the
+           rest of the page -- on any admin screen taller than one viewport
+           (Settings, ProductEditor, OrderDetail all commonly are), scrolling
+           down to read/edit content also scrolls the primary nav
+           (Dashboard/Orders/Products/Settings) out of view, so getting back
+           to another section means scrolling all the way back to the top
+           first. Gated to desktop widths only (mobile's horizontal top bar
+           has no equivalent problem -- it's already short and always at the
+           very top of the page). overflow-y: auto lets the sidebar scroll
+           independently on the rare case its own content (many nav items)
+           exceeds the viewport height, instead of clipping. */
+        @media (min-width: 861px) {
+          .ump-admin-sidebar { position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+        }
         @media (max-width: 860px) {
           .ump-admin-shell { flex-direction: column; }
           .ump-admin-sidebar { width: 100%; flex-direction: row; align-items: center; overflow-x: auto; padding: 10px 12px; }

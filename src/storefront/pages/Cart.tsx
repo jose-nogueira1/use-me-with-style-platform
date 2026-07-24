@@ -14,7 +14,7 @@ export function Cart() {
 
   if (cart.length === 0) {
     return (
-      <div className="ump-narrow" style={{ padding: '60px 30px', textAlign: 'center' }}>
+      <div className="ump-form-width" style={{ padding: '60px 30px', textAlign: 'center' }}>
         <div style={{ width: 60, height: 60, margin: '0 auto 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 30, background: C.subtleBg }}>
           <ShoppingBag size={28} color={C.goldDeep} />
         </div>
@@ -37,7 +37,7 @@ export function Cart() {
   }, 0);
 
   return (
-    <div className="ump-narrow" style={{ background: C.paper }}>
+    <div className="ump-form-width" style={{ background: C.paper }}>
       <div style={{ padding: '20px 20px 12px' }}>
         <h1 style={{ fontFamily: F.display, fontSize: 24, color: C.ink, fontWeight: 800, margin: 0 }}>{t('cart', lang)}</h1>
         <div style={{ fontSize: 11, color: C.inkSoft, marginTop: 2 }}>

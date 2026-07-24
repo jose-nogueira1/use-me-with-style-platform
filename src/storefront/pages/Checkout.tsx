@@ -646,7 +646,7 @@ export function Checkout() {
   };
 
   return (
-    <div className="ump-narrow" style={{ background: C.paper, paddingBottom: 40 }}>
+    <div className="ump-form-width" style={{ background: C.paper, paddingBottom: 40 }}>
       <div style={{ padding: '20px 20px 12px' }}>
         <h1 style={{ fontFamily: F.display, fontSize: 24, color: C.ink, fontWeight: 800, margin: '0 0 4px' }}>{t('checkout', lang)}</h1>
         {/* Market is fixed by the site the buyer is on (ao./pt. subdomain) --

@@ -21,7 +21,7 @@ export function NotFound() {
       };
 
   return (
-    <main className="ump-narrow" style={{ padding: '72px 20px', textAlign: 'center' }}>
+    <main className="ump-form-width" style={{ padding: '72px 20px', textAlign: 'center' }}>
       <div style={{ color: C.goldDeep, fontSize: 11, fontWeight: 800, letterSpacing: 2, textTransform: 'uppercase' }}>
         {copy.eyebrow}
       </div>

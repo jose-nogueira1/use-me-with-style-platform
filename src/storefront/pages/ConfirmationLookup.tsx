@@ -94,7 +94,7 @@ export function ConfirmationLookup() {
         </div>
       )}
 
-      <div className="ump-narrow" style={{ padding: '32px 20px' }}>
+      <div className="ump-form-width" style={{ padding: '32px 20px' }}>
         {activeStatusIdx >= 0 && (
           <div style={{ marginBottom: 32 }}>
             <div style={{ fontSize: 10, letterSpacing: 1, color: C.goldDeep, fontWeight: 800, textTransform: 'uppercase', marginBottom: 14 }}>{t('orderStatus', lang)}</div>

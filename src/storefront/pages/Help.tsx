@@ -153,7 +153,7 @@ export function Help() {
       : pickBilingual(settings?.portugalReturnsPolicyTextPT, settings?.portugalReturnsPolicyTextEN, lang);
 
   return (
-    <div className="ump-narrow" style={{ padding: '40px 20px', textAlign: 'center' }}>
+    <div className="ump-form-width" style={{ padding: '40px 20px', textAlign: 'center' }}>
       <div style={{ fontFamily: F.display, fontSize: 22, color: C.ink, fontWeight: 800, marginBottom: 10 }}>{t('needAHand', lang)}</div>
       <div style={{ fontSize: 13, color: C.inkSoft, lineHeight: 1.6, marginBottom: 20 }}>
         {t('helpBody', lang)}

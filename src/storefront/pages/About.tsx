@@ -21,7 +21,7 @@ export function About() {
   return (
     <div>
       <div style={{ background: C.heroBg, color: C.heroText, padding: '40px 0 32px' }}>
-        <div className="ump-content-width ump-narrow" style={{ padding: '0 20px' }}>
+        <div className="ump-form-width" style={{ padding: '0 20px' }}>
           <div style={{ fontSize: 10, letterSpacing: 3, color: C.heroAccent, fontWeight: 800, textTransform: 'uppercase', marginBottom: 14 }}>
             Use Me With Style
           </div>
@@ -32,7 +32,7 @@ export function About() {
         </div>
       </div>
 
-      <div className="ump-content-width ump-narrow" style={{ padding: '32px 20px' }}>
+      <div className="ump-form-width" style={{ padding: '32px 20px' }}>
         <div style={{ fontSize: 10, letterSpacing: 2, color: C.goldDeep, fontWeight: 800, textTransform: 'uppercase', marginBottom: 10, textAlign: 'center' }}>
           {t('aboutMissionTitle', lang)}
         </div>
