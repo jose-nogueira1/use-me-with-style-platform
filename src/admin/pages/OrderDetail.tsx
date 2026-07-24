@@ -215,7 +215,7 @@ export function OrderDetail() {
       </div>
 
       <div style={{ padding: '18px 28px 0', display: 'grid', gridTemplateColumns: '1fr 300px', gap: 16, alignItems: 'flex-start' }} className="ump-admin-orders-grid">
-        <div style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 16 }}>
+        <div style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 16, minWidth: 0 }}>
           <div style={{ fontSize: 10, fontWeight: 800, color: C.goldDeep, marginBottom: 10 }}>Items ordered</div>
           {order.items.map((item, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '10px 0', borderTop: i > 0 ? `1px solid ${C.ruleLight}` : 'none' }}>
@@ -235,7 +235,7 @@ export function OrderDetail() {
           ))}
         </div>
 
-        <div style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 16 }}>
+        <div style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 16, minWidth: 0 }}>
           <div style={{ fontSize: 10, fontWeight: 800, color: C.goldDeep, marginBottom: 8 }}>Payment and delivery</div>
           <div style={{ fontFamily: F.display, fontSize: 17, fontWeight: 800, color: C.ink, marginBottom: 14, lineHeight: 1.3 }}>
             {order.status === 'payment_review' ? 'Manual confirmation needed' : 'Confirmed'}

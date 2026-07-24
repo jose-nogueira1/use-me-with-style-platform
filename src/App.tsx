@@ -306,6 +306,23 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
         @media (min-width: 861px) {
           .ump-admin-sidebar { position: sticky; top: 0; height: 100vh; overflow-y: auto; }
         }
+        /* "More" dropdown toggle for the secondary nav group (Customers,
+           Messages, Invoices, Media): a normal inline list on desktop, a
+           single toggle button + dropdown panel on mobile. Added
+           2026-07-24 (admin responsive audit, Finding 1).
+           The panel is positioned via inline style (position: fixed, with
+           top/left computed from the toggle button's own on-screen rect in
+           AdminLayout.tsx) rather than CSS anchoring -- the mobile sidebar
+           has overflow-x: auto, which per the CSS spec silently forces its
+           other axis (overflow-y) to 'auto' too as soon as one axis is
+           non-visible, so a plain position: absolute panel nested inside
+           it was getting clipped to the bar's own height instead of
+           floating over the page content below. position: fixed escapes
+           that clipping entirely, since its containing block is the
+           viewport, not the scrolling sidebar. */
+
+        .ump-admin-more-toggle { display: none; }
+        .ump-admin-more-panel { z-index: 40; min-width: 190px; }
         @media (max-width: 860px) {
           .ump-admin-shell { flex-direction: column; }
           .ump-admin-sidebar { width: 100%; flex-direction: row; align-items: center; overflow-x: auto; padding: 10px 12px; }
@@ -313,6 +330,8 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
           .ump-admin-group-label { display: none; }
           .ump-admin-user-block { display: none; }
           .ump-admin-nav-item { border-left: none !important; border-bottom: 3px solid transparent; white-space: nowrap; }
+          .ump-admin-secondary-list { display: none !important; }
+          .ump-admin-more-toggle { display: inline-flex !important; }
         }
         .ump-admin-table-wrap { overflow-x: auto; }
         @media (max-width: 860px) { .ump-admin-table-wrap > * { min-width: 640px; } }
@@ -333,11 +352,19 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
         /* Admin two/three-column card grids (dashboard, orders + side panel,
            settings cards, product editor fields): stack to one column below
            the point where columns would get too cramped to read. */
+        /* minmax(0, 1fr), not bare 1fr: a plain 1fr track's minimum size
+           defaults to its content's min-content width, not 0 -- so a single
+           stacked column can still refuse to shrink below whatever its
+           widest child needs (a <select>, an unbroken label, a nested grid)
+           and overflow the page at narrow widths instead of wrapping/
+           shrinking. Verified overflowing by 8px at 320px on ProductEditor
+           before this fix (admin responsive audit, Finding 2, 2026-07-24).
+           minmax(0, 1fr) removes that implicit floor. */
         @media (max-width: 1000px) {
-          .ump-admin-dashboard-grid, .ump-admin-orders-grid { grid-template-columns: 1fr !important; }
+          .ump-admin-dashboard-grid, .ump-admin-orders-grid { grid-template-columns: minmax(0, 1fr) !important; }
         }
         @media (max-width: 640px) {
-          .ump-admin-fields-grid { grid-template-columns: 1fr !important; }
+          .ump-admin-fields-grid { grid-template-columns: minmax(0, 1fr) !important; }
         }
 
         .ump-mensagens-shell { display: flex; height: 100vh; }

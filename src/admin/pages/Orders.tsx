@@ -75,7 +75,7 @@ export function Orders() {
 
       {orders && orders.length > 0 && (
         <div style={{ padding: '16px 28px 0', display: 'grid', gridTemplateColumns: '1fr 320px', gap: 16, alignItems: 'flex-start' }} className="ump-admin-orders-grid">
-          <div className="ump-admin-table-wrap">
+          <div className="ump-admin-table-wrap" style={{ minWidth: 0 }}>
             <div style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, overflow: 'hidden' }}>
               <TableRow header cells={['Order', 'Customer', 'Market', 'Payment', 'Delivery', 'Status', 'Total']} />
               {orders.map((o) => (
@@ -97,7 +97,7 @@ export function Orders() {
           </div>
 
           {selected && (
-            <div style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 18 }}>
+            <div style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 18, minWidth: 0 }}>
               <div style={{ fontSize: 10, fontWeight: 800, color: C.goldDeep, marginBottom: 8 }}>Selected order</div>
               <div style={{ fontSize: 20, fontWeight: 800, color: C.ink, marginBottom: 14, lineHeight: 1.3 }}>
                 #{selected.orderNumber} {statusBadgeProps(selected.status).label.toLowerCase()}

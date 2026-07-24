@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { C } from '../theme';
 import { useAdminAuth } from './AdminAuthContext';
@@ -26,6 +26,17 @@ export function AdminLayout() {
   const location = useLocation();
   const [ordersCount, setOrdersCount] = useState<number | null>(null);
   const [productsCount, setProductsCount] = useState<number | null>(null);
+  // Mobile-only "More" dropdown for the secondary nav group (Customers,
+  // Messages, Invoices, Media) -- added 2026-07-24 (admin responsive audit,
+  // Finding 1). Below 861px the sidebar becomes a horizontal scrolling bar;
+  // with all 8 primary + secondary items inline it only had room to show
+  // 2 items before getting cut off, with no visual hint that the rest was
+  // reachable by scrolling sideways. Collapsing the secondary group behind
+  // a single toggle means the bar only ever needs to fit 5 items.
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [panelPos, setPanelPos] = useState<{ top: number; left: number } | null>(null);
+  const secondaryRef = useRef<HTMLDivElement>(null);
+  const moreToggleRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -36,6 +47,19 @@ export function AdminLayout() {
       .then((rows) => setProductsCount(rows.length))
       .catch(() => setProductsCount(null));
   }, [user]);
+
+  // Close on any click/tap outside the dropdown -- standard menu behaviour,
+  // since there's no overlay backdrop to catch outside taps here.
+  useEffect(() => {
+    if (!moreOpen) return;
+    const handlePointerDown = (event: MouseEvent) => {
+      if (secondaryRef.current && !secondaryRef.current.contains(event.target as Node)) {
+        setMoreOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handlePointerDown);
+    return () => document.removeEventListener('mousedown', handlePointerDown);
+  }, [moreOpen]);
 
   if (loading) {
     return <div style={{ minHeight: '100vh', background: C.black }} />;
@@ -51,6 +75,7 @@ export function AdminLayout() {
     { to: '/admin/produtos', label: 'Products', badge: productsCount },
     { to: '/admin/definicoes', label: 'Settings', badge: undefined },
   ];
+  const secondaryActive = SECONDARY_NAV.some((item) => location.pathname.startsWith(item.to));
 
   return (
     <div className="ump-admin-shell" style={{ background: C.subtleBg }}>
@@ -66,13 +91,69 @@ export function AdminLayout() {
           ))}
         </div>
 
-        <div className="ump-admin-groups" style={{ gap: 6, marginBottom: 'auto' }}>
+        <div ref={secondaryRef} className="ump-admin-groups ump-admin-secondary-wrap" style={{ gap: 6, marginBottom: 'auto', position: 'relative' }}>
           <div className="ump-admin-group-label" style={{ fontSize: 9, letterSpacing: 1.5, color: '#6C6656', textTransform: 'uppercase', padding: '4px 11px 2px' }}>
             More
           </div>
-          {SECONDARY_NAV.map((item) => (
-            <NavItem key={item.to} to={item.to} label={item.label} />
-          ))}
+          <div className="ump-admin-secondary-list" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {SECONDARY_NAV.map((item) => (
+              <NavItem key={item.to} to={item.to} label={item.label} />
+            ))}
+          </div>
+          <button
+            ref={moreToggleRef}
+            type="button"
+            className="ump-admin-nav-item ump-admin-more-toggle"
+            onClick={() => {
+              // The panel is position: fixed (see note below), positioned
+              // from the toggle's own on-screen rect rather than CSS anchoring,
+              // so it has to be recomputed each time the menu opens.
+              const rect = moreToggleRef.current?.getBoundingClientRect();
+              if (rect) setPanelPos({ top: rect.bottom + 6, left: rect.left });
+              setMoreOpen((open) => !open);
+            }}
+            aria-expanded={moreOpen}
+            aria-haspopup="true"
+            style={{
+              alignItems: 'center',
+              gap: 6,
+              padding: '13px 11px',
+              borderRadius: 6,
+              fontSize: 11,
+              fontWeight: 800,
+              color: secondaryActive ? C.onDarkGold : '#BEB8AE',
+              background: secondaryActive ? '#221C12' : 'transparent',
+              border: `1px solid ${secondaryActive ? '#765E24' : 'transparent'}`,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            More
+            <span aria-hidden="true" style={{ fontSize: 9, display: 'inline-block', transform: moreOpen ? 'rotate(180deg)' : 'none', transition: 'transform 120ms' }}>
+              ▾
+            </span>
+          </button>
+          {moreOpen && panelPos && (
+            <div
+              className="ump-admin-more-panel"
+              style={{
+                position: 'fixed',
+                top: panelPos.top,
+                left: panelPos.left,
+                background: '#15120C',
+                border: '1px solid #3B332A',
+                borderRadius: 8,
+                padding: 6,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 2,
+                boxShadow: '0 12px 28px rgba(0,0,0,0.45)',
+              }}
+            >
+              {SECONDARY_NAV.map((item) => (
+                <NavItem key={item.to} to={item.to} label={item.label} onClick={() => setMoreOpen(false)} />
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="ump-admin-user-block">
@@ -106,12 +187,13 @@ export function AdminLayout() {
   );
 }
 
-function NavItem({ to, label, end, badge }: { to: string; label: string; end?: boolean; badge?: number | null }) {
+function NavItem({ to, label, end, badge, onClick }: { to: string; label: string; end?: boolean; badge?: number | null; onClick?: () => void }) {
   const location = useLocation();
   const active = end ? location.pathname === to : location.pathname.startsWith(to);
   return (
     <Link
       to={to}
+      onClick={onClick}
       className="ump-admin-nav-item"
       style={{
         display: 'flex',

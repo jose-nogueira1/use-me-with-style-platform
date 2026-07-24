@@ -135,7 +135,7 @@ export function Dashboard() {
       </div>
 
       <div style={{ padding: '20px 28px 0', display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }} className="ump-admin-dashboard-grid">
-        <div style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 18 }}>
+        <div style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 18, minWidth: 0 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>
             <div style={{ fontFamily: F.display, fontSize: 19, fontWeight: 800, color: C.ink }}>Attention queue</div>
             <div style={{ fontSize: 10, fontWeight: 800, color: C.inkSoft }}>Next best actions</div>
@@ -157,7 +157,7 @@ export function Dashboard() {
           ))}
         </div>
 
-        <div style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 18 }}>
+        <div style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 18, minWidth: 0 }}>
           <div style={{ fontFamily: F.display, fontSize: 19, fontWeight: 800, color: C.ink, marginBottom: 14 }}>Recent orders</div>
           {recentOrders.map((o, i) => {
             const b = statusBadgeProps(o.status);
@@ -181,7 +181,7 @@ export function Dashboard() {
       </div>
 
       <div style={{ padding: '16px 28px 0', display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: 16 }} className="ump-admin-dashboard-grid">
-        <div style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 18 }}>
+        <div style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 18, minWidth: 0 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
             <div style={{ fontFamily: F.display, fontSize: 19, fontWeight: 800, color: C.ink }}>Revenue trend</div>
             <div style={{ fontSize: 10, fontWeight: 800, color: C.inkSoft }}>Last 7 days</div>
@@ -196,7 +196,7 @@ export function Dashboard() {
           </div>
         </div>
 
-        <div style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 18 }}>
+        <div style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 18, minWidth: 0 }}>
           <div style={{ fontFamily: F.display, fontSize: 19, fontWeight: 800, color: C.ink, marginBottom: 6 }}>Market setup</div>
           <SetupRow title="Portugal payments" detail="PayPal, Stripe, MBWay placeholders ready." badge="Ready" tone="green" />
           <SetupRow title="Angola payments" detail="Appy Pay team response pending." badge="Open" tone="gold" />
