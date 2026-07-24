@@ -6,6 +6,7 @@ import { useAdminAuth } from './AdminAuthContext';
 import { adminListOrders, adminListProducts } from '../lib/api';
 import wordmarkGold from '../assets/brand/wordmark-gold.png';
 import { AdminLanguageSwitch } from './AdminTranslation';
+import { NotificationsButton, SearchButton } from './components/PageHeader';
 
 // Sidebar matches the Figma admin design system exactly: only four
 // persistent nav items (Dashboard, Orders, Products, Settings) appear in
@@ -77,20 +78,28 @@ export function AdminLayout() {
 
   return (
     <div className="ump-admin-shell" style={{ background: C.subtleBg }}>
-      {/* Mobile-only top bar (<=860px): logo + hamburger trigger. Sits in
-          normal document flow, replacing the old horizontal nav bar. Hidden
-          entirely on desktop, where the sidebar below is the real nav. */}
+      {/* Mobile-only top bar (<=860px): logo, search + notifications, and
+          the hamburger trigger. Sits in normal document flow, replacing the
+          old horizontal nav bar. Hidden entirely on desktop, where the
+          sidebar below is the real nav and search/notifications live in
+          each page's own PageHeader instead (2026-07-25, user request:
+          these are global actions, so on mobile they belong in the
+          persistent navbar rather than repeated at the top of every page). */}
       <div className="ump-admin-mobile-bar" style={{ background: C.black }}>
         <img src={wordmarkGold} alt="Use Me With Style" style={{ height: 30, width: 'auto' }} />
-        <button
-          type="button"
-          onClick={() => setNavOpen(true)}
-          aria-label="Open menu"
-          aria-expanded={navOpen}
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 38, height: 38, borderRadius: 8, border: '1px solid #3B332A', color: C.onDarkGold, background: 'transparent' }}
-        >
-          <Menu size={18} />
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <SearchButton />
+          <NotificationsButton />
+          <button
+            type="button"
+            onClick={() => setNavOpen(true)}
+            aria-label="Open menu"
+            aria-expanded={navOpen}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 42, height: 42, borderRadius: 6, border: `1px solid ${C.rule}`, color: C.ink, background: C.paper }}
+          >
+            <Menu size={15} />
+          </button>
+        </div>
       </div>
 
       {/* Backdrop: mobile only, shown behind the open drawer, closes it on tap. */}

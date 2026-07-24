@@ -327,6 +327,11 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
         @media (max-width: 860px) {
           .ump-admin-shell { flex-direction: column; }
           .ump-admin-mobile-bar { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; position: sticky; top: 0; z-index: 20; }
+          /* Search/notifications move into .ump-admin-mobile-bar above on
+             mobile (AdminLayout.tsx), so PageHeader's own copies (desktop:
+             top-right of every page) are redundant here -- hide them,
+             keeping just the page-specific CTA button visible. */
+          .ump-admin-header-actions { display: none !important; }
           .ump-admin-nav-backdrop { display: block; position: fixed; inset: 0; background: rgba(11, 10, 8, 0.55); z-index: 45; }
           .ump-admin-drawer-close { display: flex !important; }
           .ump-admin-sidebar {

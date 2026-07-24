@@ -54,8 +54,15 @@ export function PageHeader({
         <div style={{ fontSize: 12, color: C.inkSoft, marginTop: 8 }}>{subtitle}</div>
       </div>
       <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-        <SearchButton />
-        <NotificationsButton />
+        {/* Hidden on mobile (<=860px, see App.tsx) -- these two live in the
+            mobile top bar / nav drawer instead (2026-07-25, user request:
+            search and notifications should be in the navbar on mobile, not
+            repeated inside every page's header). The CTA button stays here
+            at every width since it's page-specific, not a global action. */}
+        <div className="ump-admin-header-actions" style={{ display: 'flex', gap: 8 }}>
+          <SearchButton />
+          <NotificationsButton />
+        </div>
         {cta && (
           <button
             onClick={onCta}
@@ -188,7 +195,7 @@ function ResultGroup({ label, children }: { label: string; children: ReactNode }
 // the popover first opens (same up-to-200-rows lists every other admin list
 // page already pulls), then filtered locally on every keystroke. No new
 // backend search endpoint needed at this data scale.
-function SearchButton() {
+export function SearchButton() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -300,7 +307,7 @@ type NotificationItem = { key: string; icon: ReactNode; title: string; subtitle:
 // Products list's "Low stock" filter -- see productIsLowStock), and
 // WhatsApp/Instagram messages awaiting a reply. Fetched on mount (not only
 // on open) so the badge count is visible without having to click first.
-function NotificationsButton() {
+export function NotificationsButton() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [loaded, setLoaded] = useState(false);
