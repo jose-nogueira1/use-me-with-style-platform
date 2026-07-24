@@ -13,6 +13,8 @@ const Checkout = lazy(() => import('./storefront/pages/Checkout').then((m) => ({
 const ConfirmationLookup = lazy(() => import('./storefront/pages/ConfirmationLookup').then((m) => ({ default: m.ConfirmationLookup })));
 const Help = lazy(() => import('./storefront/pages/Help').then((m) => ({ default: m.Help })));
 const About = lazy(() => import('./storefront/pages/About').then((m) => ({ default: m.About })));
+const PrivacyPolicy = lazy(() => import('./storefront/pages/PrivacyPolicy').then((m) => ({ default: m.PrivacyPolicy })));
+const Terms = lazy(() => import('./storefront/pages/Terms').then((m) => ({ default: m.Terms })));
 const AdminRoutes = lazy(() => import('./admin/AdminRoutes').then((m) => ({ default: m.AdminRoutes })));
 const NotFound = lazy(() => import('./storefront/pages/NotFound').then((m) => ({ default: m.NotFound })));
 
@@ -238,6 +240,8 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
               <Route path="conta" element={<ConfirmationLookup />} />
               <Route path="ajuda" element={<Help />} />
               <Route path="sobre" element={<About />} />
+              <Route path="politica-privacidade" element={<PrivacyPolicy />} />
+              <Route path="termos-condicoes" element={<Terms />} />
               <Route path="*" element={<NotFound />} />
             </Route>
             <Route path="admin/*" element={<AdminRoutes />} />

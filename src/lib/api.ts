@@ -183,6 +183,15 @@ export type MarketSettings = {
   internationalShippingTextEN?: string;
 };
 
+/** Privacy Policy + Terms & Conditions (added 2026-07-24). Store-wide, not
+ * per-market -- its own global rather than more MarketSettings fields. */
+export type LegalContent = {
+  privacyPolicyTextPT?: string;
+  privacyPolicyTextEN?: string;
+  termsTextPT?: string;
+  termsTextEN?: string;
+};
+
 export type ApiCustomer = {
   id: string;
   name: string;
@@ -238,6 +247,10 @@ export async function fetchProductBySlug(slug: string, market: 'AO' | 'PT'): Pro
 
 export async function fetchMarketSettings(): Promise<MarketSettings> {
   return request<MarketSettings>('/globals/market-settings');
+}
+
+export async function fetchLegalContent(): Promise<LegalContent> {
+  return request<LegalContent>('/globals/legal-content');
 }
 
 export type ApiInstagramPost = {

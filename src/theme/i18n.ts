@@ -182,6 +182,14 @@ export const T: Record<string, Record<Lang, string>> = {
   },
   businessHoursHeading: { pt: 'Horário de atendimento', en: 'Business hours' },
   shippingHeading: { pt: 'Entregas e envios', en: 'Shipping & delivery' },
+  privacyPolicyNav: { pt: 'Política de Privacidade', en: 'Privacy Policy' },
+  termsNav: { pt: 'Termos e Condições', en: 'Terms & Conditions' },
+  legalPageLoading: { pt: 'A carregar…', en: 'Loading…' },
+  legalPagePending: {
+    pt: 'Este conteúdo está a ser preparado. Contacte-nos no WhatsApp para qualquer questão.',
+    en: 'This content is being prepared. Message us on WhatsApp for any questions.',
+  },
+  complaintsBookLabel: { pt: 'Livro de Reclamações', en: 'Complaints Book' },
   emailUsHeading: { pt: 'Enviar-nos um email', en: 'Send us an email' },
   emailUsBody: {
     pt: 'Prefere email? Escreva-nos abaixo e respondemos assim que possível.',
@@ -273,3 +281,17 @@ export const t = (key: string, lang: Lang, vars?: Record<string, string | number
   if (!vars) return raw;
   return Object.entries(vars).reduce((s, [k, v]) => s.replace(`{${k}}`, String(v)), raw);
 };
+
+// Picks between a PT/EN pair of CMS-provided fields (as opposed to `t`
+// above, which looks up static UI copy from the T dictionary). Prefers the
+// storefront's selected language but falls back to whichever language is
+// actually filled in -- e.g. if an EN field is still empty in the admin --
+// rather than showing nothing. Shared by Help.tsx and the legal pages
+// (originally duplicated in Help.tsx alone; extracted here 2026-07-24 once a
+// third bilingual-CMS-text page needed the same logic).
+export function pickBilingual(pt: string | undefined, en: string | undefined, lang: Lang): string | null {
+  const ptTrimmed = pt?.trim();
+  const enTrimmed = en?.trim();
+  const preferred = lang === 'en' ? enTrimmed : ptTrimmed;
+  return preferred || enTrimmed || ptTrimmed || null;
+}

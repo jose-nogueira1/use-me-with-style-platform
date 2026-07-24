@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { C, F, t, type Lang } from '../../theme';
+import { C, F, t, pickBilingual } from '../../theme';
 import { useApp } from '../../state/AppContext';
 import { fetchMarketSettings, submitContactMessage, type MarketSettings } from '../../lib/api';
 
@@ -14,13 +14,9 @@ import { fetchMarketSettings, submitContactMessage, type MarketSettings } from '
 // bilingual PT/EN -- PT is client-provided copy, EN is our translation of it.
 // Each section picks the field matching the storefront's language toggle,
 // falling back to whichever language is actually filled in (e.g. if an EN
-// field is still empty in the admin) rather than showing nothing.
-function pickBilingual(pt: string | undefined, en: string | undefined, lang: Lang): string | null {
-  const ptTrimmed = pt?.trim();
-  const enTrimmed = en?.trim();
-  const preferred = lang === 'en' ? enTrimmed : ptTrimmed;
-  return preferred || enTrimmed || ptTrimmed || null;
-}
+// field is still empty in the admin) rather than showing nothing. (See
+// pickBilingual in theme/i18n.ts -- extracted there 2026-07-24 once the
+// Privacy Policy / Terms pages needed the same logic.)
 
 // Collapsed-by-default accordion (added 2026-07-24 per feedback -- these
 // three policy blocks were previously always-expanded static text, which

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { MessageCircle } from 'lucide-react';
+import { MessageCircle, FileText } from 'lucide-react';
 import { C, t, type Lang } from '../../theme';
 import { useApp, type Market } from '../../state/AppContext';
 import wordmarkBlack from '../../assets/brand/wordmark-black.png';
@@ -8,10 +8,20 @@ import { clearAnalyticsConsent } from '../../lib/analyticsConsent';
 
 // Site-wide footer, rendered once from StorefrontLayout so it appears on
 // every storefront page -- previously the only "footer" was a two-line
-// tagline baked into Home.tsx alone. Links only point at routes that
-// actually exist in this app (no invented /privacy or /terms pages); the
-// WhatsApp temporarily routes to the developer's number until the client
-// business account is ready for handoff.
+// tagline baked into Home.tsx alone. The WhatsApp temporarily routes to the
+// developer's number until the client business account is ready for
+// handoff.
+//
+// Legal links (added 2026-07-24, user request): Privacy Policy and Terms &
+// Conditions link to real pages now (/politica-privacidade,
+// /termos-condicoes -- see LegalPage.tsx). Portugal additionally requires a
+// visible, highlighted link to the electronic complaints book
+// (livroreclamacoes.pt) for any business selling online -- Decreto-Lei
+// 156/2005, mandatory since 2021, fines up to EUR15,000 for non-compliance.
+// That's a market-specific legal obligation, not a design choice, so it only
+// renders when market === 'PT'. Links to the general portal for now; swap in
+// the business's specific operator URL once registered at
+// livroreclamacoes.pt/Operador/RegistoOperadores.
 const SHOP_LINKS = [
   { to: '/catalogo?cat=new', labelKey: 'newArrivalsNav' },
   { to: '/catalogo?cat=vestidos', labelKey: 'dresses' },
@@ -64,12 +74,17 @@ export function Footer() {
 
         <div className="ump-footer-col">
           <FooterHeading>{t('footerInfoHeading', lang)}</FooterHeading>
-          <Link
-            to="/sobre"
-            style={{ display: 'inline-block', marginBottom: 12, color: C.ink, fontSize: 11, fontWeight: 800, textDecoration: 'none' }}
-          >
-            {t('aboutNav', lang)}
-          </Link>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
+            <Link to="/sobre" style={{ display: 'block', color: C.ink, fontSize: 11, fontWeight: 800, textDecoration: 'none' }}>
+              {t('aboutNav', lang)}
+            </Link>
+            <Link to="/politica-privacidade" style={{ display: 'block', color: C.ink, fontSize: 11, fontWeight: 800, textDecoration: 'none' }}>
+              {t('privacyPolicyNav', lang)}
+            </Link>
+            <Link to="/termos-condicoes" style={{ display: 'block', color: C.ink, fontSize: 11, fontWeight: 800, textDecoration: 'none' }}>
+              {t('termsNav', lang)}
+            </Link>
+          </div>
           <InfoLine label={t('shipping', lang)} value={market === 'AO' ? t('localCourierDelivery', lang) : t('businessDays', lang)} />
           <InfoLine
             label={t('returns', lang)}
@@ -91,6 +106,7 @@ export function Footer() {
         <button onClick={clearAnalyticsConsent} style={{ fontSize: 11, color: C.inkSoft, textDecoration: 'underline' }}>
           {lang === 'pt' ? 'Preferências de cookies' : 'Cookie preferences'}
         </button>
+        {market === 'PT' && <ComplaintsBookLink lang={lang} />}
         <MarketSwitchLink market={market} setMarket={setMarket} lang={lang} />
       </div>
     </footer>
@@ -136,6 +152,36 @@ function MarketSwitchLink({
       <span aria-hidden>{other === 'AO' ? '🇦🇴' : '🇵🇹'}</span>
       <span>{label}</span>
     </button>
+  );
+}
+
+// Portugal's electronic complaints book requirement: "access to the book
+// must be on the seller's website in a visible and highlighted form" -- so
+// this gets the same bordered-badge treatment as the market-switch link
+// next to it, not a plain text link buried in a list.
+function ComplaintsBookLink({ lang }: { lang: Lang }) {
+  return (
+    <a
+      href="https://www.livroreclamacoes.pt/Inicio/"
+      target="_blank"
+      rel="noopener noreferrer"
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 6,
+        padding: '6px 10px',
+        borderRadius: 8,
+        background: C.paper,
+        border: `1px solid ${C.rule}`,
+        color: C.ink,
+        fontSize: 11,
+        fontWeight: 800,
+        textDecoration: 'none',
+      }}
+    >
+      <FileText size={13} color={C.goldDeep} />
+      <span>{t('complaintsBookLabel', lang)}</span>
+    </a>
   );
 }
 
