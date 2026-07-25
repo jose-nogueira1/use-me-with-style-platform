@@ -68,6 +68,42 @@ export type ApiProductImageRef =
       };
     };
 
+// ---------------------------------------------------------------------------
+// Catalogue taxonomies (2026-07-25): categories, merchandising tags, and
+// colours are admin-managed collections instead of hardcoded enums/free text.
+// Like media above, each relationship is a plain id at depth 0 and a
+// populated doc at depth >= 1; storefront/admin product calls use depth=1.
+// ---------------------------------------------------------------------------
+export type ApiCategory = {
+  id: string | number;
+  namePT: string;
+  nameEN?: string | null;
+  slug?: string | null;
+};
+
+export type ApiMerchTag = {
+  id: string | number;
+  labelPT: string;
+  labelEN?: string | null;
+};
+
+export type ApiColor = {
+  id: string | number;
+  name: string;
+  hex?: string | null;
+  swatch?: string | number | { url?: string } | null;
+};
+
+export type ApiCategoryRef = string | number | ApiCategory;
+export type ApiMerchTagRef = string | number | ApiMerchTag;
+export type ApiColorRef = string | number | ApiColor;
+
+/** Safely reads the populated doc off a relationship ref (id-only at depth
+ * 0), mirroring resolveProductImage below. */
+export function resolveRef<T extends object>(ref: T | string | number | null | undefined): T | null {
+  return ref && typeof ref === 'object' ? ref : null;
+}
+
 export type ApiProduct = {
   // Payload returns numeric IDs with the local SQLite adapter and string IDs
   // with PostgreSQL. Treat both as valid so admin routes work in every env.
@@ -76,15 +112,15 @@ export type ApiProduct = {
   namePT?: string;
   nameEN?: string;
   slug: string;
-  category: 'vestidos' | 'tops' | 'leggings' | 'conjuntos';
+  category: ApiCategoryRef;
   description?: string;
   descriptionPT?: string;
   descriptionEN?: string;
   sizeGuidePT?: string;
   sizeGuideEN?: string;
-  tag?: string;
+  tag?: ApiMerchTagRef | null;
   images?: { image: ApiProductImageRef }[];
-  colors: { color: string }[];
+  colors?: ApiColorRef[] | null;
   priceAOKz: number;
   pricePTEur: number;
   sizes: { size: string; stockAO: number; stockPT: number }[];
@@ -331,18 +367,28 @@ function availabilityField(market: 'AO' | 'PT'): 'availableAO' | 'availablePT' {
   return market === 'AO' ? 'availableAO' : 'availablePT';
 }
 
+// depth=2 (was 1 before the 2026-07-25 taxonomy change): colour SWATCH
+// images live one relationship deeper than the colour doc itself
+// (product -> color -> media), so depth 1 would leave swatchUrl empty.
 export async function fetchProducts(market: 'AO' | 'PT'): Promise<ApiProduct[]> {
   const data = await request<{ docs: ApiProduct[] }>(
-    `/products?where[active][equals]=true&where[${availabilityField(market)}][equals]=true&limit=100&depth=1`,
+    `/products?where[active][equals]=true&where[${availabilityField(market)}][equals]=true&limit=100&depth=2`,
   );
   return data.docs;
 }
 
 export async function fetchProductBySlug(slug: string, market: 'AO' | 'PT'): Promise<ApiProduct | null> {
   const data = await request<{ docs: ApiProduct[] }>(
-    `/products?where[slug][equals]=${encodeURIComponent(slug)}&where[${availabilityField(market)}][equals]=true&limit=1&depth=1`,
+    `/products?where[slug][equals]=${encodeURIComponent(slug)}&where[${availabilityField(market)}][equals]=true&limit=1&depth=2`,
   );
   return data.docs[0] ?? null;
+}
+
+/** Public: categories for the Browse filter pills/sidebar. Sorted by
+ * creation so the original four keep their familiar order. */
+export async function fetchCategories(): Promise<ApiCategory[]> {
+  const data = await request<{ docs: ApiCategory[] }>('/categories?limit=100&sort=createdAt');
+  return data.docs;
 }
 
 export async function fetchMarketSettings(): Promise<MarketSettings> {
@@ -531,8 +577,55 @@ export async function adminSendMessage(input: {
   return data.doc;
 }
 
+// ---------------------------------------------------------------------------
+// Admin: catalogue taxonomies (2026-07-25). List + create for each, so the
+// ProductEditor can offer "add new" inline instead of hardcoded options.
+// ---------------------------------------------------------------------------
+export async function adminListCategories(): Promise<ApiCategory[]> {
+  const data = await request<{ docs: ApiCategory[] }>('/categories?limit=100&sort=createdAt', {}, { auth: true });
+  return data.docs;
+}
+
+export async function adminCreateCategory(input: { namePT: string; nameEN?: string }): Promise<ApiCategory> {
+  const data = await request<{ doc: ApiCategory }>(
+    '/categories',
+    { method: 'POST', body: JSON.stringify(input) },
+    { auth: true },
+  );
+  return data.doc;
+}
+
+export async function adminListMerchTags(): Promise<ApiMerchTag[]> {
+  const data = await request<{ docs: ApiMerchTag[] }>('/merch-tags?limit=100&sort=createdAt', {}, { auth: true });
+  return data.docs;
+}
+
+export async function adminCreateMerchTag(input: { labelPT: string; labelEN?: string }): Promise<ApiMerchTag> {
+  const data = await request<{ doc: ApiMerchTag }>(
+    '/merch-tags',
+    { method: 'POST', body: JSON.stringify(input) },
+    { auth: true },
+  );
+  return data.doc;
+}
+
+export async function adminListColors(): Promise<ApiColor[]> {
+  const data = await request<{ docs: ApiColor[] }>('/colors?limit=200&sort=name', {}, { auth: true });
+  return data.docs;
+}
+
+export async function adminCreateColor(input: { name: string; hex?: string }): Promise<ApiColor> {
+  const data = await request<{ doc: ApiColor }>(
+    '/colors',
+    { method: 'POST', body: JSON.stringify(input) },
+    { auth: true },
+  );
+  return data.doc;
+}
+
 export async function adminListProducts(): Promise<ApiProduct[]> {
-  const data = await request<{ docs: ApiProduct[] }>('/products?limit=200&depth=1', {}, { auth: true });
+  // depth=2 for the same swatch-population reason as fetchProducts above.
+  const data = await request<{ docs: ApiProduct[] }>('/products?limit=200&depth=2', {}, { auth: true });
   return data.docs;
 }
 

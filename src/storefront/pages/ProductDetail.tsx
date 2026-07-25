@@ -8,7 +8,8 @@ import { ProductPhoto } from '../../components/ProductPhoto';
 import { ProductCard } from '../components/ProductCard';
 import { trackMetaEvent } from '../../lib/metaAnalytics';
 
-const CAT_LABEL_KEY: Record<string, string> = { vestidos: 'dresses', tops: 'tops', leggings: 'leggings', conjuntos: 'sets' };
+// Category display names now come from the CMS categories collection (via
+// product.catLabel) instead of a hardcoded slug->i18n-key map (2026-07-25).
 
 export function ProductDetail() {
   const { slug } = useParams<{ slug: string }>();
@@ -51,7 +52,8 @@ export function ProductDetail() {
   }
 
   const activeSize = size ?? product.sizes[Math.floor(product.sizes.length / 2)];
-  const activeColor = color ?? product.colors[0];
+  // Colours are taxonomy entries now; the cart still stores the NAME string.
+  const activeColor = color ?? product.colors[0]?.name;
   const stockForSize = product.stock[activeSize] ?? 10;
   const isLowStock = stockForSize > 0 && stockForSize <= 3;
   const isOutOfStock = stockForSize === 0;
@@ -106,7 +108,7 @@ export function ProductDetail() {
 
         <div style={{ padding: '20px 24px' }}>
           <div style={{ fontSize: 9, letterSpacing: 2, color: C.goldDeep, fontWeight: 800, textTransform: 'uppercase' }}>
-            {t(CAT_LABEL_KEY[product.cat] ?? 'sets', lang)}
+            {product.catLabel || product.cat}
           </div>
           <h1 style={{ fontFamily: F.display, fontSize: 26, color: C.ink, margin: '4px 0 0', fontWeight: 800 }}>{product.name}</h1>
           <div style={{ marginTop: 8 }}>
@@ -167,20 +169,36 @@ export function ProductDetail() {
             <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
               {product.colors.map((co) => (
                 <button
-                  key={co}
-                  onClick={() => setColor(co)}
-                  aria-pressed={activeColor === co}
+                  key={co.name}
+                  onClick={() => setColor(co.name)}
+                  aria-pressed={activeColor === co.name}
                   style={{
                     padding: '6px 12px',
                     fontSize: 11,
                     borderRadius: 20,
-                    border: `1.5px solid ${activeColor === co ? C.gold : C.rule}`,
-                    background: activeColor === co ? C.tagBg : C.paper,
-                    color: activeColor === co ? C.goldDeep : C.ink,
-                    fontWeight: activeColor === co ? 700 : 500,
+                    border: `1.5px solid ${activeColor === co.name ? C.gold : C.rule}`,
+                    background: activeColor === co.name ? C.tagBg : C.paper,
+                    color: activeColor === co.name ? C.goldDeep : C.ink,
+                    fontWeight: activeColor === co.name ? 700 : 500,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
                   }}
                 >
-                  {co}
+                  {(co.swatchUrl || co.hex) && (
+                    <span
+                      aria-hidden
+                      style={{
+                        width: 13,
+                        height: 13,
+                        borderRadius: '50%',
+                        flexShrink: 0,
+                        border: `1px solid ${C.rule}`,
+                        background: co.swatchUrl ? `center / cover url(${co.swatchUrl})` : co.hex,
+                      }}
+                    />
+                  )}
+                  {co.name}
                 </button>
               ))}
             </div>

@@ -1,5 +1,5 @@
-import type { ApiProduct } from './api';
-import type { Product } from '../types/product';
+import { resolveRef, type ApiProduct } from './api';
+import type { Product, ProductColor } from '../types/product';
 import { TONE_CYCLE } from '../components/ProductPhoto';
 import { publicEnv } from '../config/env';
 
@@ -27,19 +27,37 @@ export function adaptApiProduct(api: ApiProduct, market: 'AO' | 'PT', lang: 'pt'
     }];
   });
 
+  // Taxonomies became relationships on 2026-07-25; every product call uses
+  // depth=1, so these refs are populated docs. The unpopulated (id-only)
+  // shape is still tolerated -- it just falls back to blank/empty rather
+  // than crashing.
+  const category = resolveRef(api.category);
+  const tag = resolveRef(api.tag);
+  const colors: ProductColor[] = (api.colors ?? []).flatMap((ref) => {
+    const doc = resolveRef(ref);
+    if (!doc) return [];
+    const swatch = resolveRef(doc.swatch);
+    return [{
+      name: doc.name,
+      hex: doc.hex ?? undefined,
+      swatchUrl: absoluteMediaUrl(swatch?.url),
+    }];
+  });
+
   return {
     id: String(api.id),
     name: localizedName,
     slug: api.slug,
-    cat: api.category,
+    cat: category?.slug ?? '',
+    catLabel: (lang === 'en' ? category?.nameEN : category?.namePT)?.trim() || category?.namePT || '',
     priceKz: api.priceAOKz,
     priceEur: api.pricePTEur,
     sizes: api.sizes.map((s) => s.size),
     stock: Object.fromEntries(
       api.sizes.map((s) => [s.size, market === 'AO' ? s.stockAO : s.stockPT]),
     ),
-    colors: api.colors.map((c) => c.color),
-    tag: api.tag,
+    colors,
+    tag: tag ? ((lang === 'en' ? tag.labelEN : tag.labelPT)?.trim() || tag.labelPT) : undefined,
     description: localizedDescription,
     images,
     tone: TONE_CYCLE[index % TONE_CYCLE.length],

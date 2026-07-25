@@ -1,17 +1,21 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Filter, Search, X } from 'lucide-react';
 import { C, t } from '../../theme';
 import { useApp } from '../../state/AppContext';
 import { useProducts } from '../../hooks/useProducts';
 import { ProductCard } from '../components/ProductCard';
+import { fetchCategories, type ApiCategory } from '../../lib/api';
 
-const CATS = [
-  { key: 'all', labelKey: 'all' },
-  { key: 'vestidos', labelKey: 'dresses' },
-  { key: 'tops', labelKey: 'tops' },
-  { key: 'leggings', labelKey: 'leggings' },
-  { key: 'conjuntos', labelKey: 'sets' },
+// Categories became admin-managed CMS data on 2026-07-25 (previously a
+// hardcoded enum), so the pills/sidebar are built from the API. This
+// fallback covers only the brief moment before the fetch resolves (and an
+// unreachable CMS, where the catalogue is empty anyway).
+const FALLBACK_CATS: ApiCategory[] = [
+  { id: 'vestidos', namePT: 'Vestidos', nameEN: 'Dresses', slug: 'vestidos' },
+  { id: 'tops', namePT: 'Tops', nameEN: 'Tops', slug: 'tops' },
+  { id: 'leggings', namePT: 'Leggings', nameEN: 'Leggings', slug: 'leggings' },
+  { id: 'conjuntos', namePT: 'Conjuntos', nameEN: 'Sets', slug: 'conjuntos' },
 ];
 
 export function Browse() {
@@ -19,6 +23,31 @@ export function Browse() {
   const { products, loading } = useProducts(market, lang);
   const [searchParams] = useSearchParams();
   const initialCat = searchParams.get('cat') || 'all';
+
+  const [categories, setCategories] = useState<ApiCategory[]>(FALLBACK_CATS);
+  useEffect(() => {
+    let cancelled = false;
+    fetchCategories()
+      .then((docs) => {
+        if (!cancelled && docs.length > 0) setCategories(docs);
+      })
+      .catch(() => {
+        /* keep fallback */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const cats = useMemo(
+    () => [
+      { key: 'all', label: t('all', lang) },
+      ...categories
+        .filter((c) => c.slug)
+        .map((c) => ({ key: c.slug as string, label: (lang === 'en' ? c.nameEN : c.namePT)?.trim() || c.namePT })),
+    ],
+    [categories, lang],
+  );
 
   const [activeCat, setActiveCat] = useState(initialCat);
   const [showFilters, setShowFilters] = useState(false);
@@ -32,14 +61,22 @@ export function Browse() {
     if (activeCat !== 'all') list = list.filter((p) => p.cat === activeCat);
     if (searchTerm) list = list.filter((p) => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
     if (filterSize) list = list.filter((p) => p.sizes.includes(filterSize));
-    if (filterColor) list = list.filter((p) => p.colors.some((c) => c.toLowerCase() === filterColor.toLowerCase()));
+    if (filterColor) list = list.filter((p) => p.colors.some((c) => c.name.toLowerCase() === filterColor.toLowerCase()));
     if (sortBy === 'price-asc') list = [...list].sort((a, b) => (market === 'AO' ? a.priceKz - b.priceKz : a.priceEur - b.priceEur));
     if (sortBy === 'price-desc') list = [...list].sort((a, b) => (market === 'AO' ? b.priceKz - a.priceKz : b.priceEur - a.priceEur));
     return list;
   }, [products, activeCat, searchTerm, filterSize, filterColor, sortBy, market]);
 
   const allSizes = ['XS', 'S', 'M', 'L', 'XL'];
-  const allColors = Array.from(new Set(products.flatMap((p) => p.colors)));
+  // Dedupe by colour name, keeping the first swatch seen for each -- the
+  // taxonomy guarantees consistent names, so first-wins is safe.
+  const allColors = useMemo(() => {
+    const byName = new Map<string, { value: string; label: string; hex?: string; swatchUrl?: string }>();
+    for (const c of products.flatMap((p) => p.colors)) {
+      if (!byName.has(c.name)) byName.set(c.name, { value: c.name, label: c.name, hex: c.hex, swatchUrl: c.swatchUrl });
+    }
+    return Array.from(byName.values());
+  }, [products]);
 
   return (
     <div className="ump-browse-layout" style={{ background: C.paper }}>
@@ -49,11 +86,11 @@ export function Browse() {
         </div>
         <FilterGroup
           label={t('category', lang)}
-          options={CATS.map((c) => t(c.labelKey, lang))}
-          active={CATS.find((c) => c.key === activeCat) ? t(CATS.find((c) => c.key === activeCat)!.labelKey, lang) : null}
-          onSelect={(label) => setActiveCat(CATS.find((c) => t(c.labelKey, lang) === label)?.key ?? 'all')}
+          options={cats.map((c) => ({ value: c.key, label: c.label }))}
+          active={activeCat === 'all' ? null : activeCat}
+          onSelect={(key) => setActiveCat(key ?? 'all')}
         />
-        <FilterGroup label={t('size', lang)} options={allSizes} active={filterSize} onSelect={setFilterSize} />
+        <FilterGroup label={t('size', lang)} options={allSizes.map((s) => ({ value: s, label: s }))} active={filterSize} onSelect={setFilterSize} />
         <FilterGroup label={t('colour', lang)} options={allColors} active={filterColor} onSelect={setFilterColor} />
         <div>
           <FilterLabel>{t('sort', lang)}</FilterLabel>
@@ -104,7 +141,7 @@ export function Browse() {
         </div>
 
         <div className="ump-browse-catpills" style={{ display: 'flex', gap: 8, padding: '12px 20px', overflowX: 'auto' }}>
-          {CATS.map((c) => (
+          {cats.map((c) => (
             <button
               key={c.key}
               onClick={() => setActiveCat(c.key)}
@@ -119,7 +156,7 @@ export function Browse() {
                 border: `1px solid ${activeCat === c.key ? C.black : C.rule}`,
               }}
             >
-              {t(c.labelKey, lang)}
+              {c.label}
             </button>
           ))}
         </div>
@@ -140,7 +177,7 @@ export function Browse() {
 
         {showFilters && (
           <div className="ump-slide-up ump-browse-filter-toggle" style={{ padding: '16px 20px', background: C.subtleBg, borderBottom: `1px solid ${C.ruleLight}` }}>
-            <FilterGroup label={t('size', lang)} options={allSizes} active={filterSize} onSelect={setFilterSize} />
+            <FilterGroup label={t('size', lang)} options={allSizes.map((s) => ({ value: s, label: s }))} active={filterSize} onSelect={setFilterSize} />
             <FilterGroup label={t('colour', lang)} options={allColors} active={filterColor} onSelect={setFilterColor} />
           </div>
         )}
@@ -164,6 +201,15 @@ function FilterLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
+type FilterOption = {
+  value: string;
+  label: string;
+  /** Colour options (2026-07-25): render a swatch dot from the taxonomy's
+   * hex, or a tiny fabric-swatch image for patterns. Text-only otherwise. */
+  hex?: string;
+  swatchUrl?: string;
+};
+
 function FilterGroup({
   label,
   options,
@@ -171,7 +217,7 @@ function FilterGroup({
   onSelect,
 }: {
   label: string;
-  options: string[];
+  options: FilterOption[];
   active: string | null;
   onSelect: (v: string | null) => void;
 }) {
@@ -181,20 +227,36 @@ function FilterGroup({
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
         {options.map((opt) => (
           <button
-            key={opt}
-            onClick={() => onSelect(active === opt ? null : opt)}
+            key={opt.value}
+            onClick={() => onSelect(active === opt.value ? null : opt.value)}
             style={{
               minWidth: 36,
               padding: '6px 10px',
               fontSize: 11,
               fontWeight: 700,
               borderRadius: 6,
-              border: `1px solid ${active === opt ? C.gold : C.rule}`,
-              background: active === opt ? C.tagBg : C.paper,
-              color: active === opt ? C.goldDeep : C.ink,
+              border: `1px solid ${active === opt.value ? C.gold : C.rule}`,
+              background: active === opt.value ? C.tagBg : C.paper,
+              color: active === opt.value ? C.goldDeep : C.ink,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
             }}
           >
-            {opt}
+            {(opt.swatchUrl || opt.hex) && (
+              <span
+                aria-hidden
+                style={{
+                  width: 12,
+                  height: 12,
+                  borderRadius: '50%',
+                  flexShrink: 0,
+                  border: `1px solid ${C.rule}`,
+                  background: opt.swatchUrl ? `center / cover url(${opt.swatchUrl})` : opt.hex,
+                }}
+              />
+            )}
+            {opt.label}
           </button>
         ))}
       </div>

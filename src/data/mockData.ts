@@ -3,9 +3,27 @@
 // NOT the source of truth once wired to the Payload API (see src/lib/api.ts).
 // Tags and tones are aligned with the real Figma designs where product names
 // match (Vestido Aurora, Vestido Lume, Top Athena, Top Iris, Conjunto Sereno).
-import type { Product } from '../types/product';
+import type { ProductTone } from '../components/ProductPhoto';
 
-export const PRODUCTS: Omit<Product, 'slug' | 'images'>[] = [
+// Frozen snapshot of the PRE-taxonomy Product shape (colors were plain
+// strings, no catLabel). Kept as a local type so this archive stops
+// tracking the live view-model in types/product.ts -- it's dead fixture
+// data, not something worth migrating on every schema change.
+type ArchivedProduct = {
+  id: string;
+  name: string;
+  cat: string;
+  priceKz: number;
+  priceEur: number;
+  sizes: string[];
+  stock: Record<string, number>;
+  colors: string[];
+  tag?: string;
+  description?: string;
+  tone: ProductTone;
+};
+
+export const PRODUCTS: ArchivedProduct[] = [
   {
     id: "p1",
     name: "Vestido Aurora",
