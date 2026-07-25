@@ -8,6 +8,7 @@ import {
   createAppyPayOrder,
   createStripeCheckoutSession,
   fetchMarketSettings,
+  validateCoupon,
   type CreateOrderInput,
   type MarketSettings,
 } from '../../lib/api';
@@ -377,6 +378,15 @@ export function Checkout() {
   });
   const errorRef = useRef<HTMLDivElement>(null);
 
+  // Coupon codes (2026-07-25, discounts phase 2). Advisory-only client-side
+  // check via validateCoupon() -- the CMS re-resolves the same code for
+  // real at order-creation time (authoritativeOrder.ts) and rejects the
+  // order if it's no longer valid by then, so this being stale is harmless.
+  const [couponInput, setCouponInput] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountAmount: number; label: string } | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [couponChecking, setCouponChecking] = useState(false);
+
   useEffect(() => {
     if (error) errorRef.current?.focus();
   }, [error]);
@@ -441,6 +451,20 @@ export function Checkout() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [market, settings]);
 
+  // A coupon's discountAmount is resolved in whichever currency the
+  // settlement actually happens in (see eurSubtotal/settlementSubtotal
+  // below) -- switching payment method can change that currency (AO
+  // Multicaixa is Kz, but AO Stripe/PayPal settle in EUR), so a previously
+  // applied code is cleared rather than silently carrying a stale amount.
+  useEffect(() => {
+    // Resetting coupon state in response to a payment-method change, not
+    // synchronizing with an external system -- same accepted pattern as the
+    // market/settings reset effect above.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setAppliedCoupon(null);
+    setCouponError(null);
+  }, [paymentMethod]);
+
   if (cart.length === 0) {
     return <Navigate to="/carrinho" replace />;
   }
@@ -469,7 +493,8 @@ export function Checkout() {
       : deliveryMethod === 'ctt'
         ? SHIPPING_COST.PT_ctt
         : SHIPPING_COST.PT_courier_pt;
-  const total = subtotal + shippingCost;
+  const discountAmount = appliedCoupon?.discountAmount ?? 0;
+  const total = Math.max(0, subtotal - discountAmount) + shippingCost;
   const fmt = (n: number) => (market === 'AO' ? `${n.toLocaleString('en-US')} Kz` : `€${n.toFixed(2)}`);
 
   // Angola orders paid via Stripe or PayPal have to actually settle in EUR --
@@ -484,6 +509,25 @@ export function Checkout() {
   // stays on the plain Kz order path below, same as before.
   const usesEurSettlement = market === 'AO' && (paymentMethod === 'stripe' || paymentMethod === 'paypal');
 
+  // Hoisted out of buildOrderInput so the coupon "Apply" check (below) can
+  // validate against the same EUR-settlement subtotal that will actually be
+  // charged, instead of the always-Kz display subtotal above.
+  const eurItems = cart
+    .map((item) => {
+      const p = products.find((p) => p.id === item.id);
+      if (!p) return null;
+      return {
+        product: cmsRelationshipId(p.id),
+        productName: p.name,
+        size: item.size,
+        color: item.color,
+        qty: item.qty,
+        unitPrice: p.effectivePriceEur,
+      };
+    })
+    .filter((i): i is NonNullable<typeof i> => i !== null);
+  const eurSubtotal = eurItems.reduce((sum, i) => sum + i.unitPrice * i.qty, 0);
+
   // Combined phone number sent to the CMS and to the AppyPay widget (which
   // strips non-digits itself) -- the country-code dropdown and the local
   // number are separate form fields for editing, but everywhere else in the
@@ -495,22 +539,6 @@ export function Checkout() {
 
   const buildOrderInput = (): CreateOrderInput => {
     if (usesEurSettlement) {
-      const eurItems = cart
-        .map((item) => {
-          const p = products.find((p) => p.id === item.id);
-          if (!p) return null;
-          return {
-            product: cmsRelationshipId(p.id),
-            productName: p.name,
-            size: item.size,
-            color: item.color,
-            qty: item.qty,
-            unitPrice: p.effectivePriceEur,
-          };
-        })
-        .filter((i): i is NonNullable<typeof i> => i !== null);
-      const eurSubtotal = eurItems.reduce((sum, i) => sum + i.unitPrice * i.qty, 0);
-
       return {
         market,
         customerName: form.name,
@@ -530,7 +558,8 @@ export function Checkout() {
         currency: 'EUR',
         subtotal: eurSubtotal,
         shippingCost: 0,
-        total: eurSubtotal,
+        couponCode: appliedCoupon?.code,
+        total: Math.max(0, eurSubtotal - discountAmount),
         paymentMethod,
         deliveryMethod,
         lang,
@@ -554,12 +583,47 @@ export function Checkout() {
       currency: market === 'AO' ? 'Kz' : 'EUR',
       subtotal,
       shippingCost,
+      couponCode: appliedCoupon?.code,
       total,
       paymentMethod,
       deliveryMethod,
       lang,
       ...getMetaOrderContext(),
     };
+  };
+
+  const handleApplyCoupon = async () => {
+    const code = couponInput.trim();
+    if (!code) return;
+    setCouponChecking(true);
+    setCouponError(null);
+    try {
+      const settlementSubtotal = usesEurSettlement ? eurSubtotal : subtotal;
+      const result = await validateCoupon({
+        code,
+        market,
+        usesEurSettlement,
+        subtotal: settlementSubtotal,
+        customerEmail: form.email || undefined,
+      });
+      if (result.valid) {
+        setAppliedCoupon({ code: result.code, discountAmount: result.discountAmount, label: result.label });
+      } else {
+        setAppliedCoupon(null);
+        setCouponError(result.reason);
+      }
+    } catch {
+      setAppliedCoupon(null);
+      setCouponError(t('couponCheckFailed', lang));
+    } finally {
+      setCouponChecking(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponInput('');
+    setCouponError(null);
   };
 
   const validateRequiredFields = (): boolean => {
@@ -741,8 +805,42 @@ export function Checkout() {
       </form>
 
       <div className="ump-checkout-summary" style={{ padding: '0 20px' }}>
+        <div style={{ marginBottom: 12 }}>
+          {appliedCoupon ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '10px 12px', background: C.tagBg, border: `1px solid ${C.gold}`, borderRadius: 6 }}>
+              <div style={{ fontSize: 12, color: C.ink }}>
+                <span style={{ fontWeight: 800 }}>{appliedCoupon.code}</span> — {t('couponApplied', lang)}
+              </div>
+              <button type="button" onClick={handleRemoveCoupon} style={{ fontSize: 11, fontWeight: 700, color: C.inkSoft, textDecoration: 'underline', flexShrink: 0 }}>
+                {t('couponRemove', lang)}
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input
+                type="text"
+                value={couponInput}
+                onChange={(e) => setCouponInput(e.target.value)}
+                placeholder={t('couponPlaceholder', lang)}
+                aria-label={t('couponLabel', lang)}
+                style={{ flex: 1, minWidth: 0, padding: '10px 12px', fontSize: 13, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.paper, color: C.ink, textTransform: 'uppercase' }}
+              />
+              <button
+                type="button"
+                onClick={handleApplyCoupon}
+                disabled={couponChecking || !couponInput.trim()}
+                style={{ padding: '0 16px', fontSize: 11, fontWeight: 800, color: C.ink, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.paper, flexShrink: 0 }}
+              >
+                {couponChecking ? t('couponChecking', lang) : t('couponApply', lang)}
+              </button>
+            </div>
+          )}
+          {couponError && <div style={{ marginTop: 6, fontSize: 11, color: '#B95545' }}>{couponError}</div>}
+        </div>
+
         <div style={{ background: C.subtleBg, borderRadius: 8, padding: 16, border: `1px solid ${C.ruleLight}` }}>
           <Row label={t('subtotal', lang)} value={fmt(subtotal)} />
+          {discountAmount > 0 && <Row label={appliedCoupon?.label || t('discount', lang)} value={`-${fmt(discountAmount)}`} />}
           <Row label={t('shipping', lang)} value={shippingCost === 0 ? t('free', lang) : fmt(shippingCost)} />
           <div style={{ borderTop: `1px solid ${C.rule}`, marginTop: 8, paddingTop: 8 }}>
             <Row label={t('total', lang)} value={fmt(total)} bold />

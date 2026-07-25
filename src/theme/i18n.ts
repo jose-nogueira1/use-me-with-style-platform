@@ -154,6 +154,17 @@ export const T: Record<string, Record<Lang, string>> = {
     en: 'PayPal is unavailable right now. Please choose another method.',
   },
   paymentCancelled: { pt: 'Pagamento cancelado. Pode tentar novamente.', en: 'Payment cancelled. You can try again.' },
+  couponLabel: { pt: 'Código de desconto', en: 'Discount code' },
+  couponPlaceholder: { pt: 'Ex.: VERAO10', en: 'e.g. SUMMER10' },
+  couponApply: { pt: 'Aplicar', en: 'Apply' },
+  couponChecking: { pt: 'A verificar…', en: 'Checking…' },
+  couponRemove: { pt: 'Remover', en: 'Remove' },
+  couponApplied: { pt: 'Código aplicado', en: 'Code applied' },
+  couponCheckFailed: {
+    pt: 'Não foi possível verificar este código. Tente novamente.',
+    en: "Couldn't check this code. Please try again.",
+  },
+  discount: { pt: 'Desconto', en: 'Discount' },
 
   // Confirmation and lookup
   orderConfirmed: { pt: 'Encomenda confirmada', en: 'Order confirmed' },

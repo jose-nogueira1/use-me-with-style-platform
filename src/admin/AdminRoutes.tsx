@@ -13,6 +13,7 @@ import { Mensagens } from './pages/Mensagens';
 import { Settings } from './pages/Settings';
 import { Invoices } from './pages/Invoices';
 import { Media } from './pages/Media';
+import { Coupons } from './pages/Coupons';
 import { Roadmap } from './pages/Roadmap';
 import { AdminTranslationBoundary } from './AdminTranslation';
 
@@ -33,6 +34,7 @@ export function AdminRoutes() {
           <Route path="definicoes" element={<Settings />} />
           <Route path="faturas" element={<Invoices />} />
           <Route path="media" element={<Media />} />
+          <Route path="cupoes" element={<Coupons />} />
           <Route path="roadmap" element={<Roadmap />} />
           {['analytics', 'marketing', 'meta-ads', 'inventario', 'automacao'].map((path) => (
             <Route key={path} path={path} element={<Navigate to="/admin/roadmap" replace />} />

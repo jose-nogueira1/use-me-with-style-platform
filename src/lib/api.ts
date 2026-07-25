@@ -216,6 +216,53 @@ export function productIsOutOfStock(p: ApiProduct): boolean {
   return p.variants.some((v) => v.stockAO + v.stockPT === 0);
 }
 
+// ---------------------------------------------------------------------------
+// Coupon codes (2026-07-25, discounts phase 2). Mirrors the CMS's Coupons
+// collection -- see couponPricing.ts there. The storefront only ever
+// submits a CODE, never a discount amount; resolveCoupon() server-side is
+// the only thing that turns it into money (see authoritativeOrder.ts).
+// ---------------------------------------------------------------------------
+export type ApiCoupon = {
+  id: string | number;
+  code: string;
+  active?: boolean;
+  description?: string | null;
+  type: 'percent' | 'fixed';
+  percentOff?: number | null;
+  fixedOffAOKz?: number | null;
+  fixedOffPTEur?: number | null;
+  minOrderValueAOKz?: number | null;
+  minOrderValuePTEur?: number | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  usageLimit?: number | null;
+  usageCount?: number;
+  maxRedemptionsPerEmail?: number | null;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type CouponValidationResult =
+  | { valid: true; code: string; discountAmount: number; label: string }
+  | { valid: false; reason: string };
+
+/** Advisory-only check, powering the checkout "Apply" button so the shopper
+ * sees the discount before paying -- the CMS re-resolves the SAME code for
+ * real at order-creation time (authoritativeOrder.ts) and rejects the order
+ * if it's no longer valid, so this call being stale/bypassed is harmless. */
+export async function validateCoupon(input: {
+  code: string;
+  market: 'AO' | 'PT';
+  usesEurSettlement?: boolean;
+  subtotal: number;
+  customerEmail?: string;
+}): Promise<CouponValidationResult> {
+  return request<CouponValidationResult>('/coupons/validate', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
 export type OrderItemInput = {
   product: string | number;
   productName: string;
@@ -256,6 +303,11 @@ export type CreateOrderInput = {
   currency: 'Kz' | 'EUR';
   subtotal: number;
   shippingCost: number;
+  /** Coupon code the shopper applied at checkout (2026-07-25, discounts
+   * phase 2) -- just the string; the CMS resolves it into an actual
+   * discount amount server-side and rejects the order if it's no longer
+   * valid. Optional so a cached bundle without this field still posts. */
+  couponCode?: string;
   total: number;
   paymentMethod: string;
   deliveryMethod: string;
@@ -277,6 +329,10 @@ export type ApiOrder = CreateOrderInput & {
   paymentStatus: string;
   createdAt: string;
   updatedAt: string;
+  /** Server-computed, from the applied coupon (if any) -- see couponCode
+   * above. discountAmount is 0/absent when no coupon was applied. */
+  discountAmount?: number;
+  discountLabel?: string | null;
   // Provider/diagnostic fields -- all admin-set or admin-read-only in
   // Payload (see Orders.ts), surfaced here so the storefront admin's order
   // detail can display the same troubleshooting info Payload admin shows.
@@ -1002,4 +1058,52 @@ export async function adminUploadMedia(file: File, alt: string): Promise<ApiMedi
 
 export async function adminDeleteMedia(id: string | number): Promise<void> {
   await request<{ doc: ApiMedia }>(`/media/${id}`, { method: 'DELETE' }, { auth: true });
+}
+
+// ---------------------------------------------------------------------------
+// Admin: coupon codes (2026-07-25, discounts phase 2). Full CRUD -- the
+// storefront never lists/browses codes, only validates one it already has
+// (validateCoupon above).
+// ---------------------------------------------------------------------------
+export async function adminListCoupons(): Promise<ApiCoupon[]> {
+  const data = await request<{ docs: ApiCoupon[] }>('/coupons?limit=200&sort=-createdAt', {}, { auth: true });
+  return data.docs;
+}
+
+export type CouponInput = {
+  code: string;
+  active?: boolean;
+  description?: string;
+  type: 'percent' | 'fixed';
+  percentOff?: number | null;
+  fixedOffAOKz?: number | null;
+  fixedOffPTEur?: number | null;
+  minOrderValueAOKz?: number | null;
+  minOrderValuePTEur?: number | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  usageLimit?: number | null;
+  maxRedemptionsPerEmail?: number | null;
+};
+
+export async function adminCreateCoupon(input: CouponInput): Promise<ApiCoupon> {
+  const data = await request<{ doc: ApiCoupon }>(
+    '/coupons',
+    { method: 'POST', body: JSON.stringify(input) },
+    { auth: true },
+  );
+  return data.doc;
+}
+
+export async function adminUpdateCoupon(id: string | number, input: Partial<CouponInput>): Promise<ApiCoupon> {
+  const data = await request<{ doc: ApiCoupon }>(
+    `/coupons/${id}`,
+    { method: 'PATCH', body: JSON.stringify(input) },
+    { auth: true },
+  );
+  return data.doc;
+}
+
+export async function adminDeleteCoupon(id: string | number): Promise<void> {
+  await request<{ doc: ApiCoupon }>(`/coupons/${id}`, { method: 'DELETE' }, { auth: true });
 }

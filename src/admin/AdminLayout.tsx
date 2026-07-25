@@ -21,6 +21,7 @@ const SECONDARY_NAV = [
   { to: '/admin/mensagens', label: 'Messages' },
   { to: '/admin/faturas', label: 'Invoices' },
   { to: '/admin/media', label: 'Media' },
+  { to: '/admin/cupoes', label: 'Discounts' },
 ];
 
 export function AdminLayout() {
