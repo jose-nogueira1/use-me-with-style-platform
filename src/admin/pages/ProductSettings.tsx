@@ -18,6 +18,7 @@ import {
   adminUpdateColor,
   adminUpdateMerchTag,
   adminUpdateSizeGuide,
+  adminUploadMedia,
   colorLabel,
   refId,
   resolveRef,
@@ -29,6 +30,7 @@ import {
   type ApiSizeGuide,
   type ApiSizeGuideRow,
 } from '../../lib/api';
+import { absoluteMediaUrl } from '../../lib/productAdapters';
 import { hasSwatch, swatchBackground } from '../../lib/colorSwatch';
 import { suggestColorName } from '../../lib/colorNaming';
 
@@ -96,8 +98,14 @@ export function ProductTaxonomySettings() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16, alignItems: 'flex-start' }} className="ump-admin-orders-grid">
         <TaxonomyPanel
           title="Categories"
-          hint="Shown as storefront filter pills. The slug (URL) is created once and never changes."
-          entries={categories.map((c) => ({ id: String(c.id), primary: c.namePT, secondary: c.nameEN ?? '', meta: c.slug ?? '' }))}
+          hint="Shown as storefront filter pills and home page tiles. The slug (URL) is created once and never changes."
+          entries={categories.map((c) => ({
+            id: String(c.id),
+            primary: c.namePT,
+            secondary: c.nameEN ?? '',
+            meta: c.slug ?? '',
+            imageUrl: absoluteMediaUrl(resolveRef(c.image)?.url),
+          }))}
           usage={usage.byCategory}
           labels={{ primary: 'Name — Portuguese', secondary: 'Name — English (optional)' }}
           onCreate={async (primary, secondary) => {
@@ -112,13 +120,26 @@ export function ProductTaxonomySettings() {
             await adminDeleteCategory(id);
             setCategories((prev) => prev.filter((c) => String(c.id) !== id));
           }}
+          // Home page tile image (2026-07-25 admin request): upload happens
+          // as a separate PATCH from the name/slug save above, same pattern
+          // as the home hero image in Settings.tsx.
+          onUploadImage={async (id, file) => {
+            const category = categories.find((c) => String(c.id) === id);
+            const media = await adminUploadMedia(file, `${category?.namePT ?? 'Category'} tile image`);
+            const updated = await adminUpdateCategory(id, { image: media.id });
+            setCategories((prev) => prev.map((c) => (String(c.id) === id ? updated : c)));
+          }}
+          onRemoveImage={async (id) => {
+            const updated = await adminUpdateCategory(id, { image: null });
+            setCategories((prev) => prev.map((c) => (String(c.id) === id ? updated : c)));
+          }}
           setError={setError}
         />
 
         <TaxonomyPanel
           title="Merchandising tags"
-          hint="Optional badge on product cards (Novidade, Bestseller…)."
-          entries={tags.map((t) => ({ id: String(t.id), primary: t.labelPT, secondary: t.labelEN ?? '' }))}
+          hint='Optional badge on product cards (Novidade, Bestseller…). Also usable as a home hero "collection" link -- see the slug shown after each entry, and /catalogo?tag=<slug> in Settings > Home page.'
+          entries={tags.map((t) => ({ id: String(t.id), primary: t.labelPT, secondary: t.labelEN ?? '', meta: t.slug ?? '' }))}
           usage={usage.byTag}
           labels={{ primary: 'Label — Portuguese', secondary: 'Label — English (optional)' }}
           onCreate={async (primary, secondary) => {
@@ -196,7 +217,7 @@ const inputStyle: React.CSSProperties = { padding: '8px 10px', fontSize: 11, bor
 // Categories / tags: same two-text-field shape, one shared panel
 // ---------------------------------------------------------------------------
 
-type TaxonomyEntry = { id: string; primary: string; secondary: string; meta?: string };
+type TaxonomyEntry = { id: string; primary: string; secondary: string; meta?: string; imageUrl?: string };
 
 function TaxonomyPanel({
   title,
@@ -207,6 +228,8 @@ function TaxonomyPanel({
   onCreate,
   onSave,
   onDelete,
+  onUploadImage,
+  onRemoveImage,
   setError,
 }: {
   title: string;
@@ -217,12 +240,18 @@ function TaxonomyPanel({
   onCreate: (primary: string, secondary: string) => Promise<void>;
   onSave: (id: string, primary: string, secondary: string) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  /** Optional image upload/remove (2026-07-25 admin request, Categories
+   * only) -- happens as its own save, separate from onSave's name/slug PATCH,
+   * since the entry must already exist to attach media to it. */
+  onUploadImage?: (id: string, file: File) => Promise<void>;
+  onRemoveImage?: (id: string) => Promise<void>;
   setError: (message: string | null) => void;
 }) {
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState<{ primary: string; secondary: string }>({ primary: '', secondary: '' });
   const [newDraft, setNewDraft] = useState<{ primary: string; secondary: string }>({ primary: '', secondary: '' });
   const [busy, setBusy] = useState(false);
+  const [uploadingImageId, setUploadingImageId] = useState<string | null>(null);
 
   const run = async (fn: () => Promise<void>, fallback: string) => {
     setBusy(true);
@@ -236,14 +265,27 @@ function TaxonomyPanel({
     }
   };
 
+  const runImage = async (id: string, fn: () => Promise<void>, fallback: string) => {
+    setUploadingImageId(id);
+    setError(null);
+    try {
+      await fn();
+    } catch (err) {
+      setError(taxonomyErrorMessage(err, fallback));
+    } finally {
+      setUploadingImageId(null);
+    }
+  };
+
   return (
     <Panel title={title} hint={hint}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {entries.map((entry) => {
           const count = usage.get(entry.id) ?? 0;
           const isEditing = editing === entry.id;
+          const isUploadingImage = uploadingImageId === entry.id;
           return (
-            <div key={entry.id} style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '7px 10px', borderRadius: 6, background: C.subtleBg, border: `1px solid ${C.ruleLight}` }}>
+            <div key={entry.id} style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', padding: '7px 10px', borderRadius: 6, background: C.subtleBg, border: `1px solid ${C.ruleLight}` }}>
               {isEditing ? (
                 <>
                   <input aria-label={labels.primary} value={draft.primary} onChange={(e) => setDraft((d) => ({ ...d, primary: e.target.value }))} style={{ ...inputStyle, flex: 1 }} />
@@ -253,12 +295,44 @@ function TaxonomyPanel({
                 </>
               ) : (
                 <>
+                  {onUploadImage && (
+                    entry.imageUrl ? (
+                      <img src={entry.imageUrl} alt="" style={{ width: 28, height: 28, borderRadius: 4, objectFit: 'cover', border: `1px solid ${C.rule}`, flexShrink: 0 }} />
+                    ) : (
+                      <span style={{ width: 28, height: 28, borderRadius: 4, border: `1px dashed ${C.rule}`, flexShrink: 0 }} title="No tile image yet" />
+                    )
+                  )}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <span style={{ fontSize: 12, fontWeight: 800, color: C.ink }}>{entry.primary}</span>
                     {entry.secondary && entry.secondary !== entry.primary && <span style={{ fontSize: 11, color: C.inkSoft }}> / {entry.secondary}</span>}
                     {entry.meta && <span style={{ fontSize: 9, color: C.inkSoft, marginLeft: 6 }}>({entry.meta})</span>}
                   </div>
                   <UsageBadge count={count} />
+                  {onUploadImage && (
+                    <>
+                      <label style={{ fontSize: 9, fontWeight: 800, color: isUploadingImage ? C.inkSoft : C.goldDeep, cursor: isUploadingImage ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' }}>
+                        {isUploadingImage ? '…' : entry.imageUrl ? 'Change image' : 'Add image'}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          disabled={isUploadingImage}
+                          style={{ display: 'none' }}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            e.target.value = '';
+                            if (file) void runImage(entry.id, () => onUploadImage(entry.id, file), "Couldn't upload the image.");
+                          }}
+                        />
+                      </label>
+                      {entry.imageUrl && onRemoveImage && (
+                        <SmallButton
+                          label="Remove image"
+                          disabled={isUploadingImage}
+                          onClick={() => void runImage(entry.id, () => onRemoveImage(entry.id), "Couldn't remove the image.")}
+                        />
+                      )}
+                    </>
+                  )}
                   <SmallButton label="Edit" disabled={busy} onClick={() => { setEditing(entry.id); setDraft({ primary: entry.primary, secondary: entry.secondary }); }} />
                   <SmallButton
                     label="Delete"
@@ -278,6 +352,7 @@ function TaxonomyPanel({
         <input placeholder={labels.secondary} value={newDraft.secondary} onChange={(e) => setNewDraft((d) => ({ ...d, secondary: e.target.value }))} style={{ ...inputStyle, flex: 1 }} />
         <SmallButton label="Add" disabled={busy || !newDraft.primary.trim()} onClick={() => void run(async () => { await onCreate(newDraft.primary.trim(), newDraft.secondary.trim()); setNewDraft({ primary: '', secondary: '' }); }, "Couldn't create the entry.")} />
       </div>
+      {onUploadImage && <div style={{ fontSize: 9, color: C.inkSoft, marginTop: 8 }}>New entries can have an image added once saved above.</div>}
     </Panel>
   );
 }

@@ -5,7 +5,7 @@ import { C, t } from '../../theme';
 import { useApp } from '../../state/AppContext';
 import { useProducts } from '../../hooks/useProducts';
 import { ProductCard } from '../components/ProductCard';
-import { fetchCategories, type ApiCategory } from '../../lib/api';
+import { fetchCategories, fetchMerchTags, type ApiCategory, type ApiMerchTag } from '../../lib/api';
 import { hasSwatch, swatchBackground } from '../../lib/colorSwatch';
 
 // Categories became admin-managed CMS data on 2026-07-25 (previously a
@@ -22,7 +22,7 @@ const FALLBACK_CATS: ApiCategory[] = [
 export function Browse() {
   const { market, lang } = useApp();
   const { products, loading } = useProducts(market, lang);
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [categories, setCategories] = useState<ApiCategory[]>(FALLBACK_CATS);
   useEffect(() => {
@@ -33,6 +33,27 @@ export function Browse() {
       })
       .catch(() => {
         /* keep fallback */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Merch tags as "collections" (2026-07-25 follow-up to the home hero
+  // button -- see AskUserQuestion decision): only fetched to resolve a
+  // ?tag=<slug> URL param into a display label for the "Filtered by" banner
+  // below. The actual product filtering uses Product.tagSlug directly
+  // (productAdapters.ts), so this fetch failing just loses the label, not
+  // the filter itself.
+  const [tags, setTags] = useState<ApiMerchTag[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    fetchMerchTags()
+      .then((docs) => {
+        if (!cancelled) setTags(docs);
+      })
+      .catch(() => {
+        /* label falls back to the raw slug */
       });
     return () => {
       cancelled = true;
@@ -75,6 +96,28 @@ export function Browse() {
     setSyncedUrlCat(urlCat);
     setActiveCat(urlCat);
   }
+
+  // ?tag=<slug> "collection" filter (2026-07-25 follow-up): the home hero
+  // button can now point at a merchandising tag instead of just a category
+  // (e.g. /catalogo?tag=ss26). Same render-time URL-sync pattern as
+  // activeCat/syncedUrlCat above, for the same reason -- a same-route nav
+  // (clicking the hero button while already on /catalogo) doesn't remount
+  // this component. null means "no tag filter", distinct from activeCat's
+  // 'all' since the two filters are independent and both can apply at once.
+  const urlTag = searchParams.get('tag');
+  const [activeTag, setActiveTag] = useState(urlTag);
+  const [syncedUrlTag, setSyncedUrlTag] = useState(urlTag);
+  if (urlTag !== syncedUrlTag) {
+    setSyncedUrlTag(urlTag);
+    setActiveTag(urlTag);
+  }
+  const activeTagLabel = activeTag
+    ? (() => {
+        const doc = tags.find((tg) => tg.slug === activeTag);
+        return doc ? (lang === 'en' ? doc.labelEN : doc.labelPT)?.trim() || doc.labelPT : activeTag;
+      })()
+    : null;
+
   const [showFilters, setShowFilters] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterSize, setFilterSize] = useState<string | null>(null);
@@ -85,13 +128,14 @@ export function Browse() {
     let list = products;
     if (activeCat === 'new') list = list.filter((p) => p.isNewArrival);
     else if (activeCat !== 'all') list = list.filter((p) => p.cat === activeCat);
+    if (activeTag) list = list.filter((p) => p.tagSlug === activeTag);
     if (searchTerm) list = list.filter((p) => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
     if (filterSize) list = list.filter((p) => p.sizes.includes(filterSize));
     if (filterColor) list = list.filter((p) => p.colors.some((c) => c.id === filterColor));
     if (sortBy === 'price-asc') list = [...list].sort((a, b) => (market === 'AO' ? a.priceKz - b.priceKz : a.priceEur - b.priceEur));
     if (sortBy === 'price-desc') list = [...list].sort((a, b) => (market === 'AO' ? b.priceKz - a.priceKz : b.priceEur - a.priceEur));
     return list;
-  }, [products, activeCat, searchTerm, filterSize, filterColor, sortBy, market]);
+  }, [products, activeCat, activeTag, searchTerm, filterSize, filterColor, sortBy, market]);
 
   const allSizes = ['XS', 'S', 'M', 'L', 'XL'];
   // Dedupe by colour id (2026-07-25 bilingual follow-up: was name, but two
@@ -187,6 +231,20 @@ export function Browse() {
             </button>
           ))}
         </div>
+
+        {activeTagLabel && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', background: C.tagBg, borderBottom: `1px solid ${C.ruleLight}` }}>
+            <span style={{ fontSize: 11, color: C.goldDeep, fontWeight: 700 }}>
+              {lang === 'en' ? 'Collection: ' : 'Coleção: '}{activeTagLabel}
+            </span>
+            <button
+              onClick={() => setSearchParams((prev) => { const p = new URLSearchParams(prev); p.delete('tag'); return p; })}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 700, color: C.inkSoft }}
+            >
+              <X size={11} /> {lang === 'en' ? 'Clear' : 'Limpar'}
+            </button>
+          </div>
+        )}
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 20px', borderBottom: `1px solid ${C.ruleLight}` }}>
           <div style={{ fontSize: 11, color: C.inkSoft }}>

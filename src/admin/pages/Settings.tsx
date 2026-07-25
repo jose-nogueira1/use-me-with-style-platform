@@ -3,6 +3,8 @@ import { useSearchParams } from 'react-router-dom';
 import { C, F } from '../../theme';
 import {
   adminFetchInvoiceSettings,
+  adminListHomeContentVersions,
+  adminRestoreHomeContentVersion,
   adminUpdateHomeContent,
   adminUpdateInvoiceSettings,
   adminUpdateLegalContent,
@@ -14,6 +16,7 @@ import {
   refId,
   resolveRef,
   type HomeContent,
+  type HomeContentVersion,
   type InvoiceSettings,
   type LegalContent,
   type MarketSettings,
@@ -604,11 +607,27 @@ function HomeHeroSection() {
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
+  // Version history (2026-07-25 follow-up, "save old homepage creations, in
+  // case I want to re-activate them later"): Payload auto-snapshots the
+  // PREVIOUS doc on every save (versions.max: 20 on the home-content global,
+  // no drafts/publish workflow). Loaded alongside the current content and
+  // refreshed after every save/restore, since both create a new snapshot.
+  const [versions, setVersions] = useState<HomeContentVersion[]>([]);
+  const [versionsError, setVersionsError] = useState<string | null>(null);
+  const [restoringId, setRestoringId] = useState<string | null>(null);
+
+  const loadVersions = () => {
+    adminListHomeContentVersions()
+      .then(setVersions)
+      .catch(() => setVersionsError("Couldn't load previous versions."));
+  };
+
   useEffect(() => {
     fetchHomeContent()
       .then(setContent)
       .catch(() => setError("Couldn't load the home page content."))
       .finally(() => setLoading(false));
+    loadVersions();
   }, []);
 
   const handleSave = async () => {
@@ -619,10 +638,27 @@ function HomeHeroSection() {
       const updated = await adminUpdateHomeContent({ ...content, heroImage: refId(content.heroImage) || null });
       setContent(updated);
       setSaved(true);
+      loadVersions();
     } catch {
       setError("Couldn't save. Make sure you're logged in.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleRestore = async (version: HomeContentVersion) => {
+    setRestoringId(String(version.id));
+    setVersionsError(null);
+    setSaved(false);
+    try {
+      const restored = await adminRestoreHomeContentVersion(version.id);
+      setContent(restored);
+      setSaved(true);
+      loadVersions();
+    } catch {
+      setVersionsError("Couldn't restore that version.");
+    } finally {
+      setRestoringId(null);
     }
   };
 
@@ -684,7 +720,9 @@ function HomeHeroSection() {
             <div>
               <SettingsField label="Button link" value={content.heroCtaHref ?? ''} onChange={(v) => setContent((c) => ({ ...c, heroCtaHref: v }))} />
               <div style={{ fontSize: 10, color: C.inkSoft, marginTop: -4 }}>
-                Usually /catalogo, or e.g. /catalogo?cat=vestidos to point at one category.
+                Usually /catalogo, or /catalogo?cat=vestidos for one category. For a themed collection
+                (e.g. "SS26") that isn't just one category, add a merchandising tag below in the
+                Products tab, apply it to the relevant products, and point this at /catalogo?tag=&lt;its slug&gt;.
               </div>
             </div>
             <div>
@@ -716,9 +754,59 @@ function HomeHeroSection() {
               {uploading && <div style={{ fontSize: 10, color: C.inkSoft, marginTop: 4 }}>Uploading…</div>}
             </div>
           </div>
+
+          <div style={{ marginTop: 24, paddingTop: 20, borderTop: `1px solid ${C.ruleLight}` }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 2 }}>Previous versions</div>
+            <div style={{ fontSize: 10, color: C.inkSoft, marginBottom: 12 }}>
+              Every save keeps the version it replaces, so you can bring back an older homepage later. Restoring makes that version current (and itself becomes a new entry in this list).
+            </div>
+            {versionsError && <div style={{ fontSize: 12, color: '#B95545', marginBottom: 10 }}>{versionsError}</div>}
+            {versions.length === 0 ? (
+              <div style={{ fontSize: 11, color: C.inkSoft }}>No previous versions yet -- they'll appear here after your next save.</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {versions.map((v) => {
+                  const preview = v.version.heroHeadlinePT?.trim() || v.version.heroHeadlineEN?.trim() || '(no headline)';
+                  const isRestoring = restoringId === String(v.id);
+                  return (
+                    <div key={v.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 6, background: C.subtleBg, border: `1px solid ${C.ruleLight}` }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: C.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{preview}</div>
+                        <div style={{ fontSize: 9, color: C.inkSoft }}>{new Date(v.createdAt).toLocaleString()}</div>
+                      </div>
+                      <SmallActionButton label={isRestoring ? '…' : 'Restore'} disabled={isRestoring} onClick={() => void handleRestore(v)} />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </>
       )}
     </div>
+  );
+}
+
+function SmallActionButton({ label, onClick, disabled }: { label: string; onClick: () => void; disabled?: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        flexShrink: 0,
+        padding: '6px 12px',
+        fontSize: 10,
+        fontWeight: 800,
+        borderRadius: 6,
+        border: `1px solid ${C.rule}`,
+        background: 'transparent',
+        color: disabled ? C.inkSoft : C.ink,
+        cursor: disabled ? 'not-allowed' : 'pointer',
+      }}
+    >
+      {label}
+    </button>
   );
 }
 

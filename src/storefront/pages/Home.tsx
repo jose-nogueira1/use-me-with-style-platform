@@ -4,17 +4,23 @@ import { C, F, t } from '../../theme';
 import { useApp } from '../../state/AppContext';
 import { useProducts } from '../../hooks/useProducts';
 import { ProductCard } from '../components/ProductCard';
-import { ProductPhoto } from '../../components/ProductPhoto';
+import { ProductPhoto, type ProductTone } from '../../components/ProductPhoto';
 import { InstagramFeed } from '../components/InstagramFeed';
-import { fetchHomeContent, resolveRef, type HomeContent } from '../../lib/api';
+import { fetchCategories, fetchHomeContent, resolveRef, type ApiCategory, type HomeContent } from '../../lib/api';
 import { absoluteMediaUrl } from '../../lib/productAdapters';
 
-const CATEGORIES = [
-  { key: 'vestidos', labelKey: 'dresses', tone: 'rose' as const },
-  { key: 'tops', labelKey: 'tops', tone: 'dark' as const },
-  { key: 'leggings', labelKey: 'leggings', tone: 'blue' as const },
-  { key: 'conjuntos', labelKey: 'sets', tone: 'gold' as const },
+// Category tiles were a hardcoded list with no admin-editable image
+// (2026-07-25 admin request: "I want the admin to be able to change the
+// images on the categories"). Now fetched from the CMS like Browse.tsx's
+// filter pills -- this fallback covers only the brief moment before the
+// fetch resolves (and an unreachable CMS).
+const FALLBACK_CATEGORIES: ApiCategory[] = [
+  { id: 'vestidos', namePT: 'Vestidos', nameEN: 'Dresses', slug: 'vestidos' },
+  { id: 'tops', namePT: 'Tops', nameEN: 'Tops', slug: 'tops' },
+  { id: 'leggings', namePT: 'Leggings', nameEN: 'Leggings', slug: 'leggings' },
+  { id: 'conjuntos', namePT: 'Conjuntos', nameEN: 'Sets', slug: 'conjuntos' },
 ];
+const CATEGORY_TONE_CYCLE: ProductTone[] = ['rose', 'dark', 'blue', 'gold'];
 
 export function Home() {
   const { market, lang } = useApp();
@@ -53,6 +59,21 @@ export function Home() {
   const heroCtaLabel = (lang === 'en' ? hero?.heroCtaLabelEN : hero?.heroCtaLabelPT)?.trim() || t('shopAll', lang);
   const heroCtaHref = hero?.heroCtaHref?.trim() || '/catalogo';
   const heroImageUrl = absoluteMediaUrl(resolveRef(hero?.heroImage)?.url);
+
+  const [categories, setCategories] = useState<ApiCategory[]>(FALLBACK_CATEGORIES);
+  useEffect(() => {
+    let cancelled = false;
+    fetchCategories()
+      .then((docs) => {
+        if (!cancelled && docs.length > 0) setCategories(docs);
+      })
+      .catch(() => {
+        /* keep fallback */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div>
@@ -109,30 +130,39 @@ export function Home() {
           {t('categories', lang)}
         </div>
         <div className="ump-cat-row">
-          {CATEGORIES.map((c) => (
-            <Link
-              key={c.key}
-              to={`/catalogo?cat=${c.key}`}
-              className="ump-hover-lift"
-              style={{
-                flexShrink: 0,
-                minWidth: 96,
-                background: C.paper,
-                borderRadius: 8,
-                padding: 10,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                border: `1px solid ${C.ruleLight}`,
-                textDecoration: 'none',
-              }}
-            >
-              <div style={{ width: 60, height: 64, borderRadius: 6, overflow: 'hidden' }}>
-                <ProductPhoto tone={c.tone} radius={6} />
-              </div>
-              <div style={{ marginTop: 8, fontSize: 11, fontWeight: 800, color: C.ink, textAlign: 'center' }}>{t(c.labelKey, lang)}</div>
-            </Link>
-          ))}
+          {categories.map((c, index) => {
+            const slug = c.slug ?? String(c.id);
+            const label = (lang === 'en' ? c.nameEN : c.namePT)?.trim() || c.namePT;
+            const imageUrl = absoluteMediaUrl(resolveRef(c.image)?.url);
+            return (
+              <Link
+                key={String(c.id)}
+                to={`/catalogo?cat=${slug}`}
+                className="ump-hover-lift"
+                style={{
+                  flexShrink: 0,
+                  minWidth: 96,
+                  background: C.paper,
+                  borderRadius: 8,
+                  padding: 10,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  border: `1px solid ${C.ruleLight}`,
+                  textDecoration: 'none',
+                }}
+              >
+                <div style={{ width: 60, height: 64, borderRadius: 6, overflow: 'hidden' }}>
+                  {imageUrl ? (
+                    <img src={imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <ProductPhoto tone={CATEGORY_TONE_CYCLE[index % CATEGORY_TONE_CYCLE.length]} radius={6} />
+                  )}
+                </div>
+                <div style={{ marginTop: 8, fontSize: 11, fontWeight: 800, color: C.ink, textAlign: 'center' }}>{label}</div>
+              </Link>
+            );
+          })}
         </div>
       </div>
 

@@ -79,12 +79,19 @@ export type ApiCategory = {
   namePT: string;
   nameEN?: string | null;
   slug?: string | null;
+  /** Category tile image (2026-07-25 admin request) -- optional, falls back
+   * to a decorative placeholder on the storefront when unset. */
+  image?: string | number | ApiMedia | null;
 };
 
 export type ApiMerchTag = {
   id: string | number;
   labelPT: string;
   labelEN?: string | null;
+  /** Stable auto-generated slug (2026-07-25 follow-up), same policy as
+   * Categories.slug -- lets the home hero's "Button link" point at a
+   * themed collection via /catalogo?tag=<slug> instead of just a category. */
+  slug?: string | null;
 };
 
 export type ApiColor = {
@@ -344,6 +351,18 @@ export type HomeContent = {
   heroImage?: string | number | ApiMedia | null;
 };
 
+/** One auto-saved snapshot of home-content (2026-07-25 follow-up: "save old
+ * homepage creations, in case I want to re-activate them later"). Payload's
+ * built-in global versioning (versions.max on the global, no drafts/publish
+ * workflow) snapshots the PREVIOUS doc on every save -- `version` is the
+ * full HomeContent shape as it existed at that point in time. */
+export type HomeContentVersion = {
+  id: string | number;
+  version: HomeContent;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type ApiCustomer = {
   id: string;
   name: string;
@@ -461,7 +480,16 @@ export async function fetchProductBySlug(slug: string, market: 'AO' | 'PT'): Pro
 /** Public: categories for the Browse filter pills/sidebar. Sorted by
  * creation so the original four keep their familiar order. */
 export async function fetchCategories(): Promise<ApiCategory[]> {
-  const data = await request<{ docs: ApiCategory[] }>('/categories?limit=100&sort=createdAt');
+  const data = await request<{ docs: ApiCategory[] }>('/categories?limit=100&sort=createdAt&depth=1');
+  return data.docs;
+}
+
+/** Public read of merchandising tags (2026-07-25 follow-up) -- the CMS
+ * collection is publicly readable (access.read: () => true), same as
+ * categories. Used by Browse.tsx to resolve a ?tag=<slug> URL param (the
+ * home hero button's "collection" link) into a filter and a display label. */
+export async function fetchMerchTags(): Promise<ApiMerchTag[]> {
+  const data = await request<{ docs: ApiMerchTag[] }>('/merch-tags?limit=100&sort=createdAt');
   return data.docs;
 }
 
@@ -676,7 +704,7 @@ export function taxonomyErrorMessage(err: unknown, fallback: string): string {
   return fallback;
 }
 export async function adminListCategories(): Promise<ApiCategory[]> {
-  const data = await request<{ docs: ApiCategory[] }>('/categories?limit=100&sort=createdAt', {}, { auth: true });
+  const data = await request<{ docs: ApiCategory[] }>('/categories?limit=100&sort=createdAt&depth=1', {}, { auth: true });
   return data.docs;
 }
 
@@ -703,9 +731,12 @@ export async function adminCreateMerchTag(input: { labelPT: string; labelEN?: st
   return data.doc;
 }
 
-export async function adminUpdateCategory(id: string | number, input: { namePT?: string; nameEN?: string }): Promise<ApiCategory> {
+export async function adminUpdateCategory(
+  id: string | number,
+  input: { namePT?: string; nameEN?: string; image?: string | number | null },
+): Promise<ApiCategory> {
   const data = await request<{ doc: ApiCategory }>(
-    `/categories/${id}`,
+    `/categories/${id}?depth=1`,
     { method: 'PATCH', body: JSON.stringify(input) },
     { auth: true },
   );
@@ -899,6 +930,31 @@ export async function adminUpdateHomeContent(input: Partial<HomeContent>): Promi
     { method: 'POST', body: JSON.stringify(input) },
     { auth: true },
   );
+}
+
+/** Past saves of the home hero (2026-07-25 follow-up), newest first --
+ * powers the "Previous versions" panel in Settings.tsx's HomeHeroSection.
+ * Payload auto-snapshots the PREVIOUS doc on every save (versions.max: 20
+ * on the global), so this list is capped at the last 20 saves. */
+export async function adminListHomeContentVersions(): Promise<HomeContentVersion[]> {
+  const data = await request<{ docs: HomeContentVersion[] }>(
+    '/globals/home-content/versions?limit=20&sort=-createdAt&depth=1',
+    {},
+    { auth: true },
+  );
+  return data.docs;
+}
+
+/** Restores a past version as the current home hero content. Returns the
+ * restored (now-current) doc so the caller can update its form state
+ * without a second fetch. */
+export async function adminRestoreHomeContentVersion(id: string | number): Promise<HomeContent> {
+  const data = await request<{ doc: HomeContent }>(
+    `/globals/home-content/versions/${id}?depth=1`,
+    { method: 'POST' },
+    { auth: true },
+  );
+  return data.doc;
 }
 
 export async function adminListInvoices(): Promise<ApiInvoice[]> {

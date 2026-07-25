@@ -97,6 +97,7 @@ export function adaptApiProduct(api: ApiProduct, market: 'AO' | 'PT', lang: 'pt'
     variants,
     colors,
     tag: tag ? ((lang === 'en' ? tag.labelEN : tag.labelPT)?.trim() || tag.labelPT) : undefined,
+    tagSlug: tag?.slug ?? undefined,
     isNewArrival,
     description: localizedDescription,
     sizeGuide,

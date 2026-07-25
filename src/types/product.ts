@@ -72,6 +72,11 @@ export type Product = {
   variants: ProductVariant[];
   colors: ProductColor[];
   tag?: string;
+  /** Merch tag's stable slug (2026-07-25 follow-up, "collections"). Matches
+   * the ?tag= URL param, the same way `cat` matches ?cat= -- lets the home
+   * hero button link at a curated set of products via a merchandising tag
+   * (e.g. /catalogo?tag=ss26) rather than just one category. */
+  tagSlug?: string;
   /** True when the product's merch tag is a recognised "new arrival" marker
    * (2026-07-25 navbar fix) -- checked against BOTH labelPT and labelEN on
    * the tag doc, not the current display language, so it's stable across
