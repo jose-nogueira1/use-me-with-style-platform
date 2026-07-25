@@ -7,7 +7,6 @@ import { Orders } from './pages/Orders';
 import { OrderDetail } from './pages/OrderDetail';
 import { Products } from './pages/Products';
 import { ProductEditor } from './pages/ProductEditor';
-import { ProductSettings } from './pages/ProductSettings';
 import { Customers } from './pages/Customers';
 import { CustomerDetail } from './pages/CustomerDetail';
 import { Mensagens } from './pages/Mensagens';
@@ -28,7 +27,6 @@ export function AdminRoutes() {
           <Route path="encomendas/:id" element={<OrderDetail />} />
           <Route path="produtos" element={<Products />} />
           <Route path="produtos/:id" element={<ProductEditor />} />
-          <Route path="definicoes-produto" element={<ProductSettings />} />
           <Route path="clientes" element={<Customers />} />
           <Route path="clientes/:id" element={<CustomerDetail />} />
           <Route path="mensagens" element={<Mensagens />} />

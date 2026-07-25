@@ -356,7 +356,7 @@ export function ProductEditor() {
           </div>
 
           <div style={{ fontSize: 10, color: C.inkSoft, marginTop: -8 }}>
-            Categories, tags, colours and size guides are managed in <Link to="/admin/definicoes-produto" style={{ color: C.goldDeep, fontWeight: 800 }}>Product settings</Link>.
+            Categories, tags, colours and size guides are managed in <Link to="/admin/definicoes?tab=products" style={{ color: C.goldDeep, fontWeight: 800 }}>Settings → Products</Link>.
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }} className="ump-admin-fields-grid">

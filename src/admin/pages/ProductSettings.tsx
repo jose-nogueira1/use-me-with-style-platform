@@ -28,11 +28,13 @@ import {
   type ApiSizeGuide,
   type ApiSizeGuideRow,
 } from '../../lib/api';
-import { PageHeader } from '../components/PageHeader';
 
-// Product settings (2026-07-25 admin request): single place to manage the
-// catalogue taxonomies -- categories, merchandising tags, colours, and size
-// guides. The product editor only PICKS from these lists.
+// Product settings (2026-07-25 admin request; moved into Settings as its
+// own tab 2026-07-25): manages the catalogue taxonomies -- categories,
+// merchandising tags, colours, and size guides. The product editor only
+// PICKS from these lists. Rendered as a Settings tab body (see
+// Settings.tsx's `tab === 'products'` case) -- no PageHeader of its own,
+// since Settings already renders one for the active tab.
 //
 // Deletion is guarded twice: buttons disable while anything references the
 // entry (usage counts computed client-side from the product list), and the
@@ -41,7 +43,7 @@ import { PageHeader } from '../components/PageHeader';
 
 const ALL_SIZES = ['XS', 'S', 'M', 'L', 'XL'];
 
-export function ProductSettings() {
+export function ProductTaxonomySettings() {
   const [categories, setCategories] = useState<ApiCategory[]>([]);
   const [tags, setTags] = useState<ApiMerchTag[]>([]);
   const [colors, setColors] = useState<ApiColor[]>([]);
@@ -82,19 +84,13 @@ export function ProductSettings() {
     return { byCategory, byTag, byColor, byGuide };
   }, [products]);
 
-  if (loading) return <div style={{ padding: '32px 28px', fontSize: 13, color: C.inkSoft }}>Loading…</div>;
+  if (loading) return <div style={{ padding: '20px 28px', fontSize: 13, color: C.inkSoft }}>Loading…</div>;
 
   return (
-    <div style={{ paddingBottom: 32 }}>
-      <PageHeader
-        eyebrow="Products / Product settings"
-        title="Product settings"
-        subtitle="Categories, merchandising tags, colours, and size guides. Products pick from these lists; entries in use can't be deleted until reassigned."
-      />
+    <div style={{ padding: '20px 28px 32px' }}>
+      {error && <div style={{ fontSize: 12, color: '#B95545', marginBottom: 12 }}>{error}</div>}
 
-      {error && <div style={{ margin: '16px 28px 0', fontSize: 13, color: '#B95545' }}>{error}</div>}
-
-      <div style={{ padding: '20px 28px 0', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16, alignItems: 'flex-start' }} className="ump-admin-orders-grid">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16, alignItems: 'flex-start' }} className="ump-admin-orders-grid">
         <TaxonomyPanel
           title="Categories"
           hint="Shown as storefront filter pills. The slug (URL) is created once and never changes."

@@ -1,4 +1,5 @@
 import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { C, F } from '../../theme';
 import {
   adminFetchInvoiceSettings,
@@ -13,6 +14,7 @@ import {
 } from '../../lib/api';
 import { PageHeader } from '../components/PageHeader';
 import { Badge } from '../components/Badge';
+import { ProductTaxonomySettings } from './ProductSettings';
 
 const DEFAULTS: MarketSettings = {
   angolaPaymentLive: false,
@@ -40,6 +42,11 @@ const TABS = [
   { key: 'policies', label: 'Policies & content' },
   { key: 'invoicing', label: 'Invoicing' },
   { key: 'legal', label: 'Legal pages' },
+  // Catalogue taxonomies (2026-07-25): categories, merchandising tags,
+  // colours, and size guides -- moved here from their own admin page so
+  // the product editor's "Product settings" link has one obvious home
+  // (was /admin/definicoes-produto; now this tab).
+  { key: 'products', label: 'Products' },
 ] as const;
 type SettingsTab = (typeof TABS)[number]['key'];
 
@@ -48,7 +55,12 @@ const TAB_META: Record<SettingsTab, { title: string; subtitle: string }> = {
   policies: { title: 'Policies & content', subtitle: 'Returns, business hours, and shipping copy shown on the Help page and at checkout.' },
   invoicing: { title: 'Internal invoicing', subtitle: 'Commercial (non-fiscal) invoice generation, per market.' },
   legal: { title: 'Legal pages', subtitle: "Shown on the storefront's Privacy Policy and Terms & Conditions pages." },
+  products: { title: 'Product settings', subtitle: "Categories, merchandising tags, colours, and size guides. Products pick from these lists; entries in use can't be deleted until reassigned." },
 };
+
+function isSettingsTab(value: string | null): value is SettingsTab {
+  return TABS.some((t) => t.key === value);
+}
 
 // Split into tabs (2026-07-25, user feedback: the previous single-page
 // layout stacked Markets + Policies + Invoicing + Legal pages into one very
@@ -58,7 +70,19 @@ const TAB_META: Record<SettingsTab, { title: string; subtitle: string }> = {
 // pages are separate globals and keep their own self-contained save actions
 // (each section already had its own fetch/save before this change).
 export function Settings() {
-  const [tab, setTab] = useState<SettingsTab>('markets');
+  // Deep-linkable via ?tab=products so the ProductEditor's "Product
+  // settings" link can jump straight to this tab.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab');
+  const [tab, setTabState] = useState<SettingsTab>(isSettingsTab(initialTab) ? initialTab : 'markets');
+  const setTab = (next: SettingsTab) => {
+    setTabState(next);
+    setSearchParams((prev) => {
+      const params = new URLSearchParams(prev);
+      params.set('tab', next);
+      return params;
+    }, { replace: true });
+  };
   const [settings, setSettings] = useState<MarketSettings>(DEFAULTS);
   const [loading, setLoading] = useState(true);
   const [, setSaving] = useState(false);
@@ -281,6 +305,7 @@ export function Settings() {
 
       {tab === 'invoicing' && <InvoicingSettingsSection />}
       {tab === 'legal' && <LegalPagesSection />}
+      {tab === 'products' && <ProductTaxonomySettings />}
     </div>
   );
 }
