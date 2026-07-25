@@ -200,20 +200,33 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
           .ump-hero-photo { display: block; margin-top: 0; height: 360px !important; }
         }
 
-        .ump-grid-auto { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+        .ump-grid-auto { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(150px, 100%), 1fr)); gap: 10px; }
         /* Product grid (Browse, Home featured, recommendations): 150px is
-           deliberately low so two cards still fit on the narrowest phones
-           this app targets (150*2 + 10px gap fits inside a 320px screen's
-           ~280px content width) -- raising that floor would break mobile,
-           so it can't just be bumped everywhere. At the very wide end
-           (.ump-content-width caps out at 1900px), a 150px floor works out
-           to ~12 columns of fairly small, dense cards. Verified fine at
-           ~1560px (7 comfortable columns); this override only engages above
-           1800px -- past what could be checked directly in this environment
-           -- as a light safeguard against cards getting too small/cramped
-           on a genuine ultra-wide monitor (2026-07-24, responsive audit,
+           the target card width, but minmax(min(150px, 100%), 1fr) -- not
+           minmax(150px, 1fr) -- is what actually keeps this safe.
+           minmax(150px, 1fr) sets an unconditional 150px floor per track;
+           the browser then has to pick a column count whose floors add up
+           to no more than the container's width. At true narrow-phone
+           widths that math doesn't work out the way the original version
+           of this comment assumed: a 320px screen's actual content width
+           here is ~274px (verified directly, not the ~280px this comment
+           previously guessed), which is *less* than the 310px two 150px
+           columns plus a 10px gap need. Chrome quietly self-corrects by
+           collapsing to one column instead of forcing the impossible
+           layout, so this looked fine there -- but a real-device recording
+           (2026-07-25) showed Safari rendering two 150px-floor columns
+           anyway and overflowing the page. min(150px, 100%) caps the
+           per-track floor at the container's own width, so the minimum a
+           track can ever demand is "the whole row" -- it can never add up
+           to more than what's actually there, in any browser, regardless
+           of how that browser's auto-fill implementation counts columns.
+           At the very wide end (.ump-content-width caps out at 1900px), a
+           150px floor works out to ~12 columns of fairly small, dense
+           cards; this override raises the floor to 190px above 1800px as a
+           light safeguard against cards getting too small/cramped on a
+           genuine ultra-wide monitor (2026-07-24, responsive audit,
            Finding 7). */
-        @media (min-width: 1800px) { .ump-grid-auto { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); } }
+        @media (min-width: 1800px) { .ump-grid-auto { grid-template-columns: repeat(auto-fill, minmax(min(190px, 100%), 1fr)); } }
 
         /* Home: Instagram feed (2026-07-10) -- 3 columns on mobile (matches
            the real Instagram grid feel at small sizes), 6 on desktop so all
