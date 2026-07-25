@@ -238,6 +238,13 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
 
         .ump-cat-row { display: flex; gap: 10px; overflow-x: auto; }
         @media (min-width: 720px) { .ump-cat-row { display: grid; grid-template-columns: repeat(4, 1fr); overflow-x: visible; } }
+        /* Category tiles (2026-07-25 redesign: full-bleed portrait photo with
+           an overlaid label instead of a tiny thumbnail floating in a mostly-
+           empty card). Tiles use aspect-ratio for their height, which needs an
+           explicit width to resolve against in the mobile flex row -- the
+           desktop grid below overrides this via grid-template-columns instead. */
+        .ump-cat-tile { flex: 0 0 42%; }
+        @media (min-width: 720px) { .ump-cat-tile { flex: none; } }
 
         /* Browse: sidebar filter panel on desktop (per "D02. Desktop Browse
            and Filter"), inline pills + slide-down panel on mobile. Breakpoint

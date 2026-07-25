@@ -138,28 +138,44 @@ export function Home() {
               <Link
                 key={String(c.id)}
                 to={`/catalogo?cat=${slug}`}
-                className="ump-hover-lift"
+                className="ump-hover-lift ump-cat-tile"
                 style={{
-                  flexShrink: 0,
-                  minWidth: 96,
-                  background: C.paper,
-                  borderRadius: 8,
-                  padding: 10,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
+                  position: 'relative',
+                  display: 'block',
+                  aspectRatio: '3 / 4',
+                  borderRadius: 10,
+                  overflow: 'hidden',
                   border: `1px solid ${C.ruleLight}`,
                   textDecoration: 'none',
                 }}
               >
-                <div style={{ width: 60, height: 64, borderRadius: 6, overflow: 'hidden' }}>
-                  {imageUrl ? (
-                    <img src={imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  ) : (
-                    <ProductPhoto tone={CATEGORY_TONE_CYCLE[index % CATEGORY_TONE_CYCLE.length]} radius={6} />
-                  )}
+                {imageUrl ? (
+                  <img src={imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                ) : (
+                  <ProductPhoto tone={CATEGORY_TONE_CYCLE[index % CATEGORY_TONE_CYCLE.length]} radius={0} />
+                )}
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    background: 'linear-gradient(to top, rgba(0,0,0,0.62) 0%, rgba(0,0,0,0.0) 45%)',
+                  }}
+                />
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: 12,
+                    right: 12,
+                    bottom: 12,
+                    fontSize: 12,
+                    fontWeight: 800,
+                    letterSpacing: 1,
+                    textTransform: 'uppercase',
+                    color: '#fff',
+                  }}
+                >
+                  {label}
                 </div>
-                <div style={{ marginTop: 8, fontSize: 11, fontWeight: 800, color: C.ink, textAlign: 'center' }}>{label}</div>
               </Link>
             );
           })}
