@@ -23,7 +23,6 @@ export function Browse() {
   const { market, lang } = useApp();
   const { products, loading } = useProducts(market, lang);
   const [searchParams] = useSearchParams();
-  const initialCat = searchParams.get('cat') || 'all';
 
   const [categories, setCategories] = useState<ApiCategory[]>(FALLBACK_CATS);
   useEffect(() => {
@@ -43,6 +42,13 @@ export function Browse() {
   const cats = useMemo(
     () => [
       { key: 'all', label: t('all', lang) },
+      // Pseudo-category (2026-07-25 navbar fix): the "Novidades"/"New
+      // arrivals" nav link points at ?cat=new, but 'new' was never a real
+      // category slug once categories became real CMS data -- it always
+      // matched zero products. Filtered on the product's merch tag instead
+      // (see productAdapters.ts's isNewArrival), but kept in this same list
+      // so it still renders and highlights like any other pill/filter.
+      { key: 'new', label: t('newArrivalsNav', lang) },
       ...categories
         .filter((c) => c.slug)
         .map((c) => ({ key: c.slug as string, label: (lang === 'en' ? c.nameEN : c.namePT)?.trim() || c.namePT })),
@@ -50,7 +56,25 @@ export function Browse() {
     [categories, lang],
   );
 
-  const [activeCat, setActiveCat] = useState(initialCat);
+  // Re-syncs the active category whenever the URL's ?cat= param changes
+  // (2026-07-25 navbar fix). This used to be a plain useState initialized
+  // once from the URL and never revisited -- but clicking a top-nav
+  // category link while ALREADY on /catalogo (e.g. Vestidos -> Conjuntos)
+  // is a client-side route change within the same component instance, not
+  // a remount, so activeCat silently stayed frozen at whatever it was the
+  // first time and every subsequent nav-link click did nothing visible
+  // (confirmed via screen recording: no pill ever highlighted after the
+  // first click, filters stuck showing 0 results). Adjusting state during
+  // render (comparing against the last-seen URL value) rather than in a
+  // useEffect, per https://react.dev/learn/you-might-not-need-an-effect --
+  // avoids an extra render pass and the associated lint rule.
+  const urlCat = searchParams.get('cat') || 'all';
+  const [activeCat, setActiveCat] = useState(urlCat);
+  const [syncedUrlCat, setSyncedUrlCat] = useState(urlCat);
+  if (urlCat !== syncedUrlCat) {
+    setSyncedUrlCat(urlCat);
+    setActiveCat(urlCat);
+  }
   const [showFilters, setShowFilters] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterSize, setFilterSize] = useState<string | null>(null);
@@ -59,7 +83,8 @@ export function Browse() {
 
   const filtered = useMemo(() => {
     let list = products;
-    if (activeCat !== 'all') list = list.filter((p) => p.cat === activeCat);
+    if (activeCat === 'new') list = list.filter((p) => p.isNewArrival);
+    else if (activeCat !== 'all') list = list.filter((p) => p.cat === activeCat);
     if (searchTerm) list = list.filter((p) => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
     if (filterSize) list = list.filter((p) => p.sizes.includes(filterSize));
     if (filterColor) list = list.filter((p) => p.colors.some((c) => c.id === filterColor));

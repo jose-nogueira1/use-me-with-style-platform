@@ -72,6 +72,14 @@ export type Product = {
   variants: ProductVariant[];
   colors: ProductColor[];
   tag?: string;
+  /** True when the product's merch tag is a recognised "new arrival" marker
+   * (2026-07-25 navbar fix) -- checked against BOTH labelPT and labelEN on
+   * the tag doc, not the current display language, so it's stable across
+   * a language switch. Drives the "Novidades"/"New arrivals" nav link,
+   * which used to filter by category slug 'new' -- a slug that has never
+   * existed since categories became real CMS data, so it always showed
+   * zero results. */
+  isNewArrival: boolean;
   description?: string;
   /** Shared measurement chart (if the product references one). */
   sizeGuide?: SizeGuideRow[];

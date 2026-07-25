@@ -5,6 +5,13 @@ const SIZE_ORDER = ['XS', 'S', 'M', 'L', 'XL'];
 import { TONE_CYCLE } from '../components/ProductPhoto';
 import { publicEnv } from '../config/env';
 
+// Recognised "new arrival" merch-tag labels (2026-07-25 navbar fix), checked
+// case-insensitively against BOTH labelPT and labelEN regardless of the
+// current storefront language, so the "Novidades"/"New arrivals" nav link
+// filters correctly no matter which language a shopper (or the admin who
+// named the tag) is using.
+const NEW_ARRIVAL_TAG_LABELS = new Set(['novidade', 'novidades', 'new', 'new arrival', 'new arrivals']);
+
 function absoluteMediaUrl(url?: string): string | undefined {
   if (!url) return undefined;
   try {
@@ -35,6 +42,9 @@ export function adaptApiProduct(api: ApiProduct, market: 'AO' | 'PT', lang: 'pt'
   // than crashing.
   const category = resolveRef(api.category);
   const tag = resolveRef(api.tag);
+  const isNewArrival = Boolean(
+    tag && [tag.labelPT, tag.labelEN].some((label) => label && NEW_ARRIVAL_TAG_LABELS.has(label.trim().toLowerCase())),
+  );
 
   // Variant-level inventory: colours, sizes, and stock all derive from the
   // colour+size variant rows (row order = colour display order).
@@ -84,6 +94,7 @@ export function adaptApiProduct(api: ApiProduct, market: 'AO' | 'PT', lang: 'pt'
     variants,
     colors,
     tag: tag ? ((lang === 'en' ? tag.labelEN : tag.labelPT)?.trim() || tag.labelPT) : undefined,
+    isNewArrival,
     description: localizedDescription,
     sizeGuide,
     fitNote: (lang === 'en' ? api.fitNoteEN : api.fitNotePT)?.trim() || api.fitNotePT?.trim() || undefined,
