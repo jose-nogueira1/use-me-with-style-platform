@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertTriangle, Bell, Clock, MessageCircle, Package, Search, ShoppingBag, User } from 'lucide-react';
+import { AlertTriangle, Bell, Clock, MessageCircle, Package, Search, ShoppingBag, User, X } from 'lucide-react';
 import { C, F } from '../../theme';
 import {
   adminListCustomers,
@@ -12,6 +12,15 @@ import {
   type ApiOrder,
   type ApiProduct,
 } from '../../lib/api';
+import {
+  clearAllNotifications,
+  clearNotification,
+  getClearedKeys,
+  getSeenKeys,
+  markNotificationsSeen,
+  NOTIFICATIONS_STATE_EVENT,
+  pruneNotificationState,
+} from '../../lib/notificationState';
 
 // Every admin screen in the Figma design shares this exact header pattern:
 // a small eyebrow breadcrumb, a large bold title, a one-line subtitle, and a
@@ -302,16 +311,57 @@ export function SearchButton() {
 
 type NotificationItem = { key: string; icon: ReactNode; title: string; subtitle: string; path: string };
 
+// One notification row with an unseen dot (gold, cleared once the popover
+// is opened) and its own dismiss button, separate from the generic
+// ResultRow used by search (2026-07-25 seen/cleared request).
+function NotificationRow({ icon, title, subtitle, unseen, onClick, onClear }: { icon: ReactNode; title: string; subtitle?: string; unseen: boolean; onClick: () => void; onClear: () => void }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 2, borderRadius: 6, background: unseen ? C.tagBg : 'transparent' }}>
+      <button
+        onClick={onClick}
+        style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0, textAlign: 'left', padding: '8px 4px 8px 8px', borderRadius: 6, background: 'transparent', color: C.ink }}
+      >
+        <span aria-hidden style={{ width: 6, height: 6, borderRadius: '50%', background: unseen ? C.goldDeep : 'transparent', flexShrink: 0 }} />
+        <span style={{ color: C.goldDeep, flexShrink: 0 }}>{icon}</span>
+        <span style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 12.5, fontWeight: unseen ? 800 : 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</div>
+          {subtitle && <div style={{ fontSize: 10.5, color: C.inkSoft, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{subtitle}</div>}
+        </span>
+      </button>
+      <button
+        aria-label="Dismiss notification"
+        onClick={(e) => {
+          e.stopPropagation();
+          onClear();
+        }}
+        style={{ flexShrink: 0, width: 22, height: 22, marginRight: 4, borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.inkSoft }}
+      >
+        <X size={12} />
+      </button>
+    </div>
+  );
+}
+
 // Surfaces the three things an admin actually needs to act on: orders stuck
 // in payment review, products running low on stock (same threshold as the
 // Products list's "Low stock" filter -- see productIsLowStock), and
 // WhatsApp/Instagram messages awaiting a reply. Fetched on mount (not only
 // on open) so the badge count is visible without having to click first.
+//
+// Seen/cleared state (2026-07-25 request): notifications are recomputed
+// fresh from live data every time (there's no backend record for them), so
+// "seen" and "cleared" are tracked client-side by the item's stable
+// source-derived key (lib/notificationState.ts) -- the badge only counts
+// unseen items, opening the popover marks everything currently in it as
+// seen, and each item (or the whole list) can be dismissed, which keeps it
+// out of the list even though the underlying order/product/message is
+// still live.
 export function NotificationsButton() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [items, setItems] = useState<NotificationItem[]>([]);
+  const [seenKeys, setSeenKeys] = useState<Set<string>>(() => getSeenKeys());
   const close = () => setOpen(false);
   const wrapRef = usePopover(close);
 
@@ -347,29 +397,82 @@ export function NotificationsButton() {
             path: '/admin/mensagens',
           });
         }
-        setItems(next);
+        // Prune against the full live set (before filtering out cleared
+        // items) -- pruning against the post-filter list would immediately
+        // forget any item the admin just cleared, since a cleared item is
+        // by definition missing from that filtered list.
+        pruneNotificationState(next.map((item) => item.key));
+        const cleared = getClearedKeys();
+        setItems(next.filter((item) => !cleared.has(item.key)));
       })
       .catch(() => {})
       .finally(() => setLoaded(true));
   }, []);
+
+  // Keeps this button's seen state in sync with the other NotificationsButton
+  // instance (desktop header vs. mobile top bar render separately).
+  useEffect(() => {
+    const onStateChange = () => setSeenKeys(getSeenKeys());
+    window.addEventListener(NOTIFICATIONS_STATE_EVENT, onStateChange);
+    return () => window.removeEventListener(NOTIFICATIONS_STATE_EVENT, onStateChange);
+  }, []);
+
+  const togglePopover = () => {
+    setOpen((wasOpen) => {
+      const willOpen = !wasOpen;
+      if (willOpen && items.length > 0) {
+        markNotificationsSeen(items.map((item) => item.key));
+        setSeenKeys(getSeenKeys());
+      }
+      return willOpen;
+    });
+  };
+
+  const handleClear = (key: string) => {
+    clearNotification(key);
+    setItems((prev) => prev.filter((item) => item.key !== key));
+  };
+
+  const handleClearAll = () => {
+    clearAllNotifications(items.map((item) => item.key));
+    setItems([]);
+  };
 
   const goTo = (path: string) => {
     setOpen(false);
     navigate(path);
   };
 
+  const unseenCount = items.filter((item) => !seenKeys.has(item.key)).length;
+
   return (
     <div ref={wrapRef} style={{ position: 'relative' }}>
-      <IconButton label="Notifications" active={open} badge={items.length} onClick={() => setOpen((o) => !o)}>
+      <IconButton label="Notifications" active={open} badge={unseenCount} onClick={togglePopover}>
         <Bell size={15} />
       </IconButton>
       {open && (
         <Popover>
+          {loaded && items.length > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 10px 4px' }}>
+              <span style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, textTransform: 'uppercase', letterSpacing: 0.5 }}>Notifications</span>
+              <button onClick={handleClearAll} style={{ fontSize: 10, fontWeight: 700, color: C.inkSoft }}>
+                Clear all
+              </button>
+            </div>
+          )}
           <div style={{ overflowY: 'auto', padding: 6 }}>
             {!loaded && <div style={{ padding: '10px 8px', fontSize: 12, color: C.inkSoft }}>Loading…</div>}
             {loaded && items.length === 0 && <div style={{ padding: '10px 8px', fontSize: 12, color: C.inkSoft }}>All caught up -- no notifications.</div>}
             {items.map((item) => (
-              <ResultRow key={item.key} icon={item.icon} title={item.title} subtitle={item.subtitle} onClick={() => goTo(item.path)} />
+              <NotificationRow
+                key={item.key}
+                icon={item.icon}
+                title={item.title}
+                subtitle={item.subtitle}
+                unseen={!seenKeys.has(item.key)}
+                onClick={() => goTo(item.path)}
+                onClear={() => handleClear(item.key)}
+              />
             ))}
           </div>
         </Popover>

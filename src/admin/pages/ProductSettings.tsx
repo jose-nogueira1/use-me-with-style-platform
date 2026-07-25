@@ -298,8 +298,19 @@ function ColorDot({ hex, hex2, swatchUrl }: { hex?: string | null; hex2?: string
 // combination colour case (e.g. red & white), rendered as a split circle.
 // noHex: patterned fabric, relies on a swatch image uploaded in the CMS
 // admin instead (mutually exclusive with combo).
-type ColorDraft = { namePT: string; nameEN: string; hex: string; hex2: string; combo: boolean; noHex: boolean };
-const EMPTY_COLOR_DRAFT: ColorDraft = { namePT: '', nameEN: '', hex: '#C8A96A', hex2: '#F7F5F0', combo: false, noHex: false };
+//
+// nameSource tracks WHO last set namePT/nameEN, not just whether they're
+// blank (2026-07-25 bug fix): a hex-driven suggestion still leaves the
+// fields non-empty, so an emptiness check alone made the very first
+// suggestion "stick" and silently ignore every hex change after it --
+// changing the colour no longer changed the name. 'auto' means the
+// current text was suggested by us and stays live as the admin keeps
+// picking hexes; 'manual' means the admin typed into a name field
+// themselves, which freezes the suggestion. Clearing both name fields
+// re-arms 'auto'. Editing an existing (already-named) colour starts
+// 'manual' so a small hex tweak doesn't silently rename it.
+type ColorDraft = { namePT: string; nameEN: string; hex: string; hex2: string; combo: boolean; noHex: boolean; nameSource: 'auto' | 'manual' };
+const EMPTY_COLOR_DRAFT: ColorDraft = { namePT: '', nameEN: '', hex: '#C8A96A', hex2: '#F7F5F0', combo: false, noHex: false, nameSource: 'auto' };
 
 function ColorsPanel({
   colors,
@@ -329,23 +340,36 @@ function ColorsPanel({
     }
   };
 
-  // Auto-suggests bilingual names from the chosen hex(es) -- but only while
-  // both name fields are still blank, so it never clobbers anything the
-  // admin typed (2026-07-25 request). Applies to both the single-colour
-  // and two-tone-combination cases.
+  // Auto-suggests bilingual names from the chosen hex(es) as long as the
+  // name is still in 'auto' mode -- i.e. the admin hasn't typed into a name
+  // field themselves since the last time it was cleared (2026-07-25 bug
+  // fix: checking emptiness alone made the FIRST suggestion permanent,
+  // since it left the fields non-empty and every hex change after that was
+  // silently ignored). Applies to both the single-colour and
+  // two-tone-combination cases.
   const handleHexChange = (set: React.Dispatch<React.SetStateAction<ColorDraft>>, patch: Partial<ColorDraft>) => {
     set((d) => {
       const next = { ...d, ...patch };
-      if (d.namePT.trim() || d.nameEN.trim()) return next;
+      if (d.nameSource === 'manual') return next;
       const suggestion = suggestColorName(next.hex, next.combo ? next.hex2 : undefined);
-      return suggestion ? { ...next, namePT: suggestion.namePT, nameEN: suggestion.nameEN } : next;
+      return suggestion ? { ...next, namePT: suggestion.namePT, nameEN: suggestion.nameEN, nameSource: 'auto' } : next;
+    });
+  };
+
+  // Typing into a name field takes over from the auto-suggestion; clearing
+  // both fields back to blank hands control back to it.
+  const handleNameChange = (set: React.Dispatch<React.SetStateAction<ColorDraft>>, patch: Partial<Pick<ColorDraft, 'namePT' | 'nameEN'>>) => {
+    set((d) => {
+      const next = { ...d, ...patch };
+      const bothBlank = !next.namePT.trim() && !next.nameEN.trim();
+      return { ...next, nameSource: bothBlank ? 'auto' : 'manual' };
     });
   };
 
   const editorFields = (d: ColorDraft, set: React.Dispatch<React.SetStateAction<ColorDraft>>, namePrefix: string) => (
     <>
-      <input aria-label={`${namePrefix} — Portuguese`} placeholder="Nome (PT)" value={d.namePT} onChange={(e) => set((s) => ({ ...s, namePT: e.target.value }))} style={{ ...inputStyle, flex: 1, minWidth: 90 }} />
-      <input aria-label={`${namePrefix} — English (optional)`} placeholder="Name (EN)" value={d.nameEN} onChange={(e) => set((s) => ({ ...s, nameEN: e.target.value }))} style={{ ...inputStyle, flex: 1, minWidth: 90 }} />
+      <input aria-label={`${namePrefix} — Portuguese`} placeholder="Nome (PT)" value={d.namePT} onChange={(e) => handleNameChange(set, { namePT: e.target.value })} style={{ ...inputStyle, flex: 1, minWidth: 90 }} />
+      <input aria-label={`${namePrefix} — English (optional)`} placeholder="Name (EN)" value={d.nameEN} onChange={(e) => handleNameChange(set, { nameEN: e.target.value })} style={{ ...inputStyle, flex: 1, minWidth: 90 }} />
       {!d.noHex && (
         <>
           <input aria-label={`${namePrefix} value`} type="color" value={d.hex} onChange={(e) => handleHexChange(set, { hex: e.target.value })} style={{ width: 34, height: 30, padding: 2, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.paper, cursor: 'pointer' }} />
@@ -401,7 +425,7 @@ function ColorsPanel({
                     disabled={busy}
                     onClick={() => {
                       setEditing(id);
-                      setDraft({ namePT: color.namePT, nameEN: color.nameEN ?? '', hex: color.hex ?? '#C8A96A', hex2: color.hex2 ?? '#F7F5F0', combo: Boolean(color.hex2), noHex: !color.hex });
+                      setDraft({ namePT: color.namePT, nameEN: color.nameEN ?? '', hex: color.hex ?? '#C8A96A', hex2: color.hex2 ?? '#F7F5F0', combo: Boolean(color.hex2), noHex: !color.hex, nameSource: 'manual' });
                     }}
                   />
                   <SmallButton
