@@ -327,6 +327,23 @@ export type LegalContent = {
   termsTextEN?: string;
 };
 
+/** Storefront home hero content (2026-07-25 admin request) -- was hardcoded
+ * via i18n.ts translation keys with no admin-editable source. Same
+ * bilingual PT/EN pattern as LegalContent above. `heroImage`, when set,
+ * replaces the decorative placeholder graphic. */
+export type HomeContent = {
+  heroEyebrowPT?: string;
+  heroEyebrowEN?: string;
+  heroHeadlinePT?: string;
+  heroHeadlineEN?: string;
+  heroSubtitlePT?: string;
+  heroSubtitleEN?: string;
+  heroCtaLabelPT?: string;
+  heroCtaLabelEN?: string;
+  heroCtaHref?: string;
+  heroImage?: string | number | ApiMedia | null;
+};
+
 export type ApiCustomer = {
   id: string;
   name: string;
@@ -454,6 +471,12 @@ export async function fetchMarketSettings(): Promise<MarketSettings> {
 
 export async function fetchLegalContent(): Promise<LegalContent> {
   return request<LegalContent>('/globals/legal-content');
+}
+
+// depth=1 so heroImage resolves to a populated media doc (url/sizes)
+// instead of just an id, same reason fetchProducts uses depth for swatches.
+export async function fetchHomeContent(): Promise<HomeContent> {
+  return request<HomeContent>('/globals/home-content?depth=1');
 }
 
 export type ApiInstagramPost = {
@@ -865,6 +888,14 @@ export async function adminUpdateInvoiceSettings(input: Partial<InvoiceSettings>
 export async function adminUpdateLegalContent(input: Partial<LegalContent>): Promise<LegalContent> {
   return request<LegalContent>(
     '/globals/legal-content',
+    { method: 'POST', body: JSON.stringify(input) },
+    { auth: true },
+  );
+}
+
+export async function adminUpdateHomeContent(input: Partial<HomeContent>): Promise<HomeContent> {
+  return request<HomeContent>(
+    '/globals/home-content?depth=1',
     { method: 'POST', body: JSON.stringify(input) },
     { auth: true },
   );

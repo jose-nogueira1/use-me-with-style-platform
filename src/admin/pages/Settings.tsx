@@ -3,15 +3,22 @@ import { useSearchParams } from 'react-router-dom';
 import { C, F } from '../../theme';
 import {
   adminFetchInvoiceSettings,
+  adminUpdateHomeContent,
   adminUpdateInvoiceSettings,
   adminUpdateLegalContent,
   adminUpdateMarketSettings,
+  adminUploadMedia,
+  fetchHomeContent,
   fetchLegalContent,
   fetchMarketSettings,
+  refId,
+  resolveRef,
+  type HomeContent,
   type InvoiceSettings,
   type LegalContent,
   type MarketSettings,
 } from '../../lib/api';
+import { absoluteMediaUrl } from '../../lib/productAdapters';
 import { PageHeader } from '../components/PageHeader';
 import { Badge } from '../components/Badge';
 import { ProductTaxonomySettings } from './ProductSettings';
@@ -42,6 +49,9 @@ const TABS = [
   { key: 'policies', label: 'Policies & content' },
   { key: 'invoicing', label: 'Invoicing' },
   { key: 'legal', label: 'Legal pages' },
+  // Home hero (2026-07-25 admin request): the "Coleção SS26 / Moda que se
+  // move consigo." banner had no admin-editable source at all before this.
+  { key: 'home', label: 'Home page' },
   // Catalogue taxonomies (2026-07-25): categories, merchandising tags,
   // colours, and size guides -- moved here from their own admin page so
   // the product editor's "Product settings" link has one obvious home
@@ -55,6 +65,7 @@ const TAB_META: Record<SettingsTab, { title: string; subtitle: string }> = {
   policies: { title: 'Policies & content', subtitle: 'Returns, business hours, and shipping copy shown on the Help page and at checkout.' },
   invoicing: { title: 'Internal invoicing', subtitle: 'Commercial (non-fiscal) invoice generation, per market.' },
   legal: { title: 'Legal pages', subtitle: "Shown on the storefront's Privacy Policy and Terms & Conditions pages." },
+  home: { title: 'Home page', subtitle: 'The hero banner shown at the top of the storefront home page.' },
   products: { title: 'Product settings', subtitle: "Categories, merchandising tags, colours, and size guides. Products pick from these lists; entries in use can't be deleted until reassigned." },
 };
 
@@ -305,6 +316,7 @@ export function Settings() {
 
       {tab === 'invoicing' && <InvoicingSettingsSection />}
       {tab === 'legal' && <LegalPagesSection />}
+      {tab === 'home' && <HomeHeroSection />}
       {tab === 'products' && <ProductTaxonomySettings />}
     </div>
   );
@@ -558,6 +570,153 @@ function LegalPagesSection() {
             <PolicyTextarea label="English" value={content.termsTextEN ?? ''} onChange={(v) => setContent((c) => ({ ...c, termsTextEN: v }))} />
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+// Storefront home hero -- CMS global `home-content` (added 2026-07-25, user
+// report: "no way for admin to edit this section of the storefront"). Same
+// self-contained fetch/save pattern as InvoicingSettingsSection/
+// LegalPagesSection above. heroImage is the one field that isn't plain
+// text: the fetch (depth=1) returns a populated media doc, a fresh upload
+// via adminUploadMedia returns one too, and refId() normalizes either back
+// down to a bare id before saving (matching how ProductEditor.tsx submits
+// its own relationship fields).
+const HOME_CONTENT_DEFAULTS: HomeContent = {
+  heroEyebrowPT: '',
+  heroEyebrowEN: '',
+  heroHeadlinePT: '',
+  heroHeadlineEN: '',
+  heroSubtitlePT: '',
+  heroSubtitleEN: '',
+  heroCtaLabelPT: '',
+  heroCtaLabelEN: '',
+  heroCtaHref: '/catalogo',
+  heroImage: null,
+};
+
+function HomeHeroSection() {
+  const [content, setContent] = useState<HomeContent>(HOME_CONTENT_DEFAULTS);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    fetchHomeContent()
+      .then(setContent)
+      .catch(() => setError("Couldn't load the home page content."))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    setSaved(false);
+    try {
+      const updated = await adminUpdateHomeContent({ ...content, heroImage: refId(content.heroImage) || null });
+      setContent(updated);
+      setSaved(true);
+    } catch {
+      setError("Couldn't save. Make sure you're logged in.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleImageUpload = async (file: File) => {
+    setUploading(true);
+    setError(null);
+    try {
+      const media = await adminUploadMedia(file, 'Home hero image');
+      setContent((c) => ({ ...c, heroImage: media }));
+    } catch {
+      setError("Couldn't upload the image.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const heroImageDoc = resolveRef(content.heroImage);
+  const heroImageUrl = absoluteMediaUrl(heroImageDoc?.url);
+
+  return (
+    <div style={{ padding: '20px 28px 32px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+        <div style={{ fontSize: 11, color: C.inkSoft, maxWidth: 560 }}>
+          Shown at the top of the storefront home page. Leave an English field blank to fall back to the Portuguese one.
+        </div>
+        <button
+          onClick={() => void handleSave()}
+          disabled={loading || saving}
+          style={{ padding: '9px 18px', background: C.black, color: C.onDarkGold, fontSize: 11, fontWeight: 800, borderRadius: 6, flexShrink: 0 }}
+        >
+          {saving ? '…' : 'Save home page'}
+        </button>
+      </div>
+      {error && <div style={{ fontSize: 12, color: '#B95545', marginBottom: 12 }}>{error}</div>}
+      {saved && <div style={{ fontSize: 12, color: '#3F754D', marginBottom: 12 }}>Saved.</div>}
+
+      {loading ? (
+        <div style={{ fontSize: 12, color: C.inkSoft }}>Loading…</div>
+      ) : (
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16, marginBottom: 16 }} className="ump-admin-orders-grid">
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>Portuguese</div>
+              <SettingsField label="Eyebrow" value={content.heroEyebrowPT ?? ''} onChange={(v) => setContent((c) => ({ ...c, heroEyebrowPT: v }))} />
+              <SettingsField label="Headline" value={content.heroHeadlinePT ?? ''} onChange={(v) => setContent((c) => ({ ...c, heroHeadlinePT: v }))} />
+              <SettingsTextarea label="Subtitle" value={content.heroSubtitlePT ?? ''} onChange={(v) => setContent((c) => ({ ...c, heroSubtitlePT: v }))} rows={3} />
+              <SettingsField label="Button label" value={content.heroCtaLabelPT ?? ''} onChange={(v) => setContent((c) => ({ ...c, heroCtaLabelPT: v }))} />
+            </div>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>English</div>
+              <SettingsField label="Eyebrow" value={content.heroEyebrowEN ?? ''} onChange={(v) => setContent((c) => ({ ...c, heroEyebrowEN: v }))} />
+              <SettingsField label="Headline" value={content.heroHeadlineEN ?? ''} onChange={(v) => setContent((c) => ({ ...c, heroHeadlineEN: v }))} />
+              <SettingsTextarea label="Subtitle" value={content.heroSubtitleEN ?? ''} onChange={(v) => setContent((c) => ({ ...c, heroSubtitleEN: v }))} rows={3} />
+              <SettingsField label="Button label" value={content.heroCtaLabelEN ?? ''} onChange={(v) => setContent((c) => ({ ...c, heroCtaLabelEN: v }))} />
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }} className="ump-admin-orders-grid">
+            <div>
+              <SettingsField label="Button link" value={content.heroCtaHref ?? ''} onChange={(v) => setContent((c) => ({ ...c, heroCtaHref: v }))} />
+              <div style={{ fontSize: 10, color: C.inkSoft, marginTop: -4 }}>
+                Usually /catalogo, or e.g. /catalogo?cat=vestidos to point at one category.
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>Hero image</div>
+              {heroImageUrl ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                  <img src={heroImageUrl} alt="" style={{ width: 64, height: 64, borderRadius: 6, objectFit: 'cover', border: `1px solid ${C.rule}` }} />
+                  <button
+                    onClick={() => setContent((c) => ({ ...c, heroImage: null }))}
+                    style={{ fontSize: 10, fontWeight: 800, color: '#B95545', border: `1px solid #E1B3AA`, borderRadius: 6, padding: '6px 10px', background: 'transparent' }}
+                  >
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                <div style={{ fontSize: 11, color: C.inkSoft, marginBottom: 8 }}>None set -- the storefront shows a decorative placeholder graphic instead.</div>
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                disabled={uploading}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) void handleImageUpload(file);
+                  e.target.value = '';
+                }}
+                style={{ fontSize: 11 }}
+              />
+              {uploading && <div style={{ fontSize: 10, color: C.inkSoft, marginTop: 4 }}>Uploading…</div>}
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

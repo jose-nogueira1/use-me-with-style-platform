@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { C, F, t } from '../../theme';
 import { useApp } from '../../state/AppContext';
@@ -5,6 +6,8 @@ import { useProducts } from '../../hooks/useProducts';
 import { ProductCard } from '../components/ProductCard';
 import { ProductPhoto } from '../../components/ProductPhoto';
 import { InstagramFeed } from '../components/InstagramFeed';
+import { fetchHomeContent, resolveRef, type HomeContent } from '../../lib/api';
+import { absoluteMediaUrl } from '../../lib/productAdapters';
 
 const CATEGORIES = [
   { key: 'vestidos', labelKey: 'dresses', tone: 'rose' as const },
@@ -16,8 +19,40 @@ const CATEGORIES = [
 export function Home() {
   const { market, lang } = useApp();
   const { products, loading } = useProducts(market, lang);
-  const newArrivals = products.filter((p) => p.tag === 'New').slice(0, 4);
+  // 2026-07-25 navbar fix: was `p.tag === 'New'`, which only ever matched
+  // the English display label and broke for PT (or any renamed tag) --
+  // isNewArrival is resolved once in productAdapters.ts from the merch
+  // tag's raw labelPT/labelEN, independent of the current UI language.
+  const newArrivals = products.filter((p) => p.isNewArrival).slice(0, 4);
   const featured = products.slice(0, 8);
+
+  // Home hero content (2026-07-25 admin request): previously hardcoded via
+  // i18n.ts translation keys with no admin-editable source. Fetched from
+  // the CMS's home-content global; the i18n keys stay as the fallback
+  // (both the initial loading moment and an unreachable CMS), and also
+  // supply the defaults baked into the global itself, so nothing visibly
+  // changes until the admin actually edits it in Settings.
+  const [hero, setHero] = useState<HomeContent | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    fetchHomeContent()
+      .then((content) => {
+        if (!cancelled) setHero(content);
+      })
+      .catch(() => {
+        /* keep the i18n fallback below */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const heroEyebrow = (lang === 'en' ? hero?.heroEyebrowEN : hero?.heroEyebrowPT)?.trim() || t('ss26Collection', lang);
+  const heroHeadline = (lang === 'en' ? hero?.heroHeadlineEN : hero?.heroHeadlinePT)?.trim() || t('heroHeadline', lang);
+  const heroSubtitle = (lang === 'en' ? hero?.heroSubtitleEN : hero?.heroSubtitlePT)?.trim() || t('heroSubtitle', lang);
+  const heroCtaLabel = (lang === 'en' ? hero?.heroCtaLabelEN : hero?.heroCtaLabelPT)?.trim() || t('shopAll', lang);
+  const heroCtaHref = hero?.heroCtaHref?.trim() || '/catalogo';
+  const heroImageUrl = absoluteMediaUrl(resolveRef(hero?.heroImage)?.url);
 
   return (
     <div>
@@ -32,16 +67,16 @@ export function Home() {
         >
           <div>
             <div style={{ fontSize: 10, letterSpacing: 3, color: C.heroAccent, fontWeight: 800, textTransform: 'uppercase', marginBottom: 14 }}>
-              {t('ss26Collection', lang)}
+              {heroEyebrow}
             </div>
             <h1 style={{ fontFamily: F.display, fontSize: 34, fontWeight: 800, lineHeight: 1.12, letterSpacing: '-0.01em', margin: '0 0 16px' }}>
-              {t('heroHeadline', lang)}
+              {heroHeadline}
             </h1>
             <div style={{ fontSize: 13, color: C.heroSubtitle, lineHeight: 1.6, marginBottom: 22, maxWidth: 420 }}>
-              {t('heroSubtitle', lang)}
+              {heroSubtitle}
             </div>
             <Link
-              to="/catalogo"
+              to={heroCtaHref}
               style={{
                 display: 'inline-block',
                 padding: '13px 22px',
@@ -55,11 +90,15 @@ export function Home() {
                 textDecoration: 'none',
               }}
             >
-              {t('shopAll', lang)}
+              {heroCtaLabel}
             </Link>
           </div>
           <div className="ump-hero-photo" style={{ height: 260, borderRadius: 10, overflow: 'hidden' }}>
-            <ProductPhoto tone="gold" radius={10} />
+            {heroImageUrl ? (
+              <img src={heroImageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              <ProductPhoto tone="gold" radius={10} />
+            )}
           </div>
         </div>
       </div>

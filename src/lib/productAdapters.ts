@@ -12,7 +12,10 @@ import { publicEnv } from '../config/env';
 // named the tag) is using.
 const NEW_ARRIVAL_TAG_LABELS = new Set(['novidade', 'novidades', 'new', 'new arrival', 'new arrivals']);
 
-function absoluteMediaUrl(url?: string): string | undefined {
+/** Resolves a CMS-relative media URL to an absolute one. Exported for reuse
+ * anywhere else a raw media URL needs the same treatment (e.g. Home.tsx's
+ * hero image, 2026-07-25). */
+export function absoluteMediaUrl(url?: string): string | undefined {
   if (!url) return undefined;
   try {
     return new URL(url, publicEnv.apiBaseUrl).toString();
