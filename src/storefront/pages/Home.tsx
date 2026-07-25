@@ -8,6 +8,7 @@ import { ProductPhoto, type ProductTone } from '../../components/ProductPhoto';
 import { InstagramFeed } from '../components/InstagramFeed';
 import { fetchCategories, fetchHomeContent, resolveRef, type ApiCategory, type HomeContent } from '../../lib/api';
 import { absoluteMediaUrl } from '../../lib/productAdapters';
+import pictorialWhite from '../../assets/brand/pictorial-white.png';
 
 // Category tiles were a hardcoded list with no admin-editable image
 // (2026-07-25 admin request: "I want the admin to be able to change the
@@ -118,7 +119,28 @@ export function Home() {
             {heroImageUrl ? (
               <img src={heroImageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             ) : (
-              <ProductPhoto tone="gold" radius={10} />
+              // Hero placeholder (2026-07-25, option "B" picked from three
+              // mocked-up alternatives after user feedback that the previous
+              // abstract "garment stripes" ProductPhoto read as an obvious
+              // dev placeholder): a soft duotone gradient with the brand's
+              // pictorial mark (a dress-on-hanger line icon, already used in
+              // the header/footer) watermarked faintly in the middle. Same
+              // gold family as ProductPhoto's 'gold' tone, so it still reads
+              // as "on-brand, temporary" rather than a different accent
+              // color -- swapped out the moment an admin uploads a real photo.
+              <div
+                style={{
+                  position: 'relative',
+                  width: '100%',
+                  height: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: 'linear-gradient(160deg, #EEE4D4 0%, #D0B165 55%, #CAA039 100%)',
+                }}
+              >
+                <img src={pictorialWhite} alt="" style={{ width: '38%', opacity: 0.55 }} />
+              </div>
             )}
           </div>
         </div>
