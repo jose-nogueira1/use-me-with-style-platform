@@ -1,61 +1,67 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { C } from '../../theme';
 import {
-  adminCreateCategory,
-  adminCreateColor,
-  adminCreateMerchTag,
   adminCreateProduct,
   adminDeleteProduct,
   adminListCategories,
   adminListColors,
   adminListMerchTags,
   adminListProducts,
+  adminListSizeGuides,
   adminUpdateProduct,
   adminUploadProductImage,
+  refId,
   resolveProductImage,
   resolveRef,
   type ApiCategory,
   type ApiColor,
   type ApiMerchTag,
   type ApiProduct,
+  type ApiSizeGuide,
+  type ApiVariant,
 } from '../../lib/api';
 import { PageHeader } from '../components/PageHeader';
 
-// Categories, merchandising tags, and colours are admin-managed CMS
-// collections since 2026-07-25 (previously hardcoded options / free text),
-// so this editor loads each list from the API and offers inline "+ New"
-// creation instead of baked-in constants.
+// Catalogue taxonomies are managed in the Product settings page
+// (/admin/definicoes-produto) since 2026-07-25; this editor only PICKS
+// from those lists. Stock is variant-level (colour x size): the admin
+// toggles which colours and sizes the piece comes in, and fills stock in
+// the resulting matrix -- rows are colours, columns are sizes, one AO/PT
+// input pair per cell.
 
-/** Normalizes a Payload relationship ref (id at depth 0, doc at depth 1+)
- * to a string id for form state. */
-function refId(ref: string | number | { id?: string | number } | null | undefined): string {
-  if (ref === null || ref === undefined) return '';
-  if (typeof ref === 'object') return ref.id !== undefined ? String(ref.id) : '';
-  return String(ref);
-}
+const ALL_SIZES = ['XS', 'S', 'M', 'L', 'XL'];
+
+/** Stock cell key: `${colorId}|${size}`. */
+const cellKey = (colorId: string, size: string) => `${colorId}|${size}`;
+
+type StockCell = { ao: number; pt: number };
 
 type FormState = {
   name: string;
   namePT: string;
   nameEN: string;
   // Read-only in this form -- auto-generated server-side from the product
-  // name (2026-07-25 admin request: "user should not be allowed to create
-  // them"). Kept in FormState purely to display it, never sent back on
-  // save; see handleSave and generateProductSlug in the CMS repo.
+  // name (2026-07-25 admin request). Kept in FormState purely to display
+  // it, never sent back on save.
   slug: string;
   /** Category id (string form). Empty = not chosen yet. */
   category: string;
   description: string;
   descriptionPT: string;
   descriptionEN: string;
-  sizeGuidePT: string;
-  sizeGuideEN: string;
+  /** Size guide id (string form). Empty = none. */
+  sizeGuide: string;
+  fitNotePT: string;
+  fitNoteEN: string;
   /** Merch tag id (string form). Empty = no badge. */
   tag: string;
-  /** Selected colour ids (string form). */
+  /** Colours this piece comes in (matrix rows, in display order). */
   colorIds: string[];
-  sizes: ApiProduct['sizes'];
+  /** Sizes this piece comes in (matrix columns). */
+  sizes: string[];
+  /** Per colour+size stock; missing cells default to 0/0. */
+  stock: Record<string, StockCell>;
   priceAOKz: string;
   pricePTEur: string;
   active: boolean;
@@ -63,7 +69,21 @@ type FormState = {
   availablePT: boolean;
 };
 
-const EMPTY: FormState = { name: '', namePT: '', nameEN: '', slug: '', category: '', description: '', descriptionPT: '', descriptionEN: '', sizeGuidePT: '', sizeGuideEN: '', tag: '', colorIds: [], sizes: [{ size: 'S', stockAO: 0, stockPT: 0 }], priceAOKz: '', pricePTEur: '', active: false, availableAO: true, availablePT: true };
+const EMPTY: FormState = { name: '', namePT: '', nameEN: '', slug: '', category: '', description: '', descriptionPT: '', descriptionEN: '', sizeGuide: '', fitNotePT: '', fitNoteEN: '', tag: '', colorIds: [], sizes: ['S', 'M', 'L'], stock: {}, priceAOKz: '', pricePTEur: '', active: false, availableAO: true, availablePT: true };
+
+function formFromVariants(variants: ApiVariant[]): Pick<FormState, 'colorIds' | 'sizes' | 'stock'> {
+  const colorIds: string[] = [];
+  const sizes: string[] = [];
+  const stock: Record<string, StockCell> = {};
+  for (const variant of variants) {
+    const colorId = refId(variant.color);
+    if (colorId && !colorIds.includes(colorId)) colorIds.push(colorId);
+    if (!sizes.includes(variant.size)) sizes.push(variant.size);
+    stock[cellKey(colorId, variant.size)] = { ao: variant.stockAO, pt: variant.stockPT };
+  }
+  sizes.sort((a, b) => ALL_SIZES.indexOf(a) - ALL_SIZES.indexOf(b));
+  return { colorIds, sizes, stock };
+}
 
 export function ProductEditor() {
   const { id } = useParams<{ id: string }>();
@@ -78,19 +98,20 @@ export function ProductEditor() {
   const [categories, setCategories] = useState<ApiCategory[]>([]);
   const [tags, setTags] = useState<ApiMerchTag[]>([]);
   const [colors, setColors] = useState<ApiColor[]>([]);
+  const [sizeGuides, setSizeGuides] = useState<ApiSizeGuide[]>([]);
 
   useEffect(() => {
-    Promise.all([adminListCategories(), adminListMerchTags(), adminListColors()])
-      .then(([cats, tagDocs, colorDocs]) => {
+    Promise.all([adminListCategories(), adminListMerchTags(), adminListColors(), adminListSizeGuides()])
+      .then(([cats, tagDocs, colorDocs, guideDocs]) => {
         setCategories(cats);
         setTags(tagDocs);
         setColors(colorDocs);
-        // Sensible default for brand-new products: first category.
+        setSizeGuides(guideDocs);
         if (isNew && cats.length > 0) {
           setForm((f) => (f.category ? f : { ...f, category: String(cats[0].id) }));
         }
       })
-      .catch(() => setError("Couldn't load categories/tags/colours from the backend."));
+      .catch(() => setError("Couldn't load the catalogue taxonomies from the backend."));
   }, [isNew]);
 
   useEffect(() => {
@@ -112,11 +133,11 @@ export function ProductEditor() {
           description: p.description ?? '',
           descriptionPT: p.descriptionPT ?? p.description ?? '',
           descriptionEN: p.descriptionEN ?? '',
-          sizeGuidePT: p.sizeGuidePT ?? '',
-          sizeGuideEN: p.sizeGuideEN ?? '',
+          sizeGuide: refId(p.sizeGuide),
+          fitNotePT: p.fitNotePT ?? '',
+          fitNoteEN: p.fitNoteEN ?? '',
           tag: refId(p.tag),
-          colorIds: (p.colors ?? []).map((c) => refId(c)).filter(Boolean),
-          sizes: p.sizes,
+          ...formFromVariants(p.variants ?? []),
           priceAOKz: String(p.priceAOKz),
           pricePTEur: String(p.pricePTEur),
           active: p.active,
@@ -135,29 +156,59 @@ export function ProductEditor() {
   const originalId = (docs: { id: string | number }[], stringId: string): string | number =>
     docs.find((d) => String(d.id) === stringId)?.id ?? stringId;
 
+  const toggleColor = (colorId: string) =>
+    setForm((f) => ({
+      ...f,
+      colorIds: f.colorIds.includes(colorId) ? f.colorIds.filter((c) => c !== colorId) : [...f.colorIds, colorId],
+    }));
+
+  const toggleSize = (size: string) =>
+    setForm((f) => ({
+      ...f,
+      sizes: f.sizes.includes(size)
+        ? f.sizes.filter((s) => s !== size)
+        : [...f.sizes, size].sort((a, b) => ALL_SIZES.indexOf(a) - ALL_SIZES.indexOf(b)),
+    }));
+
+  const setStock = (colorId: string, size: string, market: 'ao' | 'pt', value: number) =>
+    setForm((f) => {
+      const key = cellKey(colorId, size);
+      const cell = f.stock[key] ?? { ao: 0, pt: 0 };
+      return { ...f, stock: { ...f.stock, [key]: { ...cell, [market]: value } } };
+    });
+
   const handleSave = async () => {
     if (!form.category) {
       setError('Choose a category before saving.');
       return;
     }
+    if (form.colorIds.length === 0 || form.sizes.length === 0) {
+      setError('Pick at least one colour and one size before saving.');
+      return;
+    }
     setSaving(true);
     setError(null);
+    const variants = form.colorIds.flatMap((colorId) =>
+      form.sizes.map((size) => {
+        const cell = form.stock[cellKey(colorId, size)] ?? { ao: 0, pt: 0 };
+        return { color: originalId(colors, colorId), size, stockAO: cell.ao, stockPT: cell.pt };
+      }),
+    );
     const payload: Partial<ApiProduct> = {
       name: form.namePT || form.name,
       namePT: form.namePT,
       nameEN: form.nameEN,
-      // slug intentionally omitted -- auto-generated (create) or preserved
-      // as-is (update) server-side, never client-supplied.
+      // slug intentionally omitted -- server-generated, never client-supplied.
       category: originalId(categories, form.category),
       description: form.descriptionPT || form.description,
       descriptionPT: form.descriptionPT,
       descriptionEN: form.descriptionEN,
-      sizeGuidePT: form.sizeGuidePT || undefined,
-      sizeGuideEN: form.sizeGuideEN || undefined,
+      sizeGuide: form.sizeGuide ? originalId(sizeGuides, form.sizeGuide) : null,
+      fitNotePT: form.fitNotePT || undefined,
+      fitNoteEN: form.fitNoteEN || undefined,
       // null (not undefined) so removing a badge actually clears it.
       tag: form.tag ? originalId(tags, form.tag) : null,
-      colors: form.colorIds.map((cid) => originalId(colors, cid)),
-      sizes: form.sizes,
+      variants,
       priceAOKz: Number(form.priceAOKz) || 0,
       pricePTEur: Number(form.pricePTEur) || 0,
       active: form.active,
@@ -211,31 +262,9 @@ export function ProductEditor() {
     }
   };
 
-  const handleCreateCategory = async (namePT: string, nameEN: string) => {
-    const created = await adminCreateCategory({ namePT, nameEN: nameEN || undefined });
-    setCategories((prev) => [...prev, created]);
-    set('category', String(created.id));
-  };
-
-  const handleCreateTag = async (labelPT: string, labelEN: string) => {
-    const created = await adminCreateMerchTag({ labelPT, labelEN: labelEN || undefined });
-    setTags((prev) => [...prev, created]);
-    set('tag', String(created.id));
-  };
-
-  const handleCreateColor = async (name: string, hex?: string) => {
-    const created = await adminCreateColor({ name, hex });
-    setColors((prev) => [...prev, created]);
-    setForm((f) => ({ ...f, colorIds: [...f.colorIds, String(created.id)] }));
-  };
-
-  const toggleColor = (colorId: string) =>
-    setForm((f) => ({
-      ...f,
-      colorIds: f.colorIds.includes(colorId) ? f.colorIds.filter((c) => c !== colorId) : [...f.colorIds, colorId],
-    }));
-
   if (loading) return <div style={{ padding: '32px 28px', fontSize: 13, color: C.inkSoft }}>Loading…</div>;
+
+  const selectStyle: React.CSSProperties = { width: '100%', padding: '11px 10px', fontSize: 12, fontWeight: 700, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, color: C.ink };
 
   return (
     <div style={{ paddingBottom: 32 }}>
@@ -285,25 +314,17 @@ export function ProductEditor() {
             <FieldInput label="Product name — English" value={form.nameEN} onChange={(v) => set('nameEN', v)} />
             <label style={{ display: 'block' }}>
               <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>Status</div>
-              <select
-                value={form.active ? 'active' : 'draft'}
-                onChange={(e) => set('active', e.target.value === 'active')}
-                style={{ width: '100%', padding: '11px 10px', fontSize: 12, fontWeight: 700, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, color: C.ink }}
-              >
+              <select value={form.active ? 'active' : 'draft'} onChange={(e) => set('active', e.target.value === 'active')} style={selectStyle}>
                 <option value="draft">Draft</option>
                 <option value="active">Active</option>
               </select>
             </label>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }} className="ump-admin-fields-grid">
-            <div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }} className="ump-admin-fields-grid">
+            <label style={{ display: 'block' }}>
               <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>Category</div>
-              <select
-                value={form.category}
-                onChange={(e) => set('category', e.target.value)}
-                style={{ width: '100%', padding: '11px 10px', fontSize: 12, fontWeight: 700, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, color: C.ink }}
-              >
+              <select value={form.category} onChange={(e) => set('category', e.target.value)} style={selectStyle}>
                 {form.category === '' && <option value="">Choose…</option>}
                 {categories.map((c) => (
                   <option key={String(c.id)} value={String(c.id)}>
@@ -311,20 +332,10 @@ export function ProductEditor() {
                   </option>
                 ))}
               </select>
-              <InlineCreate
-                buttonLabel="+ New category"
-                fields={[{ placeholder: 'Name — Portuguese' }, { placeholder: 'Name — English (optional)' }]}
-                onCreate={([pt, en]) => handleCreateCategory(pt, en)}
-                onError={() => setError("Couldn't create the category.")}
-              />
-            </div>
-            <div>
+            </label>
+            <label style={{ display: 'block' }}>
               <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>Merchandising tag</div>
-              <select
-                value={form.tag}
-                onChange={(e) => set('tag', e.target.value)}
-                style={{ width: '100%', padding: '11px 10px', fontSize: 12, fontWeight: 700, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, color: C.ink }}
-              >
+              <select value={form.tag} onChange={(e) => set('tag', e.target.value)} style={selectStyle}>
                 <option value="">None</option>
                 {tags.map((tg) => (
                   <option key={String(tg.id)} value={String(tg.id)}>
@@ -332,28 +343,33 @@ export function ProductEditor() {
                   </option>
                 ))}
               </select>
-              <InlineCreate
-                buttonLabel="+ New tag"
-                fields={[{ placeholder: 'Label — Portuguese' }, { placeholder: 'Label — English (optional)' }]}
-                onCreate={([pt, en]) => handleCreateTag(pt, en)}
-                onError={() => setError("Couldn't create the tag.")}
-              />
-            </div>
+            </label>
+            <label style={{ display: 'block' }}>
+              <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>Size guide</div>
+              <select value={form.sizeGuide} onChange={(e) => set('sizeGuide', e.target.value)} style={selectStyle}>
+                <option value="">None</option>
+                {sizeGuides.map((g) => (
+                  <option key={String(g.id)} value={String(g.id)}>{g.name}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <div style={{ fontSize: 10, color: C.inkSoft, marginTop: -8 }}>
+            Categories, tags, colours and size guides are managed in <Link to="/admin/definicoes-produto" style={{ color: C.goldDeep, fontWeight: 800 }}>Product settings</Link>.
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }} className="ump-admin-fields-grid">
-            <ReadOnlyField
-              label="Slug"
-              value={form.slug || (isNew ? 'Generated automatically on save' : '')}
-            />
+            <ReadOnlyField label="Slug" value={form.slug || (isNew ? 'Generated automatically on save' : '')} />
             <FieldInput label="Angola price (Kz)" value={form.priceAOKz} onChange={(v) => set('priceAOKz', v)} type="number" />
             <FieldInput label="Portugal price (EUR)" value={form.pricePTEur} onChange={(v) => set('pricePTEur', v)} type="number" />
           </div>
 
+          {/* ---- Variant matrix: colours x sizes, stock per cell ---- */}
           <div>
             <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>Colours</div>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              {colors.length === 0 && <span style={{ fontSize: 11, color: C.inkSoft }}>No colours yet — add the first one below.</span>}
+              {colors.length === 0 && <span style={{ fontSize: 11, color: C.inkSoft }}>No colours yet — create them in Product settings.</span>}
               {colors.map((c) => {
                 const cid = String(c.id);
                 const selected = form.colorIds.includes(cid);
@@ -379,54 +395,113 @@ export function ProductEditor() {
                     }}
                   >
                     {(swatch?.url || c.hex) && (
-                      <span
-                        aria-hidden
-                        style={{
-                          width: 12,
-                          height: 12,
-                          borderRadius: '50%',
-                          flexShrink: 0,
-                          border: `1px solid ${C.rule}`,
-                          background: swatch?.url ? `center / cover url(${swatch.url})` : c.hex ?? undefined,
-                        }}
-                      />
+                      <span aria-hidden style={{ width: 12, height: 12, borderRadius: '50%', flexShrink: 0, border: `1px solid ${C.rule}`, background: swatch?.url ? `center / cover url(${swatch.url})` : c.hex ?? undefined }} />
                     )}
                     {c.name}
                   </button>
                 );
               })}
             </div>
-            <InlineCreateColor
-              onCreate={handleCreateColor}
-              onError={() => setError("Couldn't create the colour.")}
-            />
-            <div style={{ fontSize: 10, color: C.inkSoft, marginTop: 4 }}>
-              Pattern/multicolour fabrics: create the colour here without a hex, then upload a swatch image on the colour itself in the CMS admin.
+          </div>
+
+          <div>
+            <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>Sizes</div>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {ALL_SIZES.map((size) => {
+                const selected = form.sizes.includes(size);
+                return (
+                  <button
+                    key={size}
+                    type="button"
+                    onClick={() => toggleSize(size)}
+                    aria-pressed={selected}
+                    style={{
+                      minWidth: 40,
+                      padding: '6px 10px',
+                      fontSize: 11,
+                      fontWeight: 800,
+                      borderRadius: 6,
+                      border: `1.5px solid ${selected ? C.gold : C.rule}`,
+                      background: selected ? C.tagBg : C.paper,
+                      color: selected ? C.goldDeep : C.ink,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {size}
+                  </button>
+                );
+              })}
             </div>
           </div>
+
+          {form.colorIds.length > 0 && form.sizes.length > 0 && (
+            <div>
+              <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>
+                Stock by colour and size <span style={{ fontWeight: 700, color: C.inkSoft }}>(AO / PT per cell)</span>
+              </div>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ borderCollapse: 'collapse', fontSize: 11 }}>
+                  <thead>
+                    <tr>
+                      <th style={{ textAlign: 'left', padding: '6px 10px 6px 0', fontSize: 9, fontWeight: 800, color: C.goldDeep }}>Colour</th>
+                      {form.sizes.map((size) => (
+                        <th key={size} style={{ padding: '6px 8px', fontSize: 10, fontWeight: 800, color: C.ink }}>{size}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {form.colorIds.map((colorId) => {
+                      const color = colors.find((c) => String(c.id) === colorId);
+                      const swatch = resolveRef(color?.swatch);
+                      return (
+                        <tr key={colorId} style={{ borderTop: `1px solid ${C.ruleLight}` }}>
+                          <td style={{ padding: '8px 10px 8px 0', fontWeight: 800, color: C.ink, whiteSpace: 'nowrap' }}>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                              {(swatch?.url || color?.hex) && (
+                                <span aria-hidden style={{ width: 11, height: 11, borderRadius: '50%', border: `1px solid ${C.rule}`, background: swatch?.url ? `center / cover url(${swatch.url})` : color?.hex ?? undefined }} />
+                              )}
+                              {color?.name ?? '?'}
+                            </span>
+                          </td>
+                          {form.sizes.map((size) => {
+                            const cell = form.stock[cellKey(colorId, size)] ?? { ao: 0, pt: 0 };
+                            return (
+                              <td key={size} style={{ padding: '6px 8px' }}>
+                                <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
+                                  <input
+                                    aria-label={`${color?.name ?? colorId} ${size} Angola stock`}
+                                    type="number"
+                                    min="0"
+                                    value={cell.ao}
+                                    onChange={(e) => setStock(colorId, size, 'ao', Number(e.target.value))}
+                                    style={{ width: 52, padding: '6px 6px', fontSize: 11, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, color: C.ink }}
+                                  />
+                                  <input
+                                    aria-label={`${color?.name ?? colorId} ${size} Portugal stock`}
+                                    type="number"
+                                    min="0"
+                                    value={cell.pt}
+                                    onChange={(e) => setStock(colorId, size, 'pt', Number(e.target.value))}
+                                    style={{ width: 52, padding: '6px 6px', fontSize: 11, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, color: C.ink }}
+                                  />
+                                </div>
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
           <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
             <CheckField label="Published" checked={form.active} onChange={(v) => set('active', v)} />
             <CheckField label="Available in Angola" checked={form.availableAO} onChange={(v) => set('availableAO', v)} />
             <CheckField label="Available in Portugal" checked={form.availablePT} onChange={(v) => set('availablePT', v)} />
           </div>
-
-          {form.sizes.length > 0 && (
-            <div>
-              <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>Stock by size</div>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {form.sizes.map((s, index) => (
-                  <div key={`${s.size}-${index}`} style={{ padding: '10px 12px', borderRadius: 6, background: C.subtleBg, border: `1px solid ${C.ruleLight}`, fontSize: 11, fontWeight: 800, color: C.ink, display: 'flex', gap: 6, alignItems: 'center' }}>
-                    <select value={s.size} onChange={(e) => set('sizes', form.sizes.map((row, i) => i === index ? { ...row, size: e.target.value } : row))}>{['XS','S','M','L','XL'].map((size) => <option key={size}>{size}</option>)}</select>
-                    AO <input aria-label={`${s.size} Angola stock`} type="number" min="0" value={s.stockAO} onChange={(e) => set('sizes', form.sizes.map((row, i) => i === index ? { ...row, stockAO: Number(e.target.value) } : row))} style={{ width: 55 }} />
-                    PT <input aria-label={`${s.size} Portugal stock`} type="number" min="0" value={s.stockPT} onChange={(e) => set('sizes', form.sizes.map((row, i) => i === index ? { ...row, stockPT: Number(e.target.value) } : row))} style={{ width: 55 }} />
-                    <button type="button" onClick={() => set('sizes', form.sizes.filter((_, i) => i !== index))}>×</button>
-                  </div>
-                ))}
-                <button type="button" onClick={() => set('sizes', [...form.sizes, { size: 'S', stockAO: 0, stockPT: 0 }])}>+ Add size</button>
-              </div>
-            </div>
-          )}
 
           <label style={{ display: 'block' }}>
             <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>Description — Portuguese</div>
@@ -441,18 +516,28 @@ export function ProductEditor() {
 
           <label style={{ display: 'block' }}><div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>Description — English</div><textarea value={form.descriptionEN} onChange={(e) => set('descriptionEN', e.target.value)} rows={3} style={{ width: '100%', padding: '11px 12px', fontSize: 12, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, color: C.ink, fontFamily: 'inherit' }} /></label>
 
-          <label style={{ display: 'block' }}>
-            <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>Size guide — Portuguese</div>
-            <textarea
-              value={form.sizeGuidePT}
-              onChange={(e) => set('sizeGuidePT', e.target.value)}
-              rows={3}
-              placeholder="e.g. S: busto 82cm, cintura 64cm, anca 90cm. M: busto 86cm…"
-              style={{ width: '100%', padding: '11px 12px', fontSize: 12, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, color: C.ink, fontFamily: 'inherit' }}
-            />
-          </label>
-
-          <label style={{ display: 'block' }}><div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>Size guide — English</div><textarea value={form.sizeGuideEN} onChange={(e) => set('sizeGuideEN', e.target.value)} rows={3} placeholder="e.g. S: bust 32in, waist 25in, hip 35in. M: bust 34in…" style={{ width: '100%', padding: '11px 12px', fontSize: 12, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, color: C.ink, fontFamily: 'inherit' }} /></label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }} className="ump-admin-fields-grid">
+            <label style={{ display: 'block' }}>
+              <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>Fit note — Portuguese</div>
+              <textarea
+                value={form.fitNotePT}
+                onChange={(e) => set('fitNotePT', e.target.value)}
+                rows={2}
+                placeholder='Optional, shown under the size chart. e.g. "Veste pequeno, recomendamos um tamanho acima."'
+                style={{ width: '100%', padding: '11px 12px', fontSize: 12, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, color: C.ink, fontFamily: 'inherit' }}
+              />
+            </label>
+            <label style={{ display: 'block' }}>
+              <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>Fit note — English</div>
+              <textarea
+                value={form.fitNoteEN}
+                onChange={(e) => set('fitNoteEN', e.target.value)}
+                rows={2}
+                placeholder='e.g. "Runs small, we recommend sizing up."'
+                style={{ width: '100%', padding: '11px 12px', fontSize: 12, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, color: C.ink, fontFamily: 'inherit' }}
+              />
+            </label>
+          </div>
 
           <div style={{ display: 'flex', gap: 10 }}>
             <button
@@ -511,125 +596,4 @@ function ReadOnlyField({ label, value }: { label: string; value: string }) {
 
 function CheckField({ label, checked, onChange }: { label: string; checked: boolean; onChange: (value: boolean) => void }) {
   return <label style={{ display: 'flex', gap: 7, alignItems: 'center', fontSize: 11, fontWeight: 800, color: C.ink }}><input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} />{label}</label>;
-}
-
-/** Tiny expandable "+ New …" row used for categories and tags: a toggle
- * button that reveals one or two text inputs and a create button. First
- * field is required; the rest are optional. */
-function InlineCreate({
-  buttonLabel,
-  fields,
-  onCreate,
-  onError,
-}: {
-  buttonLabel: string;
-  fields: { placeholder: string }[];
-  onCreate: (values: string[]) => Promise<void>;
-  onError: () => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [values, setValues] = useState<string[]>(fields.map(() => ''));
-  const [busy, setBusy] = useState(false);
-
-  const submit = async () => {
-    if (!values[0].trim()) return;
-    setBusy(true);
-    try {
-      await onCreate(values.map((v) => v.trim()));
-      setValues(fields.map(() => ''));
-      setOpen(false);
-    } catch {
-      onError();
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  if (!open) {
-    return (
-      <button type="button" onClick={() => setOpen(true)} style={{ marginTop: 6, fontSize: 10, fontWeight: 800, color: C.goldDeep, background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}>
-        {buttonLabel}
-      </button>
-    );
-  }
-
-  return (
-    <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-      {fields.map((f, i) => (
-        <input
-          key={f.placeholder}
-          type="text"
-          value={values[i]}
-          placeholder={f.placeholder}
-          onChange={(e) => setValues((prev) => prev.map((v, j) => (j === i ? e.target.value : v)))}
-          style={{ flex: '1 1 120px', minWidth: 0, padding: '8px 10px', fontSize: 11, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, color: C.ink }}
-        />
-      ))}
-      <button type="button" onClick={submit} disabled={busy || !values[0].trim()} style={{ padding: '8px 12px', fontSize: 10, fontWeight: 800, borderRadius: 6, background: C.black, color: C.onDarkGold, border: 'none', cursor: 'pointer' }}>
-        {busy ? '…' : 'Add'}
-      </button>
-      <button type="button" onClick={() => setOpen(false)} style={{ padding: '8px 10px', fontSize: 10, fontWeight: 800, borderRadius: 6, background: 'transparent', color: C.inkSoft, border: `1px solid ${C.rule}`, cursor: 'pointer' }}>
-        Cancel
-      </button>
-    </div>
-  );
-}
-
-/** "+ New colour" row: name + hex picker, with a "pattern" escape hatch
- * that skips the hex (for fabrics a single colour value can't represent --
- * a swatch image can then be uploaded on the colour in the CMS admin). */
-function InlineCreateColor({ onCreate, onError }: { onCreate: (name: string, hex?: string) => Promise<void>; onError: () => void }) {
-  const [open, setOpen] = useState(false);
-  const [name, setName] = useState('');
-  const [hex, setHex] = useState('#C8A96A');
-  const [noHex, setNoHex] = useState(false);
-  const [busy, setBusy] = useState(false);
-
-  const submit = async () => {
-    if (!name.trim()) return;
-    setBusy(true);
-    try {
-      await onCreate(name.trim(), noHex ? undefined : hex);
-      setName('');
-      setNoHex(false);
-      setOpen(false);
-    } catch {
-      onError();
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  if (!open) {
-    return (
-      <button type="button" onClick={() => setOpen(true)} style={{ marginTop: 8, fontSize: 10, fontWeight: 800, color: C.goldDeep, background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, display: 'block' }}>
-        + New colour
-      </button>
-    );
-  }
-
-  return (
-    <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-      <input
-        type="text"
-        value={name}
-        placeholder='Colour name, e.g. "Verde Oliva"'
-        onChange={(e) => setName(e.target.value)}
-        style={{ flex: '1 1 160px', minWidth: 0, padding: '8px 10px', fontSize: 11, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, color: C.ink }}
-      />
-      {!noHex && (
-        <input aria-label="Colour value" type="color" value={hex} onChange={(e) => setHex(e.target.value)} style={{ width: 36, height: 32, padding: 2, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.paper, cursor: 'pointer' }} />
-      )}
-      <label style={{ display: 'flex', gap: 5, alignItems: 'center', fontSize: 10, fontWeight: 700, color: C.inkSoft }}>
-        <input type="checkbox" checked={noHex} onChange={(e) => setNoHex(e.target.checked)} />
-        Pattern (no single colour)
-      </label>
-      <button type="button" onClick={submit} disabled={busy || !name.trim()} style={{ padding: '8px 12px', fontSize: 10, fontWeight: 800, borderRadius: 6, background: C.black, color: C.onDarkGold, border: 'none', cursor: 'pointer' }}>
-        {busy ? '…' : 'Add'}
-      </button>
-      <button type="button" onClick={() => setOpen(false)} style={{ padding: '8px 10px', fontSize: 10, fontWeight: 800, borderRadius: 6, background: 'transparent', color: C.inkSoft, border: `1px solid ${C.rule}`, cursor: 'pointer' }}>
-        Cancel
-      </button>
-    </div>
-  );
 }

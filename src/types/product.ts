@@ -17,6 +17,25 @@ export type ProductColor = {
   swatchUrl?: string;
 };
 
+/** One sellable colour+size combination, with stock for the CURRENT
+ * market (variant-level inventory, 2026-07-25). `color` is the colour
+ * NAME -- the same string the cart and order items carry. */
+export type ProductVariant = {
+  color: string;
+  size: string;
+  stock: number;
+};
+
+/** One row of the shared measurement chart (cm, language-neutral --
+ * labels are translated by the storefront). */
+export type SizeGuideRow = {
+  size: string;
+  bust?: number;
+  waist?: number;
+  hip?: number;
+  length?: number;
+};
+
 // Storefront view-model adapted from the CMS API response. Screens should
 // import this type rather than depending on Payload's raw API shape.
 export type Product = {
@@ -30,11 +49,19 @@ export type Product = {
   priceKz: number;
   priceEur: number;
   sizes: string[];
-  /** Stock for the CURRENT market, keyed by size. */
+  /** Stock for the CURRENT market, keyed by size, SUMMED across colours --
+   * coarse availability for cards/lists. Use `variants` for the exact
+   * colour+size number. */
   stock: Record<string, number>;
+  /** Exact per colour+size stock for the current market. */
+  variants: ProductVariant[];
   colors: ProductColor[];
   tag?: string;
   description?: string;
+  /** Shared measurement chart (if the product references one). */
+  sizeGuide?: SizeGuideRow[];
+  /** Localized per-product fit note shown under the size chart. */
+  fitNote?: string;
   images: ProductImage[];
   /** Placeholder product-photo tone (see components/ProductPhoto.tsx). */
   tone: ProductTone;

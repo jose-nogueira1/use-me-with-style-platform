@@ -94,14 +94,46 @@ export type ApiColor = {
   swatch?: string | number | { url?: string } | null;
 };
 
+export type ApiSizeGuideRow = {
+  size: string;
+  bust?: number | null;
+  waist?: number | null;
+  hip?: number | null;
+  length?: number | null;
+  id?: string | null;
+};
+
+export type ApiSizeGuide = {
+  id: string | number;
+  name: string;
+  rows: ApiSizeGuideRow[];
+};
+
 export type ApiCategoryRef = string | number | ApiCategory;
 export type ApiMerchTagRef = string | number | ApiMerchTag;
 export type ApiColorRef = string | number | ApiColor;
+export type ApiSizeGuideRef = string | number | ApiSizeGuide;
+
+/** Variant-level inventory (2026-07-25): stock per colour+size row. */
+export type ApiVariant = {
+  color: ApiColorRef;
+  size: string;
+  stockAO: number;
+  stockPT: number;
+  id?: string | null;
+};
 
 /** Safely reads the populated doc off a relationship ref (id-only at depth
  * 0), mirroring resolveProductImage below. */
 export function resolveRef<T extends object>(ref: T | string | number | null | undefined): T | null {
   return ref && typeof ref === 'object' ? ref : null;
+}
+
+/** Normalizes a relationship ref to a string id, whatever its depth. */
+export function refId(ref: string | number | { id?: string | number } | null | undefined): string {
+  if (ref === null || ref === undefined) return '';
+  if (typeof ref === 'object') return ref.id !== undefined ? String(ref.id) : '';
+  return String(ref);
 }
 
 export type ApiProduct = {
@@ -116,14 +148,14 @@ export type ApiProduct = {
   description?: string;
   descriptionPT?: string;
   descriptionEN?: string;
-  sizeGuidePT?: string;
-  sizeGuideEN?: string;
+  sizeGuide?: ApiSizeGuideRef | null;
+  fitNotePT?: string;
+  fitNoteEN?: string;
   tag?: ApiMerchTagRef | null;
   images?: { image: ApiProductImageRef }[];
-  colors?: ApiColorRef[] | null;
   priceAOKz: number;
   pricePTEur: number;
-  sizes: { size: string; stockAO: number; stockPT: number }[];
+  variants: ApiVariant[];
   active: boolean;
   /** Per-market storefront visibility (JOS market-separation decision,
    * 2026-07-10) -- a product can be sold in one market only. Both default to
@@ -143,9 +175,10 @@ export function resolveProductImage(image: ApiProductImageRef | undefined): { ur
 
 /** Shared with the admin notifications bell (PageHeader.tsx) and the
  * Products list page's "Low stock" filter, so the two can't silently drift
- * out of sync on what "low" means. */
+ * out of sync on what "low" means. Per-variant since 2026-07-25 (a colour
+ * running out in one size counts as low even if other colours are fine). */
 export function productIsLowStock(p: ApiProduct): boolean {
-  return p.sizes.some((s) => s.stockAO + s.stockPT <= 2);
+  return p.variants.some((v) => v.stockAO + v.stockPT <= 2);
 }
 
 export type OrderItemInput = {
@@ -578,9 +611,23 @@ export async function adminSendMessage(input: {
 }
 
 // ---------------------------------------------------------------------------
-// Admin: catalogue taxonomies (2026-07-25). List + create for each, so the
-// ProductEditor can offer "add new" inline instead of hardcoded options.
+// Admin: catalogue taxonomies (2026-07-25). Full CRUD -- managed in the
+// Product settings page; the ProductEditor only picks from these lists.
+// Deletes are refused by the CMS (HTTP 400) while products still reference
+// the doc; taxonomyErrorMessage() extracts that server message for the UI.
 // ---------------------------------------------------------------------------
+export function taxonomyErrorMessage(err: unknown, fallback: string): string {
+  if (err instanceof ApiError) {
+    try {
+      const body = JSON.parse(err.message.slice(err.message.indexOf('{'))) as { errors?: { message?: string }[] };
+      const message = body.errors?.[0]?.message;
+      if (message) return message;
+    } catch {
+      /* fall through */
+    }
+  }
+  return fallback;
+}
 export async function adminListCategories(): Promise<ApiCategory[]> {
   const data = await request<{ docs: ApiCategory[] }>('/categories?limit=100&sort=createdAt', {}, { auth: true });
   return data.docs;
@@ -609,6 +656,32 @@ export async function adminCreateMerchTag(input: { labelPT: string; labelEN?: st
   return data.doc;
 }
 
+export async function adminUpdateCategory(id: string | number, input: { namePT?: string; nameEN?: string }): Promise<ApiCategory> {
+  const data = await request<{ doc: ApiCategory }>(
+    `/categories/${id}`,
+    { method: 'PATCH', body: JSON.stringify(input) },
+    { auth: true },
+  );
+  return data.doc;
+}
+
+export async function adminDeleteCategory(id: string | number): Promise<void> {
+  await request(`/categories/${id}`, { method: 'DELETE' }, { auth: true });
+}
+
+export async function adminUpdateMerchTag(id: string | number, input: { labelPT?: string; labelEN?: string }): Promise<ApiMerchTag> {
+  const data = await request<{ doc: ApiMerchTag }>(
+    `/merch-tags/${id}`,
+    { method: 'PATCH', body: JSON.stringify(input) },
+    { auth: true },
+  );
+  return data.doc;
+}
+
+export async function adminDeleteMerchTag(id: string | number): Promise<void> {
+  await request(`/merch-tags/${id}`, { method: 'DELETE' }, { auth: true });
+}
+
 export async function adminListColors(): Promise<ApiColor[]> {
   const data = await request<{ docs: ApiColor[] }>('/colors?limit=200&sort=name', {}, { auth: true });
   return data.docs;
@@ -621,6 +694,48 @@ export async function adminCreateColor(input: { name: string; hex?: string }): P
     { auth: true },
   );
   return data.doc;
+}
+
+export async function adminUpdateColor(id: string | number, input: { name?: string; hex?: string | null }): Promise<ApiColor> {
+  const data = await request<{ doc: ApiColor }>(
+    `/colors/${id}`,
+    { method: 'PATCH', body: JSON.stringify(input) },
+    { auth: true },
+  );
+  return data.doc;
+}
+
+export async function adminDeleteColor(id: string | number): Promise<void> {
+  await request(`/colors/${id}`, { method: 'DELETE' }, { auth: true });
+}
+
+export type SizeGuideInput = { name: string; rows: Omit<ApiSizeGuideRow, 'id'>[] };
+
+export async function adminListSizeGuides(): Promise<ApiSizeGuide[]> {
+  const data = await request<{ docs: ApiSizeGuide[] }>('/size-guides?limit=100&sort=name', {}, { auth: true });
+  return data.docs;
+}
+
+export async function adminCreateSizeGuide(input: SizeGuideInput): Promise<ApiSizeGuide> {
+  const data = await request<{ doc: ApiSizeGuide }>(
+    '/size-guides',
+    { method: 'POST', body: JSON.stringify(input) },
+    { auth: true },
+  );
+  return data.doc;
+}
+
+export async function adminUpdateSizeGuide(id: string | number, input: Partial<SizeGuideInput>): Promise<ApiSizeGuide> {
+  const data = await request<{ doc: ApiSizeGuide }>(
+    `/size-guides/${id}`,
+    { method: 'PATCH', body: JSON.stringify(input) },
+    { auth: true },
+  );
+  return data.doc;
+}
+
+export async function adminDeleteSizeGuide(id: string | number): Promise<void> {
+  await request(`/size-guides/${id}`, { method: 'DELETE' }, { auth: true });
 }
 
 export async function adminListProducts(): Promise<ApiProduct[]> {

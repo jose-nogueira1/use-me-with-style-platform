@@ -21,6 +21,10 @@ const SECONDARY_NAV = [
   { to: '/admin/mensagens', label: 'Messages' },
   { to: '/admin/faturas', label: 'Invoices' },
   { to: '/admin/media', label: 'Media' },
+  // Catalogue taxonomies (2026-07-25): categories, merchandising tags,
+  // colours and size guides are managed here; the product editor only
+  // picks from these lists.
+  { to: '/admin/definicoes-produto', label: 'Product settings' },
 ];
 
 export function AdminLayout() {

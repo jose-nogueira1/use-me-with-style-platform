@@ -54,7 +54,12 @@ export function ProductDetail() {
   const activeSize = size ?? product.sizes[Math.floor(product.sizes.length / 2)];
   // Colours are taxonomy entries now; the cart still stores the NAME string.
   const activeColor = color ?? product.colors[0]?.name;
-  const stockForSize = product.stock[activeSize] ?? 10;
+  // Variant-level stock (2026-07-25): availability is per colour+size, so
+  // switching colour changes which sizes are in stock.
+  const stockFor = (colorName: string | undefined, sizeName: string) =>
+    product.variants.find((v) => v.color === colorName && v.size === sizeName)?.stock ?? 0;
+  const colorHasStock = (colorName: string) => product.variants.some((v) => v.color === colorName && v.stock > 0);
+  const stockForSize = activeColor ? stockFor(activeColor, activeSize) : product.stock[activeSize] ?? 0;
   const isLowStock = stockForSize > 0 && stockForSize <= 3;
   const isOutOfStock = stockForSize === 0;
   const isFav = favorites.has(product.id);
@@ -134,7 +139,7 @@ export function ProductDetail() {
             </div>
             <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
               {product.sizes.map((s) => {
-                const outForThisSize = (product.stock[s] ?? 10) === 0;
+                const outForThisSize = (activeColor ? stockFor(activeColor, s) : product.stock[s] ?? 0) === 0;
                 return (
                   <button
                     key={s}
@@ -183,6 +188,8 @@ export function ProductDetail() {
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: 6,
+                    opacity: colorHasStock(co.name) ? 1 : 0.45,
+                    textDecoration: colorHasStock(co.name) ? 'none' : 'line-through',
                   }}
                 >
                   {(co.swatchUrl || co.hex) && (
@@ -233,12 +240,56 @@ export function ProductDetail() {
                 <X size={18} />
               </button>
             </div>
-            {['XS · 78-84 cm', 'S · 84-90 cm', 'M · 90-96 cm', 'L · 96-104 cm', 'XL · 104-112 cm'].map((row) => (
-              <div key={row} style={{ display: 'flex', justifyContent: 'space-between', padding: '9px 0', borderTop: `1px solid ${C.ruleLight}`, fontSize: 13 }}>
-                <span>{row.split('·')[0]}</span>
-                <span style={{ color: C.inkSoft }}>{row.split('·')[1]}</span>
+            {product.sizeGuide && product.sizeGuide.length > 0 ? (
+              (() => {
+                // Only render columns that have at least one value -- e.g.
+                // leggings charts may skip "bust".
+                const columns = (['bust', 'waist', 'hip', 'length'] as const).filter((key) =>
+                  product.sizeGuide!.some((row) => row[key] != null),
+                );
+                const columnLabel = { bust: 'sgBust', waist: 'sgWaist', hip: 'sgHip', length: 'sgLength' } as const;
+                return (
+                  <>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                      <thead>
+                        <tr>
+                          <th style={{ textAlign: 'left', padding: '7px 0', fontSize: 10, fontWeight: 800, letterSpacing: 1, color: C.goldDeep, textTransform: 'uppercase' }}>{t('size', lang)}</th>
+                          {columns.map((key) => (
+                            <th key={key} style={{ textAlign: 'right', padding: '7px 0', fontSize: 10, fontWeight: 800, letterSpacing: 1, color: C.goldDeep, textTransform: 'uppercase' }}>
+                              {t(columnLabel[key], lang)}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {product.sizeGuide.map((row) => (
+                          <tr key={row.size} style={{ borderTop: `1px solid ${C.ruleLight}` }}>
+                            <td style={{ padding: '9px 0', fontWeight: 700, color: C.ink }}>{row.size}</td>
+                            {columns.map((key) => (
+                              <td key={key} style={{ padding: '9px 0', textAlign: 'right', color: C.inkSoft }}>
+                                {row[key] != null ? `${row[key]} cm` : '—'}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {product.fitNote && (
+                      <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${C.ruleLight}`, fontSize: 12, color: C.inkSoft, lineHeight: 1.5 }}>
+                        {product.fitNote}
+                      </div>
+                    )}
+                  </>
+                );
+              })()
+            ) : (
+              <div style={{ fontSize: 13, color: C.inkSoft, lineHeight: 1.6 }}>
+                {product.fitNote ||
+                  (lang === 'pt'
+                    ? 'Guia de tamanhos em breve. Fale connosco pelo WhatsApp para conselhos de tamanho.'
+                    : 'Size chart coming soon. Message us on WhatsApp for sizing advice.')}
               </div>
-            ))}
+            )}
           </div>
         </div>
       )}

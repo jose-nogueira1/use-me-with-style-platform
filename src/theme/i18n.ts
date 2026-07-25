@@ -63,6 +63,11 @@ export const T: Record<string, Record<Lang, string>> = {
   fewLeftStock: { pt: 'Quase esgotado — {n} em stock', en: 'Few left — {n} in stock' },
   inStockCount: { pt: '{n}+ em stock', en: '{n}+ in stock' },
   sizeGuide: { pt: 'Guia de tamanhos', en: 'Size guide' },
+  // Measurement-chart column labels (structured size guides, 2026-07-25).
+  sgBust: { pt: 'Busto', en: 'Bust' },
+  sgWaist: { pt: 'Cintura', en: 'Waist' },
+  sgHip: { pt: 'Anca', en: 'Hip' },
+  sgLength: { pt: 'Comprimento', en: 'Length' },
   colourLabel: { pt: 'Cor', en: 'Colour' },
   description: { pt: 'Descrição', en: 'Description' },
   defaultDescription: {

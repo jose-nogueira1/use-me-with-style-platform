@@ -68,7 +68,7 @@ export function Dashboard() {
   const revenueTodayEur = todayOrders.filter((o) => o.currency === 'EUR').reduce((s, o) => s + o.total, 0);
   const reviewCount = orders?.filter((o) => o.status === 'payment_review').length ?? 0;
   const processingCount = orders?.filter((o) => o.status === 'processing').length ?? 0;
-  const lowStockCount = products?.filter((p) => p.sizes.some((s) => s.stockAO + s.stockPT <= 2)).length ?? 0;
+  const lowStockCount = products?.filter((p) => p.variants.some((v) => v.stockAO + v.stockPT <= 2)).length ?? 0;
 
   const trend = useMemo(() => {
     const days = [...Array(7)].map((_, i) => {
@@ -96,10 +96,10 @@ export function Dashboard() {
         to: `/admin/encomendas/${o.id}`,
       })),
     ...(products ?? [])
-      .filter((p) => p.sizes.some((s) => s.stockAO + s.stockPT === 0))
+      .filter((p) => p.variants.some((v) => v.stockAO + v.stockPT === 0))
       .slice(0, 2)
       .map((p) => ({
-        title: `${p.name} has a size stockout`,
+        title: `${p.name} has a variant stockout`,
         detail: 'Keep published for in-stock sizes and mark the rest unavailable.',
         badge: 'Open' as const,
         tone: 'blue' as const,

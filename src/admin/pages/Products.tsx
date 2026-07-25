@@ -66,7 +66,10 @@ export function Products() {
               AO Kz {p.priceAOKz.toLocaleString('en-US')} / PT EUR {p.pricePTEur}.
             </div>
             <div style={{ display: 'flex', gap: 6, marginTop: 12, flexWrap: 'wrap' }}>
-              {p.sizes.map((s) => {
+              {/* Variant-level stock (2026-07-25): chip per size, total
+                  summed across colours -- the editor's matrix has the
+                  per-colour detail. */}
+              {aggregateSizes(p).map((s) => {
                 const total = s.stockAO + s.stockPT;
                 const zero = total === 0;
                 return (
@@ -92,6 +95,17 @@ export function Products() {
       </div>
     </div>
   );
+}
+
+function aggregateSizes(p: { variants: { size: string; stockAO: number; stockPT: number }[] }) {
+  const bySize = new Map<string, { size: string; stockAO: number; stockPT: number }>();
+  for (const v of p.variants ?? []) {
+    const entry = bySize.get(v.size) ?? { size: v.size, stockAO: 0, stockPT: 0 };
+    entry.stockAO += v.stockAO;
+    entry.stockPT += v.stockPT;
+    bySize.set(v.size, entry);
+  }
+  return [...bySize.values()];
 }
 
 function FilterPill({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
