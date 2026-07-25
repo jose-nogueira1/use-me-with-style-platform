@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { C } from '../../theme';
+import { hasSwatch, swatchBackground } from '../../lib/colorSwatch';
 import {
   adminCreateProduct,
   adminDeleteProduct,
@@ -395,8 +396,8 @@ export function ProductEditor() {
                       cursor: 'pointer',
                     }}
                   >
-                    {(swatch?.url || c.hex) && (
-                      <span aria-hidden style={{ width: 12, height: 12, borderRadius: '50%', flexShrink: 0, border: `1px solid ${C.rule}`, background: swatch?.url ? `center / cover url(${swatch.url})` : c.hex ?? undefined }} />
+                    {hasSwatch({ hex: c.hex, hex2: c.hex2, swatchUrl: swatch?.url }) && (
+                      <span aria-hidden style={{ width: 12, height: 12, borderRadius: '50%', flexShrink: 0, border: `1px solid ${C.rule}`, background: swatchBackground({ hex: c.hex, hex2: c.hex2, swatchUrl: swatch?.url }) }} />
                     )}
                     {colorLabel(c)}
                   </button>
@@ -458,8 +459,8 @@ export function ProductEditor() {
                         <tr key={colorId} style={{ borderTop: `1px solid ${C.ruleLight}` }}>
                           <td style={{ padding: '8px 10px 8px 0', fontWeight: 800, color: C.ink, whiteSpace: 'nowrap' }}>
                             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                              {(swatch?.url || color?.hex) && (
-                                <span aria-hidden style={{ width: 11, height: 11, borderRadius: '50%', border: `1px solid ${C.rule}`, background: swatch?.url ? `center / cover url(${swatch.url})` : color?.hex ?? undefined }} />
+                              {hasSwatch({ hex: color?.hex, hex2: color?.hex2, swatchUrl: swatch?.url }) && (
+                                <span aria-hidden style={{ width: 11, height: 11, borderRadius: '50%', border: `1px solid ${C.rule}`, background: swatchBackground({ hex: color?.hex, hex2: color?.hex2, swatchUrl: swatch?.url }) }} />
                               )}
                               {color ? colorLabel(color) : '?'}
                             </span>

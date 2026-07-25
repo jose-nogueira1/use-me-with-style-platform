@@ -92,6 +92,10 @@ export type ApiColor = {
   namePT: string;
   nameEN?: string | null;
   hex?: string | null;
+  /** Second hex value for two-tone combination colours (e.g. red & white),
+   * 2026-07-25 follow-up -- renders a split-circle swatch. See
+   * lib/colorSwatch.ts. */
+  hex2?: string | null;
   swatch?: string | number | { url?: string } | null;
 };
 
@@ -699,7 +703,7 @@ export async function adminListColors(): Promise<ApiColor[]> {
   return data.docs;
 }
 
-export async function adminCreateColor(input: { namePT: string; nameEN?: string; hex?: string }): Promise<ApiColor> {
+export async function adminCreateColor(input: { namePT: string; nameEN?: string; hex?: string; hex2?: string }): Promise<ApiColor> {
   const data = await request<{ doc: ApiColor }>(
     '/colors',
     { method: 'POST', body: JSON.stringify(input) },
@@ -708,7 +712,7 @@ export async function adminCreateColor(input: { namePT: string; nameEN?: string;
   return data.doc;
 }
 
-export async function adminUpdateColor(id: string | number, input: { namePT?: string; nameEN?: string; hex?: string | null }): Promise<ApiColor> {
+export async function adminUpdateColor(id: string | number, input: { namePT?: string; nameEN?: string; hex?: string | null; hex2?: string | null }): Promise<ApiColor> {
   const data = await request<{ doc: ApiColor }>(
     `/colors/${id}`,
     { method: 'PATCH', body: JSON.stringify(input) },

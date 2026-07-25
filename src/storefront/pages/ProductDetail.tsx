@@ -7,6 +7,7 @@ import { useProducts } from '../../hooks/useProducts';
 import { ProductPhoto } from '../../components/ProductPhoto';
 import { ProductCard } from '../components/ProductCard';
 import { trackMetaEvent } from '../../lib/metaAnalytics';
+import { hasSwatch, swatchBackground } from '../../lib/colorSwatch';
 
 // Category display names now come from the CMS categories collection (via
 // product.catLabel) instead of a hardcoded slug->i18n-key map (2026-07-25).
@@ -197,7 +198,7 @@ export function ProductDetail() {
                     textDecoration: colorHasStock(co.id) ? 'none' : 'line-through',
                   }}
                 >
-                  {(co.swatchUrl || co.hex) && (
+                  {hasSwatch(co) && (
                     <span
                       aria-hidden
                       style={{
@@ -206,7 +207,7 @@ export function ProductDetail() {
                         borderRadius: '50%',
                         flexShrink: 0,
                         border: `1px solid ${C.rule}`,
-                        background: co.swatchUrl ? `center / cover url(${co.swatchUrl})` : co.hex,
+                        background: swatchBackground(co),
                       }}
                     />
                   )}

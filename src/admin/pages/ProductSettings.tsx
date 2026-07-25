@@ -29,6 +29,8 @@ import {
   type ApiSizeGuide,
   type ApiSizeGuideRow,
 } from '../../lib/api';
+import { hasSwatch, swatchBackground } from '../../lib/colorSwatch';
+import { suggestColorName } from '../../lib/colorNaming';
 
 // Product settings (2026-07-25 admin request; moved into Settings as its
 // own tab 2026-07-25): manages the catalogue taxonomies -- categories,
@@ -284,12 +286,20 @@ function TaxonomyPanel({
 // Colours: name + hex (or pattern) with swatch preview
 // ---------------------------------------------------------------------------
 
-function ColorDot({ hex, swatchUrl }: { hex?: string | null; swatchUrl?: string }) {
-  if (!hex && !swatchUrl) {
+function ColorDot({ hex, hex2, swatchUrl }: { hex?: string | null; hex2?: string | null; swatchUrl?: string }) {
+  if (!hasSwatch({ hex, hex2, swatchUrl })) {
     return <span style={{ width: 14, height: 14, borderRadius: '50%', border: `1px dashed ${C.rule}`, flexShrink: 0 }} title="No swatch yet" />;
   }
-  return <span style={{ width: 14, height: 14, borderRadius: '50%', border: `1px solid ${C.rule}`, flexShrink: 0, background: swatchUrl ? `center / cover url(${swatchUrl})` : hex ?? undefined }} />;
+  return <span style={{ width: 14, height: 14, borderRadius: '50%', border: `1px solid ${C.rule}`, flexShrink: 0, background: swatchBackground({ hex, hex2, swatchUrl }) }} />;
 }
+
+// namePT/nameEN: bilingual display name (2026-07-25). hex/hex2: hex2 is
+// only sent to the API when `combo` is checked -- it's the two-tone
+// combination colour case (e.g. red & white), rendered as a split circle.
+// noHex: patterned fabric, relies on a swatch image uploaded in the CMS
+// admin instead (mutually exclusive with combo).
+type ColorDraft = { namePT: string; nameEN: string; hex: string; hex2: string; combo: boolean; noHex: boolean };
+const EMPTY_COLOR_DRAFT: ColorDraft = { namePT: '', nameEN: '', hex: '#C8A96A', hex2: '#F7F5F0', combo: false, noHex: false };
 
 function ColorsPanel({
   colors,
@@ -303,8 +313,8 @@ function ColorsPanel({
   setError: (message: string | null) => void;
 }) {
   const [editing, setEditing] = useState<string | null>(null);
-  const [draft, setDraft] = useState<{ namePT: string; nameEN: string; hex: string; noHex: boolean }>({ namePT: '', nameEN: '', hex: '#C8A96A', noHex: false });
-  const [newDraft, setNewDraft] = useState<{ namePT: string; nameEN: string; hex: string; noHex: boolean }>({ namePT: '', nameEN: '', hex: '#C8A96A', noHex: false });
+  const [draft, setDraft] = useState<ColorDraft>(EMPTY_COLOR_DRAFT);
+  const [newDraft, setNewDraft] = useState<ColorDraft>(EMPTY_COLOR_DRAFT);
   const [busy, setBusy] = useState(false);
 
   const run = async (fn: () => Promise<void>, fallback: string) => {
@@ -319,8 +329,42 @@ function ColorsPanel({
     }
   };
 
+  // Auto-suggests bilingual names from the chosen hex(es) -- but only while
+  // both name fields are still blank, so it never clobbers anything the
+  // admin typed (2026-07-25 request). Applies to both the single-colour
+  // and two-tone-combination cases.
+  const handleHexChange = (set: React.Dispatch<React.SetStateAction<ColorDraft>>, patch: Partial<ColorDraft>) => {
+    set((d) => {
+      const next = { ...d, ...patch };
+      if (d.namePT.trim() || d.nameEN.trim()) return next;
+      const suggestion = suggestColorName(next.hex, next.combo ? next.hex2 : undefined);
+      return suggestion ? { ...next, namePT: suggestion.namePT, nameEN: suggestion.nameEN } : next;
+    });
+  };
+
+  const editorFields = (d: ColorDraft, set: React.Dispatch<React.SetStateAction<ColorDraft>>, namePrefix: string) => (
+    <>
+      <input aria-label={`${namePrefix} — Portuguese`} placeholder="Nome (PT)" value={d.namePT} onChange={(e) => set((s) => ({ ...s, namePT: e.target.value }))} style={{ ...inputStyle, flex: 1, minWidth: 90 }} />
+      <input aria-label={`${namePrefix} — English (optional)`} placeholder="Name (EN)" value={d.nameEN} onChange={(e) => set((s) => ({ ...s, nameEN: e.target.value }))} style={{ ...inputStyle, flex: 1, minWidth: 90 }} />
+      {!d.noHex && (
+        <>
+          <input aria-label={`${namePrefix} value`} type="color" value={d.hex} onChange={(e) => handleHexChange(set, { hex: e.target.value })} style={{ width: 34, height: 30, padding: 2, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.paper, cursor: 'pointer' }} />
+          {d.combo && <input aria-label={`${namePrefix} second value`} type="color" value={d.hex2} onChange={(e) => handleHexChange(set, { hex2: e.target.value })} style={{ width: 34, height: 30, padding: 2, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.paper, cursor: 'pointer' }} />}
+          <label style={{ display: 'flex', gap: 4, alignItems: 'center', fontSize: 9, fontWeight: 700, color: C.inkSoft, whiteSpace: 'nowrap' }}>
+            <input type="checkbox" checked={d.combo} onChange={(e) => handleHexChange(set, { combo: e.target.checked })} />
+            Two-tone
+          </label>
+        </>
+      )}
+      <label style={{ display: 'flex', gap: 4, alignItems: 'center', fontSize: 9, fontWeight: 700, color: C.inkSoft, whiteSpace: 'nowrap' }}>
+        <input type="checkbox" checked={d.noHex} onChange={(e) => set((s) => ({ ...s, noHex: e.target.checked, combo: e.target.checked ? false : s.combo }))} />
+        Pattern
+      </label>
+    </>
+  );
+
   return (
-    <Panel title="Colours" hint="Hex renders a swatch dot; for patterned fabrics leave the hex off and upload a swatch image on the colour in the CMS admin. Names are bilingual — English is optional and falls back to the Portuguese name on the storefront.">
+    <Panel title="Colours" hint="Hex renders a swatch dot; for patterned fabrics leave the hex off and upload a swatch image on the colour in the CMS admin. Two-tone adds a second hex for combination colours (e.g. red & white), rendered as a split circle. Names are bilingual — leave English blank to fall back to Portuguese, or start typing a hex to get a suggested name.">
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {colors.map((color) => {
           const id = String(color.id);
@@ -328,18 +372,17 @@ function ColorsPanel({
           const swatch = resolveRef(color.swatch);
           const isEditing = editing === id;
           return (
-            <div key={id} style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '7px 10px', borderRadius: 6, background: C.subtleBg, border: `1px solid ${C.ruleLight}` }}>
+            <div key={id} style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', padding: '7px 10px', borderRadius: 6, background: C.subtleBg, border: `1px solid ${C.ruleLight}` }}>
               {isEditing ? (
                 <>
-                  <input aria-label="Colour name — Portuguese" placeholder="Nome (PT)" value={draft.namePT} onChange={(e) => setDraft((d) => ({ ...d, namePT: e.target.value }))} style={{ ...inputStyle, flex: 1 }} />
-                  <input aria-label="Colour name — English (optional)" placeholder="Name (EN)" value={draft.nameEN} onChange={(e) => setDraft((d) => ({ ...d, nameEN: e.target.value }))} style={{ ...inputStyle, flex: 1 }} />
-                  {!draft.noHex && <input aria-label="Colour value" type="color" value={draft.hex} onChange={(e) => setDraft((d) => ({ ...d, hex: e.target.value }))} style={{ width: 34, height: 30, padding: 2, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.paper, cursor: 'pointer' }} />}
-                  <label style={{ display: 'flex', gap: 4, alignItems: 'center', fontSize: 9, fontWeight: 700, color: C.inkSoft, whiteSpace: 'nowrap' }}>
-                    <input type="checkbox" checked={draft.noHex} onChange={(e) => setDraft((d) => ({ ...d, noHex: e.target.checked }))} />
-                    Pattern
-                  </label>
+                  {editorFields(draft, setDraft, 'Colour name')}
                   <SmallButton label="Save" disabled={busy || !draft.namePT.trim()} onClick={() => void run(async () => {
-                    const updated = await adminUpdateColor(id, { namePT: draft.namePT.trim(), nameEN: draft.nameEN.trim() || undefined, hex: draft.noHex ? null : draft.hex });
+                    const updated = await adminUpdateColor(id, {
+                      namePT: draft.namePT.trim(),
+                      nameEN: draft.nameEN.trim() || undefined,
+                      hex: draft.noHex ? null : draft.hex,
+                      hex2: draft.noHex || !draft.combo ? null : draft.hex2,
+                    });
                     setColors((prev) => prev.map((c) => (String(c.id) === id ? updated : c)));
                     setEditing(null);
                   }, "Couldn't save the colour.")} />
@@ -347,13 +390,20 @@ function ColorsPanel({
                 </>
               ) : (
                 <>
-                  <ColorDot hex={color.hex} swatchUrl={swatch?.url} />
+                  <ColorDot hex={color.hex} hex2={color.hex2} swatchUrl={swatch?.url} />
                   <div style={{ flex: 1, minWidth: 0, fontSize: 12, fontWeight: 800, color: C.ink }}>
                     {colorLabel(color)}
-                    {color.hex && <span style={{ fontSize: 9, fontWeight: 700, color: C.inkSoft, marginLeft: 6 }}>{color.hex}</span>}
+                    {color.hex && <span style={{ fontSize: 9, fontWeight: 700, color: C.inkSoft, marginLeft: 6 }}>{color.hex}{color.hex2 ? ` / ${color.hex2}` : ''}</span>}
                   </div>
                   <UsageBadge count={count} />
-                  <SmallButton label="Edit" disabled={busy} onClick={() => { setEditing(id); setDraft({ namePT: color.namePT, nameEN: color.nameEN ?? '', hex: color.hex ?? '#C8A96A', noHex: !color.hex }); }} />
+                  <SmallButton
+                    label="Edit"
+                    disabled={busy}
+                    onClick={() => {
+                      setEditing(id);
+                      setDraft({ namePT: color.namePT, nameEN: color.nameEN ?? '', hex: color.hex ?? '#C8A96A', hex2: color.hex2 ?? '#F7F5F0', combo: Boolean(color.hex2), noHex: !color.hex });
+                    }}
+                  />
                   <SmallButton
                     label="Delete"
                     danger
@@ -367,18 +417,17 @@ function ColorsPanel({
           );
         })}
       </div>
-      <div style={{ display: 'flex', gap: 8, marginTop: 10, alignItems: 'center' }}>
-        <input placeholder='Name (PT), e.g. "Verde Oliva"' value={newDraft.namePT} onChange={(e) => setNewDraft((d) => ({ ...d, namePT: e.target.value }))} style={{ ...inputStyle, flex: 1 }} />
-        <input placeholder="Name (EN), optional" value={newDraft.nameEN} onChange={(e) => setNewDraft((d) => ({ ...d, nameEN: e.target.value }))} style={{ ...inputStyle, flex: 1 }} />
-        {!newDraft.noHex && <input aria-label="New colour value" type="color" value={newDraft.hex} onChange={(e) => setNewDraft((d) => ({ ...d, hex: e.target.value }))} style={{ width: 34, height: 30, padding: 2, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.paper, cursor: 'pointer' }} />}
-        <label style={{ display: 'flex', gap: 4, alignItems: 'center', fontSize: 9, fontWeight: 700, color: C.inkSoft, whiteSpace: 'nowrap' }}>
-          <input type="checkbox" checked={newDraft.noHex} onChange={(e) => setNewDraft((d) => ({ ...d, noHex: e.target.checked }))} />
-          Pattern
-        </label>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10, alignItems: 'center' }}>
+        {editorFields(newDraft, setNewDraft, 'New colour')}
         <SmallButton label="Add" disabled={busy || !newDraft.namePT.trim()} onClick={() => void run(async () => {
-          const created = await adminCreateColor({ namePT: newDraft.namePT.trim(), nameEN: newDraft.nameEN.trim() || undefined, hex: newDraft.noHex ? undefined : newDraft.hex });
+          const created = await adminCreateColor({
+            namePT: newDraft.namePT.trim(),
+            nameEN: newDraft.nameEN.trim() || undefined,
+            hex: newDraft.noHex ? undefined : newDraft.hex,
+            hex2: newDraft.noHex || !newDraft.combo ? undefined : newDraft.hex2,
+          });
           setColors((prev) => [...prev, created]);
-          setNewDraft({ namePT: '', nameEN: '', hex: '#C8A96A', noHex: false });
+          setNewDraft(EMPTY_COLOR_DRAFT);
         }, "Couldn't create the colour.")} />
       </div>
     </Panel>

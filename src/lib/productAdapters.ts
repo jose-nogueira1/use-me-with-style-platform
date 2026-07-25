@@ -53,7 +53,7 @@ export function adaptApiProduct(api: ApiProduct, market: 'AO' | 'PT', lang: 'pt'
     variants.push({ color: colorId, size: row.size, stock: marketStock });
     if (colorDoc && !colors.some((c) => c.id === colorId)) {
       const swatch = resolveRef(colorDoc.swatch);
-      colors.push({ id: colorId, name: colorLabel, hex: colorDoc.hex ?? undefined, swatchUrl: absoluteMediaUrl(swatch?.url) });
+      colors.push({ id: colorId, name: colorLabel, hex: colorDoc.hex ?? undefined, hex2: colorDoc.hex2 ?? undefined, swatchUrl: absoluteMediaUrl(swatch?.url) });
     }
     if (!sizes.includes(row.size)) sizes.push(row.size);
     stock[row.size] = (stock[row.size] ?? 0) + marketStock;

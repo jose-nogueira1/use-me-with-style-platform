@@ -6,6 +6,7 @@ import { useApp } from '../../state/AppContext';
 import { useProducts } from '../../hooks/useProducts';
 import { ProductCard } from '../components/ProductCard';
 import { fetchCategories, type ApiCategory } from '../../lib/api';
+import { hasSwatch, swatchBackground } from '../../lib/colorSwatch';
 
 // Categories became admin-managed CMS data on 2026-07-25 (previously a
 // hardcoded enum), so the pills/sidebar are built from the API. This
@@ -72,9 +73,9 @@ export function Browse() {
   // colours could now share a display name across languages by
   // coincidence, and id is the real, language-independent identity anyway).
   const allColors = useMemo(() => {
-    const byId = new Map<string, { value: string; label: string; hex?: string; swatchUrl?: string }>();
+    const byId = new Map<string, { value: string; label: string; hex?: string; hex2?: string; swatchUrl?: string }>();
     for (const c of products.flatMap((p) => p.colors)) {
-      if (!byId.has(c.id)) byId.set(c.id, { value: c.id, label: c.name, hex: c.hex, swatchUrl: c.swatchUrl });
+      if (!byId.has(c.id)) byId.set(c.id, { value: c.id, label: c.name, hex: c.hex, hex2: c.hex2, swatchUrl: c.swatchUrl });
     }
     return Array.from(byId.values());
   }, [products]);
@@ -206,8 +207,11 @@ type FilterOption = {
   value: string;
   label: string;
   /** Colour options (2026-07-25): render a swatch dot from the taxonomy's
-   * hex, or a tiny fabric-swatch image for patterns. Text-only otherwise. */
+   * hex, or a tiny fabric-swatch image for patterns. Text-only otherwise.
+   * hex2 (2026-07-25 follow-up) renders a split circle for combination
+   * colours -- see lib/colorSwatch.ts. */
   hex?: string;
+  hex2?: string;
   swatchUrl?: string;
 };
 
@@ -244,7 +248,7 @@ function FilterGroup({
               gap: 6,
             }}
           >
-            {(opt.swatchUrl || opt.hex) && (
+            {hasSwatch(opt) && (
               <span
                 aria-hidden
                 style={{
@@ -253,7 +257,7 @@ function FilterGroup({
                   borderRadius: '50%',
                   flexShrink: 0,
                   border: `1px solid ${C.rule}`,
-                  background: opt.swatchUrl ? `center / cover url(${opt.swatchUrl})` : opt.hex,
+                  background: swatchBackground(opt),
                 }}
               />
             )}
