@@ -44,12 +44,16 @@ export function adaptApiProduct(api: ApiProduct, market: 'AO' | 'PT', lang: 'pt'
   const stock: Record<string, number> = {};
   for (const row of api.variants ?? []) {
     const colorDoc = resolveRef(row.color);
-    const colorName = colorDoc?.name ?? '';
+    // Identity = the colour's stable row id (never varies with language);
+    // display label = localized name, resolved here exactly like category
+    // and tag above (2026-07-25 bilingual colours follow-up).
+    const colorId = colorDoc ? String(colorDoc.id) : '';
+    const colorLabel = (lang === 'en' ? colorDoc?.nameEN : colorDoc?.namePT)?.trim() || colorDoc?.namePT || '';
     const marketStock = market === 'AO' ? row.stockAO : row.stockPT;
-    variants.push({ color: colorName, size: row.size, stock: marketStock });
-    if (colorDoc && !colors.some((c) => c.name === colorName)) {
+    variants.push({ color: colorId, size: row.size, stock: marketStock });
+    if (colorDoc && !colors.some((c) => c.id === colorId)) {
       const swatch = resolveRef(colorDoc.swatch);
-      colors.push({ name: colorName, hex: colorDoc.hex ?? undefined, swatchUrl: absoluteMediaUrl(swatch?.url) });
+      colors.push({ id: colorId, name: colorLabel, hex: colorDoc.hex ?? undefined, swatchUrl: absoluteMediaUrl(swatch?.url) });
     }
     if (!sizes.includes(row.size)) sizes.push(row.size);
     stock[row.size] = (stock[row.size] ?? 0) + marketStock;

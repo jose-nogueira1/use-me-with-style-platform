@@ -18,6 +18,7 @@ import {
   adminUpdateColor,
   adminUpdateMerchTag,
   adminUpdateSizeGuide,
+  colorLabel,
   refId,
   resolveRef,
   taxonomyErrorMessage,
@@ -302,8 +303,8 @@ function ColorsPanel({
   setError: (message: string | null) => void;
 }) {
   const [editing, setEditing] = useState<string | null>(null);
-  const [draft, setDraft] = useState<{ name: string; hex: string; noHex: boolean }>({ name: '', hex: '#C8A96A', noHex: false });
-  const [newDraft, setNewDraft] = useState<{ name: string; hex: string; noHex: boolean }>({ name: '', hex: '#C8A96A', noHex: false });
+  const [draft, setDraft] = useState<{ namePT: string; nameEN: string; hex: string; noHex: boolean }>({ namePT: '', nameEN: '', hex: '#C8A96A', noHex: false });
+  const [newDraft, setNewDraft] = useState<{ namePT: string; nameEN: string; hex: string; noHex: boolean }>({ namePT: '', nameEN: '', hex: '#C8A96A', noHex: false });
   const [busy, setBusy] = useState(false);
 
   const run = async (fn: () => Promise<void>, fallback: string) => {
@@ -319,7 +320,7 @@ function ColorsPanel({
   };
 
   return (
-    <Panel title="Colours" hint="Hex renders a swatch dot; for patterned fabrics leave the hex off and upload a swatch image on the colour in the CMS admin.">
+    <Panel title="Colours" hint="Hex renders a swatch dot; for patterned fabrics leave the hex off and upload a swatch image on the colour in the CMS admin. Names are bilingual — English is optional and falls back to the Portuguese name on the storefront.">
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {colors.map((color) => {
           const id = String(color.id);
@@ -330,14 +331,15 @@ function ColorsPanel({
             <div key={id} style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '7px 10px', borderRadius: 6, background: C.subtleBg, border: `1px solid ${C.ruleLight}` }}>
               {isEditing ? (
                 <>
-                  <input aria-label="Colour name" value={draft.name} onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))} style={{ ...inputStyle, flex: 1 }} />
+                  <input aria-label="Colour name — Portuguese" placeholder="Nome (PT)" value={draft.namePT} onChange={(e) => setDraft((d) => ({ ...d, namePT: e.target.value }))} style={{ ...inputStyle, flex: 1 }} />
+                  <input aria-label="Colour name — English (optional)" placeholder="Name (EN)" value={draft.nameEN} onChange={(e) => setDraft((d) => ({ ...d, nameEN: e.target.value }))} style={{ ...inputStyle, flex: 1 }} />
                   {!draft.noHex && <input aria-label="Colour value" type="color" value={draft.hex} onChange={(e) => setDraft((d) => ({ ...d, hex: e.target.value }))} style={{ width: 34, height: 30, padding: 2, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.paper, cursor: 'pointer' }} />}
                   <label style={{ display: 'flex', gap: 4, alignItems: 'center', fontSize: 9, fontWeight: 700, color: C.inkSoft, whiteSpace: 'nowrap' }}>
                     <input type="checkbox" checked={draft.noHex} onChange={(e) => setDraft((d) => ({ ...d, noHex: e.target.checked }))} />
                     Pattern
                   </label>
-                  <SmallButton label="Save" disabled={busy || !draft.name.trim()} onClick={() => void run(async () => {
-                    const updated = await adminUpdateColor(id, { name: draft.name.trim(), hex: draft.noHex ? null : draft.hex });
+                  <SmallButton label="Save" disabled={busy || !draft.namePT.trim()} onClick={() => void run(async () => {
+                    const updated = await adminUpdateColor(id, { namePT: draft.namePT.trim(), nameEN: draft.nameEN.trim() || undefined, hex: draft.noHex ? null : draft.hex });
                     setColors((prev) => prev.map((c) => (String(c.id) === id ? updated : c)));
                     setEditing(null);
                   }, "Couldn't save the colour.")} />
@@ -347,17 +349,17 @@ function ColorsPanel({
                 <>
                   <ColorDot hex={color.hex} swatchUrl={swatch?.url} />
                   <div style={{ flex: 1, minWidth: 0, fontSize: 12, fontWeight: 800, color: C.ink }}>
-                    {color.name}
+                    {colorLabel(color)}
                     {color.hex && <span style={{ fontSize: 9, fontWeight: 700, color: C.inkSoft, marginLeft: 6 }}>{color.hex}</span>}
                   </div>
                   <UsageBadge count={count} />
-                  <SmallButton label="Edit" disabled={busy} onClick={() => { setEditing(id); setDraft({ name: color.name, hex: color.hex ?? '#C8A96A', noHex: !color.hex }); }} />
+                  <SmallButton label="Edit" disabled={busy} onClick={() => { setEditing(id); setDraft({ namePT: color.namePT, nameEN: color.nameEN ?? '', hex: color.hex ?? '#C8A96A', noHex: !color.hex }); }} />
                   <SmallButton
                     label="Delete"
                     danger
                     disabled={busy || count > 0}
                     title={count > 0 ? `Used by ${count} product${count === 1 ? '' : 's'} — reassign first.` : undefined}
-                    onClick={() => { if (window.confirm(`Delete "${color.name}"?`)) void run(async () => { await adminDeleteColor(id); setColors((prev) => prev.filter((c) => String(c.id) !== id)); }, "Couldn't delete — it may still be in use."); }}
+                    onClick={() => { if (window.confirm(`Delete "${colorLabel(color)}"?`)) void run(async () => { await adminDeleteColor(id); setColors((prev) => prev.filter((c) => String(c.id) !== id)); }, "Couldn't delete — it may still be in use."); }}
                   />
                 </>
               )}
@@ -366,16 +368,17 @@ function ColorsPanel({
         })}
       </div>
       <div style={{ display: 'flex', gap: 8, marginTop: 10, alignItems: 'center' }}>
-        <input placeholder='Colour name, e.g. "Verde Oliva"' value={newDraft.name} onChange={(e) => setNewDraft((d) => ({ ...d, name: e.target.value }))} style={{ ...inputStyle, flex: 1 }} />
+        <input placeholder='Name (PT), e.g. "Verde Oliva"' value={newDraft.namePT} onChange={(e) => setNewDraft((d) => ({ ...d, namePT: e.target.value }))} style={{ ...inputStyle, flex: 1 }} />
+        <input placeholder="Name (EN), optional" value={newDraft.nameEN} onChange={(e) => setNewDraft((d) => ({ ...d, nameEN: e.target.value }))} style={{ ...inputStyle, flex: 1 }} />
         {!newDraft.noHex && <input aria-label="New colour value" type="color" value={newDraft.hex} onChange={(e) => setNewDraft((d) => ({ ...d, hex: e.target.value }))} style={{ width: 34, height: 30, padding: 2, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.paper, cursor: 'pointer' }} />}
         <label style={{ display: 'flex', gap: 4, alignItems: 'center', fontSize: 9, fontWeight: 700, color: C.inkSoft, whiteSpace: 'nowrap' }}>
           <input type="checkbox" checked={newDraft.noHex} onChange={(e) => setNewDraft((d) => ({ ...d, noHex: e.target.checked }))} />
           Pattern
         </label>
-        <SmallButton label="Add" disabled={busy || !newDraft.name.trim()} onClick={() => void run(async () => {
-          const created = await adminCreateColor({ name: newDraft.name.trim(), hex: newDraft.noHex ? undefined : newDraft.hex });
+        <SmallButton label="Add" disabled={busy || !newDraft.namePT.trim()} onClick={() => void run(async () => {
+          const created = await adminCreateColor({ namePT: newDraft.namePT.trim(), nameEN: newDraft.nameEN.trim() || undefined, hex: newDraft.noHex ? undefined : newDraft.hex });
           setColors((prev) => [...prev, created]);
-          setNewDraft({ name: '', hex: '#C8A96A', noHex: false });
+          setNewDraft({ namePT: '', nameEN: '', hex: '#C8A96A', noHex: false });
         }, "Couldn't create the colour.")} />
       </div>
     </Panel>

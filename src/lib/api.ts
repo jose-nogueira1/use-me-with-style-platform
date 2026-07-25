@@ -89,7 +89,8 @@ export type ApiMerchTag = {
 
 export type ApiColor = {
   id: string | number;
-  name: string;
+  namePT: string;
+  nameEN?: string | null;
   hex?: string | null;
   swatch?: string | number | { url?: string } | null;
 };
@@ -127,6 +128,12 @@ export type ApiVariant = {
  * 0), mirroring resolveProductImage below. */
 export function resolveRef<T extends object>(ref: T | string | number | null | undefined): T | null {
   return ref && typeof ref === 'object' ? ref : null;
+}
+
+/** Admin-facing "Portuguese / English" label, matching how category and
+ * merch-tag dropdowns already display their two names side by side. */
+export function colorLabel(c: { namePT: string; nameEN?: string | null }): string {
+  return c.nameEN && c.nameEN !== c.namePT ? `${c.namePT} / ${c.nameEN}` : c.namePT;
 }
 
 /** Normalizes a relationship ref to a string id, whatever its depth. */
@@ -185,6 +192,11 @@ export type OrderItemInput = {
   product: string | number;
   productName: string;
   size: string;
+  // Colour's stable ROW ID (2026-07-25, colours bilingual follow-up) --
+  // NOT the display name, which now varies by storefront language. The CMS
+  // resolves this to a localized, human-readable name for the stored order
+  // item/invoices (see authoritativeOrder.ts); a plain name string is still
+  // accepted as a legacy fallback.
   color?: string;
   qty: number;
   unitPrice: number;
@@ -683,11 +695,11 @@ export async function adminDeleteMerchTag(id: string | number): Promise<void> {
 }
 
 export async function adminListColors(): Promise<ApiColor[]> {
-  const data = await request<{ docs: ApiColor[] }>('/colors?limit=200&sort=name', {}, { auth: true });
+  const data = await request<{ docs: ApiColor[] }>('/colors?limit=200&sort=namePT', {}, { auth: true });
   return data.docs;
 }
 
-export async function adminCreateColor(input: { name: string; hex?: string }): Promise<ApiColor> {
+export async function adminCreateColor(input: { namePT: string; nameEN?: string; hex?: string }): Promise<ApiColor> {
   const data = await request<{ doc: ApiColor }>(
     '/colors',
     { method: 'POST', body: JSON.stringify(input) },
@@ -696,7 +708,7 @@ export async function adminCreateColor(input: { name: string; hex?: string }): P
   return data.doc;
 }
 
-export async function adminUpdateColor(id: string | number, input: { name?: string; hex?: string | null }): Promise<ApiColor> {
+export async function adminUpdateColor(id: string | number, input: { namePT?: string; nameEN?: string; hex?: string | null }): Promise<ApiColor> {
   const data = await request<{ doc: ApiColor }>(
     `/colors/${id}`,
     { method: 'PATCH', body: JSON.stringify(input) },

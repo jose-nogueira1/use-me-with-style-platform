@@ -11,6 +11,7 @@ import {
   adminListSizeGuides,
   adminUpdateProduct,
   adminUploadProductImage,
+  colorLabel,
   refId,
   resolveProductImage,
   resolveRef,
@@ -397,7 +398,7 @@ export function ProductEditor() {
                     {(swatch?.url || c.hex) && (
                       <span aria-hidden style={{ width: 12, height: 12, borderRadius: '50%', flexShrink: 0, border: `1px solid ${C.rule}`, background: swatch?.url ? `center / cover url(${swatch.url})` : c.hex ?? undefined }} />
                     )}
-                    {c.name}
+                    {colorLabel(c)}
                   </button>
                 );
               })}
@@ -460,7 +461,7 @@ export function ProductEditor() {
                               {(swatch?.url || color?.hex) && (
                                 <span aria-hidden style={{ width: 11, height: 11, borderRadius: '50%', border: `1px solid ${C.rule}`, background: swatch?.url ? `center / cover url(${swatch.url})` : color?.hex ?? undefined }} />
                               )}
-                              {color?.name ?? '?'}
+                              {color ? colorLabel(color) : '?'}
                             </span>
                           </td>
                           {form.sizes.map((size) => {
@@ -469,7 +470,7 @@ export function ProductEditor() {
                               <td key={size} style={{ padding: '6px 8px' }}>
                                 <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
                                   <input
-                                    aria-label={`${color?.name ?? colorId} ${size} Angola stock`}
+                                    aria-label={`${color ? colorLabel(color) : colorId} ${size} Angola stock`}
                                     type="number"
                                     min="0"
                                     value={cell.ao}
@@ -477,7 +478,7 @@ export function ProductEditor() {
                                     style={{ width: 52, padding: '6px 6px', fontSize: 11, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, color: C.ink }}
                                   />
                                   <input
-                                    aria-label={`${color?.name ?? colorId} ${size} Portugal stock`}
+                                    aria-label={`${color ? colorLabel(color) : colorId} ${size} Portugal stock`}
                                     type="number"
                                     min="0"
                                     value={cell.pt}

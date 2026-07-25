@@ -52,13 +52,18 @@ export function ProductDetail() {
   }
 
   const activeSize = size ?? product.sizes[Math.floor(product.sizes.length / 2)];
-  // Colours are taxonomy entries now; the cart still stores the NAME string.
-  const activeColor = color ?? product.colors[0]?.name;
+  // Colours are taxonomy entries now; `activeColor` holds the colour's
+  // stable ROW ID (2026-07-25 bilingual follow-up -- an id, not a display
+  // name, since the name now varies by storefront language and the cart
+  // must keep referring to the same colour if the shopper switches
+  // language mid-session). `activeColorLabel` below is what's shown.
+  const activeColor = color ?? product.colors[0]?.id;
+  const activeColorLabel = product.colors.find((c) => c.id === activeColor)?.name ?? activeColor;
   // Variant-level stock (2026-07-25): availability is per colour+size, so
   // switching colour changes which sizes are in stock.
-  const stockFor = (colorName: string | undefined, sizeName: string) =>
-    product.variants.find((v) => v.color === colorName && v.size === sizeName)?.stock ?? 0;
-  const colorHasStock = (colorName: string) => product.variants.some((v) => v.color === colorName && v.stock > 0);
+  const stockFor = (colorId: string | undefined, sizeName: string) =>
+    product.variants.find((v) => v.color === colorId && v.size === sizeName)?.stock ?? 0;
+  const colorHasStock = (colorId: string) => product.variants.some((v) => v.color === colorId && v.stock > 0);
   const stockForSize = activeColor ? stockFor(activeColor, activeSize) : product.stock[activeSize] ?? 0;
   const isLowStock = stockForSize > 0 && stockForSize <= 3;
   const isOutOfStock = stockForSize === 0;
@@ -169,27 +174,27 @@ export function ProductDetail() {
 
           <div style={{ marginTop: 20 }}>
             <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1, color: C.goldDeep, textTransform: 'uppercase' }}>
-              {t('colourLabel', lang)}: <span style={{ color: C.ink, fontWeight: 500, marginLeft: 4 }}>{activeColor}</span>
+              {t('colourLabel', lang)}: <span style={{ color: C.ink, fontWeight: 500, marginLeft: 4 }}>{activeColorLabel}</span>
             </div>
             <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
               {product.colors.map((co) => (
                 <button
-                  key={co.name}
-                  onClick={() => setColor(co.name)}
-                  aria-pressed={activeColor === co.name}
+                  key={co.id}
+                  onClick={() => setColor(co.id)}
+                  aria-pressed={activeColor === co.id}
                   style={{
                     padding: '6px 12px',
                     fontSize: 11,
                     borderRadius: 20,
-                    border: `1.5px solid ${activeColor === co.name ? C.gold : C.rule}`,
-                    background: activeColor === co.name ? C.tagBg : C.paper,
-                    color: activeColor === co.name ? C.goldDeep : C.ink,
-                    fontWeight: activeColor === co.name ? 700 : 500,
+                    border: `1.5px solid ${activeColor === co.id ? C.gold : C.rule}`,
+                    background: activeColor === co.id ? C.tagBg : C.paper,
+                    color: activeColor === co.id ? C.goldDeep : C.ink,
+                    fontWeight: activeColor === co.id ? 700 : 500,
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: 6,
-                    opacity: colorHasStock(co.name) ? 1 : 0.45,
-                    textDecoration: colorHasStock(co.name) ? 'none' : 'line-through',
+                    opacity: colorHasStock(co.id) ? 1 : 0.45,
+                    textDecoration: colorHasStock(co.id) ? 'none' : 'line-through',
                   }}
                 >
                   {(co.swatchUrl || co.hex) && (

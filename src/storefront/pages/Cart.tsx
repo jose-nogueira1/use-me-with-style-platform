@@ -63,7 +63,10 @@ export function Cart() {
                     </button>
                   </div>
                   <div style={{ fontSize: 11, color: C.inkSoft, marginTop: 2 }}>
-                    {item.size} · {item.color}
+                    {/* item.color is the colour's stable row id (2026-07-25
+                        bilingual follow-up), resolved to a localized label
+                        here via the product's own colour list. */}
+                    {item.size} · {p.colors.find((c) => c.id === item.color)?.name ?? item.color}
                   </div>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

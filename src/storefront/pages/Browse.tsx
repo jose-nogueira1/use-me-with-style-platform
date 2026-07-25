@@ -61,21 +61,22 @@ export function Browse() {
     if (activeCat !== 'all') list = list.filter((p) => p.cat === activeCat);
     if (searchTerm) list = list.filter((p) => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
     if (filterSize) list = list.filter((p) => p.sizes.includes(filterSize));
-    if (filterColor) list = list.filter((p) => p.colors.some((c) => c.name.toLowerCase() === filterColor.toLowerCase()));
+    if (filterColor) list = list.filter((p) => p.colors.some((c) => c.id === filterColor));
     if (sortBy === 'price-asc') list = [...list].sort((a, b) => (market === 'AO' ? a.priceKz - b.priceKz : a.priceEur - b.priceEur));
     if (sortBy === 'price-desc') list = [...list].sort((a, b) => (market === 'AO' ? b.priceKz - a.priceKz : b.priceEur - a.priceEur));
     return list;
   }, [products, activeCat, searchTerm, filterSize, filterColor, sortBy, market]);
 
   const allSizes = ['XS', 'S', 'M', 'L', 'XL'];
-  // Dedupe by colour name, keeping the first swatch seen for each -- the
-  // taxonomy guarantees consistent names, so first-wins is safe.
+  // Dedupe by colour id (2026-07-25 bilingual follow-up: was name, but two
+  // colours could now share a display name across languages by
+  // coincidence, and id is the real, language-independent identity anyway).
   const allColors = useMemo(() => {
-    const byName = new Map<string, { value: string; label: string; hex?: string; swatchUrl?: string }>();
+    const byId = new Map<string, { value: string; label: string; hex?: string; swatchUrl?: string }>();
     for (const c of products.flatMap((p) => p.colors)) {
-      if (!byName.has(c.name)) byName.set(c.name, { value: c.name, label: c.name, hex: c.hex, swatchUrl: c.swatchUrl });
+      if (!byId.has(c.id)) byId.set(c.id, { value: c.id, label: c.name, hex: c.hex, swatchUrl: c.swatchUrl });
     }
-    return Array.from(byName.values());
+    return Array.from(byId.values());
   }, [products]);
 
   return (

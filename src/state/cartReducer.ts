@@ -1,6 +1,10 @@
 export type CartItem = {
   id: string;
   size: string;
+  // Colour's stable row id (2026-07-25 bilingual colours follow-up) --
+  // NOT a display name, so the dedupe key below stays correct even if the
+  // shopper switches storefront language mid-session. Screens resolve the
+  // localized label from the product's own colour list when rendering.
   color: string;
   qty: number;
 };
