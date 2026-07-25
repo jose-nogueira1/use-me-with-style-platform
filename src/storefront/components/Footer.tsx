@@ -2,8 +2,7 @@ import { Link } from 'react-router-dom';
 import { MessageCircle, FileText } from 'lucide-react';
 import { C, t, type Lang } from '../../theme';
 import { useApp, type Market } from '../../state/AppContext';
-import wordmarkBlack from '../../assets/brand/wordmark-black.png';
-import wordmarkWhite from '../../assets/brand/wordmark-white.png';
+import { BrandLogo } from '../../components/BrandLogo';
 import { clearAnalyticsConsent } from '../../lib/analyticsConsent';
 
 // Site-wide footer, rendered once from StorefrontLayout so it appears on
@@ -39,13 +38,14 @@ const SUPPORT_LINKS = [
 export function Footer() {
   const { lang, market, setMarket, themeMode } = useApp();
   const year = new Date().getFullYear();
-  const logoSrc = themeMode === 'dark' ? wordmarkWhite : wordmarkBlack;
 
   return (
     <footer className="ump-footer" style={{ background: C.subtleBg, borderTop: `1px solid ${C.ruleLight}` }}>
       <div className="ump-content-width ump-footer-grid">
         <div className="ump-footer-col">
-          <img src={logoSrc} alt="Use Me With Style" style={{ height: 34, width: 'auto', marginBottom: 14 }} />
+          <div style={{ marginBottom: 14 }}>
+            <BrandLogo tone={themeMode === 'dark' ? 'white' : 'black'} height={40} />
+          </div>
           <div style={{ fontSize: 12, color: C.inkSoft, lineHeight: 1.6, maxWidth: 260 }}>{t('footerAbout', lang)}</div>
           <a
             href="https://wa.me/244939615501"

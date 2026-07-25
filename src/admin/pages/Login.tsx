@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { C } from '../../theme';
 import { useAdminAuth } from '../AdminAuthContext';
-import wordmarkGold from '../../assets/brand/wordmark-gold.png';
+import { BrandLogo } from '../../components/BrandLogo';
 import { AdminLanguageSwitch } from '../AdminTranslation';
 
 export function Login() {
@@ -41,7 +41,9 @@ export function Login() {
       >
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}><AdminLanguageSwitch dark /></div>
         <div style={{ textAlign: 'center', marginBottom: 26 }}>
-          <img src={wordmarkGold} alt="Use Me With Style" style={{ height: 42, width: 'auto' }} />
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <BrandLogo tone="gold" goldColor={C.onDarkGold} height={54} />
+          </div>
         </div>
         <h1 style={{ fontSize: 10, color: '#BEB8AE', letterSpacing: 2, textTransform: 'uppercase', margin: '0 0 20px', textAlign: 'center' }}>
           Admin

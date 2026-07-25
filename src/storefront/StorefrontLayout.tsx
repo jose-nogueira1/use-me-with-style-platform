@@ -4,9 +4,7 @@ import { ChevronDown, ChevronLeft, HelpCircle, Menu, Moon, Package, Search, Shop
 import { C, t, type Lang } from '../theme';
 import { useApp } from '../state/AppContext';
 import { Footer } from './components/Footer';
-import wordmarkBlack from '../assets/brand/wordmark-black.png';
-import wordmarkWhite from '../assets/brand/wordmark-white.png';
-import wordmarkGold from '../assets/brand/wordmark-gold.png';
+import { BrandLogo } from '../components/BrandLogo';
 import { AnalyticsConsentManager } from './components/AnalyticsConsent';
 
 // Matches the real Figma design (node 72:2, "Phase 1 Storefront -- High
@@ -31,12 +29,13 @@ export function StorefrontLayout() {
   const isRoot = ROOT_PATHS.includes(location.pathname);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Real brand wordmark (public/brand -- Logos & Brand Guide/New Logos),
-  // replacing the plain-text "Use Me / with style" placeholder. Gold matches
-  // the original design's use of the accent color for the Home hero header,
-  // in either theme; away from Home it's plain ink-colored like the rest of
-  // the header text -- Black in light mode, White in dark mode.
-  const logoSrc = isHome ? wordmarkGold : themeMode === 'dark' ? wordmarkWhite : wordmarkBlack;
+  // Real brand wordmark (see components/BrandLogo.tsx for why gold is
+  // synthesized via a CSS mask rather than loaded from a separate asset).
+  // Gold matches the original design's use of the accent color for the Home
+  // hero header, in either theme -- and now actually adapts between light
+  // and dark mode via C.heroAccent, same as the hero's other text. Away
+  // from Home it's plain ink-colored like the rest of the header text --
+  // Black in light mode, White in dark mode.
 
   // The hamburger only ever makes sense as a mobile pattern -- the button
   // itself is CSS-hidden at desktop widths (.ump-mobile-menu-btn), but also
@@ -94,7 +93,11 @@ export function StorefrontLayout() {
           )}
 
           <Link to="/" style={{ textAlign: 'center', textDecoration: 'none', flex: 1, display: 'flex', justifyContent: 'center' }}>
-            <img src={logoSrc} alt="Use Me With Style" style={{ height: 38, width: 'auto' }} />
+            {isHome ? (
+              <BrandLogo tone="gold" goldColor={C.heroAccent} height={46} />
+            ) : (
+              <BrandLogo tone={themeMode === 'dark' ? 'white' : 'black'} height={46} />
+            )}
           </Link>
 
           <nav className="ump-desktop-nav" style={{ gap: 18, alignItems: 'center' }}>

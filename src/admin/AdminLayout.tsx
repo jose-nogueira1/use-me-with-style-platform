@@ -4,7 +4,7 @@ import { Menu, X } from 'lucide-react';
 import { C } from '../theme';
 import { useAdminAuth } from './AdminAuthContext';
 import { adminListOrders, adminListProducts } from '../lib/api';
-import wordmarkGold from '../assets/brand/wordmark-gold.png';
+import { BrandLogo } from '../components/BrandLogo';
 import { AdminLanguageSwitch } from './AdminTranslation';
 import { NotificationsButton, SearchButton } from './components/PageHeader';
 
@@ -86,7 +86,7 @@ export function AdminLayout() {
           these are global actions, so on mobile they belong in the
           persistent navbar rather than repeated at the top of every page). */}
       <div className="ump-admin-mobile-bar" style={{ background: C.black }}>
-        <img src={wordmarkGold} alt="Use Me With Style" style={{ height: 30, width: 'auto' }} />
+        <BrandLogo tone="gold" goldColor={C.onDarkGold} height={34} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <SearchButton />
           <NotificationsButton />
@@ -122,7 +122,9 @@ export function AdminLayout() {
         </button>
 
         <div style={{ textAlign: 'center', marginBottom: 30 }}>
-          <img src={wordmarkGold} alt="Use Me With Style" style={{ height: 38, width: 'auto' }} />
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <BrandLogo tone="gold" goldColor={C.onDarkGold} height={44} />
+          </div>
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: 14 }}><AdminLanguageSwitch dark /></div>
         </div>
 
