@@ -457,7 +457,7 @@ export function Checkout() {
         size: item.size,
         color: item.color,
         qty: item.qty,
-        unitPrice: market === 'AO' ? p.priceKz : p.priceEur,
+        unitPrice: market === 'AO' ? p.effectivePriceKz : p.effectivePriceEur,
       };
     })
     .filter((i): i is NonNullable<typeof i> => i !== null);
@@ -505,7 +505,7 @@ export function Checkout() {
             size: item.size,
             color: item.color,
             qty: item.qty,
-            unitPrice: p.priceEur,
+            unitPrice: p.effectivePriceEur,
           };
         })
         .filter((i): i is NonNullable<typeof i> => i !== null);

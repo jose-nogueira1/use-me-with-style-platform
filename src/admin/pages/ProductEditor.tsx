@@ -66,12 +66,24 @@ type FormState = {
   stock: Record<string, StockCell>;
   priceAOKz: string;
   pricePTEur: string;
+  /** Sale pricing (2026-07-25, discounts phase 1) -- all optional; blank
+   * means "no sale price for this market" / "no start/end restriction". */
+  saleAOKz: string;
+  salePTEur: string;
+  saleStartDate: string;
+  saleEndDate: string;
   active: boolean;
   availableAO: boolean;
   availablePT: boolean;
 };
 
-const EMPTY: FormState = { name: '', namePT: '', nameEN: '', slug: '', category: '', description: '', descriptionPT: '', descriptionEN: '', sizeGuide: '', fitNotePT: '', fitNoteEN: '', tag: '', colorIds: [], sizes: ['S', 'M', 'L'], stock: {}, priceAOKz: '', pricePTEur: '', active: false, availableAO: true, availablePT: true };
+const EMPTY: FormState = { name: '', namePT: '', nameEN: '', slug: '', category: '', description: '', descriptionPT: '', descriptionEN: '', sizeGuide: '', fitNotePT: '', fitNoteEN: '', tag: '', colorIds: [], sizes: ['S', 'M', 'L'], stock: {}, priceAOKz: '', pricePTEur: '', saleAOKz: '', salePTEur: '', saleStartDate: '', saleEndDate: '', active: false, availableAO: true, availablePT: true };
+
+/** Payload date fields round-trip as full ISO datetimes; the admin form uses
+ * a plain <input type="date">, which needs just the YYYY-MM-DD portion. */
+function toDateInputValue(iso?: string | null): string {
+  return iso ? iso.slice(0, 10) : '';
+}
 
 function formFromVariants(variants: ApiVariant[]): Pick<FormState, 'colorIds' | 'sizes' | 'stock'> {
   const colorIds: string[] = [];
@@ -142,6 +154,10 @@ export function ProductEditor() {
           ...formFromVariants(p.variants ?? []),
           priceAOKz: String(p.priceAOKz),
           pricePTEur: String(p.pricePTEur),
+          saleAOKz: p.saleAOKz != null ? String(p.saleAOKz) : '',
+          salePTEur: p.salePTEur != null ? String(p.salePTEur) : '',
+          saleStartDate: toDateInputValue(p.saleStartDate),
+          saleEndDate: toDateInputValue(p.saleEndDate),
           active: p.active,
           availableAO: p.availableAO,
           availablePT: p.availablePT,
@@ -213,6 +229,12 @@ export function ProductEditor() {
       variants,
       priceAOKz: Number(form.priceAOKz) || 0,
       pricePTEur: Number(form.pricePTEur) || 0,
+      // null (not undefined) so clearing a sale price actually removes it --
+      // same pattern as sizeGuide/tag above.
+      saleAOKz: form.saleAOKz.trim() ? Number(form.saleAOKz) : null,
+      salePTEur: form.salePTEur.trim() ? Number(form.salePTEur) : null,
+      saleStartDate: form.saleStartDate || null,
+      saleEndDate: form.saleEndDate || null,
       active: form.active,
       availableAO: form.availableAO,
       availablePT: form.availablePT,
@@ -365,6 +387,20 @@ export function ProductEditor() {
             <ReadOnlyField label="Slug" value={form.slug || (isNew ? 'Generated automatically on save' : '')} />
             <FieldInput label="Angola price (Kz)" value={form.priceAOKz} onChange={(v) => set('priceAOKz', v)} type="number" />
             <FieldInput label="Portugal price (EUR)" value={form.pricePTEur} onChange={(v) => set('pricePTEur', v)} type="number" />
+          </div>
+
+          {/* Sale pricing (2026-07-25, discounts phase 1): optional, mirrors
+              the regular price fields above. Leave a market's field blank to
+              not discount that market; leave both dates blank for the sale
+              to run indefinitely as soon as a sale price is set. */}
+          <div style={{ marginTop: -4 }}>
+            <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>Sale pricing (optional)</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }} className="ump-admin-fields-grid">
+              <FieldInput label="Sale price -- Angola (Kz)" value={form.saleAOKz} onChange={(v) => set('saleAOKz', v)} type="number" />
+              <FieldInput label="Sale price -- Portugal (EUR)" value={form.salePTEur} onChange={(v) => set('salePTEur', v)} type="number" />
+              <FieldInput label="Sale start" value={form.saleStartDate} onChange={(v) => set('saleStartDate', v)} type="date" />
+              <FieldInput label="Sale end" value={form.saleEndDate} onChange={(v) => set('saleEndDate', v)} type="date" />
+            </div>
           </div>
 
           {/* ---- Variant matrix: colours x sizes, stock per cell ---- */}

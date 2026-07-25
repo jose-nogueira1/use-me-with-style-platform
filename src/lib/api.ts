@@ -173,6 +173,15 @@ export type ApiProduct = {
   images?: { image: ApiProductImageRef }[];
   priceAOKz: number;
   pricePTEur: number;
+  /** Sale pricing (2026-07-25, discounts phase 1) -- optional per-market
+   * override, replacing the regular price at checkout while set and within
+   * the optional start/end window. See productAdapters.ts's
+   * isProductOnSale/effectivePrice helpers, mirrored from the CMS's
+   * lib/salePricing.ts (kept in sync by hand -- separate repos/deploys). */
+  saleAOKz?: number | null;
+  salePTEur?: number | null;
+  saleStartDate?: string | null;
+  saleEndDate?: string | null;
   variants: ApiVariant[];
   active: boolean;
   /** Per-market storefront visibility (JOS market-separation decision,

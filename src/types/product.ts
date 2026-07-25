@@ -61,8 +61,21 @@ export type Product = {
   cat: string;
   /** Localized category display name, from the categories collection. */
   catLabel: string;
+  /** Regular (non-sale) price -- kept even while on sale so the storefront
+   * can show a strikethrough "was" price. Use effectivePriceKz/Eur below
+   * for anything money actually changes hands over (cart, checkout,
+   * ad-tracking value). */
   priceKz: number;
   priceEur: number;
+  /** True when a sale price is currently active (2026-07-25, discounts
+   * phase 1) -- see productAdapters.ts's isProductOnSale. */
+  onSale: boolean;
+  /** The price actually charged: the sale price while onSale, otherwise
+   * identical to priceKz/priceEur. Everything that computes money
+   * (cart/checkout totals, Meta conversion value) should read these, not
+   * priceKz/priceEur directly. */
+  effectivePriceKz: number;
+  effectivePriceEur: number;
   sizes: string[];
   /** Stock for the CURRENT market, keyed by size, SUMMED across colours --
    * coarse availability for cards/lists. Use `variants` for the exact

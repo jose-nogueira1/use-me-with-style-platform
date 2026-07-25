@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Check, Heart, Search, X } from 'lucide-react';
 import { C, F, t } from '../../theme';
-import { useApp, useFormatPrice } from '../../state/AppContext';
+import { useApp, useFormatOriginalPrice, useFormatPrice } from '../../state/AppContext';
 import { useProducts } from '../../hooks/useProducts';
 import { ProductPhoto } from '../../components/ProductPhoto';
 import { ProductCard } from '../components/ProductCard';
@@ -18,6 +18,7 @@ export function ProductDetail() {
   const { market, lang, dispatchCart, favorites, toggleFavorite } = useApp();
   const { products, loading } = useProducts(market, lang);
   const fmtPrice = useFormatPrice();
+  const fmtOriginalPrice = useFormatOriginalPrice();
 
   const product = products.find((p) => p.slug === slug);
 
@@ -27,7 +28,7 @@ export function ProductDetail() {
       content_ids: [product.id],
       content_name: product.name,
       content_type: 'product',
-      value: market === 'AO' ? product.priceKz : product.priceEur,
+      value: market === 'AO' ? product.effectivePriceKz : product.effectivePriceEur,
       currency: market === 'AO' ? 'AOA' : 'EUR',
     });
   }, [market, product]);
@@ -78,7 +79,7 @@ export function ProductDetail() {
       content_ids: [product.id],
       content_name: product.name,
       content_type: 'product',
-      value: market === 'AO' ? product.priceKz : product.priceEur,
+      value: market === 'AO' ? product.effectivePriceKz : product.effectivePriceEur,
       currency: market === 'AO' ? 'AOA' : 'EUR',
     });
     setAdded(true);
@@ -122,8 +123,13 @@ export function ProductDetail() {
             {product.catLabel || product.cat}
           </div>
           <h1 style={{ fontFamily: F.display, fontSize: 26, color: C.ink, margin: '4px 0 0', fontWeight: 800 }}>{product.name}</h1>
-          <div style={{ marginTop: 8 }}>
-            <span style={{ fontSize: 20, fontWeight: 800, color: C.black }}>{fmtPrice(product)}</span>
+          <div style={{ marginTop: 8, display: 'flex', alignItems: 'baseline', gap: 10 }}>
+            {product.onSale && (
+              <span style={{ fontSize: 15, fontWeight: 700, color: C.inkSoft, textDecoration: 'line-through' }}>
+                {fmtOriginalPrice(product)}
+              </span>
+            )}
+            <span style={{ fontSize: 20, fontWeight: 800, color: product.onSale ? '#B95545' : C.black }}>{fmtPrice(product)}</span>
           </div>
 
           <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 6 }}>

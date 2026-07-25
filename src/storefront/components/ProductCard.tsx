@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { C, F, t } from '../../theme';
-import { useApp, useFormatPrice } from '../../state/AppContext';
+import { useApp, useFormatOriginalPrice, useFormatPrice } from '../../state/AppContext';
 import { ProductPhoto } from '../../components/ProductPhoto';
 import type { Product } from '../../types/product';
 
@@ -13,6 +13,7 @@ const TAG_KEY: Record<string, string> = { New: 'tagNew', 'Few left': 'tagFewLeft
 export function ProductCard({ product, size = 'grid' }: { product: Product; size?: 'small' | 'grid' }) {
   const { lang } = useApp();
   const fmtPrice = useFormatPrice();
+  const fmtOriginalPrice = useFormatOriginalPrice();
   const isSmall = size === 'small';
   const tagStyle = product.tag ? TAG_STYLE[product.tag] ?? DEFAULT_TAG_STYLE : null;
 
@@ -55,8 +56,13 @@ export function ProductCard({ product, size = 'grid' }: { product: Product; size
           </div>
         )}
         <div style={{ fontFamily: F.sans, fontSize: 12, fontWeight: 800, color: C.ink }}>{product.name}</div>
-        <div style={{ marginTop: 6 }}>
-          <span style={{ fontSize: 11, fontWeight: 800, color: C.black }}>{fmtPrice(product)}</span>
+        <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+          {product.onSale && (
+            <span style={{ fontSize: 10, fontWeight: 700, color: C.inkSoft, textDecoration: 'line-through' }}>
+              {fmtOriginalPrice(product)}
+            </span>
+          )}
+          <span style={{ fontSize: 11, fontWeight: 800, color: product.onSale ? '#B95545' : C.black }}>{fmtPrice(product)}</span>
         </div>
       </div>
     </Link>

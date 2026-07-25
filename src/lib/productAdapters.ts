@@ -12,6 +12,20 @@ import { publicEnv } from '../config/env';
 // named the tag) is using.
 const NEW_ARRIVAL_TAG_LABELS = new Set(['novidade', 'novidades', 'new', 'new arrival', 'new arrivals']);
 
+// Discounts phase 1 (2026-07-25) -- mirrors use-me-with-style-cms's
+// lib/salePricing.ts by hand (separate repos/deploys, no shared package).
+// The CMS's authoritativeOrder.ts is what actually enforces this at
+// checkout; this copy only drives storefront DISPLAY (strikethrough price,
+// cart/checkout preview totals) so it's a nice-to-have that it stays in
+// sync, not a security boundary.
+function isProductOnSale(p: Pick<ApiProduct, 'saleAOKz' | 'salePTEur' | 'saleStartDate' | 'saleEndDate'>, now = new Date()): boolean {
+  const hasSalePrice = (p.saleAOKz ?? null) !== null || (p.salePTEur ?? null) !== null;
+  if (!hasSalePrice) return false;
+  if (p.saleStartDate && now < new Date(p.saleStartDate)) return false;
+  if (p.saleEndDate && now > new Date(p.saleEndDate)) return false;
+  return true;
+}
+
 /** Resolves a CMS-relative media URL to an absolute one. Exported for reuse
  * anywhere else a raw media URL needs the same treatment (e.g. Home.tsx's
  * hero image, 2026-07-25). */
@@ -73,6 +87,10 @@ export function adaptApiProduct(api: ApiProduct, market: 'AO' | 'PT', lang: 'pt'
   }
   sizes.sort((a, b) => SIZE_ORDER.indexOf(a) - SIZE_ORDER.indexOf(b));
 
+  const onSale = isProductOnSale(api);
+  const effectivePriceKz = onSale ? (api.saleAOKz ?? api.priceAOKz) : api.priceAOKz;
+  const effectivePriceEur = onSale ? (api.salePTEur ?? api.pricePTEur) : api.pricePTEur;
+
   const guide = resolveRef(api.sizeGuide);
   const sizeGuide: SizeGuideRow[] | undefined = guide
     ? guide.rows.map((row) => ({
@@ -92,6 +110,9 @@ export function adaptApiProduct(api: ApiProduct, market: 'AO' | 'PT', lang: 'pt'
     catLabel: (lang === 'en' ? category?.nameEN : category?.namePT)?.trim() || category?.namePT || '',
     priceKz: api.priceAOKz,
     priceEur: api.pricePTEur,
+    onSale,
+    effectivePriceKz,
+    effectivePriceEur,
     sizes,
     stock,
     variants,

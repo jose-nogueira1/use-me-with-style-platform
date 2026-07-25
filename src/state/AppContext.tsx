@@ -224,9 +224,21 @@ export function useApp(): AppContextValue {
   return ctx;
 }
 
-/** Angola/Portugal-only formatter -- matches the confirmed Phase 1 markets (INTL deferred). */
+/** Angola/Portugal-only formatter -- matches the confirmed Phase 1 markets
+ * (INTL deferred). Formats the price actually charged (the sale price when
+ * one is active, 2026-07-25 discounts phase 1) -- use useFormatOriginalPrice
+ * below alongside this one for a "was" strikethrough price. */
 // eslint-disable-next-line react-refresh/only-export-components
 export function useFormatPrice() {
+  const { market } = useApp();
+  return (product: { effectivePriceKz: number; effectivePriceEur: number }) =>
+    market === 'AO' ? `Kz ${product.effectivePriceKz.toLocaleString('pt-PT')}` : `€${product.effectivePriceEur}`;
+}
+
+/** The regular (pre-sale) price, for a strikethrough next to useFormatPrice's
+ * result -- only meaningful when `product.onSale` is true. */
+// eslint-disable-next-line react-refresh/only-export-components
+export function useFormatOriginalPrice() {
   const { market } = useApp();
   return (product: { priceKz: number; priceEur: number }) =>
     market === 'AO' ? `Kz ${product.priceKz.toLocaleString('pt-PT')}` : `€${product.priceEur}`;
