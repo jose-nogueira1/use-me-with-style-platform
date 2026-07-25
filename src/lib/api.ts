@@ -192,6 +192,14 @@ export function productIsLowStock(p: ApiProduct): boolean {
   return p.variants.some((v) => v.stockAO + v.stockPT <= 2);
 }
 
+/** Stricter than productIsLowStock -- a variant genuinely sold out, not
+ * just running low. Used by the admin notifications bell (2026-07-25) to
+ * flag "urgent" only for products that can't be sold at all right now,
+ * rather than every merely-low-stock one. */
+export function productIsOutOfStock(p: ApiProduct): boolean {
+  return p.variants.some((v) => v.stockAO + v.stockPT === 0);
+}
+
 export type OrderItemInput = {
   product: string | number;
   productName: string;

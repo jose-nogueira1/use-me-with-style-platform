@@ -8,6 +8,7 @@ import {
   adminListOrders,
   adminListProducts,
   productIsLowStock,
+  productIsOutOfStock,
   type ApiCustomer,
   type ApiOrder,
   type ApiProduct,
@@ -16,11 +17,21 @@ import {
   clearAllNotifications,
   clearNotification,
   getClearedKeys,
+  getClickedKeys,
   getSeenKeys,
+  markNotificationClicked,
   markNotificationsSeen,
   NOTIFICATIONS_STATE_EVENT,
   pruneNotificationState,
 } from '../../lib/notificationState';
+
+// Danger/urgent palette (2026-07-25) -- matches the red already used
+// throughout the admin for errors and destructive actions (Badge.tsx's
+// "red" variant, the Escalate button in Mensagens.tsx, etc.) rather than
+// inventing a new one.
+const DANGER_BG = '#FFF0EB';
+const DANGER_BORDER = '#E1B3AA';
+const DANGER_TEXT = '#B95545';
 
 // Every admin screen in the Figma design shares this exact header pattern:
 // a small eyebrow breadcrumb, a large bold title, a one-line subtitle, and a
@@ -106,7 +117,25 @@ function usePopover(onClose: () => void) {
   return ref;
 }
 
-function IconButton({ label, active, badge, onClick, children }: { label: string; active: boolean; badge?: number; onClick: () => void; children: ReactNode }) {
+function IconButton({
+  label,
+  active,
+  badge,
+  badgeUrgent,
+  onClick,
+  children,
+}: {
+  label: string;
+  active: boolean;
+  badge?: number;
+  /** Switches the badge to the danger palette (2026-07-25): the bell uses
+   * this when an unclicked notification is urgent, so the count itself
+   * flags that something needs immediate handling, not just that
+   * something's unread. */
+  badgeUrgent?: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) {
   return (
     <button
       aria-label={label}
@@ -135,7 +164,8 @@ function IconButton({ label, active, badge, onClick, children }: { label: string
             height: 16,
             padding: '0 4px',
             borderRadius: 8,
-            background: '#B95545',
+            background: badgeUrgent ? DANGER_TEXT : C.goldDeep,
+            boxShadow: badgeUrgent ? '0 0 0 3px rgba(185,85,69,0.25)' : 'none',
             color: '#FFFDF8',
             fontSize: 9,
             fontWeight: 800,
@@ -309,22 +339,60 @@ export function SearchButton() {
   );
 }
 
-type NotificationItem = { key: string; icon: ReactNode; title: string; subtitle: string; path: string };
+type NotificationItem = { key: string; icon: ReactNode; title: string; subtitle: string; path: string; urgent: boolean };
 
-// One notification row with an unseen dot (gold, cleared once the popover
-// is opened) and its own dismiss button, separate from the generic
-// ResultRow used by search (2026-07-25 seen/cleared request).
-function NotificationRow({ icon, title, subtitle, unseen, onClick, onClear }: { icon: ReactNode; title: string; subtitle?: string; unseen: boolean; onClick: () => void; onClear: () => void }) {
+// One notification row (2026-07-25 seen/clicked/urgent request). Background
+// is the primary signal, in priority order:
+// 1. clicked -- dealt with, de-emphasised (dim, no tint).
+// 2. urgent (and not yet clicked) -- danger tint + left accent bar, needs
+//    attention now.
+// 3. neither -- the default gold "not yet clicked" tint (covers both
+//    never-opened and opened-but-ignored items, per the request that those
+//    two only need ONE shared treatment).
+// The small dot is a lighter-weight detail layered on top: gold if truly
+// unseen, otherwise invisible -- it doesn't get its own background.
+function NotificationRow({
+  icon,
+  title,
+  subtitle,
+  unseen,
+  clicked,
+  urgent,
+  onClick,
+  onClear,
+}: {
+  icon: ReactNode;
+  title: string;
+  subtitle?: string;
+  unseen: boolean;
+  clicked: boolean;
+  urgent: boolean;
+  onClick: () => void;
+  onClear: () => void;
+}) {
+  const bg = clicked ? 'transparent' : urgent ? DANGER_BG : C.tagBg;
+  const accentColor = clicked ? C.goldDeep : urgent ? DANGER_TEXT : C.goldDeep;
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 2, borderRadius: 6, background: unseen ? C.tagBg : 'transparent' }}>
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 2,
+        borderRadius: 6,
+        background: bg,
+        border: `1px solid ${urgent && !clicked ? DANGER_BORDER : 'transparent'}`,
+        borderLeft: `3px solid ${urgent && !clicked ? DANGER_TEXT : 'transparent'}`,
+        opacity: clicked ? 0.6 : 1,
+      }}
+    >
       <button
         onClick={onClick}
-        style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0, textAlign: 'left', padding: '8px 4px 8px 8px', borderRadius: 6, background: 'transparent', color: C.ink }}
+        style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0, textAlign: 'left', padding: '8px 4px 8px 6px', borderRadius: 6, background: 'transparent', color: C.ink }}
       >
-        <span aria-hidden style={{ width: 6, height: 6, borderRadius: '50%', background: unseen ? C.goldDeep : 'transparent', flexShrink: 0 }} />
-        <span style={{ color: C.goldDeep, flexShrink: 0 }}>{icon}</span>
+        <span aria-hidden style={{ width: 6, height: 6, borderRadius: '50%', background: unseen && !clicked ? C.goldDeep : 'transparent', flexShrink: 0 }} />
+        <span style={{ color: accentColor, flexShrink: 0 }}>{icon}</span>
         <span style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 12.5, fontWeight: unseen ? 800 : 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</div>
+          <div style={{ fontSize: 12.5, fontWeight: clicked ? 500 : urgent ? 800 : unseen ? 800 : 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</div>
           {subtitle && <div style={{ fontSize: 10.5, color: C.inkSoft, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{subtitle}</div>}
         </span>
       </button>
@@ -348,20 +416,26 @@ function NotificationRow({ icon, title, subtitle, unseen, onClick, onClear }: { 
 // WhatsApp/Instagram messages awaiting a reply. Fetched on mount (not only
 // on open) so the badge count is visible without having to click first.
 //
-// Seen/cleared state (2026-07-25 request): notifications are recomputed
-// fresh from live data every time (there's no backend record for them), so
-// "seen" and "cleared" are tracked client-side by the item's stable
-// source-derived key (lib/notificationState.ts) -- the badge only counts
-// unseen items, opening the popover marks everything currently in it as
-// seen, and each item (or the whole list) can be dismissed, which keeps it
-// out of the list even though the underlying order/product/message is
-// still live.
+// Seen/clicked/cleared state (2026-07-25 request, extended same day):
+// notifications are recomputed fresh from live data every time (there's no
+// backend record for them), so all three are tracked client-side by the
+// item's stable source-derived key (lib/notificationState.ts). "Urgent"
+// flags the subset that genuinely needs handling now -- an order stuck in
+// payment review for over 24h, a product that's fully sold out (not just
+// low) in some variant, or an escalated message -- and only applies while
+// unclicked, since clicking through means it's been dealt with. The badge
+// counts unclicked items (opening the popover shouldn't make the count
+// disappear -- only acting on something should) and switches to the danger
+// colour whenever an unclicked item is urgent.
+const PAYMENT_REVIEW_URGENT_AFTER_MS = 24 * 60 * 60 * 1000;
+
 export function NotificationsButton() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [seenKeys, setSeenKeys] = useState<Set<string>>(() => getSeenKeys());
+  const [clickedKeys, setClickedKeys] = useState<Set<string>>(() => getClickedKeys());
   const close = () => setOpen(false);
   const wrapRef = usePopover(close);
 
@@ -370,22 +444,27 @@ export function NotificationsButton() {
       .then(([reviewOrders, products, messages]) => {
         const next: NotificationItem[] = [];
         for (const o of reviewOrders) {
+          const stuckSince = new Date(o.createdAt).getTime();
+          const urgent = Number.isFinite(stuckSince) && Date.now() - stuckSince > PAYMENT_REVIEW_URGENT_AFTER_MS;
           next.push({
             key: `order-${o.id}`,
             icon: <Clock size={13} />,
             title: `#${o.orderNumber} needs payment review`,
-            subtitle: o.customerName,
+            subtitle: urgent ? 'Waiting over 24h' : o.customerName,
             path: `/admin/encomendas/${o.id}`,
+            urgent,
           });
         }
         for (const p of products) {
           if (!productIsLowStock(p)) continue;
+          const urgent = productIsOutOfStock(p);
           next.push({
             key: `product-${p.id}`,
             icon: <AlertTriangle size={13} />,
-            title: `${p.name} is low on stock`,
+            title: urgent ? `${p.name} is out of stock` : `${p.name} is low on stock`,
             subtitle: 'Check sizes',
             path: `/admin/produtos/${p.id}`,
+            urgent,
           });
         }
         for (const m of messages.filter((m) => m.status === 'open' || m.status === 'escalated').slice(0, 20)) {
@@ -395,6 +474,7 @@ export function NotificationsButton() {
             title: `${m.customerName || m.contactHandle} sent a message`,
             subtitle: m.status === 'escalated' ? 'Escalated' : 'Needs review',
             path: '/admin/mensagens',
+            urgent: m.status === 'escalated',
           });
         }
         // Prune against the full live set (before filtering out cleared
@@ -409,10 +489,14 @@ export function NotificationsButton() {
       .finally(() => setLoaded(true));
   }, []);
 
-  // Keeps this button's seen state in sync with the other NotificationsButton
-  // instance (desktop header vs. mobile top bar render separately).
+  // Keeps this button's seen/clicked state in sync with the other
+  // NotificationsButton instance (desktop header vs. mobile top bar render
+  // separately).
   useEffect(() => {
-    const onStateChange = () => setSeenKeys(getSeenKeys());
+    const onStateChange = () => {
+      setSeenKeys(getSeenKeys());
+      setClickedKeys(getClickedKeys());
+    };
     window.addEventListener(NOTIFICATIONS_STATE_EVENT, onStateChange);
     return () => window.removeEventListener(NOTIFICATIONS_STATE_EVENT, onStateChange);
   }, []);
@@ -438,16 +522,20 @@ export function NotificationsButton() {
     setItems([]);
   };
 
-  const goTo = (path: string) => {
+  const goTo = (item: NotificationItem) => {
+    markNotificationClicked(item.key);
+    setClickedKeys(getClickedKeys());
     setOpen(false);
-    navigate(path);
+    navigate(item.path);
   };
 
-  const unseenCount = items.filter((item) => !seenKeys.has(item.key)).length;
+  const unclickedItems = items.filter((item) => !clickedKeys.has(item.key));
+  const unclickedCount = unclickedItems.length;
+  const hasUrgentPending = unclickedItems.some((item) => item.urgent);
 
   return (
     <div ref={wrapRef} style={{ position: 'relative' }}>
-      <IconButton label="Notifications" active={open} badge={unseenCount} onClick={togglePopover}>
+      <IconButton label="Notifications" active={open} badge={unclickedCount} badgeUrgent={hasUrgentPending} onClick={togglePopover}>
         <Bell size={15} />
       </IconButton>
       {open && (
@@ -460,7 +548,7 @@ export function NotificationsButton() {
               </button>
             </div>
           )}
-          <div style={{ overflowY: 'auto', padding: 6 }}>
+          <div style={{ overflowY: 'auto', padding: 6, display: 'flex', flexDirection: 'column', gap: 3 }}>
             {!loaded && <div style={{ padding: '10px 8px', fontSize: 12, color: C.inkSoft }}>Loading…</div>}
             {loaded && items.length === 0 && <div style={{ padding: '10px 8px', fontSize: 12, color: C.inkSoft }}>All caught up -- no notifications.</div>}
             {items.map((item) => (
@@ -470,7 +558,9 @@ export function NotificationsButton() {
                 title={item.title}
                 subtitle={item.subtitle}
                 unseen={!seenKeys.has(item.key)}
-                onClick={() => goTo(item.path)}
+                clicked={clickedKeys.has(item.key)}
+                urgent={item.urgent}
+                onClick={() => goTo(item)}
                 onClear={() => handleClear(item.key)}
               />
             ))}
