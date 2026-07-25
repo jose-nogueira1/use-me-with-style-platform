@@ -80,6 +80,8 @@ export type ApiProduct = {
   description?: string;
   descriptionPT?: string;
   descriptionEN?: string;
+  sizeGuidePT?: string;
+  sizeGuideEN?: string;
   tag?: string;
   images?: { image: ApiProductImageRef }[];
   colors: { color: string }[];

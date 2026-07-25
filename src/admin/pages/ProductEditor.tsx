@@ -11,11 +11,17 @@ type FormState = {
   name: string;
   namePT: string;
   nameEN: string;
+  // Read-only in this form -- auto-generated server-side from the product
+  // name (2026-07-25 admin request: "user should not be allowed to create
+  // them"). Kept in FormState purely to display it, never sent back on
+  // save; see handleSave and generateProductSlug in the CMS repo.
   slug: string;
   category: ApiProduct['category'];
   description: string;
   descriptionPT: string;
   descriptionEN: string;
+  sizeGuidePT: string;
+  sizeGuideEN: string;
   tag: string;
   colors: string;
   sizes: ApiProduct['sizes'];
@@ -26,7 +32,7 @@ type FormState = {
   availablePT: boolean;
 };
 
-const EMPTY: FormState = { name: '', namePT: '', nameEN: '', slug: '', category: 'vestidos', description: '', descriptionPT: '', descriptionEN: '', tag: '', colors: '', sizes: [{ size: 'S', stockAO: 0, stockPT: 0 }], priceAOKz: '', pricePTEur: '', active: false, availableAO: true, availablePT: true };
+const EMPTY: FormState = { name: '', namePT: '', nameEN: '', slug: '', category: 'vestidos', description: '', descriptionPT: '', descriptionEN: '', sizeGuidePT: '', sizeGuideEN: '', tag: '', colors: '', sizes: [{ size: 'S', stockAO: 0, stockPT: 0 }], priceAOKz: '', pricePTEur: '', active: false, availableAO: true, availablePT: true };
 
 export function ProductEditor() {
   const { id } = useParams<{ id: string }>();
@@ -57,6 +63,8 @@ export function ProductEditor() {
           description: p.description ?? '',
           descriptionPT: p.descriptionPT ?? p.description ?? '',
           descriptionEN: p.descriptionEN ?? '',
+          sizeGuidePT: p.sizeGuidePT ?? '',
+          sizeGuideEN: p.sizeGuideEN ?? '',
           tag: p.tag ?? '',
           colors: p.colors.map((c) => c.color).join(', '),
           sizes: p.sizes,
@@ -80,11 +88,14 @@ export function ProductEditor() {
       name: form.namePT || form.name,
       namePT: form.namePT,
       nameEN: form.nameEN,
-      slug: form.slug,
+      // slug intentionally omitted -- auto-generated (create) or preserved
+      // as-is (update) server-side, never client-supplied.
       category: form.category,
       description: form.descriptionPT || form.description,
       descriptionPT: form.descriptionPT,
       descriptionEN: form.descriptionEN,
+      sizeGuidePT: form.sizeGuidePT || undefined,
+      sizeGuideEN: form.sizeGuideEN || undefined,
       tag: form.tag || undefined,
       colors: form.colors.split(',').map((color) => color.trim()).filter(Boolean).map((color) => ({ color })),
       sizes: form.sizes,
@@ -217,7 +228,10 @@ export function ProductEditor() {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }} className="ump-admin-fields-grid">
-            <FieldInput label="Slug" value={form.slug} onChange={(v) => set('slug', v)} />
+            <ReadOnlyField
+              label="Slug"
+              value={form.slug || (isNew ? 'Generated automatically on save' : '')}
+            />
             <FieldInput label="Angola price (Kz)" value={form.priceAOKz} onChange={(v) => set('priceAOKz', v)} type="number" />
             <FieldInput label="Portugal price (EUR)" value={form.pricePTEur} onChange={(v) => set('pricePTEur', v)} type="number" />
           </div>
@@ -263,6 +277,18 @@ export function ProductEditor() {
 
           <label style={{ display: 'block' }}><div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>Description — English</div><textarea value={form.descriptionEN} onChange={(e) => set('descriptionEN', e.target.value)} rows={3} style={{ width: '100%', padding: '11px 12px', fontSize: 12, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, color: C.ink, fontFamily: 'inherit' }} /></label>
 
+          <label style={{ display: 'block' }}>
+            <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>Size guide — Portuguese</div>
+            <textarea
+              value={form.sizeGuidePT}
+              onChange={(e) => set('sizeGuidePT', e.target.value)}
+              rows={3}
+              placeholder="e.g. S: busto 82cm, cintura 64cm, anca 90cm. M: busto 86cm…"
+              style={{ width: '100%', padding: '11px 12px', fontSize: 12, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, color: C.ink, fontFamily: 'inherit' }}
+            />
+          </label>
+
+          <label style={{ display: 'block' }}><div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>Size guide — English</div><textarea value={form.sizeGuideEN} onChange={(e) => set('sizeGuideEN', e.target.value)} rows={3} placeholder="e.g. S: bust 32in, waist 25in, hip 35in. M: bust 34in…" style={{ width: '100%', padding: '11px 12px', fontSize: 12, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, color: C.ink, fontFamily: 'inherit' }} /></label>
 
           <div style={{ display: 'flex', gap: 10 }}>
             <button
@@ -297,6 +323,23 @@ function FieldInput({ label, value, onChange, type = 'text' }: { label: string; 
         value={value}
         onChange={(e) => onChange(e.target.value)}
         style={{ width: '100%', padding: '11px 10px', fontSize: 12, fontWeight: 700, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, color: C.ink }}
+      />
+    </label>
+  );
+}
+
+// Same visual shell as FieldInput, but genuinely non-editable (disabled
+// input, no onChange) -- used for the slug, which is server-generated and
+// never client-writable (2026-07-25 admin request).
+function ReadOnlyField({ label, value }: { label: string; value: string }) {
+  return (
+    <label style={{ display: 'block' }}>
+      <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>{label}</div>
+      <input
+        type="text"
+        value={value}
+        disabled
+        style={{ width: '100%', padding: '11px 10px', fontSize: 12, fontWeight: 700, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.ruleLight, color: C.inkSoft, cursor: 'not-allowed' }}
       />
     </label>
   );
