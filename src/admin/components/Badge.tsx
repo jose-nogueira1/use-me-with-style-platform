@@ -1,4 +1,5 @@
 import { C } from '../../theme';
+import { t, type Lang } from '../i18n';
 
 // Status/badge pill matching the Figma admin design system. Every badge on
 // every admin screen (Dashboard, Orders, Products, Settings, Messaging) uses
@@ -37,25 +38,26 @@ export function Badge({ label, tone = 'neutral' }: { label: string; tone?: Badge
   );
 }
 
-// Maps the backend order/message status strings to a badge tone + label,
+// Maps the backend order/message status strings to a badge tone + i18n key,
 // used consistently across Dashboard, Orders queue, Order detail, and
-// Mensagens so a given status always reads the same way.
-// Kept beside Badge so every status consumer uses the same visual mapping.
+// Mensagens so a given status always reads the same way. Kept beside Badge
+// so every status consumer uses the same visual mapping. Callers resolve the
+// label via t(key, lang) themselves (statusBadgeProps has no lang of its own).
 // eslint-disable-next-line react-refresh/only-export-components
-export function statusBadgeProps(status: string): { label: string; tone: BadgeTone } {
+export function statusBadgeProps(status: string, lang: Lang): { label: string; tone: BadgeTone } {
   switch (status) {
     case 'new':
-      return { label: 'New', tone: 'neutral' };
+      return { label: t('statusNew', lang), tone: 'neutral' };
     case 'payment_review':
-      return { label: 'Payment Review', tone: 'gold' };
+      return { label: t('statusPaymentReview', lang), tone: 'gold' };
     case 'processing':
-      return { label: 'Processing', tone: 'blue' };
+      return { label: t('statusProcessing', lang), tone: 'blue' };
     case 'shipped':
-      return { label: 'Shipped', tone: 'green' };
+      return { label: t('statusShipped', lang), tone: 'green' };
     case 'delivered':
-      return { label: 'Delivered', tone: 'green' };
+      return { label: t('statusDelivered', lang), tone: 'green' };
     case 'cancelled':
-      return { label: 'Cancelled', tone: 'neutral' };
+      return { label: t('statusCancelled', lang), tone: 'neutral' };
     default:
       return { label: status, tone: 'neutral' };
   }

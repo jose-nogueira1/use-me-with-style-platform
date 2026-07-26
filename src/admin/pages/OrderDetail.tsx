@@ -1,12 +1,20 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { C, F } from '../../theme';
+import { useApp } from '../../state/AppContext';
 import { adminGetOrder, adminUpdateOrder, adminUpdateOrderStatus, type ApiOrder } from '../../lib/api';
 import { PageHeader } from '../components/PageHeader';
 import { Badge, statusBadgeProps } from '../components/Badge';
+import { t, type Lang } from '../i18n';
 
 const STATUSES = ['new', 'payment_review', 'processing', 'shipped', 'delivered', 'cancelled'] as const;
 const PAYMENT_STATUSES = ['pending', 'awaiting_manual_review', 'paid', 'failed'] as const;
+const PAYMENT_STATUS_KEY: Record<(typeof PAYMENT_STATUSES)[number], string> = {
+  pending: 'payStatusPending',
+  awaiting_manual_review: 'payStatusAwaitingReview',
+  paid: 'payStatusPaid',
+  failed: 'payStatusFailed',
+};
 
 // Editable core fields (added 2026-07-25 for storefront-admin/Payload-admin
 // parity -- previously only the status pipeline below was editable here,
@@ -46,6 +54,7 @@ function toEditable(order: ApiOrder): EditableFields {
 }
 
 export function OrderDetail() {
+  const { lang } = useApp();
   const { id } = useParams<{ id: string }>();
   const [order, setOrder] = useState<ApiOrder | null>(null);
   const [form, setForm] = useState<EditableFields | null>(null);
@@ -107,31 +116,31 @@ export function OrderDetail() {
   if (error) {
     return (
       <div style={{ padding: '32px 28px', fontSize: 13, color: '#B95545' }}>
-        Couldn't load this order. <Link to="/admin/encomendas">Back</Link>
+        {t('couldntLoadOrder', lang)} <Link to="/admin/encomendas">{t('backLink', lang)}</Link>
       </div>
     );
   }
 
   if (!order || !form) {
-    return <div style={{ padding: '32px 28px', fontSize: 13, color: C.inkSoft }}>Loading…</div>;
+    return <div style={{ padding: '32px 28px', fontSize: 13, color: C.inkSoft }}>{t('loadingEllipsis', lang)}</div>;
   }
 
   const activeIdx = STATUSES.indexOf(order.status as (typeof STATUSES)[number]);
-  const b = statusBadgeProps(order.status);
+  const b = statusBadgeProps(order.status, lang);
 
   return (
     <div style={{ paddingBottom: 32 }}>
       <PageHeader
-        eyebrow={`Orders / #${order.orderNumber}`}
+        eyebrow={`${t('navOrders', lang)} / #${order.orderNumber}`}
         title={b.label}
-        subtitle="Manual payment confirmation before processing and manual Angola coordination."
-        cta={order.status === 'payment_review' ? 'Confirm payment' : 'Update status'}
+        subtitle={t('orderDetailSubtitle', lang)}
+        cta={order.status === 'payment_review' ? t('confirmPayment', lang) : t('updateStatus', lang)}
         onCta={() => handleStatusChange(order.status === 'payment_review' ? 'processing' : order.status)}
       />
 
       <div style={{ padding: '20px 28px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
         <div>
-          <div style={{ fontSize: 10, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>Order summary</div>
+          <div style={{ fontSize: 10, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>{t('orderSummaryLabel', lang)}</div>
           <div style={{ fontFamily: F.display, fontSize: 28, fontWeight: 800, color: C.ink }}>#{order.orderNumber} {order.customerName}</div>
         </div>
         <Badge label={b.label} tone={b.tone} />
@@ -154,8 +163,8 @@ export function OrderDetail() {
                 border: `1px solid ${current ? '#E8D28D' : C.ruleLight}`,
               }}
             >
-              <div style={{ fontSize: 12, fontWeight: 800, color: C.ink }}>{statusBadgeProps(s).label}</div>
-              <div style={{ fontSize: 10, color: C.inkSoft, marginTop: 6 }}>{current ? 'Current' : i < activeIdx ? 'Done' : 'Pending'}</div>
+              <div style={{ fontSize: 12, fontWeight: 800, color: C.ink }}>{statusBadgeProps(s, lang).label}</div>
+              <div style={{ fontSize: 10, color: C.inkSoft, marginTop: 6 }}>{current ? t('currentLabel', lang) : i < activeIdx ? t('doneLabel', lang) : t('pendingLabel', lang)}</div>
             </button>
           );
         })}
@@ -164,30 +173,30 @@ export function OrderDetail() {
       <div style={{ padding: '18px 28px 0' }}>
         <div style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 16 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <div style={{ fontSize: 10, fontWeight: 800, color: C.goldDeep }}>Customer &amp; fulfilment details</div>
+            <div style={{ fontSize: 10, fontWeight: 800, color: C.goldDeep }}>{t('customerFulfilmentDetails', lang)}</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              {fieldsSaved && <span style={{ fontSize: 11, color: '#3F754D' }}>Saved.</span>}
+              {fieldsSaved && <span style={{ fontSize: 11, color: '#3F754D' }}>{t('savedNotice', lang)}</span>}
               <button
                 onClick={handleSaveFields}
                 disabled={saving}
                 style={{ padding: '8px 16px', background: C.black, color: C.onDarkGold, fontSize: 11, fontWeight: 800, borderRadius: 6 }}
               >
-                {saving ? '…' : 'Save changes'}
+                {saving ? '…' : t('saveChanges', lang)}
               </button>
             </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }} className="ump-admin-fields-grid">
-            <EditField label="Name" value={form.customerName} onChange={(v) => setField('customerName', v)} />
-            <EditField label="Phone / WhatsApp" value={form.customerPhone} onChange={(v) => setField('customerPhone', v)} />
-            <EditField label="Email" value={form.customerEmail} onChange={(v) => setField('customerEmail', v)} type="email" />
-            <EditField label="Address" value={form.address} onChange={(v) => setField('address', v)} />
-            <EditField label="Floor / Door (PT)" value={form.addressLine2} onChange={(v) => setField('addressLine2', v)} />
-            <EditField label="Postal code (PT)" value={form.postalCode} onChange={(v) => setField('postalCode', v)} />
-            <EditField label="City" value={form.city} onChange={(v) => setField('city', v)} />
-            <EditField label="Country" value={form.country} onChange={(v) => setField('country', v)} />
-            <EditField label="NIF / Tax ID" value={form.taxId} onChange={(v) => setField('taxId', v)} />
+            <EditField label={t('nameField', lang)} value={form.customerName} onChange={(v) => setField('customerName', v)} />
+            <EditField label={t('phoneWhatsappField', lang)} value={form.customerPhone} onChange={(v) => setField('customerPhone', v)} />
+            <EditField label={t('emailField', lang)} value={form.customerEmail} onChange={(v) => setField('customerEmail', v)} type="email" />
+            <EditField label={t('addressField', lang)} value={form.address} onChange={(v) => setField('address', v)} />
+            <EditField label={t('floorDoorPT', lang)} value={form.addressLine2} onChange={(v) => setField('addressLine2', v)} />
+            <EditField label={t('postalCodePT', lang)} value={form.postalCode} onChange={(v) => setField('postalCode', v)} />
+            <EditField label={t('cityField', lang)} value={form.city} onChange={(v) => setField('city', v)} />
+            <EditField label={t('countryField', lang)} value={form.country} onChange={(v) => setField('country', v)} />
+            <EditField label={t('nifTaxId', lang)} value={form.taxId} onChange={(v) => setField('taxId', v)} />
             <label style={{ display: 'block' }}>
-              <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>Payment status</div>
+              <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>{t('paymentStatusLabel', lang)}</div>
               <select
                 value={form.paymentStatus}
                 onChange={(e) => setField('paymentStatus', e.target.value)}
@@ -195,14 +204,14 @@ export function OrderDetail() {
               >
                 {PAYMENT_STATUSES.map((s) => (
                   <option key={s} value={s}>
-                    {s.replace(/_/g, ' ')}
+                    {t(PAYMENT_STATUS_KEY[s], lang)}
                   </option>
                 ))}
               </select>
             </label>
-            <EditField label="Delivery method" value={form.deliveryMethod} onChange={(v) => setField('deliveryMethod', v)} />
+            <EditField label={t('deliveryMethodLabel', lang)} value={form.deliveryMethod} onChange={(v) => setField('deliveryMethod', v)} />
             <label style={{ display: 'block', gridColumn: 'span 3' }}>
-              <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>Notes</div>
+              <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>{t('notesLabel', lang)}</div>
               <textarea
                 value={form.notes}
                 onChange={(e) => setField('notes', e.target.value)}
@@ -216,44 +225,44 @@ export function OrderDetail() {
 
       <div style={{ padding: '18px 28px 0', display: 'grid', gridTemplateColumns: '1fr 300px', gap: 16, alignItems: 'flex-start' }} className="ump-admin-orders-grid">
         <div style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 16, minWidth: 0 }}>
-          <div style={{ fontSize: 10, fontWeight: 800, color: C.goldDeep, marginBottom: 10 }}>Items ordered</div>
+          <div style={{ fontSize: 10, fontWeight: 800, color: C.goldDeep, marginBottom: 10 }}>{t('itemsOrdered', lang)}</div>
           {order.items.map((item, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '10px 0', borderTop: i > 0 ? `1px solid ${C.ruleLight}` : 'none' }}>
               <div style={{ width: 56, height: 68, flexShrink: 0, borderRadius: 6, background: C.subtleBg, border: `1px solid ${C.rule}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 800, color: C.goldDeep, textAlign: 'center' }}>
-                Photo pending
+                {t('photoPending', lang)}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 14, fontWeight: 800, color: C.ink }}>{item.productName}</div>
                 <div style={{ fontSize: 11, color: C.inkSoft, marginTop: 2 }}>
-                  Size {item.size}
+                  {t('sizeWithValue', lang, { size: item.size })}
                   {item.color ? `, ${item.color}` : ''}
                 </div>
               </div>
-              <div style={{ fontSize: 12, fontWeight: 800, color: C.ink }}>Qty {item.qty}</div>
+              <div style={{ fontSize: 12, fontWeight: 800, color: C.ink }}>{t('qtyWithValue', lang, { n: item.qty })}</div>
               <div style={{ fontSize: 12, fontWeight: 800, color: C.ink }}>{item.unitPrice.toLocaleString('en-US')} {order.currency}</div>
             </div>
           ))}
         </div>
 
         <div style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 16, minWidth: 0 }}>
-          <div style={{ fontSize: 10, fontWeight: 800, color: C.goldDeep, marginBottom: 8 }}>Payment and delivery</div>
+          <div style={{ fontSize: 10, fontWeight: 800, color: C.goldDeep, marginBottom: 8 }}>{t('paymentAndDelivery', lang)}</div>
           <div style={{ fontFamily: F.display, fontSize: 17, fontWeight: 800, color: C.ink, marginBottom: 14, lineHeight: 1.3 }}>
-            {order.status === 'payment_review' ? 'Manual confirmation needed' : 'Confirmed'}
+            {order.status === 'payment_review' ? t('manualConfirmationNeeded', lang) : t('confirmedLabel', lang)}
           </div>
-          <RowKV label="Payment method" value={order.paymentMethod} badge={order.status === 'payment_review' ? 'Review' : undefined} tone="gold" />
-          <RowKV label="Delivery method" value={order.deliveryMethod} />
-          <RowKV label="Order total" value={`${order.total.toLocaleString('en-US')} ${order.currency}`} last />
+          <RowKV label={t('paymentMethodLabel', lang)} value={order.paymentMethod} badge={order.status === 'payment_review' ? t('reviewBadge', lang) : undefined} tone="gold" />
+          <RowKV label={t('deliveryMethodLabel', lang)} value={order.deliveryMethod} />
+          <RowKV label={t('orderTotalLabel', lang)} value={`${order.total.toLocaleString('en-US')} ${order.currency}`} last />
           <button
             onClick={() => handleStatusChange('processing')}
             disabled={saving}
             style={{ width: '100%', marginTop: 14, padding: 12, background: C.black, color: C.onDarkGold, fontSize: 11, fontWeight: 800, borderRadius: 6 }}
           >
-            Approve and process
+            {t('approveAndProcess', lang)}
           </button>
         </div>
       </div>
 
-      <PaymentDiagnostics order={order} />
+      <PaymentDiagnostics order={order} lang={lang} />
     </div>
   );
 }
@@ -263,19 +272,19 @@ export function OrderDetail() {
 // (see Orders.ts), so this panel only displays them, matching what Payload
 // admin shows. Only rendered when at least one value is actually present,
 // since most orders (non-AppyPay) won't have any of these set.
-function PaymentDiagnostics({ order }: { order: ApiOrder }) {
+function PaymentDiagnostics({ order, lang }: { order: ApiOrder; lang: Lang }) {
   const rows: { label: string; value: string }[] = [
-    { label: 'Payment reference', value: order.paymentReference ?? '' },
-    { label: 'AppyPay merchant transaction ID', value: order.appyPayMerchantTransactionId ?? '' },
-    { label: 'AppyPay transaction ID', value: order.appyPayTransactionId ?? '' },
-    { label: 'AppyPay status', value: order.appyPayStatus ?? '' },
-    { label: 'AppyPay payment method', value: order.appyPayPaymentMethod ?? '' },
-    { label: 'AppyPay response', value: order.appyPayResponseCode ? `${order.appyPayResponseCode} — ${order.appyPayResponseMessage ?? ''}` : '' },
-    { label: 'AppyPay reference', value: order.appyPayReferenceEntity ? `${order.appyPayReferenceEntity} / ${order.appyPayReferenceNumber ?? ''}` : '' },
-    { label: 'AppyPay reference due date', value: order.appyPayReferenceDueDate ? new Date(order.appyPayReferenceDueDate).toLocaleDateString() : '' },
-    { label: 'AppyPay verified at', value: order.appyPayVerifiedAt ? new Date(order.appyPayVerifiedAt).toLocaleString() : '' },
-    { label: 'Inventory reservation', value: order.inventoryReservationStatus ?? '' },
-    { label: 'Reservation expires', value: order.inventoryReservationExpiresAt ? new Date(order.inventoryReservationExpiresAt).toLocaleString() : '' },
+    { label: t('diagPaymentReference', lang), value: order.paymentReference ?? '' },
+    { label: t('diagMerchantTxId', lang), value: order.appyPayMerchantTransactionId ?? '' },
+    { label: t('diagTransactionId', lang), value: order.appyPayTransactionId ?? '' },
+    { label: t('diagStatus', lang), value: order.appyPayStatus ?? '' },
+    { label: t('diagPaymentMethod', lang), value: order.appyPayPaymentMethod ?? '' },
+    { label: t('diagResponse', lang), value: order.appyPayResponseCode ? `${order.appyPayResponseCode} — ${order.appyPayResponseMessage ?? ''}` : '' },
+    { label: t('diagReference', lang), value: order.appyPayReferenceEntity ? `${order.appyPayReferenceEntity} / ${order.appyPayReferenceNumber ?? ''}` : '' },
+    { label: t('diagReferenceDueDate', lang), value: order.appyPayReferenceDueDate ? new Date(order.appyPayReferenceDueDate).toLocaleDateString() : '' },
+    { label: t('diagVerifiedAt', lang), value: order.appyPayVerifiedAt ? new Date(order.appyPayVerifiedAt).toLocaleString() : '' },
+    { label: t('diagInventoryReservation', lang), value: order.inventoryReservationStatus ?? '' },
+    { label: t('diagReservationExpires', lang), value: order.inventoryReservationExpiresAt ? new Date(order.inventoryReservationExpiresAt).toLocaleString() : '' },
   ].filter((r) => r.value);
 
   if (rows.length === 0) return null;
@@ -283,7 +292,7 @@ function PaymentDiagnostics({ order }: { order: ApiOrder }) {
   return (
     <div style={{ padding: '18px 28px 0' }}>
       <div style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 16 }}>
-        <div style={{ fontSize: 10, fontWeight: 800, color: C.goldDeep, marginBottom: 10 }}>Payment diagnostics (read-only)</div>
+        <div style={{ fontSize: 10, fontWeight: 800, color: C.goldDeep, marginBottom: 10 }}>{t('paymentDiagnostics', lang)}</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }} className="ump-admin-fields-grid">
           {rows.map((r) => (
             <div key={r.label}>

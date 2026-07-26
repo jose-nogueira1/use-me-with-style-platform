@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import { C, F } from '../../theme';
+import { useApp } from '../../state/AppContext';
 import { adminListMessages, adminSendMessage, adminUpdateMessageStatus, type ApiMessage, type MessageStatus } from '../../lib/api';
 import { PageHeader } from '../components/PageHeader';
 import { Badge, type BadgeTone } from '../components/Badge';
+import { t } from '../i18n';
 
-const STATUS_LABEL: Record<MessageStatus, string> = {
-  open: 'Needs review',
-  auto_handled: 'Auto-handled',
-  escalated: 'Escalated',
-  resolved: 'Resolved',
+const STATUS_LABEL_KEY: Record<MessageStatus, string> = {
+  open: 'msgNeedsReview',
+  auto_handled: 'msgAutoHandled',
+  escalated: 'msgEscalated',
+  resolved: 'msgResolved',
 };
 
 const STATUS_TONE: Record<MessageStatus, BadgeTone> = {
@@ -58,6 +60,7 @@ function groupIntoConversations(messages: ApiMessage[]): Conversation[] {
 // visual language (approval-queue framing, Phase 1 badges) while keeping the
 // actual conversation-thread UI, since that's the functional core of JOS-58.
 export function Mensagens() {
+  const { lang } = useApp();
   const [messages, setMessages] = useState<ApiMessage[] | null>(null);
   const [error, setError] = useState(false);
   const [statusFilter, setStatusFilter] = useState<MessageStatus | ''>('');
@@ -104,21 +107,21 @@ export function Mensagens() {
 
   return (
     <div style={{ paddingBottom: 0, height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <PageHeader eyebrow="Settings / Messaging" title="AI-assisted messaging" subtitle="Draft, review, approve, and send contextual replies for WhatsApp and Instagram." />
+      <PageHeader eyebrow={t('settingsMessaging', lang)} title={t('aiAssistedMessaging', lang)} subtitle={t('aiAssistedMessagingSubtitle', lang)} />
 
-      {error && <div style={{ margin: '12px 28px 0', fontSize: 12, color: '#B95545' }}>Couldn't connect to the backend.</div>}
+      {error && <div style={{ margin: '12px 28px 0', fontSize: 12, color: '#B95545' }}>{t('couldntConnectBackend', lang)}</div>}
 
       <div className="ump-mensagens-shell" style={{ margin: '18px 28px 28px', border: `1px solid ${C.ruleLight}`, borderRadius: 8, overflow: 'hidden', background: C.paper }}>
         <div className="ump-mensagens-list" style={{ borderRight: `1px solid ${C.ruleLight}`, display: 'flex', flexDirection: 'column' }}>
           <div style={{ padding: '16px 16px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontFamily: F.display, fontSize: 16, fontWeight: 800, color: C.ink }}>Approval queue</div>
-            <Badge label="Required" tone="gold" />
+            <div style={{ fontFamily: F.display, fontSize: 16, fontWeight: 800, color: C.ink }}>{t('approvalQueue', lang)}</div>
+            <Badge label={t('requiredBadge', lang)} tone="gold" />
           </div>
 
           <div style={{ display: 'flex', gap: 5, padding: '0 16px 12px', flexWrap: 'wrap' }}>
-            <FilterPill label="All" active={!statusFilter} onClick={() => setStatusFilter('')} />
-            {(Object.keys(STATUS_LABEL) as MessageStatus[]).map((s) => (
-              <FilterPill key={s} label={STATUS_LABEL[s]} active={statusFilter === s} onClick={() => setStatusFilter(s)} />
+            <FilterPill label={t('filterAllShort', lang)} active={!statusFilter} onClick={() => setStatusFilter('')} />
+            {(Object.keys(STATUS_LABEL_KEY) as MessageStatus[]).map((s) => (
+              <FilterPill key={s} label={t(STATUS_LABEL_KEY[s], lang)} active={statusFilter === s} onClick={() => setStatusFilter(s)} />
             ))}
           </div>
 
@@ -143,15 +146,15 @@ export function Mensagens() {
                 <div style={{ fontSize: 11, color: C.inkSoft, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 6 }}>
                   {c.messages[c.messages.length - 1].body}
                 </div>
-                <Badge label={STATUS_LABEL[c.status]} tone={STATUS_TONE[c.status]} />
+                <Badge label={t(STATUS_LABEL_KEY[c.status], lang)} tone={STATUS_TONE[c.status]} />
               </button>
             ))}
-            {messages && filtered.length === 0 && <div style={{ padding: 16, fontSize: 12, color: C.inkSoft }}>No conversations.</div>}
+            {messages && filtered.length === 0 && <div style={{ padding: 16, fontSize: 12, color: C.inkSoft }}>{t('noConversations', lang)}</div>}
           </div>
         </div>
 
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 420 }}>
-          {!selected && <div style={{ padding: 28, fontSize: 13, color: C.inkSoft }}>Select a conversation.</div>}
+          {!selected && <div style={{ padding: 28, fontSize: 13, color: C.inkSoft }}>{t('selectAConversation', lang)}</div>}
 
           {selected && (
             <>
@@ -164,10 +167,10 @@ export function Mensagens() {
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button onClick={() => handleStatus('escalated')} style={{ padding: '7px 14px', fontSize: 11, fontWeight: 800, borderRadius: 6, border: '1px solid #E1B3AA', color: '#B95545' }}>
-                    Escalate
+                    {t('escalateAction', lang)}
                   </button>
                   <button onClick={() => handleStatus('resolved')} style={{ padding: '7px 14px', fontSize: 11, fontWeight: 800, borderRadius: 6, border: '1px solid #BFD3B6', color: '#3F754D' }}>
-                    Mark resolved
+                    {t('markResolved', lang)}
                   </button>
                 </div>
               </div>
@@ -199,7 +202,7 @@ export function Mensagens() {
                 <input
                   value={reply}
                   onChange={(e) => setReply(e.target.value)}
-                  placeholder="Write a reply…"
+                  placeholder={t('writeAReply', lang)}
                   onKeyDown={(e) => e.key === 'Enter' && handleReply()}
                   style={{ flex: 1, padding: '10px 12px', fontSize: 13, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.paper }}
                 />
@@ -208,7 +211,7 @@ export function Mensagens() {
                   disabled={sending || !reply.trim()}
                   style={{ padding: '10px 20px', background: C.black, color: C.onDarkGold, fontSize: 11, fontWeight: 800, borderRadius: 6 }}
                 >
-                  {sending ? '…' : 'Send'}
+                  {sending ? '…' : t('sendAction', lang)}
                 </button>
               </div>
             </>

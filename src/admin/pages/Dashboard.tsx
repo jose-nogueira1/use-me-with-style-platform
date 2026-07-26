@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { C, F } from '../../theme';
+import { useApp } from '../../state/AppContext';
 import { adminListOrders, adminListProducts, type ApiOrder, type ApiProduct } from '../../lib/api';
 import { PageHeader } from '../components/PageHeader';
 import { Badge, statusBadgeProps } from '../components/Badge';
+import { t, type Lang } from '../i18n';
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -13,8 +15,12 @@ function csvValue(v: string | number): string {
 }
 
 /** Real "Export summary" behavior -- previously this CTA had no onCta at
- * all and did nothing when clicked. Downloads today's orders as a CSV. */
-function downloadOrdersCsv(rows: ApiOrder[]) {
+ * all and did nothing when clicked. Downloads today's orders as a CSV.
+ * The CSV itself is an admin export file, not on-screen UI copy, so its
+ * column headers stay in English regardless of the admin's language toggle
+ * (consistent with how spreadsheet exports are usually kept in one
+ * language for anyone downstream who opens the file). */
+function downloadOrdersCsv(rows: ApiOrder[], lang: Lang) {
   const headers = ['Order', 'Customer', 'Market', 'Status', 'Payment', 'Delivery', 'City', 'Total', 'Currency', 'Created At'];
   const lines = [headers.join(',')];
   for (const o of rows) {
@@ -23,7 +29,7 @@ function downloadOrdersCsv(rows: ApiOrder[]) {
         o.orderNumber,
         o.customerName,
         o.market,
-        statusBadgeProps(o.status).label,
+        statusBadgeProps(o.status, lang).label,
         o.paymentMethod,
         o.deliveryMethod,
         o.city,
@@ -47,6 +53,7 @@ function downloadOrdersCsv(rows: ApiOrder[]) {
 }
 
 export function Dashboard() {
+  const { lang } = useApp();
   const [orders, setOrders] = useState<ApiOrder[] | null>(null);
   const [products, setProducts] = useState<ApiProduct[] | null>(null);
   const [error, setError] = useState(false);
@@ -88,9 +95,9 @@ export function Dashboard() {
       .filter((o) => o.status === 'payment_review')
       .slice(0, 2)
       .map((o) => ({
-        title: `#${o.orderNumber} ${o.customerName} needs payment review`,
-        detail: `${o.market === 'AO' ? 'Angola' : 'Portugal'} order, ${o.paymentMethod}, manual confirmation pending.`,
-        badge: 'Review' as const,
+        title: t('dashAttnReviewTitle', lang, { orderNumber: o.orderNumber, customerName: o.customerName }),
+        detail: t('dashAttnReviewDetail', lang, { market: o.market === 'AO' ? t('angolaOption', lang) : t('portugalOption', lang), paymentMethod: o.paymentMethod }),
+        badge: t('reviewBadge', lang),
         tone: 'gold' as const,
         priority: C.gold,
         to: `/admin/encomendas/${o.id}`,
@@ -99,9 +106,9 @@ export function Dashboard() {
       .filter((p) => p.variants.some((v) => v.stockAO + v.stockPT === 0))
       .slice(0, 2)
       .map((p) => ({
-        title: `${p.name} has a variant stockout`,
-        detail: 'Keep published for in-stock sizes and mark the rest unavailable.',
-        badge: 'Open' as const,
+        title: t('dashAttnStockoutTitle', lang, { name: p.name }),
+        detail: t('dashAttnStockoutDetail', lang),
+        badge: t('openBadge', lang),
         tone: 'blue' as const,
         priority: C.sage,
         to: `/admin/produtos/${p.id}`,
@@ -113,34 +120,34 @@ export function Dashboard() {
   return (
     <div style={{ paddingBottom: 32 }}>
       <PageHeader
-        eyebrow={new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-        title="Morning check"
-        subtitle="Angola and Portugal orders, payment review, low stock, and launch setup gaps."
-        cta="Export summary"
-        onCta={() => downloadOrdersCsv(todayOrders)}
+        eyebrow={new Date().toLocaleDateString(lang === 'pt' ? 'pt-PT' : 'en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+        title={t('morningCheck', lang)}
+        subtitle={t('morningCheckSubtitle', lang)}
+        cta={t('exportSummary', lang)}
+        onCta={() => downloadOrdersCsv(todayOrders, lang)}
       />
 
       {error && (
         <div style={{ margin: '20px 28px', fontSize: 13, color: '#B95545' }}>
-          Couldn't connect to the backend (use-me-with-style-cms). Make sure it's running on localhost:3000.
+          {t('couldntConnectBackendDashboard', lang)}
         </div>
       )}
 
       <div style={{ padding: '20px 28px 0', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }} className="ump-admin-metric-grid">
-        <Metric label="Orders today" value={String(todayOrders.length)} sub={`${todayAO} Angola, ${todayPT} Portugal`} />
-        <Metric label="Revenue today" value={`${revenueTodayKz.toLocaleString('en-US')} Kz`} sub={`EUR ${revenueTodayEur.toFixed(0)} separately`} />
-        <Metric label="Payment review" value={String(reviewCount)} sub="Manual confirmation needed" tone="gold" />
-        <Metric label="Processing" value={String(processingCount)} sub="Orders being fulfilled" />
-        <Metric label="Low stock" value={String(lowStockCount)} sub="Sizes with 2 units or less" tone="red" />
+        <Metric label={t('ordersToday', lang)} value={String(todayOrders.length)} sub={`${todayAO} ${t('angolaOption', lang)}, ${todayPT} ${t('portugalOption', lang)}`} />
+        <Metric label={t('revenueToday', lang)} value={`${revenueTodayKz.toLocaleString('en-US')} Kz`} sub={t('separatelyNote', lang, { amount: revenueTodayEur.toFixed(0) })} />
+        <Metric label={t('statusPaymentReview', lang)} value={String(reviewCount)} sub={t('manualConfirmationNeeded', lang)} tone="gold" />
+        <Metric label={t('statusProcessing', lang)} value={String(processingCount)} sub={t('ordersBeingFulfilled', lang)} />
+        <Metric label={t('lowStockMetric', lang)} value={String(lowStockCount)} sub={t('sizesWithFewUnits', lang)} tone="red" />
       </div>
 
       <div style={{ padding: '20px 28px 0', display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }} className="ump-admin-dashboard-grid">
         <div style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 18, minWidth: 0 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>
-            <div style={{ fontFamily: F.display, fontSize: 19, fontWeight: 800, color: C.ink }}>Attention queue</div>
-            <div style={{ fontSize: 10, fontWeight: 800, color: C.inkSoft }}>Next best actions</div>
+            <div style={{ fontFamily: F.display, fontSize: 19, fontWeight: 800, color: C.ink }}>{t('attentionQueue', lang)}</div>
+            <div style={{ fontSize: 10, fontWeight: 800, color: C.inkSoft }}>{t('nextBestActions', lang)}</div>
           </div>
-          {attentionItems.length === 0 && <div style={{ fontSize: 12, color: C.inkSoft }}>Nothing needs attention right now.</div>}
+          {attentionItems.length === 0 && <div style={{ fontSize: 12, color: C.inkSoft }}>{t('nothingNeedsAttention', lang)}</div>}
           {attentionItems.map((item, i) => (
             <Link
               key={i}
@@ -158,9 +165,9 @@ export function Dashboard() {
         </div>
 
         <div style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 18, minWidth: 0 }}>
-          <div style={{ fontFamily: F.display, fontSize: 19, fontWeight: 800, color: C.ink, marginBottom: 14 }}>Recent orders</div>
+          <div style={{ fontFamily: F.display, fontSize: 19, fontWeight: 800, color: C.ink, marginBottom: 14 }}>{t('recentOrders', lang)}</div>
           {recentOrders.map((o, i) => {
-            const b = statusBadgeProps(o.status);
+            const b = statusBadgeProps(o.status, lang);
             return (
               <Link
                 key={o.id}
@@ -183,8 +190,8 @@ export function Dashboard() {
       <div style={{ padding: '16px 28px 0', display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: 16 }} className="ump-admin-dashboard-grid">
         <div style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 18, minWidth: 0 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
-            <div style={{ fontFamily: F.display, fontSize: 19, fontWeight: 800, color: C.ink }}>Revenue trend</div>
-            <div style={{ fontSize: 10, fontWeight: 800, color: C.inkSoft }}>Last 7 days</div>
+            <div style={{ fontFamily: F.display, fontSize: 19, fontWeight: 800, color: C.ink }}>{t('revenueTrend', lang)}</div>
+            <div style={{ fontSize: 10, fontWeight: 800, color: C.inkSoft }}>{t('last7Days', lang)}</div>
           </div>
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, height: 140 }}>
             {trend.map((d, i) => (
@@ -197,10 +204,10 @@ export function Dashboard() {
         </div>
 
         <div style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 18, minWidth: 0 }}>
-          <div style={{ fontFamily: F.display, fontSize: 19, fontWeight: 800, color: C.ink, marginBottom: 6 }}>Market setup</div>
-          <SetupRow title="Portugal payments" detail="PayPal, Stripe, MBWay placeholders ready." badge="Ready" tone="green" />
-          <SetupRow title="Angola payments" detail="Appy Pay team response pending." badge="Open" tone="gold" />
-          <SetupRow title="Messaging automation" detail="Keyword-based auto-replies for order/payment/delivery FAQs; sensitive topics always escalate to you." badge="Ready" tone="blue" last />
+          <div style={{ fontFamily: F.display, fontSize: 19, fontWeight: 800, color: C.ink, marginBottom: 6 }}>{t('marketSetup', lang)}</div>
+          <SetupRow title={t('portugalPayments', lang)} detail={t('portugalPaymentsDetail', lang)} badge={t('readyBadge', lang)} tone="green" />
+          <SetupRow title={t('angolaPayments', lang)} detail={t('angolaPaymentsDetail', lang)} badge={t('openBadge', lang)} tone="gold" />
+          <SetupRow title={t('messagingAutomation', lang)} detail={t('messagingAutomationDetail', lang)} badge={t('readyBadge', lang)} tone="blue" last />
         </div>
       </div>
     </div>

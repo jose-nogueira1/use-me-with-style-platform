@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { C } from '../../theme';
+import { useApp } from '../../state/AppContext';
 import {
   adminCreateCategory,
   adminCreateColor,
@@ -33,6 +34,7 @@ import {
 import { absoluteMediaUrl } from '../../lib/productAdapters';
 import { hasSwatch, swatchBackground } from '../../lib/colorSwatch';
 import { suggestColorName } from '../../lib/colorNaming';
+import { t, type Lang } from '../i18n';
 
 // Product settings (2026-07-25 admin request; moved into Settings as its
 // own tab 2026-07-25): manages the catalogue taxonomies -- categories,
@@ -49,6 +51,7 @@ import { suggestColorName } from '../../lib/colorNaming';
 const ALL_SIZES = ['XS', 'S', 'M', 'L', 'XL'];
 
 export function ProductTaxonomySettings() {
+  const { lang } = useApp();
   const [categories, setCategories] = useState<ApiCategory[]>([]);
   const [tags, setTags] = useState<ApiMerchTag[]>([]);
   const [colors, setColors] = useState<ApiColor[]>([]);
@@ -66,9 +69,9 @@ export function ProductTaxonomySettings() {
         setGuides(guideDocs);
         setProducts(productDocs);
       })
-      .catch(() => setError("Couldn't connect to the backend."))
+      .catch(() => setError(t('couldntConnectBackend', lang)))
       .finally(() => setLoading(false));
-  }, []);
+  }, [lang]);
 
   // Usage counts, client-side from the (small) product list -- avoids one
   // count request per entry.
@@ -89,7 +92,7 @@ export function ProductTaxonomySettings() {
     return { byCategory, byTag, byColor, byGuide };
   }, [products]);
 
-  if (loading) return <div style={{ padding: '20px 28px', fontSize: 13, color: C.inkSoft }}>Loading…</div>;
+  if (loading) return <div style={{ padding: '20px 28px', fontSize: 13, color: C.inkSoft }}>{t('loadingEllipsis', lang)}</div>;
 
   return (
     <div style={{ padding: '20px 28px 32px' }}>
@@ -97,8 +100,8 @@ export function ProductTaxonomySettings() {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16, alignItems: 'flex-start' }} className="ump-admin-orders-grid">
         <TaxonomyPanel
-          title="Categories"
-          hint="Shown as storefront filter pills and home page tiles. The slug (URL) is created once and never changes."
+          title={t('categoriesTitle', lang)}
+          hint={t('categoriesHint', lang)}
           entries={categories.map((c) => ({
             id: String(c.id),
             primary: c.namePT,
@@ -107,7 +110,7 @@ export function ProductTaxonomySettings() {
             imageUrl: absoluteMediaUrl(resolveRef(c.image)?.url),
           }))}
           usage={usage.byCategory}
-          labels={{ primary: 'Name — Portuguese', secondary: 'Name — English (optional)' }}
+          labels={{ primary: t('namePortugueseLabel', lang), secondary: t('nameEnglishOptionalLabel', lang) }}
           onCreate={async (primary, secondary) => {
             const created = await adminCreateCategory({ namePT: primary, nameEN: secondary || undefined });
             setCategories((prev) => [...prev, created]);
@@ -134,32 +137,34 @@ export function ProductTaxonomySettings() {
             setCategories((prev) => prev.map((c) => (String(c.id) === id ? updated : c)));
           }}
           setError={setError}
+          lang={lang}
         />
 
         <TaxonomyPanel
-          title="Merchandising tags"
-          hint='Optional badge on product cards (Novidade, Bestseller…). Also usable as a home hero "collection" link -- see the slug shown after each entry, and /catalogo?tag=<slug> in Settings > Home page.'
-          entries={tags.map((t) => ({ id: String(t.id), primary: t.labelPT, secondary: t.labelEN ?? '', meta: t.slug ?? '' }))}
+          title={t('merchTagsTitle', lang)}
+          hint={t('merchTagsHint', lang)}
+          entries={tags.map((tg) => ({ id: String(tg.id), primary: tg.labelPT, secondary: tg.labelEN ?? '', meta: tg.slug ?? '' }))}
           usage={usage.byTag}
-          labels={{ primary: 'Label — Portuguese', secondary: 'Label — English (optional)' }}
+          labels={{ primary: t('labelPortugueseLabel', lang), secondary: t('labelEnglishOptionalLabel', lang) }}
           onCreate={async (primary, secondary) => {
             const created = await adminCreateMerchTag({ labelPT: primary, labelEN: secondary || undefined });
             setTags((prev) => [...prev, created]);
           }}
           onSave={async (id, primary, secondary) => {
             const updated = await adminUpdateMerchTag(id, { labelPT: primary, labelEN: secondary || undefined });
-            setTags((prev) => prev.map((t) => (String(t.id) === id ? updated : t)));
+            setTags((prev) => prev.map((tg) => (String(tg.id) === id ? updated : tg)));
           }}
           onDelete={async (id) => {
             await adminDeleteMerchTag(id);
-            setTags((prev) => prev.filter((t) => String(t.id) !== id));
+            setTags((prev) => prev.filter((tg) => String(tg.id) !== id));
           }}
           setError={setError}
+          lang={lang}
         />
 
-        <ColorsPanel colors={colors} setColors={setColors} usage={usage.byColor} setError={setError} />
+        <ColorsPanel colors={colors} setColors={setColors} usage={usage.byColor} setError={setError} lang={lang} />
 
-        <SizeGuidesPanel guides={guides} setGuides={setGuides} usage={usage.byGuide} setError={setError} />
+        <SizeGuidesPanel guides={guides} setGuides={setGuides} usage={usage.byGuide} setError={setError} lang={lang} />
       </div>
     </div>
   );
@@ -179,10 +184,10 @@ function Panel({ title, hint, children }: { title: string; hint: string; childre
   );
 }
 
-function UsageBadge({ count }: { count: number }) {
+function UsageBadge({ count, lang }: { count: number; lang: Lang }) {
   return (
     <span style={{ fontSize: 9, fontWeight: 800, color: count > 0 ? C.goldDeep : C.inkSoft, background: count > 0 ? C.tagBg : C.subtleBg, borderRadius: 10, padding: '2px 7px', whiteSpace: 'nowrap' }}>
-      {count} {count === 1 ? 'product' : 'products'}
+      {count === 1 ? t('productCountBadge', lang, { n: count }) : t('productCountBadgePlural', lang, { n: count })}
     </span>
   );
 }
@@ -231,6 +236,7 @@ function TaxonomyPanel({
   onUploadImage,
   onRemoveImage,
   setError,
+  lang,
 }: {
   title: string;
   hint: string;
@@ -246,6 +252,7 @@ function TaxonomyPanel({
   onUploadImage?: (id: string, file: File) => Promise<void>;
   onRemoveImage?: (id: string) => Promise<void>;
   setError: (message: string | null) => void;
+  lang: Lang;
 }) {
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState<{ primary: string; secondary: string }>({ primary: '', secondary: '' });
@@ -290,8 +297,8 @@ function TaxonomyPanel({
                 <>
                   <input aria-label={labels.primary} value={draft.primary} onChange={(e) => setDraft((d) => ({ ...d, primary: e.target.value }))} style={{ ...inputStyle, flex: 1 }} />
                   <input aria-label={labels.secondary} value={draft.secondary} onChange={(e) => setDraft((d) => ({ ...d, secondary: e.target.value }))} style={{ ...inputStyle, flex: 1 }} />
-                  <SmallButton label="Save" disabled={busy || !draft.primary.trim()} onClick={() => void run(async () => { await onSave(entry.id, draft.primary.trim(), draft.secondary.trim()); setEditing(null); }, "Couldn't save the change.")} />
-                  <SmallButton label="Cancel" onClick={() => setEditing(null)} />
+                  <SmallButton label={t('saveAction', lang)} disabled={busy || !draft.primary.trim()} onClick={() => void run(async () => { await onSave(entry.id, draft.primary.trim(), draft.secondary.trim()); setEditing(null); }, t('couldntSaveChange', lang))} />
+                  <SmallButton label={t('cancelAction', lang)} onClick={() => setEditing(null)} />
                 </>
               ) : (
                 <>
@@ -299,7 +306,7 @@ function TaxonomyPanel({
                     entry.imageUrl ? (
                       <img src={entry.imageUrl} alt="" style={{ width: 28, height: 28, borderRadius: 4, objectFit: 'cover', border: `1px solid ${C.rule}`, flexShrink: 0 }} />
                     ) : (
-                      <span style={{ width: 28, height: 28, borderRadius: 4, border: `1px dashed ${C.rule}`, flexShrink: 0 }} title="No tile image yet" />
+                      <span style={{ width: 28, height: 28, borderRadius: 4, border: `1px dashed ${C.rule}`, flexShrink: 0 }} title={t('noTileImageYet', lang)} />
                     )
                   )}
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -307,11 +314,11 @@ function TaxonomyPanel({
                     {entry.secondary && entry.secondary !== entry.primary && <span style={{ fontSize: 11, color: C.inkSoft }}> / {entry.secondary}</span>}
                     {entry.meta && <span style={{ fontSize: 9, color: C.inkSoft, marginLeft: 6 }}>({entry.meta})</span>}
                   </div>
-                  <UsageBadge count={count} />
+                  <UsageBadge count={count} lang={lang} />
                   {onUploadImage && (
                     <>
                       <label style={{ fontSize: 9, fontWeight: 800, color: isUploadingImage ? C.inkSoft : C.goldDeep, cursor: isUploadingImage ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' }}>
-                        {isUploadingImage ? '…' : entry.imageUrl ? 'Change image' : 'Add image'}
+                        {isUploadingImage ? '…' : entry.imageUrl ? t('changeImage', lang) : t('addImage', lang)}
                         <input
                           type="file"
                           accept="image/*"
@@ -320,26 +327,26 @@ function TaxonomyPanel({
                           onChange={(e) => {
                             const file = e.target.files?.[0];
                             e.target.value = '';
-                            if (file) void runImage(entry.id, () => onUploadImage(entry.id, file), "Couldn't upload the image.");
+                            if (file) void runImage(entry.id, () => onUploadImage(entry.id, file), t('couldntUploadImageGeneric', lang));
                           }}
                         />
                       </label>
                       {entry.imageUrl && onRemoveImage && (
                         <SmallButton
-                          label="Remove image"
+                          label={t('removeImage', lang)}
                           disabled={isUploadingImage}
-                          onClick={() => void runImage(entry.id, () => onRemoveImage(entry.id), "Couldn't remove the image.")}
+                          onClick={() => void runImage(entry.id, () => onRemoveImage(entry.id), t('couldntRemoveImage', lang))}
                         />
                       )}
                     </>
                   )}
-                  <SmallButton label="Edit" disabled={busy} onClick={() => { setEditing(entry.id); setDraft({ primary: entry.primary, secondary: entry.secondary }); }} />
+                  <SmallButton label={t('editAction', lang)} disabled={busy} onClick={() => { setEditing(entry.id); setDraft({ primary: entry.primary, secondary: entry.secondary }); }} />
                   <SmallButton
-                    label="Delete"
+                    label={t('deleteAction', lang)}
                     danger
                     disabled={busy || count > 0}
-                    title={count > 0 ? `Used by ${count} product${count === 1 ? '' : 's'} — reassign first.` : undefined}
-                    onClick={() => { if (window.confirm(`Delete "${entry.primary}"?`)) void run(() => onDelete(entry.id), "Couldn't delete — it may still be in use."); }}
+                    title={count > 0 ? t('usedByProductsTitle', lang, { n: count, s: count === 1 ? '' : 's' }) : undefined}
+                    onClick={() => { if (window.confirm(t('deleteEntryConfirm', lang, { name: entry.primary }))) void run(() => onDelete(entry.id), t('couldntDeleteInUseGeneric', lang)); }}
                   />
                 </>
               )}
@@ -350,9 +357,9 @@ function TaxonomyPanel({
       <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
         <input placeholder={labels.primary} value={newDraft.primary} onChange={(e) => setNewDraft((d) => ({ ...d, primary: e.target.value }))} style={{ ...inputStyle, flex: 1 }} />
         <input placeholder={labels.secondary} value={newDraft.secondary} onChange={(e) => setNewDraft((d) => ({ ...d, secondary: e.target.value }))} style={{ ...inputStyle, flex: 1 }} />
-        <SmallButton label="Add" disabled={busy || !newDraft.primary.trim()} onClick={() => void run(async () => { await onCreate(newDraft.primary.trim(), newDraft.secondary.trim()); setNewDraft({ primary: '', secondary: '' }); }, "Couldn't create the entry.")} />
+        <SmallButton label={t('addAction', lang)} disabled={busy || !newDraft.primary.trim()} onClick={() => void run(async () => { await onCreate(newDraft.primary.trim(), newDraft.secondary.trim()); setNewDraft({ primary: '', secondary: '' }); }, t('couldntCreateEntry', lang))} />
       </div>
-      {onUploadImage && <div style={{ fontSize: 9, color: C.inkSoft, marginTop: 8 }}>New entries can have an image added once saved above.</div>}
+      {onUploadImage && <div style={{ fontSize: 9, color: C.inkSoft, marginTop: 8 }}>{t('newEntriesImageNote', lang)}</div>}
     </Panel>
   );
 }
@@ -361,9 +368,9 @@ function TaxonomyPanel({
 // Colours: name + hex (or pattern) with swatch preview
 // ---------------------------------------------------------------------------
 
-function ColorDot({ hex, hex2, swatchUrl }: { hex?: string | null; hex2?: string | null; swatchUrl?: string }) {
+function ColorDot({ hex, hex2, swatchUrl, lang }: { hex?: string | null; hex2?: string | null; swatchUrl?: string; lang: Lang }) {
   if (!hasSwatch({ hex, hex2, swatchUrl })) {
-    return <span style={{ width: 14, height: 14, borderRadius: '50%', border: `1px dashed ${C.rule}`, flexShrink: 0 }} title="No swatch yet" />;
+    return <span style={{ width: 14, height: 14, borderRadius: '50%', border: `1px dashed ${C.rule}`, flexShrink: 0 }} title={t('noSwatchYet', lang)} />;
   }
   return <span style={{ width: 14, height: 14, borderRadius: '50%', border: `1px solid ${C.rule}`, flexShrink: 0, background: swatchBackground({ hex, hex2, swatchUrl }) }} />;
 }
@@ -392,11 +399,13 @@ function ColorsPanel({
   setColors,
   usage,
   setError,
+  lang,
 }: {
   colors: ApiColor[];
   setColors: React.Dispatch<React.SetStateAction<ApiColor[]>>;
   usage: Map<string, number>;
   setError: (message: string | null) => void;
+  lang: Lang;
 }) {
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState<ColorDraft>(EMPTY_COLOR_DRAFT);
@@ -443,27 +452,27 @@ function ColorsPanel({
 
   const editorFields = (d: ColorDraft, set: React.Dispatch<React.SetStateAction<ColorDraft>>, namePrefix: string) => (
     <>
-      <input aria-label={`${namePrefix} — Portuguese`} placeholder="Nome (PT)" value={d.namePT} onChange={(e) => handleNameChange(set, { namePT: e.target.value })} style={{ ...inputStyle, flex: 1, minWidth: 90 }} />
-      <input aria-label={`${namePrefix} — English (optional)`} placeholder="Name (EN)" value={d.nameEN} onChange={(e) => handleNameChange(set, { nameEN: e.target.value })} style={{ ...inputStyle, flex: 1, minWidth: 90 }} />
+      <input aria-label={t('ariaPortuguese', lang, { prefix: namePrefix })} placeholder={t('namePlaceholderPT', lang)} value={d.namePT} onChange={(e) => handleNameChange(set, { namePT: e.target.value })} style={{ ...inputStyle, flex: 1, minWidth: 90 }} />
+      <input aria-label={t('ariaEnglishOptional', lang, { prefix: namePrefix })} placeholder={t('namePlaceholderEN', lang)} value={d.nameEN} onChange={(e) => handleNameChange(set, { nameEN: e.target.value })} style={{ ...inputStyle, flex: 1, minWidth: 90 }} />
       {!d.noHex && (
         <>
-          <input aria-label={`${namePrefix} value`} type="color" value={d.hex} onChange={(e) => handleHexChange(set, { hex: e.target.value })} style={{ width: 34, height: 30, padding: 2, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.paper, cursor: 'pointer' }} />
-          {d.combo && <input aria-label={`${namePrefix} second value`} type="color" value={d.hex2} onChange={(e) => handleHexChange(set, { hex2: e.target.value })} style={{ width: 34, height: 30, padding: 2, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.paper, cursor: 'pointer' }} />}
+          <input aria-label={t('ariaValue', lang, { prefix: namePrefix })} type="color" value={d.hex} onChange={(e) => handleHexChange(set, { hex: e.target.value })} style={{ width: 34, height: 30, padding: 2, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.paper, cursor: 'pointer' }} />
+          {d.combo && <input aria-label={t('ariaSecondValue', lang, { prefix: namePrefix })} type="color" value={d.hex2} onChange={(e) => handleHexChange(set, { hex2: e.target.value })} style={{ width: 34, height: 30, padding: 2, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.paper, cursor: 'pointer' }} />}
           <label style={{ display: 'flex', gap: 4, alignItems: 'center', fontSize: 9, fontWeight: 700, color: C.inkSoft, whiteSpace: 'nowrap' }}>
             <input type="checkbox" checked={d.combo} onChange={(e) => handleHexChange(set, { combo: e.target.checked })} />
-            Two-tone
+            {t('twoToneLabel', lang)}
           </label>
         </>
       )}
       <label style={{ display: 'flex', gap: 4, alignItems: 'center', fontSize: 9, fontWeight: 700, color: C.inkSoft, whiteSpace: 'nowrap' }}>
         <input type="checkbox" checked={d.noHex} onChange={(e) => set((s) => ({ ...s, noHex: e.target.checked, combo: e.target.checked ? false : s.combo }))} />
-        Pattern
+        {t('patternLabel', lang)}
       </label>
     </>
   );
 
   return (
-    <Panel title="Colours" hint="Hex renders a swatch dot; for patterned fabrics leave the hex off and upload a swatch image on the colour in the CMS admin. Two-tone adds a second hex for combination colours (e.g. red & white), rendered as a split circle. Names are bilingual — leave English blank to fall back to Portuguese, or start typing a hex to get a suggested name.">
+    <Panel title={t('coloursTitle', lang)} hint={t('coloursHint', lang)}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {colors.map((color) => {
           const id = String(color.id);
@@ -474,8 +483,8 @@ function ColorsPanel({
             <div key={id} style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', padding: '7px 10px', borderRadius: 6, background: C.subtleBg, border: `1px solid ${C.ruleLight}` }}>
               {isEditing ? (
                 <>
-                  {editorFields(draft, setDraft, 'Colour name')}
-                  <SmallButton label="Save" disabled={busy || !draft.namePT.trim()} onClick={() => void run(async () => {
+                  {editorFields(draft, setDraft, t('colourNameAriaPrefix', lang))}
+                  <SmallButton label={t('saveAction', lang)} disabled={busy || !draft.namePT.trim()} onClick={() => void run(async () => {
                     const updated = await adminUpdateColor(id, {
                       namePT: draft.namePT.trim(),
                       nameEN: draft.nameEN.trim() || undefined,
@@ -484,19 +493,19 @@ function ColorsPanel({
                     });
                     setColors((prev) => prev.map((c) => (String(c.id) === id ? updated : c)));
                     setEditing(null);
-                  }, "Couldn't save the colour.")} />
-                  <SmallButton label="Cancel" onClick={() => setEditing(null)} />
+                  }, t('couldntSaveColour', lang))} />
+                  <SmallButton label={t('cancelAction', lang)} onClick={() => setEditing(null)} />
                 </>
               ) : (
                 <>
-                  <ColorDot hex={color.hex} hex2={color.hex2} swatchUrl={swatch?.url} />
+                  <ColorDot hex={color.hex} hex2={color.hex2} swatchUrl={swatch?.url} lang={lang} />
                   <div style={{ flex: 1, minWidth: 0, fontSize: 12, fontWeight: 800, color: C.ink }}>
                     {colorLabel(color)}
                     {color.hex && <span style={{ fontSize: 9, fontWeight: 700, color: C.inkSoft, marginLeft: 6 }}>{color.hex}{color.hex2 ? ` / ${color.hex2}` : ''}</span>}
                   </div>
-                  <UsageBadge count={count} />
+                  <UsageBadge count={count} lang={lang} />
                   <SmallButton
-                    label="Edit"
+                    label={t('editAction', lang)}
                     disabled={busy}
                     onClick={() => {
                       setEditing(id);
@@ -504,11 +513,11 @@ function ColorsPanel({
                     }}
                   />
                   <SmallButton
-                    label="Delete"
+                    label={t('deleteAction', lang)}
                     danger
                     disabled={busy || count > 0}
-                    title={count > 0 ? `Used by ${count} product${count === 1 ? '' : 's'} — reassign first.` : undefined}
-                    onClick={() => { if (window.confirm(`Delete "${colorLabel(color)}"?`)) void run(async () => { await adminDeleteColor(id); setColors((prev) => prev.filter((c) => String(c.id) !== id)); }, "Couldn't delete — it may still be in use."); }}
+                    title={count > 0 ? t('usedByProductsTitle', lang, { n: count, s: count === 1 ? '' : 's' }) : undefined}
+                    onClick={() => { if (window.confirm(t('deleteEntryConfirm', lang, { name: colorLabel(color) }))) void run(async () => { await adminDeleteColor(id); setColors((prev) => prev.filter((c) => String(c.id) !== id)); }, t('couldntDeleteInUseGeneric', lang)); }}
                   />
                 </>
               )}
@@ -517,8 +526,8 @@ function ColorsPanel({
         })}
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10, alignItems: 'center' }}>
-        {editorFields(newDraft, setNewDraft, 'New colour')}
-        <SmallButton label="Add" disabled={busy || !newDraft.namePT.trim()} onClick={() => void run(async () => {
+        {editorFields(newDraft, setNewDraft, t('newColourAriaPrefix', lang))}
+        <SmallButton label={t('addAction', lang)} disabled={busy || !newDraft.namePT.trim()} onClick={() => void run(async () => {
           const created = await adminCreateColor({
             namePT: newDraft.namePT.trim(),
             nameEN: newDraft.nameEN.trim() || undefined,
@@ -527,7 +536,7 @@ function ColorsPanel({
           });
           setColors((prev) => [...prev, created]);
           setNewDraft(EMPTY_COLOR_DRAFT);
-        }, "Couldn't create the colour.")} />
+        }, t('couldntCreateColour', lang))} />
       </div>
     </Panel>
   );
@@ -566,11 +575,13 @@ function SizeGuidesPanel({
   setGuides,
   usage,
   setError,
+  lang,
 }: {
   guides: ApiSizeGuide[];
   setGuides: React.Dispatch<React.SetStateAction<ApiSizeGuide[]>>;
   usage: Map<string, number>;
   setError: (message: string | null) => void;
+  lang: Lang;
 }) {
   // editing === 'new' means a brand-new guide draft.
   const [editing, setEditing] = useState<string | null>(null);
@@ -592,12 +603,21 @@ function SizeGuidesPanel({
   const setRow = (index: number, key: keyof GuideDraft['rows'][number], value: string) =>
     setDraft((d) => ({ ...d, rows: d.rows.map((row, i) => (i === index ? { ...row, [key]: value } : row)) }));
 
+  const columnHeaders: { key: string; label: string }[] = [
+    { key: 'size', label: t('sizeGuideColSize', lang) },
+    { key: 'bust', label: t('sizeGuideColBust', lang) },
+    { key: 'waist', label: t('sizeGuideColWaist', lang) },
+    { key: 'hip', label: t('sizeGuideColHip', lang) },
+    { key: 'length', label: t('sizeGuideColLength', lang) },
+    { key: 'x', label: '' },
+  ];
+
   const editorTable = (
     <div style={{ marginTop: 8 }}>
-      <input placeholder='Guide name, e.g. "Vestidos — padrão"' value={draft.name} onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))} style={{ ...inputStyle, width: '100%', marginBottom: 8 }} />
+      <input placeholder={t('guideNamePlaceholder', lang)} value={draft.name} onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))} style={{ ...inputStyle, width: '100%', marginBottom: 8 }} />
       <div style={{ display: 'grid', gridTemplateColumns: '64px repeat(4, 1fr) 28px', gap: 4, alignItems: 'center' }}>
-        {['Size', 'Bust', 'Waist', 'Hip', 'Length', ''].map((h) => (
-          <div key={h || 'x'} style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep }}>{h}{h && h !== 'Size' ? ' (cm)' : ''}</div>
+        {columnHeaders.map((h) => (
+          <div key={h.key} style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep }}>{h.label}{h.label && h.key !== 'size' ? t('cmSuffix', lang) : ''}</div>
         ))}
         {draft.rows.map((row, index) => (
           <FragmentRow key={index}>
@@ -607,14 +627,14 @@ function SizeGuidesPanel({
             {(['bust', 'waist', 'hip', 'length'] as const).map((key) => (
               <input key={key} aria-label={`${row.size} ${key}`} type="number" min="0" value={row[key]} onChange={(e) => setRow(index, key, e.target.value)} style={{ ...inputStyle, padding: '7px 6px' }} />
             ))}
-            <button type="button" aria-label="Remove row" onClick={() => setDraft((d) => ({ ...d, rows: d.rows.filter((_, i) => i !== index) }))} style={{ color: C.inkSoft, fontWeight: 800 }}>×</button>
+            <button type="button" aria-label={t('removeRow', lang)} onClick={() => setDraft((d) => ({ ...d, rows: d.rows.filter((_, i) => i !== index) }))} style={{ color: C.inkSoft, fontWeight: 800 }}>×</button>
           </FragmentRow>
         ))}
       </div>
       <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-        <SmallButton label="+ Add row" disabled={busy || draft.rows.length >= ALL_SIZES.length} onClick={() => setDraft((d) => ({ ...d, rows: [...d.rows, { size: 'M', bust: '', waist: '', hip: '', length: '' }] }))} />
+        <SmallButton label={t('addRow', lang)} disabled={busy || draft.rows.length >= ALL_SIZES.length} onClick={() => setDraft((d) => ({ ...d, rows: [...d.rows, { size: 'M', bust: '', waist: '', hip: '', length: '' }] }))} />
         <SmallButton
-          label={busy ? '…' : 'Save guide'}
+          label={busy ? '…' : t('saveGuide', lang)}
           disabled={busy || !draft.name.trim() || draft.rows.length === 0}
           onClick={() => void run(async () => {
             const input = { name: draft.name.trim(), rows: fromDraftRows(draft.rows) };
@@ -626,15 +646,15 @@ function SizeGuidesPanel({
               setGuides((prev) => prev.map((g) => (String(g.id) === editing ? updated : g)));
             }
             setEditing(null);
-          }, "Couldn't save the size guide.")}
+          }, t('couldntSaveGuide', lang))}
         />
-        <SmallButton label="Cancel" onClick={() => setEditing(null)} />
+        <SmallButton label={t('cancelAction', lang)} onClick={() => setEditing(null)} />
       </div>
     </div>
   );
 
   return (
-    <Panel title="Size guides" hint="Shared measurement charts in centimetres. Products pick one; labels are translated on the storefront, so numbers are entered only once.">
+    <Panel title={t('sizeGuidesTitle', lang)} hint={t('sizeGuidesHint', lang)}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {guides.map((guide) => {
           const id = String(guide.id);
@@ -644,16 +664,16 @@ function SizeGuidesPanel({
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <div style={{ flex: 1, minWidth: 0, fontSize: 12, fontWeight: 800, color: C.ink }}>
                   {guide.name}
-                  <span style={{ fontSize: 9, fontWeight: 700, color: C.inkSoft, marginLeft: 6 }}>{guide.rows.length} sizes</span>
+                  <span style={{ fontSize: 9, fontWeight: 700, color: C.inkSoft, marginLeft: 6 }}>{t('sizesCountLabel', lang, { n: guide.rows.length })}</span>
                 </div>
-                <UsageBadge count={count} />
-                <SmallButton label={editing === id ? 'Editing…' : 'Edit'} disabled={busy || editing === id} onClick={() => { setEditing(id); setDraft({ name: guide.name, rows: toDraftRows(guide.rows) }); }} />
+                <UsageBadge count={count} lang={lang} />
+                <SmallButton label={editing === id ? t('editingEllipsis', lang) : t('editAction', lang)} disabled={busy || editing === id} onClick={() => { setEditing(id); setDraft({ name: guide.name, rows: toDraftRows(guide.rows) }); }} />
                 <SmallButton
-                  label="Delete"
+                  label={t('deleteAction', lang)}
                   danger
                   disabled={busy || count > 0}
-                  title={count > 0 ? `Used by ${count} product${count === 1 ? '' : 's'} — reassign first.` : undefined}
-                  onClick={() => { if (window.confirm(`Delete "${guide.name}"?`)) void run(async () => { await adminDeleteSizeGuide(id); setGuides((prev) => prev.filter((g) => String(g.id) !== id)); }, "Couldn't delete — it may still be in use."); }}
+                  title={count > 0 ? t('usedByProductsTitle', lang, { n: count, s: count === 1 ? '' : 's' }) : undefined}
+                  onClick={() => { if (window.confirm(t('deleteEntryConfirm', lang, { name: guide.name }))) void run(async () => { await adminDeleteSizeGuide(id); setGuides((prev) => prev.filter((g) => String(g.id) !== id)); }, t('couldntDeleteInUseGeneric', lang)); }}
                 />
               </div>
               {editing === id && editorTable}
@@ -665,7 +685,7 @@ function SizeGuidesPanel({
         <div style={{ padding: '7px 10px', marginTop: 10, borderRadius: 6, background: C.subtleBg, border: `1px solid ${C.ruleLight}` }}>{editorTable}</div>
       ) : (
         <div style={{ marginTop: 10 }}>
-          <SmallButton label="+ New size guide" disabled={busy} onClick={() => { setEditing('new'); setDraft({ name: '', rows: DEFAULT_GUIDE_ROWS }); }} />
+          <SmallButton label={t('newSizeGuide', lang)} disabled={busy} onClick={() => { setEditing('new'); setDraft({ name: '', rows: DEFAULT_GUIDE_ROWS }); }} />
         </div>
       )}
     </Panel>

@@ -1,5 +1,6 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import { C, F } from '../../theme';
+import { useApp } from '../../state/AppContext';
 import {
   adminCreateCoupon,
   adminDeleteCoupon,
@@ -10,6 +11,7 @@ import {
   type CouponInput,
 } from '../../lib/api';
 import { PageHeader } from '../components/PageHeader';
+import { t, type Lang } from '../i18n';
 
 // Discounts phase 2 (2026-07-25): admin CRUD for coupon codes, standalone
 // page + route (same pattern as Invoices/Media) rather than a Settings tab,
@@ -43,6 +45,7 @@ function fmtDate(value?: string | null): string {
 }
 
 export function Coupons() {
+  const { lang } = useApp();
   const [coupons, setCoupons] = useState<ApiCoupon[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | number | 'new' | null>(null);
@@ -52,7 +55,7 @@ export function Coupons() {
   const load = () => {
     adminListCoupons()
       .then(setCoupons)
-      .catch(() => setError("Couldn't connect to the backend."));
+      .catch(() => setError(t('couldntConnectBackend', lang)));
   };
 
   useEffect(load, []);
@@ -90,7 +93,7 @@ export function Coupons() {
 
   const save = async () => {
     if (!draft.code.trim()) {
-      setError('A code is required.');
+      setError(t('codeRequiredError', lang));
       return;
     }
     setBusy(true);
@@ -109,41 +112,41 @@ export function Coupons() {
       setEditing(null);
       load();
     } catch (err) {
-      setError(taxonomyErrorMessage(err, "Couldn't save this coupon."));
+      setError(taxonomyErrorMessage(err, t('couldntSaveCoupon', lang)));
     } finally {
       setBusy(false);
     }
   };
 
   const remove = async (c: ApiCoupon) => {
-    if (!window.confirm(`Delete "${c.code}"? Past orders that used it keep their discount -- this only removes the code itself.`)) return;
+    if (!window.confirm(t('deleteCouponConfirm', lang, { code: c.code }))) return;
     setError(null);
     try {
       await adminDeleteCoupon(c.id);
       setCoupons((prev) => (prev ? prev.filter((x) => x.id !== c.id) : prev));
     } catch {
-      setError("Couldn't delete this coupon.");
+      setError(t('couldntDeleteCoupon', lang));
     }
   };
 
   return (
     <div style={{ paddingBottom: 32 }}>
       <PageHeader
-        eyebrow="Settings / Discounts"
-        title="Coupon codes"
-        subtitle="Percentage or fixed-amount discounts shoppers apply at checkout. Editing or deleting a code never changes past orders that already used it."
-        cta="New coupon"
+        eyebrow={t('settingsDiscounts', lang)}
+        title={t('couponCodesTitle', lang)}
+        subtitle={t('couponCodesSubtitle', lang)}
+        cta={t('newCoupon', lang)}
         onCta={startCreate}
       />
 
       {error && <div style={{ margin: '16px 28px 0', fontSize: 13, color: '#B95545' }}>{error}</div>}
 
       {editing !== null && (
-        <CouponForm draft={draft} setDraft={setDraft} busy={busy} onSave={save} onCancel={cancel} isNew={editing === 'new'} />
+        <CouponForm draft={draft} setDraft={setDraft} busy={busy} onSave={save} onCancel={cancel} isNew={editing === 'new'} lang={lang} />
       )}
 
       {coupons && coupons.length === 0 && editing === null && (
-        <div style={{ margin: '20px 28px', fontSize: 13, color: C.inkSoft }}>No coupons yet.</div>
+        <div style={{ margin: '20px 28px', fontSize: 13, color: C.inkSoft }}>{t('noCouponsYet', lang)}</div>
       )}
 
       <div style={{ padding: '20px 28px 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -164,19 +167,19 @@ export function Coupons() {
             <div style={{ minWidth: 120 }}>
               <div style={{ fontFamily: F.display, fontSize: 15, fontWeight: 800, color: C.ink }}>{c.code}</div>
               <div style={{ fontSize: 10, color: c.active === false ? '#B95545' : '#3C8A5E', fontWeight: 700, textTransform: 'uppercase', marginTop: 2 }}>
-                {c.active === false ? 'Inactive' : 'Active'}
+                {c.active === false ? t('inactiveStatus', lang) : t('activeStatusSingular', lang)}
               </div>
             </div>
             <div style={{ fontSize: 12, color: C.ink, minWidth: 140 }}>
               {c.type === 'percent'
-                ? `${c.percentOff ?? 0}% off`
-                : `Kz ${c.fixedOffAOKz ?? 0} / €${c.fixedOffPTEur ?? 0} off`}
+                ? t('percentOffLabel', lang, { pct: c.percentOff ?? 0 })
+                : t('fixedOffLabel', lang, { kz: c.fixedOffAOKz ?? 0, eur: c.fixedOffPTEur ?? 0 })}
             </div>
             <div style={{ fontSize: 11, color: C.inkSoft, minWidth: 160 }}>
               {fmtDate(c.startDate)} → {fmtDate(c.endDate)}
             </div>
             <div style={{ fontSize: 11, color: C.inkSoft, minWidth: 100 }}>
-              Used {c.usageCount ?? 0}{c.usageLimit ? ` / ${c.usageLimit}` : ''}
+              {c.usageLimit ? t('usedCountOfLimit', lang, { n: c.usageCount ?? 0, limit: c.usageLimit }) : t('usedCountLabel', lang, { n: c.usageCount ?? 0 })}
             </div>
             {c.description && (
               <div style={{ fontSize: 11, color: C.inkSoft, flex: 1, minWidth: 140 }}>{c.description}</div>
@@ -186,13 +189,13 @@ export function Coupons() {
                 onClick={() => startEdit(c)}
                 style={{ padding: '7px 14px', fontSize: 10, fontWeight: 800, color: C.ink, border: `1px solid ${C.rule}`, borderRadius: 6, background: 'transparent' }}
               >
-                Edit
+                {t('editAction', lang)}
               </button>
               <button
                 onClick={() => remove(c)}
                 style={{ padding: '7px 14px', fontSize: 10, fontWeight: 800, color: '#B95545', border: '1px solid #E1B3AA', borderRadius: 6, background: 'transparent' }}
               >
-                Delete
+                {t('deleteAction', lang)}
               </button>
             </div>
           </div>
@@ -209,6 +212,7 @@ function CouponForm({
   onSave,
   onCancel,
   isNew,
+  lang,
 }: {
   draft: CouponInput;
   setDraft: (d: CouponInput) => void;
@@ -216,49 +220,50 @@ function CouponForm({
   onSave: () => void;
   onCancel: () => void;
   isNew: boolean;
+  lang: Lang;
 }) {
   return (
     <div style={{ margin: '20px 28px 0', background: C.subtleBg, border: `1px solid ${C.rule}`, borderRadius: 8, padding: 18 }}>
-      <div style={{ fontSize: 13, fontWeight: 800, color: C.ink, marginBottom: 14 }}>{isNew ? 'New coupon' : `Edit ${draft.code}`}</div>
+      <div style={{ fontSize: 13, fontWeight: 800, color: C.ink, marginBottom: 14 }}>{isNew ? t('newCouponHeading', lang) : t('editCouponHeading', lang, { code: draft.code })}</div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
-        <TextField label="Code" value={draft.code} onChange={(v) => setDraft({ ...draft, code: v.toUpperCase() })} placeholder="SUMMER10" />
+        <TextField label={t('codeLabel', lang)} value={draft.code} onChange={(v) => setDraft({ ...draft, code: v.toUpperCase() })} placeholder="SUMMER10" />
         <SelectField
-          label="Type"
+          label={t('typeLabel', lang)}
           value={draft.type}
           onChange={(v) => setDraft({ ...draft, type: v as 'percent' | 'fixed' })}
-          options={[{ value: 'percent', label: 'Percentage off' }, { value: 'fixed', label: 'Fixed amount off' }]}
+          options={[{ value: 'percent', label: t('percentageOffOption', lang) }, { value: 'fixed', label: t('fixedAmountOffOption', lang) }]}
         />
-        <CheckboxField label="Active" checked={draft.active ?? true} onChange={(v) => setDraft({ ...draft, active: v })} />
+        <CheckboxField label={t('activeCheckboxLabel', lang)} checked={draft.active ?? true} onChange={(v) => setDraft({ ...draft, active: v })} />
       </div>
 
       {draft.type === 'percent' ? (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginTop: 12 }}>
-          <NumberField label="Percent off (1-100)" value={draft.percentOff} onChange={(v) => setDraft({ ...draft, percentOff: v })} />
+          <NumberField label={t('percentOffFieldLabel', lang)} value={draft.percentOff} onChange={(v) => setDraft({ ...draft, percentOff: v })} />
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginTop: 12 }}>
-          <NumberField label="Fixed off -- Angola (Kz)" value={draft.fixedOffAOKz} onChange={(v) => setDraft({ ...draft, fixedOffAOKz: v })} />
-          <NumberField label="Fixed off -- Portugal (EUR)" value={draft.fixedOffPTEur} onChange={(v) => setDraft({ ...draft, fixedOffPTEur: v })} />
+          <NumberField label={t('fixedOffAngolaKz', lang)} value={draft.fixedOffAOKz} onChange={(v) => setDraft({ ...draft, fixedOffAOKz: v })} />
+          <NumberField label={t('fixedOffPortugalEur', lang)} value={draft.fixedOffPTEur} onChange={(v) => setDraft({ ...draft, fixedOffPTEur: v })} />
         </div>
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginTop: 12 }}>
-        <NumberField label="Min. order -- Angola (Kz)" value={draft.minOrderValueAOKz} onChange={(v) => setDraft({ ...draft, minOrderValueAOKz: v })} />
-        <NumberField label="Min. order -- Portugal (EUR)" value={draft.minOrderValuePTEur} onChange={(v) => setDraft({ ...draft, minOrderValuePTEur: v })} />
+        <NumberField label={t('minOrderAngolaKz', lang)} value={draft.minOrderValueAOKz} onChange={(v) => setDraft({ ...draft, minOrderValueAOKz: v })} />
+        <NumberField label={t('minOrderPortugalEur', lang)} value={draft.minOrderValuePTEur} onChange={(v) => setDraft({ ...draft, minOrderValuePTEur: v })} />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginTop: 12 }}>
-        <DateField label="Start date (optional)" value={toDateInputValue(draft.startDate)} onChange={(v) => setDraft({ ...draft, startDate: v || null })} />
-        <DateField label="End date (optional)" value={toDateInputValue(draft.endDate)} onChange={(v) => setDraft({ ...draft, endDate: v || null })} />
+        <DateField label={t('startDateOptional', lang)} value={toDateInputValue(draft.startDate)} onChange={(v) => setDraft({ ...draft, startDate: v || null })} />
+        <DateField label={t('endDateOptional', lang)} value={toDateInputValue(draft.endDate)} onChange={(v) => setDraft({ ...draft, endDate: v || null })} />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginTop: 12 }}>
-        <NumberField label="Total usage limit" value={draft.usageLimit} onChange={(v) => setDraft({ ...draft, usageLimit: v })} />
-        <NumberField label="Per-customer limit" value={draft.maxRedemptionsPerEmail} onChange={(v) => setDraft({ ...draft, maxRedemptionsPerEmail: v })} />
+        <NumberField label={t('totalUsageLimit', lang)} value={draft.usageLimit} onChange={(v) => setDraft({ ...draft, usageLimit: v })} />
+        <NumberField label={t('perCustomerLimit', lang)} value={draft.maxRedemptionsPerEmail} onChange={(v) => setDraft({ ...draft, maxRedemptionsPerEmail: v })} />
       </div>
 
       <div style={{ marginTop: 12 }}>
-        <TextField label="Internal note (optional)" value={draft.description || ''} onChange={(v) => setDraft({ ...draft, description: v })} placeholder="Which campaign this is for" />
+        <TextField label={t('internalNoteOptional', lang)} value={draft.description || ''} onChange={(v) => setDraft({ ...draft, description: v })} placeholder={t('internalNotePlaceholder', lang)} />
       </div>
 
       <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
@@ -267,10 +272,10 @@ function CouponForm({
           disabled={busy}
           style={{ padding: '9px 18px', fontSize: 11, fontWeight: 800, color: C.onDarkGold, background: C.black, borderRadius: 6 }}
         >
-          {busy ? 'Saving…' : 'Save'}
+          {busy ? t('savingEllipsis', lang) : t('saveAction', lang)}
         </button>
         <button onClick={onCancel} disabled={busy} style={{ padding: '9px 18px', fontSize: 11, fontWeight: 800, color: C.ink, border: `1px solid ${C.rule}`, borderRadius: 6, background: 'transparent' }}>
-          Cancel
+          {t('cancelAction', lang)}
         </button>
       </div>
     </div>

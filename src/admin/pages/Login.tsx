@@ -1,11 +1,14 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { C } from '../../theme';
+import { useApp } from '../../state/AppContext';
 import { useAdminAuth } from '../AdminAuthContext';
 import { BrandLogo } from '../../components/BrandLogo';
 import { AdminLanguageSwitch } from '../AdminTranslation';
+import { t } from '../i18n';
 
 export function Login() {
+  const { lang } = useApp();
   const { user, login } = useAdminAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -27,7 +30,7 @@ export function Login() {
       await login(email, password);
       navigate(redirectTo, { replace: true });
     } catch {
-      setError('Incorrect email or password, or the backend (use-me-with-style-cms) is not running yet.');
+      setError(t('loginError', lang));
     } finally {
       setSubmitting(false);
     }
@@ -46,11 +49,11 @@ export function Login() {
           </div>
         </div>
         <h1 style={{ fontSize: 10, color: '#BEB8AE', letterSpacing: 2, textTransform: 'uppercase', margin: '0 0 20px', textAlign: 'center' }}>
-          Admin
+          {t('adminHeading', lang)}
         </h1>
 
         <label style={{ display: 'block', marginBottom: 12 }}>
-          <div style={{ fontSize: 11, color: '#BEB8AE', marginBottom: 4 }}>Email</div>
+          <div style={{ fontSize: 11, color: '#BEB8AE', marginBottom: 4 }}>{t('emailLabel', lang)}</div>
           <input
             type="email"
             autoComplete="username"
@@ -61,7 +64,7 @@ export function Login() {
           />
         </label>
         <label style={{ display: 'block', marginBottom: 20 }}>
-          <div style={{ fontSize: 11, color: '#BEB8AE', marginBottom: 4 }}>Password</div>
+          <div style={{ fontSize: 11, color: '#BEB8AE', marginBottom: 4 }}>{t('passwordLabel', lang)}</div>
           <input
             type="password"
             autoComplete="current-password"
@@ -79,7 +82,7 @@ export function Login() {
           disabled={submitting}
           style={{ width: '100%', padding: 12, background: C.champagne, color: C.black, fontSize: 12, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', borderRadius: 6 }}
         >
-          {submitting ? '…' : 'Log in'}
+          {submitting ? '…' : t('logIn', lang)}
         </button>
       </form>
     </div>

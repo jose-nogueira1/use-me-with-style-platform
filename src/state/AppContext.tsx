@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, useReducer, type ReactNode } from 'react';
-import type { Lang } from '../theme';
+import { formatKz, type Lang } from '../theme';
 import { publicEnv } from '../config/env';
 import { cartReducer, type CartItem, type CartAction } from './cartReducer';
 import { marketFromHostname, siblingMarketUrl } from '../lib/market';
@@ -230,16 +230,16 @@ export function useApp(): AppContextValue {
  * below alongside this one for a "was" strikethrough price. */
 // eslint-disable-next-line react-refresh/only-export-components
 export function useFormatPrice() {
-  const { market } = useApp();
+  const { market, lang } = useApp();
   return (product: { effectivePriceKz: number; effectivePriceEur: number }) =>
-    market === 'AO' ? `Kz ${product.effectivePriceKz.toLocaleString('pt-PT')}` : `€${product.effectivePriceEur}`;
+    market === 'AO' ? `Kz ${formatKz(product.effectivePriceKz, lang)}` : `€${product.effectivePriceEur}`;
 }
 
 /** The regular (pre-sale) price, for a strikethrough next to useFormatPrice's
  * result -- only meaningful when `product.onSale` is true. */
 // eslint-disable-next-line react-refresh/only-export-components
 export function useFormatOriginalPrice() {
-  const { market } = useApp();
+  const { market, lang } = useApp();
   return (product: { priceKz: number; priceEur: number }) =>
-    market === 'AO' ? `Kz ${product.priceKz.toLocaleString('pt-PT')}` : `€${product.priceEur}`;
+    market === 'AO' ? `Kz ${formatKz(product.priceKz, lang)}` : `€${product.priceEur}`;
 }

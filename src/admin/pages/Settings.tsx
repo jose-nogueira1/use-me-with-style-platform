@@ -1,6 +1,7 @@
 import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { C, F } from '../../theme';
+import { useApp } from '../../state/AppContext';
 import {
   adminFetchInvoiceSettings,
   adminListHomeContentVersions,
@@ -25,10 +26,12 @@ import { absoluteMediaUrl } from '../../lib/productAdapters';
 import { PageHeader } from '../components/PageHeader';
 import { Badge } from '../components/Badge';
 import { ProductTaxonomySettings } from './ProductSettings';
+import { t, type Lang } from '../i18n';
 
 const DEFAULTS: MarketSettings = {
   angolaPaymentLive: false,
-  angolaBankTransferInstructions: '',
+  angolaBankTransferInstructionsPT: '',
+  angolaBankTransferInstructionsEN: '',
   angolaPaymentMethods: ['multicaixa_express', 'stripe', 'paypal'],
   angolaDeliveryMethods: ['courier_ao'],
   portugalPaymentMethods: ['paypal', 'stripe', 'mbway'],
@@ -48,28 +51,28 @@ const DEFAULTS: MarketSettings = {
 };
 
 const TABS = [
-  { key: 'markets', label: 'Markets' },
-  { key: 'policies', label: 'Policies & content' },
-  { key: 'invoicing', label: 'Invoicing' },
-  { key: 'legal', label: 'Legal pages' },
+  { key: 'markets', labelKey: 'tabMarkets' },
+  { key: 'policies', labelKey: 'tabPolicies' },
+  { key: 'invoicing', labelKey: 'tabInvoicing' },
+  { key: 'legal', labelKey: 'tabLegal' },
   // Home hero (2026-07-25 admin request): the "Coleção SS26 / Moda que se
   // move consigo." banner had no admin-editable source at all before this.
-  { key: 'home', label: 'Home page' },
+  { key: 'home', labelKey: 'tabHome' },
   // Catalogue taxonomies (2026-07-25): categories, merchandising tags,
   // colours, and size guides -- moved here from their own admin page so
   // the product editor's "Product settings" link has one obvious home
   // (was /admin/definicoes-produto; now this tab).
-  { key: 'products', label: 'Products' },
+  { key: 'products', labelKey: 'tabProducts' },
 ] as const;
 type SettingsTab = (typeof TABS)[number]['key'];
 
-const TAB_META: Record<SettingsTab, { title: string; subtitle: string }> = {
-  markets: { title: 'Launch configuration', subtitle: 'Safe placeholders until payment, fulfilment, and client media inputs are final.' },
-  policies: { title: 'Policies & content', subtitle: 'Returns, business hours, and shipping copy shown on the Help page and at checkout.' },
-  invoicing: { title: 'Internal invoicing', subtitle: 'Commercial (non-fiscal) invoice generation, per market.' },
-  legal: { title: 'Legal pages', subtitle: "Shown on the storefront's Privacy Policy and Terms & Conditions pages." },
-  home: { title: 'Home page', subtitle: 'The hero banner shown at the top of the storefront home page.' },
-  products: { title: 'Product settings', subtitle: "Categories, merchandising tags, colours, and size guides. Products pick from these lists; entries in use can't be deleted until reassigned." },
+const TAB_META: Record<SettingsTab, { titleKey: string; subtitleKey: string }> = {
+  markets: { titleKey: 'tabMarketsTitle', subtitleKey: 'tabMarketsSubtitle' },
+  policies: { titleKey: 'tabPoliciesTitle', subtitleKey: 'tabPoliciesSubtitle' },
+  invoicing: { titleKey: 'tabInvoicingTitle', subtitleKey: 'tabInvoicingSubtitle' },
+  legal: { titleKey: 'tabLegalTitle', subtitleKey: 'tabLegalSubtitle' },
+  home: { titleKey: 'tabHomeTitle', subtitleKey: 'tabHomeSubtitle' },
+  products: { titleKey: 'tabProductsTitle', subtitleKey: 'tabProductsSubtitle' },
 };
 
 function isSettingsTab(value: string | null): value is SettingsTab {
@@ -84,6 +87,7 @@ function isSettingsTab(value: string | null): value is SettingsTab {
 // pages are separate globals and keep their own self-contained save actions
 // (each section already had its own fetch/save before this change).
 export function Settings() {
+  const { lang } = useApp();
   // Deep-linkable via ?tab=products so the ProductEditor's "Product
   // settings" link can jump straight to this tab.
   const [searchParams, setSearchParams] = useSearchParams();
@@ -106,9 +110,9 @@ export function Settings() {
   useEffect(() => {
     fetchMarketSettings()
       .then(setSettings)
-      .catch(() => setError("Couldn't load settings -- showing defaults."))
+      .catch(() => setError(t('couldntLoadSettingsDefaults', lang)))
       .finally(() => setLoading(false));
-  }, []);
+  }, [lang]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -119,46 +123,46 @@ export function Settings() {
       setSettings(updated);
       setSaved(true);
     } catch {
-      setError("Couldn't save. Make sure the backend is running.");
+      setError(t('couldntSaveBackend', lang));
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) return <div style={{ padding: '32px 28px', fontSize: 13, color: C.inkSoft }}>Loading…</div>;
+  if (loading) return <div style={{ padding: '32px 28px', fontSize: 13, color: C.inkSoft }}>{t('loadingEllipsis', lang)}</div>;
 
   const showsMarketSettingsCta = tab === 'markets' || tab === 'policies';
 
   return (
     <div style={{ paddingBottom: 32 }}>
       <PageHeader
-        eyebrow="Settings"
-        title={TAB_META[tab].title}
-        subtitle={TAB_META[tab].subtitle}
-        cta={showsMarketSettingsCta ? 'Save settings' : undefined}
+        eyebrow={t('settingsEyebrow', lang)}
+        title={t(TAB_META[tab].titleKey, lang)}
+        subtitle={t(TAB_META[tab].subtitleKey, lang)}
+        cta={showsMarketSettingsCta ? t('saveSettings', lang) : undefined}
         onCta={showsMarketSettingsCta ? handleSave : undefined}
       />
 
       <div style={{ padding: '20px 28px 0', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        {TABS.map((t) => (
-          <TabPill key={t.key} label={t.label} active={tab === t.key} onClick={() => setTab(t.key)} />
+        {TABS.map((tb) => (
+          <TabPill key={tb.key} label={t(tb.labelKey, lang)} active={tab === tb.key} onClick={() => setTab(tb.key)} />
         ))}
       </div>
 
       {showsMarketSettingsCta && error && <div style={{ margin: '16px 28px 0', fontSize: 13, color: '#B95545' }}>{error}</div>}
-      {showsMarketSettingsCta && saved && <div style={{ margin: '16px 28px 0', fontSize: 13, color: '#3F754D' }}>Saved.</div>}
+      {showsMarketSettingsCta && saved && <div style={{ margin: '16px 28px 0', fontSize: 13, color: '#3F754D' }}>{t('savedNotice', lang)}</div>}
 
       {tab === 'markets' && (
         <div style={{ padding: '20px 28px 0', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }} className="ump-admin-orders-grid">
-          <Card title="Angola" badge="Multicaixa Express" tone="gold">
-            <ConfigRow label="Currency" value="Kwanza, prices shown as Kz. Stripe/PayPal charges settle in EUR (neither gateway supports Kz)." />
+          <Card title={t('angolaOption', lang)} badge={t('multicaixaBadge', lang)} tone="gold">
+            <ConfigRow label={t('currencyLabel', lang)} value={t('angolaCurrencyNote', lang)} />
             <ConfigRow
-              label="Payment"
+              label={t('paymentLabel', lang)}
               value={
                 <div>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                     <input type="checkbox" checked={settings.angolaPaymentLive} onChange={(e) => setSettings((s) => ({ ...s, angolaPaymentLive: e.target.checked }))} />
-                    AppyPay (Multicaixa Express) integration live
+                    {t('appyPayLiveLabel', lang)}
                   </label>
                   <input
                     value={settings.angolaPaymentMethods.join(', ')}
@@ -166,17 +170,24 @@ export function Settings() {
                     style={{ width: '100%', padding: 8, fontSize: 11, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, marginBottom: 8 }}
                   />
                   <textarea
-                    value={settings.angolaBankTransferInstructions ?? ''}
-                    onChange={(e) => setSettings((s) => ({ ...s, angolaBankTransferInstructions: e.target.value }))}
+                    value={settings.angolaBankTransferInstructionsPT ?? ''}
+                    onChange={(e) => setSettings((s) => ({ ...s, angolaBankTransferInstructionsPT: e.target.value }))}
                     rows={2}
-                    placeholder="Multicaixa Express manual instructions (shown until AppyPay integration is live)"
+                    placeholder={`${t('bankTransferInstructionsPlaceholder', lang)} — ${t('portuguese', lang)}`}
+                    style={{ width: '100%', padding: 8, fontSize: 11, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, fontFamily: 'inherit', marginBottom: 8 }}
+                  />
+                  <textarea
+                    value={settings.angolaBankTransferInstructionsEN ?? ''}
+                    onChange={(e) => setSettings((s) => ({ ...s, angolaBankTransferInstructionsEN: e.target.value }))}
+                    rows={2}
+                    placeholder={`${t('bankTransferInstructionsPlaceholder', lang)} — ${t('english', lang)}`}
                     style={{ width: '100%', padding: 8, fontSize: 11, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, fontFamily: 'inherit' }}
                   />
                 </div>
               }
             />
             <ConfigRow
-              label="Delivery"
+              label={t('deliveryLabel', lang)}
               value={
                 <input
                   value={settings.angolaDeliveryMethods.join(', ')}
@@ -185,13 +196,13 @@ export function Settings() {
                 />
               }
             />
-            <ConfigRow label="Order flow" value="New to Payment Review to Processing." last />
+            <ConfigRow label={t('orderFlowLabel', lang)} value={t('angolaOrderFlow', lang)} last />
           </Card>
 
-          <Card title="Portugal" badge="Configured" tone="green">
-            <ConfigRow label="Currency" value="Euro, prices shown as EUR." />
+          <Card title={t('portugalOption', lang)} badge={t('configuredBadge', lang)} tone="green">
+            <ConfigRow label={t('currencyLabel', lang)} value={t('portugalCurrencyNote', lang)} />
             <ConfigRow
-              label="Payment"
+              label={t('paymentLabel', lang)}
               value={
                 <input
                   value={settings.portugalPaymentMethods.join(', ')}
@@ -201,7 +212,7 @@ export function Settings() {
               }
             />
             <ConfigRow
-              label="Delivery"
+              label={t('deliveryLabel', lang)}
               value={
                 <input
                   value={settings.portugalDeliveryMethods.join(', ')}
@@ -210,21 +221,21 @@ export function Settings() {
                 />
               }
             />
-            <ConfigRow label="Order flow" value="New, Processing, Shipped, Delivered, Cancelled." last />
+            <ConfigRow label={t('orderFlowLabel', lang)} value={t('portugalOrderFlow', lang)} last />
           </Card>
 
-          <Card title="Messaging" badge="Phase 1" tone="blue">
-            <ConfigRow label="WhatsApp" value="Keyword-based auto-replies (order status, payment, delivery FAQs); sensitive topics always escalate to you." />
-            <ConfigRow label="Instagram" value="Same rule-based classification via Instagram DM; escalates to you when unmatched." />
-            <ConfigRow label="Deferred" value="AI-drafted replies, campaign generation, Meta Ads, segmentation, and analytics." />
-            <ConfigRow label="Storefront language" value="Bilingual PT/EN (Portuguese default); admin stays English-only." last />
+          <Card title={t('messagingCardTitle', lang)} badge={t('phase1Badge', lang)} tone="blue">
+            <ConfigRow label={t('whatsappLabel', lang)} value={t('messagingAutomationDetail', lang)} />
+            <ConfigRow label={t('instagramLabel', lang)} value={t('instagramNote', lang)} />
+            <ConfigRow label={t('deferredLabel', lang)} value={t('deferredMessagingNote', lang)} />
+            <ConfigRow label={t('storefrontLanguageLabel', lang)} value={t('storefrontLanguageNote', lang)} last />
           </Card>
 
-          <Card title="Order Fields" badge="Required" tone="neutral">
-            <ConfigRow label="Customer" value="Name, phone/WhatsApp, email, notes." />
-            <ConfigRow label="Address" value="Address, city, country." />
-            <ConfigRow label="Methods" value="Payment method and delivery method." />
-            <ConfigRow label="Lookup" value="Confirmation and lookup without full accounts." last />
+          <Card title={t('orderFieldsCard', lang)} badge={t('requiredCardBadge', lang)} tone="neutral">
+            <ConfigRow label={t('customerFieldLabel', lang)} value={t('orderFieldsCustomer', lang)} />
+            <ConfigRow label={t('addressField', lang)} value={t('orderFieldsAddress', lang)} />
+            <ConfigRow label={t('methodsLabel', lang)} value={t('orderFieldsMethods', lang)} />
+            <ConfigRow label={t('lookupLabel', lang)} value={t('orderFieldsLookup', lang)} last />
           </Card>
         </div>
       )}
@@ -233,84 +244,96 @@ export function Settings() {
         <>
           <div style={{ padding: '20px 28px 0', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }} className="ump-admin-orders-grid">
             <div>
-              <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>Angola: returns &amp; exchanges policy</div>
+              <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>{t('returnsAngolaHeading', lang)}</div>
               <PolicyTextarea
-                label="Portuguese"
+                label={t('portuguese', lang)}
                 value={settings.angolaReturnsPolicyTextPT ?? ''}
                 onChange={(v) => setSettings((s) => ({ ...s, angolaReturnsPolicyTextPT: v }))}
+                lang={lang}
               />
               <PolicyTextarea
-                label="English"
+                label={t('english', lang)}
                 value={settings.angolaReturnsPolicyTextEN ?? ''}
                 onChange={(v) => setSettings((s) => ({ ...s, angolaReturnsPolicyTextEN: v }))}
+                lang={lang}
               />
             </div>
             <div>
-              <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>Portugal/EU: returns &amp; exchanges policy</div>
+              <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>{t('returnsPortugalHeading', lang)}</div>
               <PolicyTextarea
-                label="Portuguese"
+                label={t('portuguese', lang)}
                 value={settings.portugalReturnsPolicyTextPT ?? ''}
                 onChange={(v) => setSettings((s) => ({ ...s, portugalReturnsPolicyTextPT: v }))}
+                lang={lang}
               />
               <PolicyTextarea
-                label="English"
+                label={t('english', lang)}
                 value={settings.portugalReturnsPolicyTextEN ?? ''}
                 onChange={(v) => setSettings((s) => ({ ...s, portugalReturnsPolicyTextEN: v }))}
+                lang={lang}
               />
             </div>
           </div>
 
           <div style={{ padding: '20px 28px 0', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }} className="ump-admin-orders-grid">
             <div>
-              <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>Business hours (shared, both markets)</div>
+              <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>{t('businessHoursSharedHeading', lang)}</div>
               <PolicyTextarea
-                label="Portuguese"
+                label={t('portuguese', lang)}
                 value={settings.businessHoursTextPT ?? ''}
                 onChange={(v) => setSettings((s) => ({ ...s, businessHoursTextPT: v }))}
+                lang={lang}
               />
               <PolicyTextarea
-                label="English"
+                label={t('english', lang)}
                 value={settings.businessHoursTextEN ?? ''}
                 onChange={(v) => setSettings((s) => ({ ...s, businessHoursTextEN: v }))}
+                lang={lang}
               />
             </div>
             <div>
-              <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>International shipping (shared, both markets)</div>
+              <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>{t('internationalShippingSharedHeading', lang)}</div>
               <PolicyTextarea
-                label="Portuguese"
+                label={t('portuguese', lang)}
                 value={settings.internationalShippingTextPT ?? ''}
                 onChange={(v) => setSettings((s) => ({ ...s, internationalShippingTextPT: v }))}
+                lang={lang}
               />
               <PolicyTextarea
-                label="English"
+                label={t('english', lang)}
                 value={settings.internationalShippingTextEN ?? ''}
                 onChange={(v) => setSettings((s) => ({ ...s, internationalShippingTextEN: v }))}
+                lang={lang}
               />
             </div>
             <div>
-              <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>Angola: shipping &amp; delivery info</div>
+              <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>{t('angolaShippingHeading', lang)}</div>
               <PolicyTextarea
-                label="Portuguese"
+                label={t('portuguese', lang)}
                 value={settings.angolaShippingTextPT ?? ''}
                 onChange={(v) => setSettings((s) => ({ ...s, angolaShippingTextPT: v }))}
+                lang={lang}
               />
               <PolicyTextarea
-                label="English"
+                label={t('english', lang)}
                 value={settings.angolaShippingTextEN ?? ''}
                 onChange={(v) => setSettings((s) => ({ ...s, angolaShippingTextEN: v }))}
+                lang={lang}
               />
             </div>
             <div>
-              <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>Portugal: shipping &amp; delivery info</div>
+              <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>{t('portugalShippingHeading', lang)}</div>
               <PolicyTextarea
-                label="Portuguese"
+                label={t('portuguese', lang)}
                 value={settings.portugalShippingTextPT ?? ''}
                 onChange={(v) => setSettings((s) => ({ ...s, portugalShippingTextPT: v }))}
+                lang={lang}
               />
               <PolicyTextarea
-                label="English"
+                label={t('english', lang)}
                 value={settings.portugalShippingTextEN ?? ''}
                 onChange={(v) => setSettings((s) => ({ ...s, portugalShippingTextEN: v }))}
+                lang={lang}
               />
             </div>
           </div>
@@ -350,7 +373,8 @@ function TabPill({ label, active, onClick }: { label: string; active: boolean; o
 // (own fetch/save) rather than folded into the page-level Save button above,
 // since it's a different global with its own endpoint.
 const INVOICE_SETTINGS_DEFAULTS: InvoiceSettings = {
-  phaseOneDisclaimer: '',
+  phaseOneDisclaimerPT: '',
+  phaseOneDisclaimerEN: '',
   invoicingEnabledAO: true,
   issuerNameAO: 'Use Me With Style',
   issuerTaxIdAO: '',
@@ -370,6 +394,7 @@ const INVOICE_SETTINGS_DEFAULTS: InvoiceSettings = {
 };
 
 function InvoicingSettingsSection() {
+  const { lang } = useApp();
   const [settings, setSettings] = useState<InvoiceSettings>(INVOICE_SETTINGS_DEFAULTS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -379,9 +404,9 @@ function InvoicingSettingsSection() {
   useEffect(() => {
     adminFetchInvoiceSettings()
       .then(setSettings)
-      .catch(() => setError("Couldn't load invoicing settings."))
+      .catch(() => setError(t('couldntLoadInvoicingSettings', lang)))
       .finally(() => setLoading(false));
-  }, []);
+  }, [lang]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -392,7 +417,7 @@ function InvoicingSettingsSection() {
       setSettings(updated);
       setSaved(true);
     } catch {
-      setError("Couldn't save invoicing settings.");
+      setError(t('couldntSaveInvoicingSettings', lang));
     } finally {
       setSaving(false);
     }
@@ -402,36 +427,47 @@ function InvoicingSettingsSection() {
     <div style={{ padding: '20px 28px 0' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
         <div style={{ fontSize: 11, color: C.inkSoft, maxWidth: 560 }}>
-          Snapshotted onto each invoice at issue time -- editing here doesn't rewrite invoices already generated.
+          {t('invoicingSnapshotNote', lang)}
         </div>
         <button
           onClick={handleSave}
           disabled={loading || saving}
           style={{ padding: '9px 18px', background: C.black, color: C.onDarkGold, fontSize: 11, fontWeight: 800, borderRadius: 6, flexShrink: 0 }}
         >
-          {saving ? '…' : 'Save invoicing settings'}
+          {saving ? '…' : t('saveInvoicingSettings', lang)}
         </button>
       </div>
       {error && <div style={{ fontSize: 12, color: '#B95545', marginBottom: 12 }}>{error}</div>}
-      {saved && <div style={{ fontSize: 12, color: '#3F754D', marginBottom: 12 }}>Saved.</div>}
+      {saved && <div style={{ fontSize: 12, color: '#3F754D', marginBottom: 12 }}>{t('savedNotice', lang)}</div>}
 
       {loading ? (
-        <div style={{ fontSize: 12, color: C.inkSoft }}>Loading…</div>
+        <div style={{ fontSize: 12, color: C.inkSoft }}>{t('loadingEllipsis', lang)}</div>
       ) : (
         <>
-          <label style={{ display: 'block', marginBottom: 16 }}>
-            <div style={{ fontSize: 10, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>Required non-fiscal disclaimer</div>
-            <textarea
-              value={settings.phaseOneDisclaimer}
-              onChange={(e) => setSettings((s) => ({ ...s, phaseOneDisclaimer: e.target.value }))}
-              rows={2}
-              style={{ width: '100%', padding: 10, fontSize: 12, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.paper, fontFamily: 'inherit', lineHeight: 1.5 }}
-            />
-          </label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16, marginBottom: 16 }} className="ump-admin-orders-grid">
+            <label style={{ display: 'block' }}>
+              <div style={{ fontSize: 10, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>{t('requiredDisclaimer', lang)} — {t('portuguese', lang)}</div>
+              <textarea
+                value={settings.phaseOneDisclaimerPT}
+                onChange={(e) => setSettings((s) => ({ ...s, phaseOneDisclaimerPT: e.target.value }))}
+                rows={2}
+                style={{ width: '100%', padding: 10, fontSize: 12, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.paper, fontFamily: 'inherit', lineHeight: 1.5 }}
+              />
+            </label>
+            <label style={{ display: 'block' }}>
+              <div style={{ fontSize: 10, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>{t('requiredDisclaimer', lang)} — {t('english', lang)}</div>
+              <textarea
+                value={settings.phaseOneDisclaimerEN}
+                onChange={(e) => setSettings((s) => ({ ...s, phaseOneDisclaimerEN: e.target.value }))}
+                rows={2}
+                style={{ width: '100%', padding: 10, fontSize: 12, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.paper, fontFamily: 'inherit', lineHeight: 1.5 }}
+              />
+            </label>
+          </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }} className="ump-admin-orders-grid">
-            <InvoiceMarketCard label="Angola" market="AO" settings={settings} setSettings={setSettings} />
-            <InvoiceMarketCard label="Portugal" market="PT" settings={settings} setSettings={setSettings} />
+            <InvoiceMarketCard label={t('angolaOption', lang)} market="AO" settings={settings} setSettings={setSettings} lang={lang} />
+            <InvoiceMarketCard label={t('portugalOption', lang)} market="PT" settings={settings} setSettings={setSettings} lang={lang} />
           </div>
         </>
       )}
@@ -444,11 +480,13 @@ function InvoiceMarketCard({
   market,
   settings,
   setSettings,
+  lang,
 }: {
   label: string;
   market: 'AO' | 'PT';
   settings: InvoiceSettings;
   setSettings: Dispatch<SetStateAction<InvoiceSettings>>;
+  lang: Lang;
 }) {
   const set = <K extends keyof InvoiceSettings>(key: K, value: InvoiceSettings[K]) => setSettings((s) => ({ ...s, [key]: value }));
   const enabledKey = `invoicingEnabled${market}` as const;
@@ -465,15 +503,15 @@ function InvoiceMarketCard({
       <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>{label}</div>
       <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, fontSize: 11, fontWeight: 700, color: C.ink }}>
         <input type="checkbox" checked={settings[enabledKey]} onChange={(e) => set(enabledKey, e.target.checked)} />
-        Generate internal invoices automatically
+        {t('generateInvoicesAuto', lang)}
       </label>
-      <SettingsField label="Issuer name" value={settings[nameKey] ?? ''} onChange={(v) => set(nameKey, v)} />
-      <SettingsField label="Issuer tax ID" value={settings[taxIdKey] ?? ''} onChange={(v) => set(taxIdKey, v)} />
-      <SettingsTextarea label="Issuer address" value={settings[addressKey] ?? ''} onChange={(v) => set(addressKey, v)} rows={2} />
-      <SettingsField label="VAT rate (%) included in prices" value={String(settings[vatKey] ?? 0)} onChange={(v) => set(vatKey, Number(v) || 0)} type="number" />
-      <SettingsField label="VAT / exemption note" value={settings[taxNoteKey] ?? ''} onChange={(v) => set(taxNoteKey, v)} />
-      <SettingsField label="Invoice prefix" value={settings[prefixKey] ?? ''} onChange={(v) => set(prefixKey, v)} />
-      <SettingsTextarea label="PDF footer" value={settings[footerKey] ?? ''} onChange={(v) => set(footerKey, v)} rows={2} />
+      <SettingsField label={t('issuerName', lang)} value={settings[nameKey] ?? ''} onChange={(v) => set(nameKey, v)} />
+      <SettingsField label={t('issuerTaxId', lang)} value={settings[taxIdKey] ?? ''} onChange={(v) => set(taxIdKey, v)} />
+      <SettingsTextarea label={t('issuerAddress', lang)} value={settings[addressKey] ?? ''} onChange={(v) => set(addressKey, v)} rows={2} />
+      <SettingsField label={t('vatRateLabel', lang)} value={String(settings[vatKey] ?? 0)} onChange={(v) => set(vatKey, Number(v) || 0)} type="number" />
+      <SettingsField label={t('vatNoteLabel', lang)} value={settings[taxNoteKey] ?? ''} onChange={(v) => set(taxNoteKey, v)} />
+      <SettingsField label={t('invoicePrefixLabel', lang)} value={settings[prefixKey] ?? ''} onChange={(v) => set(prefixKey, v)} />
+      <SettingsTextarea label={t('pdfFooterLabel', lang)} value={settings[footerKey] ?? ''} onChange={(v) => set(footerKey, v)} rows={2} />
     </div>
   );
 }
@@ -513,6 +551,7 @@ function SettingsTextarea({ label, value, onChange, rows = 2 }: { label: string;
 // else, but that provenance caveat doesn't change just because there's now a
 // storefront UI for it.
 function LegalPagesSection() {
+  const { lang } = useApp();
   const [content, setContent] = useState<LegalContent>({ privacyPolicyTextPT: '', privacyPolicyTextEN: '', termsTextPT: '', termsTextEN: '' });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -522,9 +561,9 @@ function LegalPagesSection() {
   useEffect(() => {
     fetchLegalContent()
       .then(setContent)
-      .catch(() => setError("Couldn't load legal pages."))
+      .catch(() => setError(t('couldntLoadLegalPages', lang)))
       .finally(() => setLoading(false));
-  }, []);
+  }, [lang]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -535,7 +574,7 @@ function LegalPagesSection() {
       setContent(updated);
       setSaved(true);
     } catch {
-      setError("Couldn't save. Make sure you're logged in.");
+      setError(t('couldntSaveLoggedIn', lang));
     } finally {
       setSaving(false);
     }
@@ -545,32 +584,32 @@ function LegalPagesSection() {
     <div style={{ padding: '20px 28px 32px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
         <div style={{ fontSize: 11, color: C.inkSoft, maxWidth: 560 }}>
-          The seeded text is an AI-drafted generic template -- have it reviewed by a lawyer before treating it as final.
+          {t('legalSeededNote', lang)}
         </div>
         <button
           onClick={handleSave}
           disabled={loading || saving}
           style={{ padding: '9px 18px', background: C.black, color: C.onDarkGold, fontSize: 11, fontWeight: 800, borderRadius: 6, flexShrink: 0 }}
         >
-          {saving ? '…' : 'Save legal pages'}
+          {saving ? '…' : t('saveLegalPages', lang)}
         </button>
       </div>
       {error && <div style={{ fontSize: 12, color: '#B95545', marginBottom: 12 }}>{error}</div>}
-      {saved && <div style={{ fontSize: 12, color: '#3F754D', marginBottom: 12 }}>Saved.</div>}
+      {saved && <div style={{ fontSize: 12, color: '#3F754D', marginBottom: 12 }}>{t('savedNotice', lang)}</div>}
 
       {loading ? (
-        <div style={{ fontSize: 12, color: C.inkSoft }}>Loading…</div>
+        <div style={{ fontSize: 12, color: C.inkSoft }}>{t('loadingEllipsis', lang)}</div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }} className="ump-admin-orders-grid">
           <div>
-            <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>Privacy Policy</div>
-            <PolicyTextarea label="Portuguese" value={content.privacyPolicyTextPT ?? ''} onChange={(v) => setContent((c) => ({ ...c, privacyPolicyTextPT: v }))} />
-            <PolicyTextarea label="English" value={content.privacyPolicyTextEN ?? ''} onChange={(v) => setContent((c) => ({ ...c, privacyPolicyTextEN: v }))} />
+            <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>{t('privacyPolicyTitle', lang)}</div>
+            <PolicyTextarea label={t('portuguese', lang)} value={content.privacyPolicyTextPT ?? ''} onChange={(v) => setContent((c) => ({ ...c, privacyPolicyTextPT: v }))} lang={lang} />
+            <PolicyTextarea label={t('english', lang)} value={content.privacyPolicyTextEN ?? ''} onChange={(v) => setContent((c) => ({ ...c, privacyPolicyTextEN: v }))} lang={lang} />
           </div>
           <div>
-            <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>Terms &amp; Conditions</div>
-            <PolicyTextarea label="Portuguese" value={content.termsTextPT ?? ''} onChange={(v) => setContent((c) => ({ ...c, termsTextPT: v }))} />
-            <PolicyTextarea label="English" value={content.termsTextEN ?? ''} onChange={(v) => setContent((c) => ({ ...c, termsTextEN: v }))} />
+            <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>{t('termsTitle', lang)}</div>
+            <PolicyTextarea label={t('portuguese', lang)} value={content.termsTextPT ?? ''} onChange={(v) => setContent((c) => ({ ...c, termsTextPT: v }))} lang={lang} />
+            <PolicyTextarea label={t('english', lang)} value={content.termsTextEN ?? ''} onChange={(v) => setContent((c) => ({ ...c, termsTextEN: v }))} lang={lang} />
           </div>
         </div>
       )}
@@ -600,6 +639,7 @@ const HOME_CONTENT_DEFAULTS: HomeContent = {
 };
 
 function HomeHeroSection() {
+  const { lang } = useApp();
   const [content, setContent] = useState<HomeContent>(HOME_CONTENT_DEFAULTS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -619,16 +659,17 @@ function HomeHeroSection() {
   const loadVersions = () => {
     adminListHomeContentVersions()
       .then(setVersions)
-      .catch(() => setVersionsError("Couldn't load previous versions."));
+      .catch(() => setVersionsError(t('couldntLoadPreviousVersions', lang)));
   };
 
   useEffect(() => {
     fetchHomeContent()
       .then(setContent)
-      .catch(() => setError("Couldn't load the home page content."))
+      .catch(() => setError(t('couldntLoadHomeContent', lang)))
       .finally(() => setLoading(false));
     loadVersions();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -640,7 +681,7 @@ function HomeHeroSection() {
       setSaved(true);
       loadVersions();
     } catch {
-      setError("Couldn't save. Make sure you're logged in.");
+      setError(t('couldntSaveLoggedIn', lang));
     } finally {
       setSaving(false);
     }
@@ -656,7 +697,7 @@ function HomeHeroSection() {
       setSaved(true);
       loadVersions();
     } catch {
-      setVersionsError("Couldn't restore that version.");
+      setVersionsError(t('couldntRestoreVersion', lang));
     } finally {
       setRestoringId(null);
     }
@@ -669,7 +710,7 @@ function HomeHeroSection() {
       const media = await adminUploadMedia(file, 'Home hero image');
       setContent((c) => ({ ...c, heroImage: media }));
     } catch {
-      setError("Couldn't upload the image.");
+      setError(t('couldntUploadImage', lang));
     } finally {
       setUploading(false);
     }
@@ -682,51 +723,49 @@ function HomeHeroSection() {
     <div style={{ padding: '20px 28px 32px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
         <div style={{ fontSize: 11, color: C.inkSoft, maxWidth: 560 }}>
-          Shown at the top of the storefront home page. Leave an English field blank to fall back to the Portuguese one.
+          {t('homeHeroNote', lang)}
         </div>
         <button
           onClick={() => void handleSave()}
           disabled={loading || saving}
           style={{ padding: '9px 18px', background: C.black, color: C.onDarkGold, fontSize: 11, fontWeight: 800, borderRadius: 6, flexShrink: 0 }}
         >
-          {saving ? '…' : 'Save home page'}
+          {saving ? '…' : t('saveHomePage', lang)}
         </button>
       </div>
       {error && <div style={{ fontSize: 12, color: '#B95545', marginBottom: 12 }}>{error}</div>}
-      {saved && <div style={{ fontSize: 12, color: '#3F754D', marginBottom: 12 }}>Saved.</div>}
+      {saved && <div style={{ fontSize: 12, color: '#3F754D', marginBottom: 12 }}>{t('savedNotice', lang)}</div>}
 
       {loading ? (
-        <div style={{ fontSize: 12, color: C.inkSoft }}>Loading…</div>
+        <div style={{ fontSize: 12, color: C.inkSoft }}>{t('loadingEllipsis', lang)}</div>
       ) : (
         <>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16, marginBottom: 16 }} className="ump-admin-orders-grid">
             <div>
-              <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>Portuguese</div>
-              <SettingsField label="Eyebrow" value={content.heroEyebrowPT ?? ''} onChange={(v) => setContent((c) => ({ ...c, heroEyebrowPT: v }))} />
-              <SettingsField label="Headline" value={content.heroHeadlinePT ?? ''} onChange={(v) => setContent((c) => ({ ...c, heroHeadlinePT: v }))} />
-              <SettingsTextarea label="Subtitle" value={content.heroSubtitlePT ?? ''} onChange={(v) => setContent((c) => ({ ...c, heroSubtitlePT: v }))} rows={3} />
-              <SettingsField label="Button label" value={content.heroCtaLabelPT ?? ''} onChange={(v) => setContent((c) => ({ ...c, heroCtaLabelPT: v }))} />
+              <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>{t('portuguese', lang)}</div>
+              <SettingsField label={t('eyebrowLabel', lang)} value={content.heroEyebrowPT ?? ''} onChange={(v) => setContent((c) => ({ ...c, heroEyebrowPT: v }))} />
+              <SettingsField label={t('headlineLabel', lang)} value={content.heroHeadlinePT ?? ''} onChange={(v) => setContent((c) => ({ ...c, heroHeadlinePT: v }))} />
+              <SettingsTextarea label={t('subtitleLabel', lang)} value={content.heroSubtitlePT ?? ''} onChange={(v) => setContent((c) => ({ ...c, heroSubtitlePT: v }))} rows={3} />
+              <SettingsField label={t('buttonLabelLabel', lang)} value={content.heroCtaLabelPT ?? ''} onChange={(v) => setContent((c) => ({ ...c, heroCtaLabelPT: v }))} />
             </div>
             <div>
-              <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>English</div>
-              <SettingsField label="Eyebrow" value={content.heroEyebrowEN ?? ''} onChange={(v) => setContent((c) => ({ ...c, heroEyebrowEN: v }))} />
-              <SettingsField label="Headline" value={content.heroHeadlineEN ?? ''} onChange={(v) => setContent((c) => ({ ...c, heroHeadlineEN: v }))} />
-              <SettingsTextarea label="Subtitle" value={content.heroSubtitleEN ?? ''} onChange={(v) => setContent((c) => ({ ...c, heroSubtitleEN: v }))} rows={3} />
-              <SettingsField label="Button label" value={content.heroCtaLabelEN ?? ''} onChange={(v) => setContent((c) => ({ ...c, heroCtaLabelEN: v }))} />
+              <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>{t('english', lang)}</div>
+              <SettingsField label={t('eyebrowLabel', lang)} value={content.heroEyebrowEN ?? ''} onChange={(v) => setContent((c) => ({ ...c, heroEyebrowEN: v }))} />
+              <SettingsField label={t('headlineLabel', lang)} value={content.heroHeadlineEN ?? ''} onChange={(v) => setContent((c) => ({ ...c, heroHeadlineEN: v }))} />
+              <SettingsTextarea label={t('subtitleLabel', lang)} value={content.heroSubtitleEN ?? ''} onChange={(v) => setContent((c) => ({ ...c, heroSubtitleEN: v }))} rows={3} />
+              <SettingsField label={t('buttonLabelLabel', lang)} value={content.heroCtaLabelEN ?? ''} onChange={(v) => setContent((c) => ({ ...c, heroCtaLabelEN: v }))} />
             </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }} className="ump-admin-orders-grid">
             <div>
-              <SettingsField label="Button link" value={content.heroCtaHref ?? ''} onChange={(v) => setContent((c) => ({ ...c, heroCtaHref: v }))} />
+              <SettingsField label={t('buttonLinkLabel', lang)} value={content.heroCtaHref ?? ''} onChange={(v) => setContent((c) => ({ ...c, heroCtaHref: v }))} />
               <div style={{ fontSize: 10, color: C.inkSoft, marginTop: -4 }}>
-                Usually /catalogo, or /catalogo?cat=vestidos for one category. For a themed collection
-                (e.g. "SS26") that isn't just one category, add a merchandising tag below in the
-                Products tab, apply it to the relevant products, and point this at /catalogo?tag=&lt;its slug&gt;.
+                {t('buttonLinkNote', lang)}
               </div>
             </div>
             <div>
-              <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>Hero image</div>
+              <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>{t('heroImageLabel', lang)}</div>
               {heroImageUrl ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
                   <img src={heroImageUrl} alt="" style={{ width: 64, height: 64, borderRadius: 6, objectFit: 'cover', border: `1px solid ${C.rule}` }} />
@@ -734,11 +773,11 @@ function HomeHeroSection() {
                     onClick={() => setContent((c) => ({ ...c, heroImage: null }))}
                     style={{ fontSize: 10, fontWeight: 800, color: '#B95545', border: `1px solid #E1B3AA`, borderRadius: 6, padding: '6px 10px', background: 'transparent' }}
                   >
-                    Remove
+                    {t('removeAction', lang)}
                   </button>
                 </div>
               ) : (
-                <div style={{ fontSize: 11, color: C.inkSoft, marginBottom: 8 }}>None set -- the storefront shows a decorative placeholder graphic instead.</div>
+                <div style={{ fontSize: 11, color: C.inkSoft, marginBottom: 8 }}>{t('noneSetPlaceholderGraphic', lang)}</div>
               )}
               <input
                 type="file"
@@ -751,22 +790,22 @@ function HomeHeroSection() {
                 }}
                 style={{ fontSize: 11 }}
               />
-              {uploading && <div style={{ fontSize: 10, color: C.inkSoft, marginTop: 4 }}>Uploading…</div>}
+              {uploading && <div style={{ fontSize: 10, color: C.inkSoft, marginTop: 4 }}>{t('uploadingEllipsis', lang)}</div>}
             </div>
           </div>
 
           <div style={{ marginTop: 24, paddingTop: 20, borderTop: `1px solid ${C.ruleLight}` }}>
-            <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 2 }}>Previous versions</div>
+            <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 2 }}>{t('previousVersions', lang)}</div>
             <div style={{ fontSize: 10, color: C.inkSoft, marginBottom: 12 }}>
-              Every save keeps the version it replaces, so you can bring back an older homepage later. Restoring makes that version current (and itself becomes a new entry in this list).
+              {t('previousVersionsNote', lang)}
             </div>
             {versionsError && <div style={{ fontSize: 12, color: '#B95545', marginBottom: 10 }}>{versionsError}</div>}
             {versions.length === 0 ? (
-              <div style={{ fontSize: 11, color: C.inkSoft }}>No previous versions yet -- they'll appear here after your next save.</div>
+              <div style={{ fontSize: 11, color: C.inkSoft }}>{t('noVersionsYet', lang)}</div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {versions.map((v) => {
-                  const preview = v.version.heroHeadlinePT?.trim() || v.version.heroHeadlineEN?.trim() || '(no headline)';
+                  const preview = v.version.heroHeadlinePT?.trim() || v.version.heroHeadlineEN?.trim() || t('noHeadlinePlaceholder', lang);
                   const isRestoring = restoringId === String(v.id);
                   return (
                     <div key={v.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 6, background: C.subtleBg, border: `1px solid ${C.ruleLight}` }}>
@@ -774,7 +813,7 @@ function HomeHeroSection() {
                         <div style={{ fontSize: 11, fontWeight: 700, color: C.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{preview}</div>
                         <div style={{ fontSize: 9, color: C.inkSoft }}>{new Date(v.createdAt).toLocaleString()}</div>
                       </div>
-                      <SmallActionButton label={isRestoring ? '…' : 'Restore'} disabled={isRestoring} onClick={() => void handleRestore(v)} />
+                      <SmallActionButton label={isRestoring ? '…' : t('restoreAction', lang)} disabled={isRestoring} onClick={() => void handleRestore(v)} />
                     </div>
                   );
                 })}
@@ -810,7 +849,7 @@ function SmallActionButton({ label, onClick, disabled }: { label: string; onClic
   );
 }
 
-function PolicyTextarea({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+function PolicyTextarea({ label, value, onChange, lang }: { label: string; value: string; onChange: (value: string) => void; lang: Lang }) {
   return (
     <div style={{ marginBottom: 14 }}>
       <div style={{ fontSize: 10, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>{label}</div>
@@ -818,7 +857,7 @@ function PolicyTextarea({ label, value, onChange }: { label: string; value: stri
         value={value}
         onChange={(e) => onChange(e.target.value)}
         rows={8}
-        placeholder="Client-provided legal copy -- shown on the storefront Help page and at checkout."
+        placeholder={t('policyPlaceholder', lang)}
         style={{ width: '100%', padding: 10, fontSize: 12, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.paper, fontFamily: 'inherit', lineHeight: 1.5 }}
       />
     </div>

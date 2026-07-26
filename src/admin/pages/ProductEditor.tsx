@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { C } from '../../theme';
+import { useApp } from '../../state/AppContext';
 import { hasSwatch, swatchBackground } from '../../lib/colorSwatch';
 import {
   adminCreateProduct,
@@ -24,6 +25,7 @@ import {
   type ApiVariant,
 } from '../../lib/api';
 import { PageHeader } from '../components/PageHeader';
+import { t } from '../i18n';
 
 // Catalogue taxonomies are managed in the Product settings page
 // (/admin/definicoes-produto) since 2026-07-25; this editor only PICKS
@@ -100,6 +102,7 @@ function formFromVariants(variants: ApiVariant[]): Pick<FormState, 'colorIds' | 
 }
 
 export function ProductEditor() {
+  const { lang } = useApp();
   const { id } = useParams<{ id: string }>();
   const isNew = id === 'novo';
   const navigate = useNavigate();
@@ -125,8 +128,8 @@ export function ProductEditor() {
           setForm((f) => (f.category ? f : { ...f, category: String(cats[0].id) }));
         }
       })
-      .catch(() => setError("Couldn't load the catalogue taxonomies from the backend."));
-  }, [isNew]);
+      .catch(() => setError(t('couldntLoadTaxonomies', lang)));
+  }, [isNew, lang]);
 
   useEffect(() => {
     if (isNew) return;
@@ -134,7 +137,7 @@ export function ProductEditor() {
       .then((products) => {
         const p = products.find((x) => String(x.id) === id);
         if (!p) {
-          setError('Product not found.');
+          setError(t('productNotFound', lang));
           return;
         }
         setExisting(p);
@@ -163,9 +166,9 @@ export function ProductEditor() {
           availablePT: p.availablePT,
         });
       })
-      .catch(() => setError("Couldn't connect to the backend."))
+      .catch(() => setError(t('couldntConnectBackend', lang)))
       .finally(() => setLoading(false));
-  }, [id, isNew]);
+  }, [id, isNew, lang]);
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => setForm((f) => ({ ...f, [key]: value }));
 
@@ -197,11 +200,11 @@ export function ProductEditor() {
 
   const handleSave = async () => {
     if (!form.category) {
-      setError('Choose a category before saving.');
+      setError(t('chooseCategoryError', lang));
       return;
     }
     if (form.colorIds.length === 0 || form.sizes.length === 0) {
-      setError('Pick at least one colour and one size before saving.');
+      setError(t('pickColourSizeError', lang));
       return;
     }
     setSaving(true);
@@ -247,7 +250,7 @@ export function ProductEditor() {
         await adminUpdateProduct(existing.id, payload);
       }
     } catch {
-      setError("Couldn't save. Make sure the backend is running.");
+      setError(t('couldntSaveBackend', lang));
     } finally {
       setSaving(false);
     }
@@ -255,14 +258,14 @@ export function ProductEditor() {
 
   const handleDelete = async () => {
     if (!existing) return;
-    if (!window.confirm(`Delete "${form.name}"? This can't be undone.`)) return;
+    if (!window.confirm(t('deleteProductConfirm', lang, { name: form.name }))) return;
     setSaving(true);
     setError(null);
     try {
       await adminDeleteProduct(existing.id);
       navigate('/admin/produtos');
     } catch {
-      setError("Couldn't delete this product.");
+      setError(t('couldntDeleteProduct', lang));
       setSaving(false);
     }
   };
@@ -280,23 +283,23 @@ export function ProductEditor() {
       const updated = await adminUpdateProduct(existing.id, { images });
       setExisting(updated);
     } catch {
-      setError("Couldn't upload the image.");
+      setError(t('couldntUploadImage', lang));
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) return <div style={{ padding: '32px 28px', fontSize: 13, color: C.inkSoft }}>Loading…</div>;
+  if (loading) return <div style={{ padding: '32px 28px', fontSize: 13, color: C.inkSoft }}>{t('loadingEllipsis', lang)}</div>;
 
   const selectStyle: React.CSSProperties = { width: '100%', padding: '11px 10px', fontSize: 12, fontWeight: 700, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, color: C.ink };
 
   return (
     <div style={{ paddingBottom: 32 }}>
       <PageHeader
-        eyebrow={isNew ? 'Products / Add product' : `Products / ${form.name}`}
-        title={isNew ? 'Create catalogue item' : form.name}
-        subtitle="Enter everything needed to sell a piece before final photography arrives."
-        cta={isNew ? 'Publish product' : 'Save changes'}
+        eyebrow={isNew ? t('crumbAddProduct', lang) : t('crumbEditProduct', lang, { name: form.name })}
+        title={isNew ? t('createCatalogueItem', lang) : form.name}
+        subtitle={t('enterEverythingSubtitle', lang)}
+        cta={isNew ? t('publishProduct', lang) : t('saveChanges', lang)}
         onCta={handleSave}
       />
 
@@ -323,33 +326,33 @@ export function ProductEditor() {
             {existing?.images?.length ? (
               <img src={resolveProductImage(existing.images[0].image).url} alt={resolveProductImage(existing.images[0].image).alt ?? form.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }} />
             ) : (
-              'Client photo pending'
+              t('clientPhotoPending', lang)
             )}
           </div>
           <label style={{ display: 'block', width: '100%', marginTop: 12, padding: 12, background: C.paper, border: `1px solid ${C.rule}`, borderRadius: 6, fontSize: 11, fontWeight: 800, color: C.ink, textAlign: 'center', cursor: 'pointer' }}>
-            Add photos
+            {t('addPhotos', lang)}
             <input type="file" accept="image/*" hidden onChange={(e) => void handleImageUpload(e.target.files?.[0])} />
           </label>
         </div>
 
         <div style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 20, display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }} className="ump-admin-fields-grid">
-            <FieldInput label="Product name — Portuguese" value={form.namePT} onChange={(v) => set('namePT', v)} />
-            <FieldInput label="Product name — English" value={form.nameEN} onChange={(v) => set('nameEN', v)} />
+            <FieldInput label={t('productNamePT', lang)} value={form.namePT} onChange={(v) => set('namePT', v)} />
+            <FieldInput label={t('productNameEN', lang)} value={form.nameEN} onChange={(v) => set('nameEN', v)} />
             <label style={{ display: 'block' }}>
-              <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>Status</div>
+              <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>{t('statusLabel', lang)}</div>
               <select value={form.active ? 'active' : 'draft'} onChange={(e) => set('active', e.target.value === 'active')} style={selectStyle}>
-                <option value="draft">Draft</option>
-                <option value="active">Active</option>
+                <option value="draft">{t('draftOption', lang)}</option>
+                <option value="active">{t('activeOption', lang)}</option>
               </select>
             </label>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }} className="ump-admin-fields-grid">
             <label style={{ display: 'block' }}>
-              <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>Category</div>
+              <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>{t('categoryLabel', lang)}</div>
               <select value={form.category} onChange={(e) => set('category', e.target.value)} style={selectStyle}>
-                {form.category === '' && <option value="">Choose…</option>}
+                {form.category === '' && <option value="">{t('chooseEllipsis', lang)}</option>}
                 {categories.map((c) => (
                   <option key={String(c.id)} value={String(c.id)}>
                     {c.namePT}{c.nameEN && c.nameEN !== c.namePT ? ` / ${c.nameEN}` : ''}
@@ -358,9 +361,9 @@ export function ProductEditor() {
               </select>
             </label>
             <label style={{ display: 'block' }}>
-              <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>Merchandising tag</div>
+              <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>{t('merchTagLabel', lang)}</div>
               <select value={form.tag} onChange={(e) => set('tag', e.target.value)} style={selectStyle}>
-                <option value="">None</option>
+                <option value="">{t('noneOption', lang)}</option>
                 {tags.map((tg) => (
                   <option key={String(tg.id)} value={String(tg.id)}>
                     {tg.labelPT}{tg.labelEN && tg.labelEN !== tg.labelPT ? ` / ${tg.labelEN}` : ''}
@@ -369,9 +372,9 @@ export function ProductEditor() {
               </select>
             </label>
             <label style={{ display: 'block' }}>
-              <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>Size guide</div>
+              <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>{t('sizeGuideLabel', lang)}</div>
               <select value={form.sizeGuide} onChange={(e) => set('sizeGuide', e.target.value)} style={selectStyle}>
-                <option value="">None</option>
+                <option value="">{t('noneOption', lang)}</option>
                 {sizeGuides.map((g) => (
                   <option key={String(g.id)} value={String(g.id)}>{g.name}</option>
                 ))}
@@ -380,13 +383,13 @@ export function ProductEditor() {
           </div>
 
           <div style={{ fontSize: 10, color: C.inkSoft, marginTop: -8 }}>
-            Categories, tags, colours and size guides are managed in <Link to="/admin/definicoes?tab=products" style={{ color: C.goldDeep, fontWeight: 800 }}>Settings → Products</Link>.
+            {t('taxonomyManagedNotePrefix', lang)} <Link to="/admin/definicoes?tab=products" style={{ color: C.goldDeep, fontWeight: 800 }}>{t('settingsProductsLink', lang)}</Link>.
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }} className="ump-admin-fields-grid">
-            <ReadOnlyField label="Slug" value={form.slug || (isNew ? 'Generated automatically on save' : '')} />
-            <FieldInput label="Angola price (Kz)" value={form.priceAOKz} onChange={(v) => set('priceAOKz', v)} type="number" />
-            <FieldInput label="Portugal price (EUR)" value={form.pricePTEur} onChange={(v) => set('pricePTEur', v)} type="number" />
+            <ReadOnlyField label={t('slugLabel', lang)} value={form.slug || (isNew ? t('generatedAutomatically', lang) : '')} />
+            <FieldInput label={t('angolaPriceKz', lang)} value={form.priceAOKz} onChange={(v) => set('priceAOKz', v)} type="number" />
+            <FieldInput label={t('portugalPriceEur', lang)} value={form.pricePTEur} onChange={(v) => set('pricePTEur', v)} type="number" />
           </div>
 
           {/* Sale pricing (2026-07-25, discounts phase 1): optional, mirrors
@@ -394,20 +397,20 @@ export function ProductEditor() {
               not discount that market; leave both dates blank for the sale
               to run indefinitely as soon as a sale price is set. */}
           <div style={{ marginTop: -4 }}>
-            <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>Sale pricing (optional)</div>
+            <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>{t('salePricingOptional', lang)}</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }} className="ump-admin-fields-grid">
-              <FieldInput label="Sale price -- Angola (Kz)" value={form.saleAOKz} onChange={(v) => set('saleAOKz', v)} type="number" />
-              <FieldInput label="Sale price -- Portugal (EUR)" value={form.salePTEur} onChange={(v) => set('salePTEur', v)} type="number" />
-              <FieldInput label="Sale start" value={form.saleStartDate} onChange={(v) => set('saleStartDate', v)} type="date" />
-              <FieldInput label="Sale end" value={form.saleEndDate} onChange={(v) => set('saleEndDate', v)} type="date" />
+              <FieldInput label={t('saleAngolaKz', lang)} value={form.saleAOKz} onChange={(v) => set('saleAOKz', v)} type="number" />
+              <FieldInput label={t('salePortugalEur', lang)} value={form.salePTEur} onChange={(v) => set('salePTEur', v)} type="number" />
+              <FieldInput label={t('saleStart', lang)} value={form.saleStartDate} onChange={(v) => set('saleStartDate', v)} type="date" />
+              <FieldInput label={t('saleEnd', lang)} value={form.saleEndDate} onChange={(v) => set('saleEndDate', v)} type="date" />
             </div>
           </div>
 
           {/* ---- Variant matrix: colours x sizes, stock per cell ---- */}
           <div>
-            <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>Colours</div>
+            <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>{t('coloursLabel', lang)}</div>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              {colors.length === 0 && <span style={{ fontSize: 11, color: C.inkSoft }}>No colours yet — create them in Product settings.</span>}
+              {colors.length === 0 && <span style={{ fontSize: 11, color: C.inkSoft }}>{t('noColoursYet', lang)}</span>}
               {colors.map((c) => {
                 const cid = String(c.id);
                 const selected = form.colorIds.includes(cid);
@@ -443,7 +446,7 @@ export function ProductEditor() {
           </div>
 
           <div>
-            <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>Sizes</div>
+            <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>{t('sizesLabel', lang)}</div>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               {ALL_SIZES.map((size) => {
                 const selected = form.sizes.includes(size);
@@ -475,13 +478,13 @@ export function ProductEditor() {
           {form.colorIds.length > 0 && form.sizes.length > 0 && (
             <div>
               <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>
-                Stock by colour and size <span style={{ fontWeight: 700, color: C.inkSoft }}>(AO / PT per cell)</span>
+                {t('stockByColourSize', lang)} <span style={{ fontWeight: 700, color: C.inkSoft }}>{t('aoPtPerCell', lang)}</span>
               </div>
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ borderCollapse: 'collapse', fontSize: 11 }}>
                   <thead>
                     <tr>
-                      <th style={{ textAlign: 'left', padding: '6px 10px 6px 0', fontSize: 9, fontWeight: 800, color: C.goldDeep }}>Colour</th>
+                      <th style={{ textAlign: 'left', padding: '6px 10px 6px 0', fontSize: 9, fontWeight: 800, color: C.goldDeep }}>{t('colourTableHeader', lang)}</th>
                       {form.sizes.map((size) => (
                         <th key={size} style={{ padding: '6px 8px', fontSize: 10, fontWeight: 800, color: C.ink }}>{size}</th>
                       ))}
@@ -507,7 +510,7 @@ export function ProductEditor() {
                               <td key={size} style={{ padding: '6px 8px' }}>
                                 <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
                                   <input
-                                    aria-label={`${color ? colorLabel(color) : colorId} ${size} Angola stock`}
+                                    aria-label={t('stockAriaAO', lang, { colour: color ? colorLabel(color) : colorId, size })}
                                     type="number"
                                     min="0"
                                     value={cell.ao}
@@ -515,7 +518,7 @@ export function ProductEditor() {
                                     style={{ width: 52, padding: '6px 6px', fontSize: 11, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, color: C.ink }}
                                   />
                                   <input
-                                    aria-label={`${color ? colorLabel(color) : colorId} ${size} Portugal stock`}
+                                    aria-label={t('stockAriaPT', lang, { colour: color ? colorLabel(color) : colorId, size })}
                                     type="number"
                                     min="0"
                                     value={cell.pt}
@@ -536,27 +539,27 @@ export function ProductEditor() {
           )}
 
           <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
-            <CheckField label="Published" checked={form.active} onChange={(v) => set('active', v)} />
-            <CheckField label="Available in Angola" checked={form.availableAO} onChange={(v) => set('availableAO', v)} />
-            <CheckField label="Available in Portugal" checked={form.availablePT} onChange={(v) => set('availablePT', v)} />
+            <CheckField label={t('publishedLabel', lang)} checked={form.active} onChange={(v) => set('active', v)} />
+            <CheckField label={t('availableAngola', lang)} checked={form.availableAO} onChange={(v) => set('availableAO', v)} />
+            <CheckField label={t('availablePortugal', lang)} checked={form.availablePT} onChange={(v) => set('availablePT', v)} />
           </div>
 
           <label style={{ display: 'block' }}>
-            <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>Description — Portuguese</div>
+            <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>{t('descriptionPTLabel', lang)}</div>
             <textarea
               value={form.descriptionPT}
               onChange={(e) => set('descriptionPT', e.target.value)}
               rows={3}
-              placeholder="Soft launch copy until client approves final product descriptions. Include fit, care, fabric, and styling notes."
+              placeholder={t('descriptionPlaceholder', lang)}
               style={{ width: '100%', padding: '11px 12px', fontSize: 12, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, color: C.ink, fontFamily: 'inherit' }}
             />
           </label>
 
-          <label style={{ display: 'block' }}><div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>Description — English</div><textarea value={form.descriptionEN} onChange={(e) => set('descriptionEN', e.target.value)} rows={3} style={{ width: '100%', padding: '11px 12px', fontSize: 12, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, color: C.ink, fontFamily: 'inherit' }} /></label>
+          <label style={{ display: 'block' }}><div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>{t('descriptionENLabel', lang)}</div><textarea value={form.descriptionEN} onChange={(e) => set('descriptionEN', e.target.value)} rows={3} style={{ width: '100%', padding: '11px 12px', fontSize: 12, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, color: C.ink, fontFamily: 'inherit' }} /></label>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }} className="ump-admin-fields-grid">
             <label style={{ display: 'block' }}>
-              <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>Fit note — Portuguese</div>
+              <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>{t('fitNotePTLabel', lang)}</div>
               <textarea
                 value={form.fitNotePT}
                 onChange={(e) => set('fitNotePT', e.target.value)}
@@ -566,7 +569,7 @@ export function ProductEditor() {
               />
             </label>
             <label style={{ display: 'block' }}>
-              <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>Fit note — English</div>
+              <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>{t('fitNoteENLabel', lang)}</div>
               <textarea
                 value={form.fitNoteEN}
                 onChange={(e) => set('fitNoteEN', e.target.value)}
@@ -583,7 +586,7 @@ export function ProductEditor() {
               disabled={saving}
               style={{ padding: 12, background: C.black, color: C.onDarkGold, fontSize: 11, fontWeight: 800, borderRadius: 6, alignSelf: 'flex-start', minWidth: 160 }}
             >
-              {saving ? '…' : isNew ? 'Publish product' : 'Save changes'}
+              {saving ? '…' : isNew ? t('publishProduct', lang) : t('saveChanges', lang)}
             </button>
             {!isNew && existing && (
               <button
@@ -591,7 +594,7 @@ export function ProductEditor() {
                 disabled={saving}
                 style={{ padding: 12, background: 'transparent', color: '#B95545', border: '1px solid #E1B3AA', fontSize: 11, fontWeight: 800, borderRadius: 6, alignSelf: 'flex-start' }}
               >
-                Delete product
+                {t('deleteProduct', lang)}
               </button>
             )}
           </div>

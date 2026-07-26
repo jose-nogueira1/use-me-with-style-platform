@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertTriangle, Bell, Clock, MessageCircle, Package, Search, ShoppingBag, User, X } from 'lucide-react';
 import { C, F } from '../../theme';
+import { useApp } from '../../state/AppContext';
+import { t } from '../i18n';
 import {
   adminListCustomers,
   adminListMessages,
@@ -235,6 +237,7 @@ function ResultGroup({ label, children }: { label: string; children: ReactNode }
 // page already pulls), then filtered locally on every keystroke. No new
 // backend search endpoint needed at this data scale.
 export function SearchButton() {
+  const { lang } = useApp();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -295,7 +298,7 @@ export function SearchButton() {
 
   return (
     <div ref={wrapRef} style={{ position: 'relative' }}>
-      <IconButton label="Search" active={open} onClick={() => setOpen((o) => !o)}>
+      <IconButton label={t('search', lang)} active={open} onClick={() => setOpen((o) => !o)}>
         <Search size={15} />
       </IconButton>
       {open && (
@@ -304,29 +307,29 @@ export function SearchButton() {
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search orders, products, customers…"
+            placeholder={t('searchPlaceholder', lang)}
             style={{ margin: 10, padding: '9px 11px', fontSize: 13, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, color: C.ink }}
           />
           <div style={{ overflowY: 'auto', padding: '0 6px 8px' }}>
-            {loading && <div style={{ padding: '8px 10px', fontSize: 12, color: C.inkSoft }}>Loading…</div>}
-            {!loading && q && !hasResults && <div style={{ padding: '8px 10px', fontSize: 12, color: C.inkSoft }}>No matches.</div>}
-            {!loading && !q && <div style={{ padding: '8px 10px', fontSize: 12, color: C.inkSoft }}>Type to search orders, products, and customers.</div>}
+            {loading && <div style={{ padding: '8px 10px', fontSize: 12, color: C.inkSoft }}>{t('loadingEllipsis', lang)}</div>}
+            {!loading && q && !hasResults && <div style={{ padding: '8px 10px', fontSize: 12, color: C.inkSoft }}>{t('noMatches', lang)}</div>}
+            {!loading && !q && <div style={{ padding: '8px 10px', fontSize: 12, color: C.inkSoft }}>{t('typeToSearch', lang)}</div>}
             {matchedOrders.length > 0 && (
-              <ResultGroup label="Orders">
+              <ResultGroup label={t('resultGroupOrders', lang)}>
                 {matchedOrders.map((o) => (
                   <ResultRow key={o.id} icon={<ShoppingBag size={13} />} title={`#${o.orderNumber}`} subtitle={o.customerName} onClick={() => goTo(`/admin/encomendas/${o.id}`)} />
                 ))}
               </ResultGroup>
             )}
             {matchedProducts.length > 0 && (
-              <ResultGroup label="Products">
+              <ResultGroup label={t('resultGroupProducts', lang)}>
                 {matchedProducts.map((p) => (
                   <ResultRow key={p.id} icon={<Package size={13} />} title={p.name} subtitle={p.slug} onClick={() => goTo(`/admin/produtos/${p.id}`)} />
                 ))}
               </ResultGroup>
             )}
             {matchedCustomers.length > 0 && (
-              <ResultGroup label="Customers">
+              <ResultGroup label={t('resultGroupCustomers', lang)}>
                 {matchedCustomers.map((c) => (
                   <ResultRow key={c.id} icon={<User size={13} />} title={c.name} subtitle={c.email} onClick={() => goTo(`/admin/clientes/${c.id}`)} />
                 ))}
@@ -360,6 +363,7 @@ function NotificationRow({
   urgent,
   onClick,
   onClear,
+  dismissLabel,
 }: {
   icon: ReactNode;
   title: string;
@@ -369,6 +373,7 @@ function NotificationRow({
   urgent: boolean;
   onClick: () => void;
   onClear: () => void;
+  dismissLabel: string;
 }) {
   const bg = clicked ? 'transparent' : urgent ? DANGER_BG : C.tagBg;
   const accentColor = clicked ? C.goldDeep : urgent ? DANGER_TEXT : C.goldDeep;
@@ -397,7 +402,7 @@ function NotificationRow({
         </span>
       </button>
       <button
-        aria-label="Dismiss notification"
+        aria-label={dismissLabel}
         onClick={(e) => {
           e.stopPropagation();
           onClear();
@@ -430,6 +435,7 @@ function NotificationRow({
 const PAYMENT_REVIEW_URGENT_AFTER_MS = 24 * 60 * 60 * 1000;
 
 export function NotificationsButton() {
+  const { lang } = useApp();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -449,8 +455,8 @@ export function NotificationsButton() {
           next.push({
             key: `order-${o.id}`,
             icon: <Clock size={13} />,
-            title: `#${o.orderNumber} needs payment review`,
-            subtitle: urgent ? 'Waiting over 24h' : o.customerName,
+            title: t('notifNeedsPaymentReview', lang, { n: o.orderNumber }),
+            subtitle: urgent ? t('notifWaitingOver24h', lang) : o.customerName,
             path: `/admin/encomendas/${o.id}`,
             urgent,
           });
@@ -461,8 +467,8 @@ export function NotificationsButton() {
           next.push({
             key: `product-${p.id}`,
             icon: <AlertTriangle size={13} />,
-            title: urgent ? `${p.name} is out of stock` : `${p.name} is low on stock`,
-            subtitle: 'Check sizes',
+            title: urgent ? t('notifOutOfStock', lang, { name: p.name }) : t('notifLowOnStock', lang, { name: p.name }),
+            subtitle: t('notifCheckSizes', lang),
             path: `/admin/produtos/${p.id}`,
             urgent,
           });
@@ -471,8 +477,8 @@ export function NotificationsButton() {
           next.push({
             key: `message-${m.id}`,
             icon: <MessageCircle size={13} />,
-            title: `${m.customerName || m.contactHandle} sent a message`,
-            subtitle: m.status === 'escalated' ? 'Escalated' : 'Needs review',
+            title: t('notifSentAMessage', lang, { name: m.customerName || m.contactHandle }),
+            subtitle: m.status === 'escalated' ? t('msgEscalated', lang) : t('msgNeedsReview', lang),
             path: '/admin/mensagens',
             urgent: m.status === 'escalated',
           });
@@ -487,7 +493,7 @@ export function NotificationsButton() {
       })
       .catch(() => {})
       .finally(() => setLoaded(true));
-  }, []);
+  }, [lang]);
 
   // Keeps this button's seen/clicked state in sync with the other
   // NotificationsButton instance (desktop header vs. mobile top bar render
@@ -535,22 +541,22 @@ export function NotificationsButton() {
 
   return (
     <div ref={wrapRef} style={{ position: 'relative' }}>
-      <IconButton label="Notifications" active={open} badge={unclickedCount} badgeUrgent={hasUrgentPending} onClick={togglePopover}>
+      <IconButton label={t('notifications', lang)} active={open} badge={unclickedCount} badgeUrgent={hasUrgentPending} onClick={togglePopover}>
         <Bell size={15} />
       </IconButton>
       {open && (
         <Popover>
           {loaded && items.length > 0 && (
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 10px 4px' }}>
-              <span style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, textTransform: 'uppercase', letterSpacing: 0.5 }}>Notifications</span>
+              <span style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('notifications', lang)}</span>
               <button onClick={handleClearAll} style={{ fontSize: 10, fontWeight: 700, color: C.inkSoft }}>
-                Clear all
+                {t('clearAll', lang)}
               </button>
             </div>
           )}
           <div style={{ overflowY: 'auto', padding: 6, display: 'flex', flexDirection: 'column', gap: 3 }}>
-            {!loaded && <div style={{ padding: '10px 8px', fontSize: 12, color: C.inkSoft }}>Loading…</div>}
-            {loaded && items.length === 0 && <div style={{ padding: '10px 8px', fontSize: 12, color: C.inkSoft }}>All caught up -- no notifications.</div>}
+            {!loaded && <div style={{ padding: '10px 8px', fontSize: 12, color: C.inkSoft }}>{t('loadingEllipsis', lang)}</div>}
+            {loaded && items.length === 0 && <div style={{ padding: '10px 8px', fontSize: 12, color: C.inkSoft }}>{t('allCaughtUp', lang)}</div>}
             {items.map((item) => (
               <NotificationRow
                 key={item.key}
@@ -562,6 +568,7 @@ export function NotificationsButton() {
                 urgent={item.urgent}
                 onClick={() => goTo(item)}
                 onClear={() => handleClear(item.key)}
+                dismissLabel={t('dismissNotification', lang)}
               />
             ))}
           </div>

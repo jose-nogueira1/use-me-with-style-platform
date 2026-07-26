@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { C } from '../../theme';
+import { useApp } from '../../state/AppContext';
 import { adminListCustomers, type ApiCustomer } from '../../lib/api';
 import { PageHeader } from '../components/PageHeader';
+import { t } from '../i18n';
 
 export function Customers() {
+  const { lang } = useApp();
   const [customers, setCustomers] = useState<ApiCustomer[] | null>(null);
   const [error, setError] = useState(false);
 
@@ -16,15 +19,15 @@ export function Customers() {
 
   return (
     <div style={{ paddingBottom: 32 }}>
-      <PageHeader eyebrow="Customers" title="Contact log" subtitle="Lightweight contact and order history -- no full accounts yet (Phase 2)." />
+      <PageHeader eyebrow={t('navCustomers', lang)} title={t('contactLog', lang)} subtitle={t('contactLogSubtitle', lang)} />
 
-      {error && <div style={{ margin: '20px 28px', fontSize: 13, color: '#B95545' }}>Couldn't connect to the backend.</div>}
-      {customers && customers.length === 0 && <div style={{ margin: '20px 28px', fontSize: 13, color: C.inkSoft }}>No customers yet.</div>}
+      {error && <div style={{ margin: '20px 28px', fontSize: 13, color: '#B95545' }}>{t('couldntConnectBackend', lang)}</div>}
+      {customers && customers.length === 0 && <div style={{ margin: '20px 28px', fontSize: 13, color: C.inkSoft }}>{t('noCustomersYet', lang)}</div>}
 
       {customers && customers.length > 0 && (
         <div style={{ padding: '20px 28px 0' }} className="ump-admin-table-wrap">
           <div style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, overflow: 'hidden' }}>
-            <Row header cells={['Name', 'Email', 'Phone', 'Market', 'Orders']} />
+            <Row header cells={[t('tableHeaderName', lang), t('tableHeaderEmail', lang), t('tableHeaderPhone', lang), t('tableHeaderMarket', lang), t('tableHeaderOrdersCount', lang)]} />
             {customers.map((c) => (
               <Link key={c.id} to={`/admin/clientes/${c.id}`} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
                 <Row cells={[c.name, c.email, c.phone ?? '—', c.market, String(c.orderCount)]} />

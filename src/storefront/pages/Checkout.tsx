@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { C, F, t, type Lang } from '../../theme';
+import { C, F, t, pickBilingual, formatKz, type Lang } from '../../theme';
 import { useApp } from '../../state/AppContext';
 import { useProducts } from '../../hooks/useProducts';
 import {
@@ -26,7 +26,12 @@ const SHIPPING_COST = { AO_courier: 0, PT_ctt: 4, PT_courier_pt: 6 } as const;
 
 const DEFAULT_MARKET_SETTINGS: MarketSettings = {
   angolaPaymentLive: false,
-  angolaBankTransferInstructions:
+  // Bilingual fallback (2026-07-26 bilingual audit fix): this used to be a
+  // single English-only string, so Angola's Portuguese-default shoppers saw
+  // English bank-transfer instructions whenever the CMS field was blank.
+  angolaBankTransferInstructionsPT:
+    'As instruções de pagamento Multicaixa Express são enviadas por WhatsApp assim que a encomenda for confirmada.',
+  angolaBankTransferInstructionsEN:
     'Multicaixa Express payment instructions are sent by WhatsApp once the order is confirmed.',
   angolaPaymentMethods: ['multicaixa_express', 'stripe', 'paypal'],
   angolaDeliveryMethods: ['courier_ao'],
@@ -495,7 +500,7 @@ export function Checkout() {
         : SHIPPING_COST.PT_courier_pt;
   const discountAmount = appliedCoupon?.discountAmount ?? 0;
   const total = Math.max(0, subtotal - discountAmount) + shippingCost;
-  const fmt = (n: number) => (market === 'AO' ? `${n.toLocaleString('en-US')} Kz` : `€${n.toFixed(2)}`);
+  const fmt = (n: number) => (market === 'AO' ? `${formatKz(n, lang)} Kz` : `€${n.toFixed(2)}`);
 
   // Angola orders paid via Stripe or PayPal have to actually settle in EUR --
   // neither gateway supports AOA, and Stripe has no Angola merchant accounts
@@ -798,7 +803,7 @@ export function Checkout() {
           ))}
           {paymentMethod === 'multicaixa_express' && !appyPayLive && (
             <div style={{ marginTop: 8, padding: 12, background: C.subtleBg, borderRadius: 6, fontSize: 12, color: C.inkSoft, lineHeight: 1.5 }}>
-              {settings.angolaBankTransferInstructions}
+              {pickBilingual(settings.angolaBankTransferInstructionsPT, settings.angolaBankTransferInstructionsEN, lang)}
             </div>
           )}
         </Section>
@@ -875,6 +880,7 @@ export function Checkout() {
             buildOrderInput={buildOrderInputForPaypal}
             onSuccess={handlePaypalSuccess}
             onError={(message) => setError(message)}
+            lang={lang}
           />
         ) : (
           <button

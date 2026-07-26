@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { Minus, Plus, ShoppingBag, X } from 'lucide-react';
-import { C, F, t } from '../../theme';
+import { C, F, formatKz, t } from '../../theme';
 import { useApp, useFormatPrice } from '../../state/AppContext';
 import { useProducts } from '../../hooks/useProducts';
 import { ProductPhoto } from '../../components/ProductPhoto';
@@ -91,11 +91,11 @@ export function Cart() {
         <div style={{ padding: 16, background: C.subtleBg, border: `1px solid ${C.ruleLight}`, borderRadius: 8 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: C.inkSoft, marginBottom: 8 }}>
             <span>{t('subtotal', lang)}</span>
-            <span>{market === 'AO' ? `${subtotal.toLocaleString('en-US')} Kz` : `€${subtotal.toFixed(2)}`}</span>
+            <span>{market === 'AO' ? `${formatKz(subtotal, lang)} Kz` : `€${subtotal.toFixed(2)}`}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 16, fontWeight: 800, color: C.ink, marginBottom: 16 }}>
             <span>{t('total', lang)}</span>
-            <span>{market === 'AO' ? `${subtotal.toLocaleString('en-US')} Kz` : `€${subtotal.toFixed(2)}`}</span>
+            <span>{market === 'AO' ? `${formatKz(subtotal, lang)} Kz` : `€${subtotal.toFixed(2)}`}</span>
           </div>
           <button
             onClick={() => {

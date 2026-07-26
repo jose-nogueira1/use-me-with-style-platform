@@ -15,12 +15,11 @@ import { Invoices } from './pages/Invoices';
 import { Media } from './pages/Media';
 import { Coupons } from './pages/Coupons';
 import { Roadmap } from './pages/Roadmap';
-import { AdminTranslationBoundary } from './AdminTranslation';
 
 export function AdminRoutes() {
   return (
     <AdminAuthProvider>
-      <AdminTranslationBoundary><Routes>
+      <Routes>
         <Route path="login" element={<Login />} />
         <Route element={<AdminLayout />}>
           <Route index element={<Dashboard />} />
@@ -41,7 +40,7 @@ export function AdminRoutes() {
           ))}
           <Route path="*" element={<Navigate to="/admin" replace />} />
         </Route>
-      </Routes></AdminTranslationBoundary>
+      </Routes>
     </AdminAuthProvider>
   );
 }

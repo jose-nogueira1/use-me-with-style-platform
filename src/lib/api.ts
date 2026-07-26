@@ -359,7 +359,12 @@ export type PublicOrderStatus = Pick<
 
 export type MarketSettings = {
   angolaPaymentLive: boolean;
-  angolaBankTransferInstructions?: string;
+  /** Split PT/EN (2026-07-26 bilingual audit): was a single field, which
+   * meant Checkout.tsx's English-only fallback copy showed to Angola's
+   * Portuguese-default shoppers whenever this was blank. Pick via
+   * pickBilingual(), same as every other bilingual CMS field. */
+  angolaBankTransferInstructionsPT?: string;
+  angolaBankTransferInstructionsEN?: string;
   /** Per-market payment/delivery method lists (2026-07-10 decision). Angola:
    * Multicaixa Express (AppyPay) + Stripe + PayPal (Stripe/PayPal settle in
    * EUR). Portugal: PayPal + Stripe + MB WAY, unchanged. */
@@ -441,7 +446,10 @@ export type ApiCustomer = {
 /** Internal (non-fiscal) invoicing configuration, per market -- admin-only
  * global (added 2026-07-25 for storefront-admin/Payload-admin parity). */
 export type InvoiceSettings = {
-  phaseOneDisclaimer: string;
+  /** Split PT/EN (2026-07-26 bilingual audit): the invoice PDF renderer now
+   * picks by the order's `lang` instead of always rendering Portuguese. */
+  phaseOneDisclaimerPT: string;
+  phaseOneDisclaimerEN: string;
   invoicingEnabledAO: boolean;
   issuerNameAO?: string;
   issuerTaxIdAO?: string;

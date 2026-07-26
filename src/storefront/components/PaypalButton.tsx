@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { publicEnv } from '../../config/env';
 import { createPaypalOrder, capturePaypalOrder, type CreateOrderInput } from '../../lib/api';
+import { t, type Lang } from '../../theme';
 
 // Real PayPal integration (JOS-61) -- hand-rolled SDK loader (no
 // @paypal/react-paypal-js dependency) to match this project's existing
@@ -38,10 +39,12 @@ export function PaypalButton({
   buildOrderInput,
   onSuccess,
   onError,
+  lang,
 }: {
   buildOrderInput: () => CreateOrderInput;
   onSuccess: (orderNumber: string) => void;
   onError: (message: string) => void;
+  lang: Lang;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [ready, setReady] = useState(false);
@@ -76,16 +79,18 @@ export function PaypalButton({
   const buildOrderInputRef = useRef(buildOrderInput);
   const onSuccessRef = useRef(onSuccess);
   const onErrorRef = useRef(onError);
+  const langRef = useRef(lang);
 
   useEffect(() => {
     buildOrderInputRef.current = buildOrderInput;
     onSuccessRef.current = onSuccess;
     onErrorRef.current = onError;
-  }, [buildOrderInput, onSuccess, onError]);
+    langRef.current = lang;
+  }, [buildOrderInput, onSuccess, onError, lang]);
 
   useEffect(() => {
     if (!publicEnv.paypalClientId) {
-      onErrorRef.current('PayPal ainda não está configurado.');
+      onErrorRef.current(t('paypalUnavailable', langRef.current));
       return;
     }
     let cancelled = false;
@@ -93,7 +98,7 @@ export function PaypalButton({
       .then(() => {
         if (!cancelled) setReady(true);
       })
-      .catch(() => onErrorRef.current('Não foi possível carregar o PayPal.'));
+      .catch(() => onErrorRef.current(t('paypalLoadFailed', langRef.current)));
     return () => {
       cancelled = true;
     };
@@ -122,7 +127,7 @@ export function PaypalButton({
             const { paypalOrderId } = await createPaypalOrder(input);
             return paypalOrderId;
           } catch (err) {
-            onErrorRef.current('Não foi possível iniciar o pagamento PayPal.');
+            onErrorRef.current(t('paypalStartFailed', langRef.current));
             throw err;
           }
         },
@@ -132,13 +137,13 @@ export function PaypalButton({
             if (result.status === 'COMPLETED' && result.orderNumber) {
               onSuccessRef.current(result.orderNumber);
             } else {
-              onErrorRef.current('Pagamento não confirmado. Tente novamente.');
+              onErrorRef.current(t('paypalNotConfirmed', langRef.current));
             }
           } catch {
-            onErrorRef.current('Não foi possível confirmar o pagamento PayPal.');
+            onErrorRef.current(t('paypalConfirmFailed', langRef.current));
           }
         },
-        onCancel: () => onErrorRef.current('Pagamento PayPal cancelado.'),
+        onCancel: () => onErrorRef.current(t('paypalCancelled', langRef.current)),
         onError: () => {
           // The SDK calls this on top of createOrder's own rejection --
           // skip it for our own validation failures (see
@@ -147,7 +152,7 @@ export function PaypalButton({
             validationFailedRef.current = false;
             return;
           }
-          onErrorRef.current('Ocorreu um erro no PayPal.');
+          onErrorRef.current(t('paypalGenericError', langRef.current));
         },
       })
       .render(containerRef.current);

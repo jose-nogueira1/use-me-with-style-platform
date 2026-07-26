@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import { Link, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { C } from '../theme';
+import { useApp } from '../state/AppContext';
 import { useAdminAuth } from './AdminAuthContext';
 import { adminListOrders, adminListProducts } from '../lib/api';
 import { BrandLogo } from '../components/BrandLogo';
 import { AdminLanguageSwitch } from './AdminTranslation';
 import { NotificationsButton, SearchButton } from './components/PageHeader';
+import { t } from './i18n';
 
 // Sidebar matches the Figma admin design system exactly: only four
 // persistent nav items (Dashboard, Orders, Products, Settings) appear in
@@ -17,14 +19,15 @@ import { NotificationsButton, SearchButton } from './components/PageHeader';
 // Figma screen of their own, so they're kept as a secondary group beneath a
 // divider rather than promoted into the primary four.
 const SECONDARY_NAV = [
-  { to: '/admin/clientes', label: 'Customers' },
-  { to: '/admin/mensagens', label: 'Messages' },
-  { to: '/admin/faturas', label: 'Invoices' },
-  { to: '/admin/media', label: 'Media' },
-  { to: '/admin/cupoes', label: 'Discounts' },
-];
+  { to: '/admin/clientes', labelKey: 'navCustomers' },
+  { to: '/admin/mensagens', labelKey: 'navMessages' },
+  { to: '/admin/faturas', labelKey: 'navInvoices' },
+  { to: '/admin/media', labelKey: 'navMedia' },
+  { to: '/admin/cupoes', labelKey: 'navDiscounts' },
+] as const;
 
 export function AdminLayout() {
+  const { lang } = useApp();
   const { user, loading, logout } = useAdminAuth();
   const location = useLocation();
   const [ordersCount, setOrdersCount] = useState<number | null>(null);
@@ -70,10 +73,10 @@ export function AdminLayout() {
   }
 
   const primaryNav = [
-    { to: '/admin', label: 'Dashboard', end: true, badge: undefined as number | null | undefined },
-    { to: '/admin/encomendas', label: 'Orders', badge: ordersCount },
-    { to: '/admin/produtos', label: 'Products', badge: productsCount },
-    { to: '/admin/definicoes', label: 'Settings', badge: undefined },
+    { to: '/admin', label: t('navDashboard', lang), end: true, badge: undefined as number | null | undefined },
+    { to: '/admin/encomendas', label: t('navOrders', lang), badge: ordersCount },
+    { to: '/admin/produtos', label: t('navProducts', lang), badge: productsCount },
+    { to: '/admin/definicoes', label: t('navSettings', lang), badge: undefined },
   ];
   const closeNav = () => setNavOpen(false);
 
@@ -94,7 +97,7 @@ export function AdminLayout() {
           <button
             type="button"
             onClick={() => setNavOpen(true)}
-            aria-label="Open menu"
+            aria-label={t('openMenu', lang)}
             aria-expanded={navOpen}
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 42, height: 42, borderRadius: 6, border: `1px solid ${C.rule}`, color: C.ink, background: C.paper }}
           >
@@ -115,7 +118,7 @@ export function AdminLayout() {
         <button
           type="button"
           onClick={closeNav}
-          aria-label="Close menu"
+          aria-label={t('closeMenu', lang)}
           className="ump-admin-drawer-close"
           style={{ display: 'none', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, borderRadius: 8, border: '1px solid #3B332A', color: C.onDarkGold, background: 'transparent', marginLeft: 'auto', marginBottom: 14 }}
         >
@@ -137,10 +140,10 @@ export function AdminLayout() {
 
         <div className="ump-admin-groups" style={{ gap: 6, marginBottom: 'auto' }}>
           <div className="ump-admin-group-label" style={{ fontSize: 9, letterSpacing: 1.5, color: '#6C6656', textTransform: 'uppercase', padding: '4px 11px 2px' }}>
-            More
+            {t('navMore', lang)}
           </div>
           {SECONDARY_NAV.map((item) => (
-            <NavItem key={item.to} to={item.to} label={item.label} onClick={closeNav} />
+            <NavItem key={item.to} to={item.to} label={t(item.labelKey, lang)} onClick={closeNav} />
           ))}
         </div>
 
@@ -154,14 +157,14 @@ export function AdminLayout() {
               marginBottom: 14,
             }}
           >
-            <div style={{ fontSize: 12, fontWeight: 800, color: C.onDarkGold, marginBottom: 6 }}>Phase 1 launch admin</div>
+            <div style={{ fontSize: 12, fontWeight: 800, color: C.onDarkGold, marginBottom: 6 }}>{t('phase1LaunchAdmin', lang)}</div>
             <div style={{ fontSize: 10, color: '#C9C0B5', lineHeight: 1.5 }}>
-              Deferred: AI campaigns, Meta Ads, advanced analytics, roles, full accounts, wishlist, loyalty, and VIP.
+              {t('deferredNote', lang)}
             </div>
           </div>
           <div style={{ fontSize: 11, color: '#BEB8AE', marginBottom: 6, wordBreak: 'break-all' }}>{user.email}</div>
           <button onClick={() => logout()} style={{ fontSize: 11, color: C.onDarkGold, textDecoration: 'underline' }}>
-            Log out
+            {t('logOut', lang)}
           </button>
         </div>
       </div>

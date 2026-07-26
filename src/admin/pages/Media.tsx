@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { C } from '../../theme';
+import { useApp } from '../../state/AppContext';
 import { adminDeleteMedia, adminListMedia, adminUploadMedia, type ApiMedia } from '../../lib/api';
 import { PageHeader } from '../components/PageHeader';
+import { t } from '../i18n';
 
 // Standalone media library -- browse/upload/delete images independent of the
 // per-product upload flow already in ProductEditor. Added 2026-07-25 for
@@ -10,6 +12,7 @@ import { PageHeader } from '../components/PageHeader';
 // decision to add it for Products and Media specifically (low-risk, catalogue
 // cleanup is routine) but not for Orders/Customers/Invoices.
 export function Media() {
+  const { lang } = useApp();
   const [items, setItems] = useState<ApiMedia[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -18,7 +21,7 @@ export function Media() {
   const load = () => {
     adminListMedia()
       .then(setItems)
-      .catch(() => setError("Couldn't connect to the backend."));
+      .catch(() => setError(t('couldntConnectBackend', lang)));
   };
 
   useEffect(load, []);
@@ -31,7 +34,7 @@ export function Media() {
       await adminUploadMedia(file, file.name.replace(/\.[^.]+$/, ''));
       load();
     } catch {
-      setError("Couldn't upload the file.");
+      setError(t('couldntUploadFile', lang));
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -39,29 +42,29 @@ export function Media() {
   };
 
   const handleDelete = async (item: ApiMedia) => {
-    if (!window.confirm(`Delete "${item.alt || item.filename}"? This can't be undone, and it will break any product still using it.`)) return;
+    if (!window.confirm(t('deleteMediaConfirm', lang, { name: item.alt || item.filename || '' }))) return;
     setError(null);
     try {
       await adminDeleteMedia(item.id);
       setItems((prev) => (prev ? prev.filter((m) => m.id !== item.id) : prev));
     } catch {
-      setError("Couldn't delete -- it may still be in use on a product.");
+      setError(t('couldntDeleteInUse', lang));
     }
   };
 
   return (
     <div style={{ paddingBottom: 32 }}>
       <PageHeader
-        eyebrow="Settings / Media"
-        title="Media library"
-        subtitle="Every uploaded image, independent of any single product. Deleting here removes it everywhere it's used."
-        cta={uploading ? 'Uploading…' : 'Upload image'}
+        eyebrow={t('settingsMedia', lang)}
+        title={t('mediaLibraryTitle', lang)}
+        subtitle={t('mediaLibrarySubtitle', lang)}
+        cta={uploading ? t('uploadingEllipsis', lang) : t('uploadImage', lang)}
         onCta={() => fileInputRef.current?.click()}
       />
       <input ref={fileInputRef} type="file" accept="image/*" hidden onChange={(e) => void handleUpload(e.target.files?.[0])} />
 
       {error && <div style={{ margin: '16px 28px 0', fontSize: 13, color: '#B95545' }}>{error}</div>}
-      {items && items.length === 0 && <div style={{ margin: '20px 28px', fontSize: 13, color: C.inkSoft }}>No media yet.</div>}
+      {items && items.length === 0 && <div style={{ margin: '20px 28px', fontSize: 13, color: C.inkSoft }}>{t('noMediaYet', lang)}</div>}
 
       <div style={{ padding: '20px 28px 0', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 14 }} className="ump-admin-media-grid">
         {(items ?? []).map((item) => (
@@ -72,13 +75,13 @@ export function Media() {
               )}
             </div>
             <div style={{ fontSize: 11, fontWeight: 700, color: C.ink, marginTop: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {item.alt || item.filename || 'Untitled'}
+              {item.alt || item.filename || t('untitledMedia', lang)}
             </div>
             <button
               onClick={() => handleDelete(item)}
               style={{ width: '100%', marginTop: 8, padding: '7px 0', fontSize: 10, fontWeight: 800, color: '#B95545', border: '1px solid #E1B3AA', borderRadius: 6, background: 'transparent' }}
             >
-              Delete
+              {t('deleteAction', lang)}
             </button>
           </div>
         ))}

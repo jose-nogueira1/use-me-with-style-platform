@@ -153,6 +153,24 @@ export const T: Record<string, Record<Lang, string>> = {
     pt: 'PayPal indisponível de momento. Escolha outro método.',
     en: 'PayPal is unavailable right now. Please choose another method.',
   },
+  paypalLoadFailed: {
+    pt: 'Não foi possível carregar o PayPal.',
+    en: "Couldn't load PayPal.",
+  },
+  paypalStartFailed: {
+    pt: 'Não foi possível iniciar o pagamento PayPal.',
+    en: "Couldn't start the PayPal payment.",
+  },
+  paypalNotConfirmed: {
+    pt: 'Pagamento não confirmado. Tente novamente.',
+    en: 'Payment not confirmed. Please try again.',
+  },
+  paypalConfirmFailed: {
+    pt: 'Não foi possível confirmar o pagamento PayPal.',
+    en: "Couldn't confirm the PayPal payment.",
+  },
+  paypalCancelled: { pt: 'Pagamento PayPal cancelado.', en: 'PayPal payment cancelled.' },
+  paypalGenericError: { pt: 'Ocorreu um erro no PayPal.', en: 'A PayPal error occurred.' },
   paymentCancelled: { pt: 'Pagamento cancelado. Pode tentar novamente.', en: 'Payment cancelled. You can try again.' },
   couponLabel: { pt: 'Código de desconto', en: 'Discount code' },
   couponPlaceholder: { pt: 'Ex.: VERAO10', en: 'e.g. SUMMER10' },
@@ -176,9 +194,11 @@ export const T: Record<string, Record<Lang, string>> = {
   },
   orderStatus: { pt: 'Estado da encomenda', en: 'Order status' },
   statusReceived: { pt: 'Encomenda recebida', en: 'Order received' },
+  statusPaymentReview: { pt: 'Pagamento em revisão', en: 'Payment under review' },
   statusProcessing: { pt: 'Em processamento', en: 'Processing' },
   statusShipped: { pt: 'Enviada', en: 'Shipped' },
   statusDelivered: { pt: 'Entregue', en: 'Delivered' },
+  statusCancelled: { pt: 'Cancelada', en: 'Cancelled' },
   trackAnotherOrder: { pt: 'Consultar outra encomenda', en: 'Track another order' },
   lookupOrderStatus: { pt: 'Consulte o estado da sua encomenda.', en: 'Look up your order status.' },
   trackOrder: { pt: 'Consultar encomenda', en: 'Track order' },
@@ -314,4 +334,16 @@ export function pickBilingual(pt: string | undefined, en: string | undefined, la
   const enTrimmed = en?.trim();
   const preferred = lang === 'en' ? enTrimmed : ptTrimmed;
   return preferred || enTrimmed || ptTrimmed || null;
+}
+
+// Kz (Angola) amounts have no decimals, so the only thing that varies by
+// locale is the thousands separator ("1.234" vs "1,234"). This was
+// previously hardcoded inconsistently across the storefront -- AppContext's
+// product-price formatters used 'pt-PT' while Cart.tsx/Checkout.tsx used
+// 'en-US' for the exact same Kz values, so the same amount could render with
+// a different separator depending on which page it appeared on, regardless
+// of the shopper's selected language. Drive it off `lang` instead so it's
+// consistent everywhere and actually reflects the bilingual toggle.
+export function formatKz(amount: number, lang: Lang): string {
+  return amount.toLocaleString(lang === 'pt' ? 'pt-PT' : 'en-US');
 }

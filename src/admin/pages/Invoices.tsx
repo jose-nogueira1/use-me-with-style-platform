@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { C } from '../../theme';
+import { useApp } from '../../state/AppContext';
 import { adminInvoicePdfUrl, adminListInvoices, type ApiInvoice } from '../../lib/api';
 import { PageHeader } from '../components/PageHeader';
 import { Badge } from '../components/Badge';
+import { t } from '../i18n';
 
 // Read-only viewer for issued internal (non-fiscal) invoices -- the CMS's
 // Invoices collection is intentionally immutable once generated (see
@@ -12,6 +14,7 @@ import { Badge } from '../components/Badge';
 // 2026-07-25 for storefront-admin/Payload-admin parity; previously this
 // collection had no storefront-admin UI at all.
 export function Invoices() {
+  const { lang } = useApp();
   const [invoices, setInvoices] = useState<ApiInvoice[] | null>(null);
   const [error, setError] = useState(false);
   const [marketFilter, setMarketFilter] = useState<'' | 'AO' | 'PT'>('');
@@ -38,28 +41,40 @@ export function Invoices() {
   return (
     <div style={{ paddingBottom: 32 }}>
       <PageHeader
-        eyebrow="Settings / Invoices"
-        title="Internal invoices"
-        subtitle="Commercial documents for accounting support -- not certified fiscal invoices. Immutable once generated."
+        eyebrow={t('settingsInvoices', lang)}
+        title={t('internalInvoicesTitle', lang)}
+        subtitle={t('internalInvoicesSubtitle', lang)}
       />
 
       <div style={{ padding: '20px 28px 0', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <FilterPill label={`All ${counts.all}`} active={!statusFilter} onClick={() => setStatusFilter('')} />
-        <FilterPill label={`Issued ${counts.issued}`} active={statusFilter === 'issued'} onClick={() => setStatusFilter('issued')} />
-        <FilterPill label={`Failed ${counts.failed}`} active={statusFilter === 'failed'} onClick={() => setStatusFilter('failed')} />
+        <FilterPill label={t('filterAll', lang, { n: counts.all })} active={!statusFilter} onClick={() => setStatusFilter('')} />
+        <FilterPill label={`${t('issuedBadge', lang)} ${counts.issued}`} active={statusFilter === 'issued'} onClick={() => setStatusFilter('issued')} />
+        <FilterPill label={`${t('failedBadge', lang)} ${counts.failed}`} active={statusFilter === 'failed'} onClick={() => setStatusFilter('failed')} />
         <div style={{ width: 1, background: C.ruleLight, margin: '4px 4px' }} />
-        <FilterPill label="Both markets" active={!marketFilter} onClick={() => setMarketFilter('')} />
-        <FilterPill label="Angola" active={marketFilter === 'AO'} onClick={() => setMarketFilter('AO')} />
-        <FilterPill label="Portugal" active={marketFilter === 'PT'} onClick={() => setMarketFilter('PT')} />
+        <FilterPill label={t('bothMarkets', lang)} active={!marketFilter} onClick={() => setMarketFilter('')} />
+        <FilterPill label={t('angolaOption', lang)} active={marketFilter === 'AO'} onClick={() => setMarketFilter('AO')} />
+        <FilterPill label={t('portugalOption', lang)} active={marketFilter === 'PT'} onClick={() => setMarketFilter('PT')} />
       </div>
 
-      {error && <div style={{ margin: '20px 28px', fontSize: 13, color: '#B95545' }}>Couldn't connect to the backend.</div>}
-      {invoices && filtered.length === 0 && !error && <div style={{ margin: '20px 28px', fontSize: 13, color: C.inkSoft }}>No invoices yet.</div>}
+      {error && <div style={{ margin: '20px 28px', fontSize: 13, color: '#B95545' }}>{t('couldntConnectBackend', lang)}</div>}
+      {invoices && filtered.length === 0 && !error && <div style={{ margin: '20px 28px', fontSize: 13, color: C.inkSoft }}>{t('noInvoicesYet', lang)}</div>}
 
       {filtered.length > 0 && (
         <div style={{ padding: '20px 28px 0' }} className="ump-admin-table-wrap">
           <div style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, overflow: 'hidden' }}>
-            <Row header cells={['Invoice #', 'Market', 'Customer', 'Order', 'Status', 'Total', 'Issued', '']} />
+            <Row
+              header
+              cells={[
+                t('tableHeaderInvoiceNumber', lang),
+                t('tableHeaderMarket', lang),
+                t('tableHeaderCustomer', lang),
+                t('tableHeaderOrderShort', lang),
+                t('tableHeaderStatus', lang),
+                t('tableHeaderTotal', lang),
+                t('tableHeaderIssued', lang),
+                '',
+              ]}
+            />
             {filtered.map((inv) => (
               <Row
                 key={inv.id}
@@ -70,7 +85,7 @@ export function Invoices() {
                   <Link key="order" to={`/admin/encomendas/${typeof inv.relatedOrder === 'object' ? inv.relatedOrder.id : inv.relatedOrder}`} style={{ color: C.ink, textDecoration: 'underline' }}>
                     #{inv.orderNumber}
                   </Link>,
-                  <Badge key="status" label={inv.status === 'issued' ? 'Issued' : 'Failed'} tone={inv.status === 'issued' ? 'green' : 'red'} />,
+                  <Badge key="status" label={inv.status === 'issued' ? t('issuedBadge', lang) : t('failedBadge', lang)} tone={inv.status === 'issued' ? 'green' : 'red'} />,
                   `${inv.total.toLocaleString('en-US')} ${inv.currency}`,
                   new Date(inv.issuedAt).toLocaleDateString(),
                   inv.status === 'issued' ? (

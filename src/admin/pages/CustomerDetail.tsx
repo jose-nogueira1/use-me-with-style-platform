@@ -1,15 +1,18 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { C, F } from '../../theme';
+import { useApp } from '../../state/AppContext';
 import { adminGetCustomer, adminListOrdersByEmail, adminUpdateCustomer, type ApiCustomer, type ApiOrder } from '../../lib/api';
 import { PageHeader } from '../components/PageHeader';
 import { Badge, statusBadgeProps } from '../components/Badge';
+import { t } from '../i18n';
 
 // Customer detail/edit + order history -- previously the Customers list was
 // read-only with no detail page at all. Added 2026-07-25 for storefront-
 // admin/Payload-admin parity (Payload admin lets you open and edit any
 // customer document directly).
 export function CustomerDetail() {
+  const { lang } = useApp();
   const { id } = useParams<{ id: string }>();
   const [customer, setCustomer] = useState<ApiCustomer | null>(null);
   const [orders, setOrders] = useState<ApiOrder[] | null>(null);
@@ -27,8 +30,8 @@ export function CustomerDetail() {
         return adminListOrdersByEmail(c.email);
       })
       .then(setOrders)
-      .catch(() => setError("Couldn't load this customer."));
-  }, [id]);
+      .catch(() => setError(t('couldntLoadCustomer', lang)));
+  }, [id, lang]);
 
   const handleSave = async () => {
     if (!customer) return;
@@ -40,7 +43,7 @@ export function CustomerDetail() {
       setCustomer(updated);
       setSaved(true);
     } catch {
-      setError("Couldn't save changes.");
+      setError(t('couldntSaveChanges', lang));
     } finally {
       setSaving(false);
     }
@@ -49,54 +52,54 @@ export function CustomerDetail() {
   if (error) {
     return (
       <div style={{ padding: '32px 28px', fontSize: 13, color: '#B95545' }}>
-        {error} <Link to="/admin/clientes">Back</Link>
+        {error} <Link to="/admin/clientes">{t('backLink', lang)}</Link>
       </div>
     );
   }
 
   if (!customer) {
-    return <div style={{ padding: '32px 28px', fontSize: 13, color: C.inkSoft }}>Loading…</div>;
+    return <div style={{ padding: '32px 28px', fontSize: 13, color: C.inkSoft }}>{t('loadingEllipsis', lang)}</div>;
   }
 
   return (
     <div style={{ paddingBottom: 32 }}>
       <PageHeader
-        eyebrow="Customers"
+        eyebrow={t('navCustomers', lang)}
         title={customer.name}
-        subtitle="Lightweight contact record -- no full accounts yet (Phase 2)."
-        cta={saving ? '…' : 'Save changes'}
+        subtitle={t('contactRecordSubtitle', lang)}
+        cta={saving ? '…' : t('saveChanges', lang)}
         onCta={handleSave}
       />
 
       {error && <div style={{ margin: '16px 28px 0', fontSize: 13, color: '#B95545' }}>{error}</div>}
-      {saved && <div style={{ margin: '16px 28px 0', fontSize: 13, color: '#3F754D' }}>Saved.</div>}
+      {saved && <div style={{ margin: '16px 28px 0', fontSize: 13, color: '#3F754D' }}>{t('savedNotice', lang)}</div>}
 
       <div style={{ padding: '20px 28px 0', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }} className="ump-admin-fields-grid">
-        <EditField label="Name" value={form.name} onChange={(v) => setForm((f) => ({ ...f, name: v }))} />
-        <EditField label="Email" value={form.email} onChange={(v) => setForm((f) => ({ ...f, email: v }))} type="email" />
-        <EditField label="Phone" value={form.phone} onChange={(v) => setForm((f) => ({ ...f, phone: v }))} />
+        <EditField label={t('nameField', lang)} value={form.name} onChange={(v) => setForm((f) => ({ ...f, name: v }))} />
+        <EditField label={t('emailField', lang)} value={form.email} onChange={(v) => setForm((f) => ({ ...f, email: v }))} type="email" />
+        <EditField label={t('phoneField', lang)} value={form.phone} onChange={(v) => setForm((f) => ({ ...f, phone: v }))} />
         <label style={{ display: 'block' }}>
-          <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>Market</div>
+          <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>{t('marketField', lang)}</div>
           <select
             value={form.market}
             onChange={(e) => setForm((f) => ({ ...f, market: e.target.value as 'AO' | 'PT' }))}
             style={{ width: '100%', padding: '11px 10px', fontSize: 12, fontWeight: 700, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, color: C.ink }}
           >
-            <option value="AO">Angola</option>
-            <option value="PT">Portugal</option>
+            <option value="AO">{t('angolaOption', lang)}</option>
+            <option value="PT">{t('portugalOption', lang)}</option>
           </select>
         </label>
       </div>
 
       <div style={{ padding: '24px 28px 0' }}>
-        <div style={{ fontFamily: F.display, fontSize: 18, fontWeight: 800, color: C.ink, marginBottom: 10 }}>Order history</div>
-        {orders === null && <div style={{ fontSize: 12, color: C.inkSoft }}>Loading…</div>}
-        {orders && orders.length === 0 && <div style={{ fontSize: 12, color: C.inkSoft }}>No orders yet.</div>}
+        <div style={{ fontFamily: F.display, fontSize: 18, fontWeight: 800, color: C.ink, marginBottom: 10 }}>{t('orderHistory', lang)}</div>
+        {orders === null && <div style={{ fontSize: 12, color: C.inkSoft }}>{t('loadingEllipsis', lang)}</div>}
+        {orders && orders.length === 0 && <div style={{ fontSize: 12, color: C.inkSoft }}>{t('noOrdersYet', lang)}</div>}
         {orders && orders.length > 0 && (
           <div className="ump-admin-table-wrap">
           <div style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, overflow: 'hidden' }}>
             {orders.map((o) => {
-              const b = statusBadgeProps(o.status);
+              const b = statusBadgeProps(o.status, lang);
               return (
                 <Link
                   key={o.id}

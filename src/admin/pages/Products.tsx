@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { C, F } from '../../theme';
+import { useApp } from '../../state/AppContext';
 import { adminListProducts, productIsLowStock, resolveProductImage, type ApiProduct } from '../../lib/api';
 import { PageHeader } from '../components/PageHeader';
+import { t } from '../i18n';
 
 export function Products() {
+  const { lang } = useApp();
   const [products, setProducts] = useState<ApiProduct[] | null>(null);
   const [filter, setFilter] = useState<'all' | 'active' | 'draft' | 'low' | 'photo'>('all');
   const [error, setError] = useState(false);
@@ -37,28 +40,28 @@ export function Products() {
   return (
     <div style={{ paddingBottom: 32 }}>
       <PageHeader
-        eyebrow="Products"
-        title="Catalogue control"
-        subtitle="Manual product entry, stock by size, prices for both markets, and publish state."
-        cta="Add product"
+        eyebrow={t('navProducts', lang)}
+        title={t('catalogueControl', lang)}
+        subtitle={t('catalogueControlSubtitle', lang)}
+        cta={t('addProduct', lang)}
         onCta={() => navigate('/admin/produtos/novo')}
       />
 
       <div style={{ padding: '20px 28px 0', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <FilterPill label={`All ${counts.all}`} active={filter === 'all'} onClick={() => setFilter('all')} />
-        <FilterPill label={`Active ${counts.active}`} active={filter === 'active'} onClick={() => setFilter('active')} />
-        <FilterPill label={`Draft ${counts.draft}`} active={filter === 'draft'} onClick={() => setFilter('draft')} />
-        <FilterPill label={`Low stock ${counts.low}`} active={filter === 'low'} onClick={() => setFilter('low')} />
-        <FilterPill label={`Photo pending ${counts.photo}`} active={filter === 'photo'} onClick={() => setFilter('photo')} />
+        <FilterPill label={t('filterAll', lang, { n: counts.all })} active={filter === 'all'} onClick={() => setFilter('all')} />
+        <FilterPill label={t('filterActive', lang, { n: counts.active })} active={filter === 'active'} onClick={() => setFilter('active')} />
+        <FilterPill label={t('filterDraft', lang, { n: counts.draft })} active={filter === 'draft'} onClick={() => setFilter('draft')} />
+        <FilterPill label={t('filterLowStock', lang, { n: counts.low })} active={filter === 'low'} onClick={() => setFilter('low')} />
+        <FilterPill label={t('filterPhotoPending', lang, { n: counts.photo })} active={filter === 'photo'} onClick={() => setFilter('photo')} />
       </div>
 
-      {error && <div style={{ margin: '20px 28px', fontSize: 13, color: '#B95545' }}>Couldn't connect to the backend.</div>}
+      {error && <div style={{ margin: '20px 28px', fontSize: 13, color: '#B95545' }}>{t('couldntConnectBackend', lang)}</div>}
 
       <div style={{ padding: '20px 28px 0', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }} className="ump-admin-product-grid">
         {filtered.map((p) => (
           <Link key={p.id} to={`/admin/produtos/${p.id}`} style={{ textDecoration: 'none', display: 'block', background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 16 }}>
             <div style={{ height: 110, borderRadius: 6, background: '#F1EADF', border: `1px solid ${C.rule}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span style={{ fontSize: 10, fontWeight: 800, color: C.goldDeep }}>{hasPhoto(p) ? '' : 'Photo pending'}</span>
+              <span style={{ fontSize: 10, fontWeight: 800, color: C.goldDeep }}>{hasPhoto(p) ? '' : t('photoPending', lang)}</span>
               {hasPhoto(p) && <img src={resolveProductImage(p.images![0].image).url} alt={resolveProductImage(p.images![0].image).alt ?? p.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 6 }} />}
             </div>
             <div style={{ fontFamily: F.display, fontSize: 18, fontWeight: 800, color: C.ink, marginTop: 12 }}>{p.name}</div>

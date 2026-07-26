@@ -18,6 +18,20 @@ const STATUS_LABEL_KEY: Record<(typeof STATUS_STEPS)[number], string> = {
   shipped: 'statusShipped',
   delivered: 'statusDelivered',
 };
+// Covers the full backend order-status enum (see admin's statusBadgeProps in
+// Badge.tsx for the authoritative list) -- STATUS_STEPS/STATUS_LABEL_KEY
+// above only covers the 4 statuses that appear in the timeline, but
+// 'payment_review' and 'cancelled' orders can also be looked up here, and
+// previously fell through to a raw, untranslated `result.status` string
+// (e.g. "payment_review") in the result card below.
+const ALL_STATUS_LABEL_KEY: Record<string, string> = {
+  new: 'statusReceived',
+  payment_review: 'statusPaymentReview',
+  processing: 'statusProcessing',
+  shipped: 'statusShipped',
+  delivered: 'statusDelivered',
+  cancelled: 'statusCancelled',
+};
 
 export function ConfirmationLookup() {
   const { lang, dispatchCart } = useApp();
@@ -181,7 +195,9 @@ export function ConfirmationLookup() {
         {result && result !== 'not_found' && result !== 'service_error' && (
           <div style={{ marginTop: 20, background: C.subtleBg, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 16 }}>
             <div style={{ fontFamily: F.display, fontSize: 16, color: C.ink, fontWeight: 800 }}>{result.orderNumber}</div>
-            <div style={{ fontSize: 11, color: C.goldDeep, fontWeight: 800, marginTop: 4, textTransform: 'uppercase' }}>{result.status}</div>
+            <div style={{ fontSize: 11, color: C.goldDeep, fontWeight: 800, marginTop: 4, textTransform: 'uppercase' }}>
+              {ALL_STATUS_LABEL_KEY[result.status] ? t(ALL_STATUS_LABEL_KEY[result.status], lang) : result.status}
+            </div>
             <div style={{ fontSize: 13, color: C.inkSoft, marginTop: 8 }}>
               {result.total} {result.currency}
             </div>
