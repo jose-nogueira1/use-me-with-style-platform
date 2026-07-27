@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { C } from '../../theme';
 import { useApp } from '../../state/AppContext';
 import { adminListOrders, adminSendMessage, type ApiOrder } from '../../lib/api';
@@ -11,23 +11,75 @@ const STATUSES = ['new', 'payment_review', 'processing', 'shipped', 'delivered',
 
 export function Orders() {
   const { lang } = useApp();
-  const [orders, setOrders] = useState<ApiOrder[] | null>(null);
+  const [allOrders, setAllOrders] = useState<ApiOrder[] | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [selected, setSelected] = useState<ApiOrder | null>(null);
   const [error, setError] = useState(false);
   const [sendingUpdate, setSendingUpdate] = useState(false);
   const [updateNote, setUpdateNote] = useState<string | null>(null);
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Date-range/market drill-down from the Dashboard chart (2026-07-27) --
+  // previously this page only supported a status filter. `from`/`to` are
+  // inclusive calendar-day ISO dates (YYYY-MM-DD); filtering is done
+  // client-side against the already-fetched list, same pattern as the
+  // Dashboard's own today/trend calculations, since adminListOrders has no
+  // date-range param and the store's order volume is well within the
+  // existing limit: 200 fetch.
+  const fromDate = searchParams.get('from');
+  const toDate = searchParams.get('to');
+  const marketFilter = searchParams.get('market');
 
   useEffect(() => {
     adminListOrders(statusFilter ? { status: statusFilter } : {})
       .then((rows) => {
         setError(false);
-        setOrders(rows);
-        setSelected(rows[0] ?? null);
+        setAllOrders(rows);
       })
       .catch(() => setError(true));
   }, [statusFilter]);
+
+  const orders = useMemo(() => {
+    if (!allOrders) return allOrders;
+    let rows = allOrders;
+    if (marketFilter) rows = rows.filter((o) => o.market === marketFilter);
+    if (fromDate && toDate) {
+      const start = new Date(`${fromDate}T00:00:00`);
+      const end = new Date(`${toDate}T23:59:59.999`);
+      rows = rows.filter((o) => {
+        const created = new Date(o.createdAt);
+        return created >= start && created <= end;
+      });
+    }
+    return rows;
+  }, [allOrders, fromDate, toDate, marketFilter]);
+
+  // Adjust state during render (not an effect) when the filtered `orders`
+  // list changes reference -- avoids the cascading-render lint error a
+  // `useEffect` calling setState synchronously would trigger. Same pattern
+  // used in useProducts.ts for the market-cache follow-up (2026-07-27).
+  const [ordersForSelection, setOrdersForSelection] = useState<ApiOrder[] | null>(null);
+  if (orders !== ordersForSelection) {
+    setOrdersForSelection(orders);
+    setSelected(orders?.[0] ?? null);
+  }
+
+  const hasDateOrMarketFilter = Boolean((fromDate && toDate) || marketFilter);
+  const clearDrillDownFilter = () => {
+    const next = new URLSearchParams(searchParams);
+    next.delete('from');
+    next.delete('to');
+    next.delete('market');
+    setSearchParams(next);
+  };
+  const dateRangeLabel = useMemo(() => {
+    if (!fromDate || !toDate) return null;
+    const start = new Date(`${fromDate}T00:00:00`);
+    const end = new Date(`${toDate}T00:00:00`);
+    const fmt = (d: Date) => `${d.getDate()}/${d.getMonth() + 1}`;
+    return fromDate === toDate ? fmt(start) : `${fmt(start)}–${fmt(end)}`;
+  }, [fromDate, toDate]);
 
   const countFor = (status: string) => orders?.filter((o) => (status ? o.status === status : true)).length ?? 0;
 
@@ -65,6 +117,19 @@ export function Orders() {
         onCta={handleWhatsAppUpdate}
       />
       {updateNote && <div style={{ margin: '8px 28px 0', fontSize: 12, color: C.inkSoft }}>{updateNote}</div>}
+
+      {hasDateOrMarketFilter && (
+        <div style={{ margin: '12px 28px 0', display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', background: C.tagBg, border: '1px solid #E8D28D', borderRadius: 8, width: 'fit-content' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: C.goldDeep }}>
+            {dateRangeLabel && t('filteredToRangeLabel', lang, { range: dateRangeLabel })}
+            {dateRangeLabel && marketFilter && ' · '}
+            {marketFilter && t('filteredToMarketLabel', lang, { market: marketFilter === 'AO' ? t('angolaOption', lang) : t('portugalOption', lang) })}
+          </div>
+          <button onClick={clearDrillDownFilter} style={{ fontSize: 11, fontWeight: 800, color: C.goldDeep, textDecoration: 'underline' }}>
+            {t('clearDateFilter', lang)}
+          </button>
+        </div>
+      )}
 
       <div style={{ padding: '20px 28px 0', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <FilterPill label={t('filterAll', lang, { n: orders?.length ?? 0 })} active={!statusFilter} onClick={() => setStatusFilter('')} />

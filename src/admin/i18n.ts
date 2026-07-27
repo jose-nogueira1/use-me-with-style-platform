@@ -138,6 +138,22 @@ export const T: Record<string, Record<Lang, string>> = {
   // instead of one bar that mixed Kz and EUR together.
   revenueTrendAngolaLegend: { en: 'Angola (Kz)', pt: 'Angola (Kz)' },
   revenueTrendPortugalLegend: { en: 'Portugal (EUR)', pt: 'Portugal (EUR)' },
+  // Sales-trend chart interactivity pass (2026-07-27 follow-up) -- range
+  // selector, revenue/orders metric toggle, period-over-period comparison,
+  // and click-through to Orders.
+  ordersTrend: { en: 'Orders trend', pt: 'Evolução das encomendas' },
+  metricRevenueTab: { en: 'Revenue', pt: 'Receita' },
+  metricOrdersTab: { en: 'Orders', pt: 'Encomendas' },
+  lastNDays: { en: 'Last {n} days', pt: 'Últimos {n} dias' },
+  vsPreviousPeriod: { en: 'vs previous period', pt: 'vs período anterior' },
+  newActivityBadge: { en: 'New', pt: 'Novo' },
+  clickBarToViewOrders: { en: 'Click a bar to see those orders', pt: 'Clique numa barra para ver essas encomendas' },
+  ordersCountLegend: { en: 'orders', pt: 'encomendas' },
+  dashAttnQuietMarketTitle: { en: '{market} has had no orders in 2 days', pt: '{market} não tem encomendas há 2 dias' },
+  dashAttnQuietMarketDetail: {
+    en: 'Worth checking whether a payment or delivery option is blocking checkout.',
+    pt: 'Vale a pena verificar se algum método de pagamento ou entrega está a bloquear o checkout.',
+  },
   marketSetup: { en: 'Market setup', pt: 'Configuração dos mercados' },
   portugalPayments: { en: 'Portugal payments', pt: 'Pagamentos em Portugal' },
   portugalPaymentsDetail: { en: 'PayPal, Stripe, MBWay placeholders ready.', pt: 'PayPal, Stripe e MB WAY preparados.' },
@@ -177,6 +193,11 @@ export const T: Record<string, Record<Lang, string>> = {
   },
   filterAll: { en: 'All {n}', pt: 'Todos {n}' },
   noOrdersFound: { en: 'No orders found.', pt: 'Nenhuma encomenda encontrada.' },
+  // Date/market drill-down from the Dashboard chart (2026-07-27) -- Orders
+  // previously only supported a status filter.
+  filteredToRangeLabel: { en: 'Filtered to {range}', pt: 'Filtrado para {range}' },
+  filteredToMarketLabel: { en: '{market} only', pt: 'Apenas {market}' },
+  clearDateFilter: { en: 'Clear', pt: 'Limpar' },
   tableHeaderOrder: { en: 'Order', pt: 'Encomenda' },
   tableHeaderCustomer: { en: 'Customer', pt: 'Cliente' },
   tableHeaderMarket: { en: 'Market', pt: 'Mercado' },

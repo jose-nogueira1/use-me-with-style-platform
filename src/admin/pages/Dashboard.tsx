@@ -52,11 +52,20 @@ function downloadOrdersCsv(rows: ApiOrder[], lang: Lang) {
   URL.revokeObjectURL(url);
 }
 
+function localISODate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 export function Dashboard() {
   const { lang } = useApp();
   const [orders, setOrders] = useState<ApiOrder[] | null>(null);
   const [products, setProducts] = useState<ApiProduct[] | null>(null);
   const [error, setError] = useState(false);
+  const [rangeDays, setRangeDays] = useState<7 | 30 | 90>(7);
+  const [metric, setMetric] = useState<'revenue' | 'orders'>('revenue');
 
   useEffect(() => {
     Promise.all([adminListOrders(), adminListProducts()])
@@ -77,37 +86,120 @@ export function Dashboard() {
   const processingCount = orders?.filter((o) => o.status === 'processing').length ?? 0;
   const lowStockCount = products?.filter((p) => p.variants.some((v) => v.stockAO + v.stockPT <= 2)).length ?? 0;
 
-  const trend = useMemo(() => {
-    const days = [...Array(7)].map((_, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() - (6 - i));
-      return d;
+  // Sales-trend chart (2026-07-27 interactivity pass). Always renders 7
+  // columns regardless of the selected range -- each column is a "bucket"
+  // covering rangeDays/7 days (1 day per bucket at the default 7-day range,
+  // a few days per bucket at 30/90 so the chart stays readable at any
+  // range). Buckets are per-currency AND per-market-count so both the
+  // revenue view (Kz/EUR, each normalized to its own max -- see the
+  // 2026-07-27 currency-split fix below) and the orders view (AO/PT counts,
+  // sharing one scale since counts are directly comparable) can read off
+  // the same underlying data.
+  const chart = useMemo(() => {
+    const bucketCount = 7;
+    const base = Math.floor(rangeDays / bucketCount);
+    const remainder = rangeDays % bucketCount;
+    // Spreads any remainder evenly across the most recent buckets rather
+    // than lumping it into just the first or last one.
+    const sizes = Array.from({ length: bucketCount }, (_, i) => base + (i >= bucketCount - remainder ? 1 : 0));
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const starts: Date[] = new Array(bucketCount);
+    const ends: Date[] = new Array(bucketCount);
+    let cursorEnd = new Date(today);
+    for (let i = bucketCount - 1; i >= 0; i--) {
+      const end = new Date(cursorEnd);
+      const start = new Date(cursorEnd);
+      start.setDate(start.getDate() - (sizes[i] - 1));
+      starts[i] = start;
+      ends[i] = end;
+      cursorEnd = new Date(start);
+      cursorEnd.setDate(cursorEnd.getDate() - 1);
+    }
+
+    const buckets = sizes.map((size, i) => {
+      const start = starts[i];
+      const end = ends[i];
+      const startMs = new Date(start);
+      startMs.setHours(0, 0, 0, 0);
+      const endMs = new Date(end);
+      endMs.setHours(23, 59, 59, 999);
+      const bucketOrders = (orders ?? []).filter((o) => {
+        const c = new Date(o.createdAt);
+        return c >= startMs && c <= endMs;
+      });
+      const kzRevenue = bucketOrders.filter((o) => o.currency === 'Kz').reduce((s, o) => s + o.total, 0);
+      const eurRevenue = bucketOrders.filter((o) => o.currency === 'EUR').reduce((s, o) => s + o.total, 0);
+      const aoCount = bucketOrders.filter((o) => o.market === 'AO').length;
+      const ptCount = bucketOrders.filter((o) => o.market === 'PT').length;
+      const label = size === 1 ? DAY_LABELS[start.getDay()] : `${start.getDate()}/${start.getMonth() + 1}–${end.getDate()}/${end.getMonth() + 1}`;
+      return { label, fromISO: localISODate(start), toISO: localISODate(end), kzRevenue, eurRevenue, aoCount, ptCount };
     });
-    // Kept as two separate per-currency series (2026-07-27 chart fix) --
-    // Angola orders settle in Kz and Portugal orders in EUR, so summing raw
-    // `.total` across both (the previous behavior) mixed units into a
-    // number with no real meaning on any day both markets had orders. Each
-    // series is normalized against its own 7-day max, not a shared one --
-    // Kz and EUR values differ by roughly two orders of magnitude, so a
-    // shared scale would make the EUR bars look perpetually flat even on a
-    // good day for Portugal.
-    const kzTotals = days.map((d) =>
-      (orders ?? [])
-        .filter((o) => o.currency === 'Kz' && new Date(o.createdAt).toDateString() === d.toDateString())
-        .reduce((s, o) => s + o.total, 0),
-    );
-    const eurTotals = days.map((d) =>
-      (orders ?? [])
-        .filter((o) => o.currency === 'EUR' && new Date(o.createdAt).toDateString() === d.toDateString())
-        .reduce((s, o) => s + o.total, 0),
-    );
-    const kzMax = Math.max(1, ...kzTotals);
-    const eurMax = Math.max(1, ...eurTotals);
-    return days.map((d, i) => ({
-      label: DAY_LABELS[d.getDay()],
-      kz: { value: kzTotals[i], pct: kzTotals[i] / kzMax },
-      eur: { value: eurTotals[i], pct: eurTotals[i] / eurMax },
+
+    const kzMax = Math.max(1, ...buckets.map((b) => b.kzRevenue));
+    const eurMax = Math.max(1, ...buckets.map((b) => b.eurRevenue));
+    const countMax = Math.max(1, ...buckets.map((b) => Math.max(b.aoCount, b.ptCount)));
+    const withPct = buckets.map((b) => ({
+      ...b,
+      kzPct: b.kzRevenue / kzMax,
+      eurPct: b.eurRevenue / eurMax,
+      aoCountPct: b.aoCount / countMax,
+      ptCountPct: b.ptCount / countMax,
     }));
+
+    // Period-over-period comparison: the rangeDays immediately preceding
+    // the current window, same length, so "+18%" means something concrete.
+    const earliestStart = starts[0];
+    const prevEnd = new Date(earliestStart);
+    prevEnd.setDate(prevEnd.getDate() - 1);
+    prevEnd.setHours(23, 59, 59, 999);
+    const prevStart = new Date(prevEnd);
+    prevStart.setDate(prevStart.getDate() - (rangeDays - 1));
+    prevStart.setHours(0, 0, 0, 0);
+    const prevOrders = (orders ?? []).filter((o) => {
+      const c = new Date(o.createdAt);
+      return c >= prevStart && c <= prevEnd;
+    });
+    const currentTotals = {
+      kz: withPct.reduce((s, b) => s + b.kzRevenue, 0),
+      eur: withPct.reduce((s, b) => s + b.eurRevenue, 0),
+      ao: withPct.reduce((s, b) => s + b.aoCount, 0),
+      pt: withPct.reduce((s, b) => s + b.ptCount, 0),
+    };
+    const prevTotals = {
+      kz: prevOrders.filter((o) => o.currency === 'Kz').reduce((s, o) => s + o.total, 0),
+      eur: prevOrders.filter((o) => o.currency === 'EUR').reduce((s, o) => s + o.total, 0),
+      ao: prevOrders.filter((o) => o.market === 'AO').length,
+      pt: prevOrders.filter((o) => o.market === 'PT').length,
+    };
+    const delta = (curr: number, prev: number): { pct: number | null; isNew: boolean } =>
+      prev === 0 ? { pct: null, isNew: curr > 0 } : { pct: Math.round(((curr - prev) / prev) * 100), isNew: false };
+
+    return {
+      buckets: withPct,
+      deltas: {
+        kz: delta(currentTotals.kz, prevTotals.kz),
+        eur: delta(currentTotals.eur, prevTotals.eur),
+        ao: delta(currentTotals.ao, prevTotals.ao),
+        pt: delta(currentTotals.pt, prevTotals.pt),
+      },
+    };
+  }, [orders, rangeDays]);
+
+  // "No orders in 2 days" attention-queue alert -- independent of the chart
+  // controls above (always checks the last 2 full calendar days, i.e.
+  // yesterday and the day before, since today is still in progress and
+  // showing 0 there isn't yet meaningful).
+  const quietMarkets = useMemo(() => {
+    const checkDates = [1, 2].map((n) => {
+      const d = new Date();
+      d.setDate(d.getDate() - n);
+      return d.toDateString();
+    });
+    return (['AO', 'PT'] as const).filter(
+      (m) => !checkDates.some((ds) => (orders ?? []).some((o) => o.market === m && new Date(o.createdAt).toDateString() === ds)),
+    );
   }, [orders]);
 
   const attentionItems = [
@@ -122,6 +214,14 @@ export function Dashboard() {
         priority: C.gold,
         to: `/admin/encomendas/${o.id}`,
       })),
+    ...quietMarkets.map((m) => ({
+      title: t('dashAttnQuietMarketTitle', lang, { market: m === 'AO' ? t('angolaOption', lang) : t('portugalOption', lang) }),
+      detail: t('dashAttnQuietMarketDetail', lang),
+      badge: t('openBadge', lang),
+      tone: 'gold' as const,
+      priority: C.gold,
+      to: `/admin/encomendas?market=${m}`,
+    })),
     ...(products ?? [])
       .filter((p) => p.variants.some((v) => v.stockAO + v.stockPT === 0))
       .slice(0, 2)
@@ -209,46 +309,124 @@ export function Dashboard() {
 
       <div style={{ padding: '16px 28px 0', display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: 16 }} className="ump-admin-dashboard-grid">
         <div style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 18, minWidth: 0 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>
-            <div style={{ fontFamily: F.display, fontSize: 19, fontWeight: 800, color: C.ink }}>{t('revenueTrend', lang)}</div>
-            <div style={{ fontSize: 10, fontWeight: 800, color: C.inkSoft }}>{t('last7Days', lang)}</div>
-          </div>
-          <div style={{ display: 'flex', gap: 14, marginBottom: 16 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <div style={{ width: 8, height: 8, borderRadius: 2, background: C.gold }} />
-              <div style={{ fontSize: 10, fontWeight: 700, color: C.inkSoft }}>{t('revenueTrendAngolaLegend', lang)}</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
+            <div style={{ fontFamily: F.display, fontSize: 19, fontWeight: 800, color: C.ink }}>
+              {t(metric === 'revenue' ? 'revenueTrend' : 'ordersTrend', lang)}
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <div style={{ width: 8, height: 8, borderRadius: 2, background: C.blue }} />
-              <div style={{ fontSize: 10, fontWeight: 700, color: C.inkSoft }}>{t('revenueTrendPortugalLegend', lang)}</div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {([7, 30, 90] as const).map((n) => (
+                <button
+                  key={n}
+                  onClick={() => setRangeDays(n)}
+                  style={{
+                    padding: '5px 10px',
+                    fontSize: 10,
+                    fontWeight: 800,
+                    borderRadius: 6,
+                    border: `1px solid ${rangeDays === n ? C.black : C.rule}`,
+                    background: rangeDays === n ? C.black : C.paper,
+                    color: rangeDays === n ? C.onDarkGold : C.inkSoft,
+                  }}
+                >
+                  {n}d
+                </button>
+              ))}
             </div>
           </div>
+
+          <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
+            <button
+              onClick={() => setMetric('revenue')}
+              style={{
+                padding: '6px 12px',
+                fontSize: 10.5,
+                fontWeight: 800,
+                borderRadius: 6,
+                border: `1px solid ${metric === 'revenue' ? C.goldDeep : C.rule}`,
+                background: metric === 'revenue' ? C.tagBg : C.paper,
+                color: metric === 'revenue' ? C.goldDeep : C.inkSoft,
+              }}
+            >
+              {t('metricRevenueTab', lang)}
+            </button>
+            <button
+              onClick={() => setMetric('orders')}
+              style={{
+                padding: '6px 12px',
+                fontSize: 10.5,
+                fontWeight: 800,
+                borderRadius: 6,
+                border: `1px solid ${metric === 'orders' ? C.goldDeep : C.rule}`,
+                background: metric === 'orders' ? C.tagBg : C.paper,
+                color: metric === 'orders' ? C.goldDeep : C.inkSoft,
+              }}
+            >
+              {t('metricOrdersTab', lang)}
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', gap: 20, marginBottom: 16, flexWrap: 'wrap' }}>
+            <LegendWithDelta
+              color={C.gold}
+              label={metric === 'revenue' ? t('revenueTrendAngolaLegend', lang) : t('angolaOption', lang)}
+              delta={metric === 'revenue' ? chart.deltas.kz : chart.deltas.ao}
+              lang={lang}
+            />
+            <LegendWithDelta
+              color={C.blue}
+              label={metric === 'revenue' ? t('revenueTrendPortugalLegend', lang) : t('portugalOption', lang)}
+              delta={metric === 'revenue' ? chart.deltas.eur : chart.deltas.pt}
+              lang={lang}
+            />
+          </div>
+
           <div style={{ display: 'flex', gap: 10 }}>
-            {trend.map((d, i) => (
-              <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+            {chart.buckets.map((b, i) => (
+              // Clicking a bucket jumps to Orders pre-filtered to that exact
+              // date range (2026-07-27 interactivity pass) -- previously
+              // this chart was just a static picture with no way to drill
+              // into what it was showing.
+              <Link
+                key={i}
+                to={`/admin/encomendas?from=${b.fromISO}&to=${b.toISO}`}
+                style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, textDecoration: 'none' }}
+              >
                 {/* Fixed-height track so each bar's percentage height has a
                     real (non-auto) parent to resolve against -- previously
                     this container had no explicit height (the flex row's
                     alignItems: 'flex-end' let it shrink-wrap instead of
                     stretching to the row's height), so height: X% always
-                    collapsed to 0 per how CSS percentage heights work.
-                    Two bars per day now (Angola/Kz + Portugal/EUR, see the
-                    trend useMemo above) instead of one bar mixing both
-                    currencies' raw totals together. */}
+                    collapsed to 0 per how CSS percentage heights work. */}
                 <div style={{ width: '100%', height: 140, display: 'flex', alignItems: 'flex-end', gap: 4 }}>
-                  <div
-                    title={`${d.kz.value.toLocaleString('en-US')} Kz`}
-                    style={{ flex: 1, height: `${Math.max(6, d.kz.pct * 100)}%`, borderRadius: 5, background: C.gold }}
-                  />
-                  <div
-                    title={`€${d.eur.value.toLocaleString('en-US')}`}
-                    style={{ flex: 1, height: `${Math.max(6, d.eur.pct * 100)}%`, borderRadius: 5, background: C.blue }}
-                  />
+                  {metric === 'revenue' ? (
+                    <>
+                      <div
+                        title={`${b.kzRevenue.toLocaleString('en-US')} Kz`}
+                        style={{ flex: 1, height: `${Math.max(6, b.kzPct * 100)}%`, borderRadius: 5, background: C.gold }}
+                      />
+                      <div
+                        title={`€${b.eurRevenue.toLocaleString('en-US')}`}
+                        style={{ flex: 1, height: `${Math.max(6, b.eurPct * 100)}%`, borderRadius: 5, background: C.blue }}
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <div
+                        title={`${b.aoCount} ${t('ordersCountLegend', lang)}`}
+                        style={{ flex: 1, height: `${Math.max(6, b.aoCountPct * 100)}%`, borderRadius: 5, background: C.gold }}
+                      />
+                      <div
+                        title={`${b.ptCount} ${t('ordersCountLegend', lang)}`}
+                        style={{ flex: 1, height: `${Math.max(6, b.ptCountPct * 100)}%`, borderRadius: 5, background: C.blue }}
+                      />
+                    </>
+                  )}
                 </div>
-                <div style={{ fontSize: 9, fontWeight: 800, color: C.inkSoft }}>{d.label}</div>
-              </div>
+                <div style={{ fontSize: 9, fontWeight: 800, color: C.inkSoft, textAlign: 'center' }}>{b.label}</div>
+              </Link>
             ))}
           </div>
+          <div style={{ fontSize: 9, color: C.inkSoft, marginTop: 10 }}>{t('clickBarToViewOrders', lang)}</div>
         </div>
 
         <div style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 18, minWidth: 0 }}>
@@ -258,6 +436,35 @@ export function Dashboard() {
           <SetupRow title={t('messagingAutomation', lang)} detail={t('messagingAutomationDetail', lang)} badge={t('readyBadge', lang)} tone="blue" last />
         </div>
       </div>
+    </div>
+  );
+}
+
+function LegendWithDelta({
+  color,
+  label,
+  delta,
+  lang,
+}: {
+  color: string;
+  label: string;
+  delta: { pct: number | null; isNew: boolean };
+  lang: Lang;
+}) {
+  let deltaText: string | null = null;
+  let deltaColor = C.inkSoft;
+  if (delta.isNew) {
+    deltaText = t('newActivityBadge', lang);
+    deltaColor = C.successText;
+  } else if (delta.pct !== null) {
+    deltaText = `${delta.pct > 0 ? '+' : ''}${delta.pct}% ${t('vsPreviousPeriod', lang)}`;
+    deltaColor = delta.pct > 0 ? C.successText : delta.pct < 0 ? '#B95545' : C.inkSoft;
+  }
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+      <div style={{ width: 8, height: 8, borderRadius: 2, background: color, flexShrink: 0 }} />
+      <div style={{ fontSize: 10, fontWeight: 700, color: C.inkSoft }}>{label}</div>
+      {deltaText && <div style={{ fontSize: 10, fontWeight: 700, color: deltaColor }}>· {deltaText}</div>}
     </div>
   );
 }
