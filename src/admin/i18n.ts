@@ -133,6 +133,11 @@ export const T: Record<string, Record<Lang, string>> = {
   recentOrders: { en: 'Recent orders', pt: 'Encomendas recentes' },
   revenueTrend: { en: 'Revenue trend', pt: 'Evolução da receita' },
   last7Days: { en: 'Last 7 days', pt: 'Últimos 7 dias' },
+  // Revenue trend chart legend (2026-07-27 currency-split fix) -- Angola
+  // and Portugal totals are shown as two separate per-currency bars now,
+  // instead of one bar that mixed Kz and EUR together.
+  revenueTrendAngolaLegend: { en: 'Angola (Kz)', pt: 'Angola (Kz)' },
+  revenueTrendPortugalLegend: { en: 'Portugal (EUR)', pt: 'Portugal (EUR)' },
   marketSetup: { en: 'Market setup', pt: 'Configuração dos mercados' },
   portugalPayments: { en: 'Portugal payments', pt: 'Pagamentos em Portugal' },
   portugalPaymentsDetail: { en: 'PayPal, Stripe, MBWay placeholders ready.', pt: 'PayPal, Stripe e MB WAY preparados.' },

@@ -83,11 +83,31 @@ export function Dashboard() {
       d.setDate(d.getDate() - (6 - i));
       return d;
     });
-    const totals = days.map((d) =>
-      (orders ?? []).filter((o) => new Date(o.createdAt).toDateString() === d.toDateString()).reduce((s, o) => s + o.total, 0),
+    // Kept as two separate per-currency series (2026-07-27 chart fix) --
+    // Angola orders settle in Kz and Portugal orders in EUR, so summing raw
+    // `.total` across both (the previous behavior) mixed units into a
+    // number with no real meaning on any day both markets had orders. Each
+    // series is normalized against its own 7-day max, not a shared one --
+    // Kz and EUR values differ by roughly two orders of magnitude, so a
+    // shared scale would make the EUR bars look perpetually flat even on a
+    // good day for Portugal.
+    const kzTotals = days.map((d) =>
+      (orders ?? [])
+        .filter((o) => o.currency === 'Kz' && new Date(o.createdAt).toDateString() === d.toDateString())
+        .reduce((s, o) => s + o.total, 0),
     );
-    const max = Math.max(1, ...totals);
-    return days.map((d, i) => ({ label: DAY_LABELS[d.getDay()], value: totals[i], pct: totals[i] / max }));
+    const eurTotals = days.map((d) =>
+      (orders ?? [])
+        .filter((o) => o.currency === 'EUR' && new Date(o.createdAt).toDateString() === d.toDateString())
+        .reduce((s, o) => s + o.total, 0),
+    );
+    const kzMax = Math.max(1, ...kzTotals);
+    const eurMax = Math.max(1, ...eurTotals);
+    return days.map((d, i) => ({
+      label: DAY_LABELS[d.getDay()],
+      kz: { value: kzTotals[i], pct: kzTotals[i] / kzMax },
+      eur: { value: eurTotals[i], pct: eurTotals[i] / eurMax },
+    }));
   }, [orders]);
 
   const attentionItems = [
@@ -189,21 +209,41 @@ export function Dashboard() {
 
       <div style={{ padding: '16px 28px 0', display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: 16 }} className="ump-admin-dashboard-grid">
         <div style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 18, minWidth: 0 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>
             <div style={{ fontFamily: F.display, fontSize: 19, fontWeight: 800, color: C.ink }}>{t('revenueTrend', lang)}</div>
             <div style={{ fontSize: 10, fontWeight: 800, color: C.inkSoft }}>{t('last7Days', lang)}</div>
+          </div>
+          <div style={{ display: 'flex', gap: 14, marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ width: 8, height: 8, borderRadius: 2, background: C.gold }} />
+              <div style={{ fontSize: 10, fontWeight: 700, color: C.inkSoft }}>{t('revenueTrendAngolaLegend', lang)}</div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ width: 8, height: 8, borderRadius: 2, background: C.blue }} />
+              <div style={{ fontSize: 10, fontWeight: 700, color: C.inkSoft }}>{t('revenueTrendPortugalLegend', lang)}</div>
+            </div>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
             {trend.map((d, i) => (
               <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-                {/* Fixed-height track so the bar's percentage height has a
+                {/* Fixed-height track so each bar's percentage height has a
                     real (non-auto) parent to resolve against -- previously
                     this container had no explicit height (the flex row's
                     alignItems: 'flex-end' let it shrink-wrap instead of
                     stretching to the row's height), so height: X% always
-                    collapsed to 0 per how CSS percentage heights work. */}
-                <div style={{ width: '100%', height: 140, display: 'flex', alignItems: 'flex-end' }}>
-                  <div style={{ width: '100%', height: `${Math.max(6, d.pct * 100)}%`, borderRadius: 5, background: i === trend.length - 1 ? C.gold : C.ruleLight }} />
+                    collapsed to 0 per how CSS percentage heights work.
+                    Two bars per day now (Angola/Kz + Portugal/EUR, see the
+                    trend useMemo above) instead of one bar mixing both
+                    currencies' raw totals together. */}
+                <div style={{ width: '100%', height: 140, display: 'flex', alignItems: 'flex-end', gap: 4 }}>
+                  <div
+                    title={`${d.kz.value.toLocaleString('en-US')} Kz`}
+                    style={{ flex: 1, height: `${Math.max(6, d.kz.pct * 100)}%`, borderRadius: 5, background: C.gold }}
+                  />
+                  <div
+                    title={`€${d.eur.value.toLocaleString('en-US')}`}
+                    style={{ flex: 1, height: `${Math.max(6, d.eur.pct * 100)}%`, borderRadius: 5, background: C.blue }}
+                  />
                 </div>
                 <div style={{ fontSize: 9, fontWeight: 800, color: C.inkSoft }}>{d.label}</div>
               </div>
