@@ -459,20 +459,20 @@ export function Checkout() {
   // A coupon's discountAmount is resolved in whichever currency the
   // settlement actually happens in (see eurSubtotal/settlementSubtotal
   // below) -- switching payment method can change that currency (AO
-  // Multicaixa is Kz, but AO Stripe/PayPal settle in EUR), so a previously
-  // applied code is cleared rather than silently carrying a stale amount.
-  useEffect(() => {
-    // Resetting coupon state in response to a payment-method change, not
-    // synchronizing with an external system -- same accepted pattern as the
-    // market/settings reset effect above.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setAppliedCoupon(null);
-    setCouponError(null);
-  }, [paymentMethod]);
-
-  if (cart.length === 0) {
-    return <Navigate to="/carrinho" replace />;
-  }
+  // Multicaixa is Kz, but AO Stripe/PayPal settle in EUR). This used to just
+  // wipe an already-applied coupon outright and leave the shopper to notice
+  // and reapply it -- confirmed during the 2026-07-26 QA pass that a real
+  // order went through at full price because nobody noticed the silent
+  // reset. See the revalidation effect below (after eurSubtotal is
+  // computed), which replaces this: it re-checks the same code against the
+  // new settlement context instead of just dropping it.
+  //
+  // Hooks must run in the same order on every render, so the values this
+  // effect needs (subtotal/eurSubtotal/usesEurSettlement) are computed here,
+  // above the "cart is empty" early return below, instead of in their
+  // original spot after it -- they're plain derived data (no hooks inside),
+  // so moving them earlier is safe and keeps every useEffect/useState call
+  // unconditional.
 
   // Displayed to the shopper -- always Kz in Angola, regardless of which
   // payment method ends up handling the actual charge.
@@ -499,8 +499,6 @@ export function Checkout() {
         ? SHIPPING_COST.PT_ctt
         : SHIPPING_COST.PT_courier_pt;
   const discountAmount = appliedCoupon?.discountAmount ?? 0;
-  const total = Math.max(0, subtotal - discountAmount) + shippingCost;
-  const fmt = (n: number) => (market === 'AO' ? `${formatKz(n, lang)} Kz` : `€${n.toFixed(2)}`);
 
   // Angola orders paid via Stripe or PayPal have to actually settle in EUR --
   // neither gateway supports AOA, and Stripe has no Angola merchant accounts
@@ -532,6 +530,83 @@ export function Checkout() {
     })
     .filter((i): i is NonNullable<typeof i> => i !== null);
   const eurSubtotal = eurItems.reduce((sum, i) => sum + i.unitPrice * i.qty, 0);
+  const settlementSubtotal = usesEurSettlement ? eurSubtotal : subtotal;
+
+  // The order summary/total and "Pay Now" amount must always be computed
+  // and displayed in whichever currency actually settles -- previously this
+  // subtracted a EUR-denominated discountAmount (see the coupon-revalidation
+  // effect above) from the always-Kz `subtotal`, producing a total that
+  // silently mixed units (e.g. "-2.3 Kz" instead of "-1,950 Kz", confirmed
+  // during the 2026-07-26 QA pass). shippingCost is already 0 for every
+  // Angola order regardless of payment method, so this only changes
+  // behaviour for the usesEurSettlement case. This also now matches
+  // buildOrderInput's own EUR-branch total exactly, instead of computing an
+  // independent (and previously inconsistent) display value.
+  const total = Math.max(0, settlementSubtotal - discountAmount) + shippingCost;
+  const fmt = (n: number) => (market === 'PT' || usesEurSettlement ? `€${n.toFixed(2)}` : `${formatKz(n, lang)} Kz`);
+
+  // Re-check (never silently drop) an already-applied coupon whenever the
+  // payment or delivery method changes. Re-runs handleApplyCoupon's same
+  // validateCoupon() call against the settlement context for the render
+  // this effect fires from -- settlementSubtotal/usesEurSettlement above are
+  // recomputed from paymentMethod/deliveryMethod on every render already, so
+  // reading them via closure here is always current. If the code is still
+  // valid, the (possibly different) discount amount replaces the old one
+  // silently; if it's no longer valid, it's cleared with a visible message
+  // instead of the previous silent reset, so the shopper always knows why
+  // their total changed. Deliberately excludes appliedCoupon/subtotal/
+  // eurSubtotal/form.email from deps: this only needs to re-run when the
+  // *method* changes -- including them would either loop (this effect sets
+  // appliedCoupon) or re-fire on unrelated field edits.
+  useEffect(() => {
+    const code = appliedCoupon?.code;
+    if (!code) return;
+
+    let cancelled = false;
+    // Synchronous setState in an effect body, same accepted pattern as the
+    // other effects in this component (see the market/settings reset effect
+    // above) -- this is reacting to a payment/delivery-method change, not
+    // synchronizing with an external system on mount.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setCouponChecking(true);
+    setCouponError(null);
+
+    validateCoupon({
+      code,
+      market,
+      usesEurSettlement,
+      subtotal: settlementSubtotal,
+      customerEmail: form.email || undefined,
+    })
+      .then((result) => {
+        if (cancelled) return;
+        if (result.valid) {
+          setAppliedCoupon({ code: result.code, discountAmount: result.discountAmount, label: result.label });
+        } else {
+          setAppliedCoupon(null);
+          setCouponInput(code);
+          setCouponError(t('couponRemovedOnMethodChange', lang));
+        }
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setAppliedCoupon(null);
+        setCouponInput(code);
+        setCouponError(t('couponRemovedOnMethodChange', lang));
+      })
+      .finally(() => {
+        if (!cancelled) setCouponChecking(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paymentMethod, deliveryMethod]);
+
+  if (cart.length === 0) {
+    return <Navigate to="/carrinho" replace />;
+  }
 
   // Combined phone number sent to the CMS and to the AppyPay widget (which
   // strips non-digits itself) -- the country-code dropdown and the local
@@ -603,7 +678,6 @@ export function Checkout() {
     setCouponChecking(true);
     setCouponError(null);
     try {
-      const settlementSubtotal = usesEurSettlement ? eurSubtotal : subtotal;
       const result = await validateCoupon({
         code,
         market,
@@ -629,6 +703,19 @@ export function Checkout() {
     setAppliedCoupon(null);
     setCouponInput('');
     setCouponError(null);
+  };
+
+  // The error banner (e.g. "Card payment is unavailable right now" from a
+  // failed Stripe attempt, or a PayPal onError callback) belongs to whichever
+  // payment method was selected when it was set. Left alone, it stayed on
+  // screen after switching to a different, working method -- confirmed
+  // during the 2026-07-26 QA pass, where a stale Stripe error kept showing
+  // while MB WAY was selected and about to succeed. Only clears on an actual
+  // change (not a re-click of the already-selected method), so a
+  // still-relevant error for the current method isn't dismissed by accident.
+  const handleSelectPaymentMethod = (method: string) => {
+    if (method !== paymentMethod) setError(null);
+    setPaymentMethod(method);
   };
 
   const validateRequiredFields = (): boolean => {
@@ -799,7 +886,7 @@ export function Checkout() {
 
         <Section title={t('payment', lang)}>
           {paymentOptions.map((opt) => (
-            <RadioRow key={opt} name="payment" value={opt} checked={paymentMethod === opt} onSelect={() => setPaymentMethod(opt)} label={PAYMENT_LABEL_KEYS[opt] ? t(PAYMENT_LABEL_KEYS[opt], lang) : opt} />
+            <RadioRow key={opt} name="payment" value={opt} checked={paymentMethod === opt} onSelect={() => handleSelectPaymentMethod(opt)} label={PAYMENT_LABEL_KEYS[opt] ? t(PAYMENT_LABEL_KEYS[opt], lang) : opt} />
           ))}
           {paymentMethod === 'multicaixa_express' && !appyPayLive && (
             <div style={{ marginTop: 8, padding: 12, background: C.subtleBg, borderRadius: 6, fontSize: 12, color: C.inkSoft, lineHeight: 1.5 }}>
@@ -812,7 +899,7 @@ export function Checkout() {
       <div className="ump-checkout-summary" style={{ padding: '0 20px' }}>
         <div style={{ marginBottom: 12 }}>
           {appliedCoupon ? (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '10px 12px', background: C.tagBg, border: `1px solid ${C.gold}`, borderRadius: 6 }}>
+            <div data-testid="applied-coupon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '10px 12px', background: C.tagBg, border: `1px solid ${C.gold}`, borderRadius: 6 }}>
               <div style={{ fontSize: 12, color: C.ink }}>
                 <span style={{ fontWeight: 800 }}>{appliedCoupon.code}</span> — {t('couponApplied', lang)}
               </div>
@@ -840,15 +927,21 @@ export function Checkout() {
               </button>
             </div>
           )}
-          {couponError && <div style={{ marginTop: 6, fontSize: 11, color: '#B95545' }}>{couponError}</div>}
+          {couponError && <div data-testid="coupon-error" style={{ marginTop: 6, fontSize: 11, color: '#B95545' }}>{couponError}</div>}
         </div>
 
+        {usesEurSettlement && (
+          <div data-testid="eur-settlement-notice" style={{ marginBottom: 12, padding: '10px 12px', background: C.subtleBg, border: `1px solid ${C.ruleLight}`, borderRadius: 6, fontSize: 11, color: C.inkSoft, lineHeight: 1.5 }}>
+            {t('eurSettlementNotice', lang)}
+          </div>
+        )}
+
         <div style={{ background: C.subtleBg, borderRadius: 8, padding: 16, border: `1px solid ${C.ruleLight}` }}>
-          <Row label={t('subtotal', lang)} value={fmt(subtotal)} />
-          {discountAmount > 0 && <Row label={appliedCoupon?.label || t('discount', lang)} value={`-${fmt(discountAmount)}`} />}
-          <Row label={t('shipping', lang)} value={shippingCost === 0 ? t('free', lang) : fmt(shippingCost)} />
+          <Row testId="checkout-subtotal" label={t('subtotal', lang)} value={fmt(settlementSubtotal)} />
+          {discountAmount > 0 && <Row testId="checkout-discount" label={appliedCoupon?.label || t('discount', lang)} value={`-${fmt(discountAmount)}`} />}
+          <Row testId="checkout-shipping" label={t('shipping', lang)} value={shippingCost === 0 ? t('free', lang) : fmt(shippingCost)} />
           <div style={{ borderTop: `1px solid ${C.rule}`, marginTop: 8, paddingTop: 8 }}>
-            <Row label={t('total', lang)} value={fmt(total)} bold />
+            <Row testId="checkout-total" label={t('total', lang)} value={fmt(total)} bold />
           </div>
         </div>
 
@@ -1182,9 +1275,9 @@ function RadioRow({ checked, onSelect, label, name, value }: { checked: boolean;
   );
 }
 
-function Row({ label, value, bold = false }: { label: string; value: string; bold?: boolean }) {
+function Row({ label, value, bold = false, testId }: { label: string; value: string; bold?: boolean; testId?: string }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: bold ? 15 : 13, fontWeight: bold ? 800 : 400, color: bold ? C.ink : C.inkSoft, padding: '3px 0' }}>
+    <div data-testid={testId} style={{ display: 'flex', justifyContent: 'space-between', fontSize: bold ? 15 : 13, fontWeight: bold ? 800 : 400, color: bold ? C.ink : C.inkSoft, padding: '3px 0' }}>
       <span>{label}</span>
       <span>{value}</span>
     </div>
