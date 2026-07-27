@@ -66,6 +66,7 @@ export function Dashboard() {
   const [error, setError] = useState(false);
   const [rangeDays, setRangeDays] = useState<7 | 30 | 90>(7);
   const [metric, setMetric] = useState<'revenue' | 'orders'>('revenue');
+  const [hoveredBucket, setHoveredBucket] = useState<number | null>(null);
 
   useEffect(() => {
     Promise.all([adminListOrders(), adminListProducts()])
@@ -134,7 +135,12 @@ export function Dashboard() {
       const aoCount = bucketOrders.filter((o) => o.market === 'AO').length;
       const ptCount = bucketOrders.filter((o) => o.market === 'PT').length;
       const label = size === 1 ? DAY_LABELS[start.getDay()] : `${start.getDate()}/${start.getMonth() + 1}–${end.getDate()}/${end.getMonth() + 1}`;
-      return { label, fromISO: localISODate(start), toISO: localISODate(end), kzRevenue, eurRevenue, aoCount, ptCount };
+      // Full numeric date range for the hover tooltip -- the axis `label`
+      // above is a compact day-name/date-range caption, but a bare "Tue"
+      // isn't enough context on its own when you're reading the exact
+      // figures for that bar.
+      const rangeLabel = size === 1 ? `${start.getDate()}/${start.getMonth() + 1}` : `${start.getDate()}/${start.getMonth() + 1}–${end.getDate()}/${end.getMonth() + 1}`;
+      return { label, rangeLabel, fromISO: localISODate(start), toISO: localISODate(end), kzRevenue, eurRevenue, aoCount, ptCount };
     });
 
     const kzMax = Math.max(1, ...buckets.map((b) => b.kzRevenue));
@@ -389,8 +395,52 @@ export function Dashboard() {
               <Link
                 key={i}
                 to={`/admin/encomendas?from=${b.fromISO}&to=${b.toISO}`}
-                style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, textDecoration: 'none' }}
+                onMouseEnter={() => setHoveredBucket(i)}
+                onMouseLeave={() => setHoveredBucket(null)}
+                onFocus={() => setHoveredBucket(i)}
+                onBlur={() => setHoveredBucket(null)}
+                style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, textDecoration: 'none', position: 'relative' }}
               >
+                {/* Custom hover/focus tooltip (2026-07-27) -- replaces the
+                    native `title` attribute, which was easy to miss (delayed,
+                    plain browser styling, one value at a time). Anchored to
+                    the Link's own box (not the bar), so it sits at the same
+                    height above every column regardless of that day's bar
+                    height. pointerEvents: 'none' so it never itself blocks
+                    the click-through to Orders. */}
+                {hoveredBucket === i && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: '100%',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      marginBottom: 8,
+                      background: C.black,
+                      color: C.onDark,
+                      borderRadius: 6,
+                      padding: '8px 12px',
+                      fontSize: 11,
+                      whiteSpace: 'nowrap',
+                      zIndex: 10,
+                      boxShadow: '0 6px 16px rgba(0,0,0,0.28)',
+                      pointerEvents: 'none',
+                    }}
+                  >
+                    <div style={{ fontSize: 9, fontWeight: 800, color: C.onDarkGold, marginBottom: 4, textTransform: 'uppercase' }}>{b.rangeLabel}</div>
+                    {metric === 'revenue' ? (
+                      <>
+                        <div style={{ fontWeight: 700 }}>{t('revenueTrendAngolaLegend', lang)}: {b.kzRevenue.toLocaleString('en-US')} Kz</div>
+                        <div style={{ fontWeight: 700 }}>{t('revenueTrendPortugalLegend', lang)}: €{b.eurRevenue.toLocaleString('en-US')}</div>
+                      </>
+                    ) : (
+                      <>
+                        <div style={{ fontWeight: 700 }}>{t('angolaOption', lang)}: {b.aoCount} {t('ordersCountLegend', lang)}</div>
+                        <div style={{ fontWeight: 700 }}>{t('portugalOption', lang)}: {b.ptCount} {t('ordersCountLegend', lang)}</div>
+                      </>
+                    )}
+                  </div>
+                )}
                 {/* Fixed-height track so each bar's percentage height has a
                     real (non-auto) parent to resolve against -- previously
                     this container had no explicit height (the flex row's
@@ -400,25 +450,13 @@ export function Dashboard() {
                 <div style={{ width: '100%', height: 140, display: 'flex', alignItems: 'flex-end', gap: 4 }}>
                   {metric === 'revenue' ? (
                     <>
-                      <div
-                        title={`${b.kzRevenue.toLocaleString('en-US')} Kz`}
-                        style={{ flex: 1, height: `${Math.max(6, b.kzPct * 100)}%`, borderRadius: 5, background: C.gold }}
-                      />
-                      <div
-                        title={`€${b.eurRevenue.toLocaleString('en-US')}`}
-                        style={{ flex: 1, height: `${Math.max(6, b.eurPct * 100)}%`, borderRadius: 5, background: C.blue }}
-                      />
+                      <div style={{ flex: 1, height: `${Math.max(6, b.kzPct * 100)}%`, borderRadius: 5, background: C.gold }} />
+                      <div style={{ flex: 1, height: `${Math.max(6, b.eurPct * 100)}%`, borderRadius: 5, background: C.blue }} />
                     </>
                   ) : (
                     <>
-                      <div
-                        title={`${b.aoCount} ${t('ordersCountLegend', lang)}`}
-                        style={{ flex: 1, height: `${Math.max(6, b.aoCountPct * 100)}%`, borderRadius: 5, background: C.gold }}
-                      />
-                      <div
-                        title={`${b.ptCount} ${t('ordersCountLegend', lang)}`}
-                        style={{ flex: 1, height: `${Math.max(6, b.ptCountPct * 100)}%`, borderRadius: 5, background: C.blue }}
-                      />
+                      <div style={{ flex: 1, height: `${Math.max(6, b.aoCountPct * 100)}%`, borderRadius: 5, background: C.gold }} />
+                      <div style={{ flex: 1, height: `${Math.max(6, b.ptCountPct * 100)}%`, borderRadius: 5, background: C.blue }} />
                     </>
                   )}
                 </div>
