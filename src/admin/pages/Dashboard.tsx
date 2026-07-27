@@ -193,10 +193,18 @@ export function Dashboard() {
             <div style={{ fontFamily: F.display, fontSize: 19, fontWeight: 800, color: C.ink }}>{t('revenueTrend', lang)}</div>
             <div style={{ fontSize: 10, fontWeight: 800, color: C.inkSoft }}>{t('last7Days', lang)}</div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, height: 140 }}>
+          <div style={{ display: 'flex', gap: 10 }}>
             {trend.map((d, i) => (
               <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-                <div style={{ width: '100%', height: `${Math.max(6, d.pct * 100)}%`, borderRadius: 5, background: i === trend.length - 1 ? C.gold : C.ruleLight }} />
+                {/* Fixed-height track so the bar's percentage height has a
+                    real (non-auto) parent to resolve against -- previously
+                    this container had no explicit height (the flex row's
+                    alignItems: 'flex-end' let it shrink-wrap instead of
+                    stretching to the row's height), so height: X% always
+                    collapsed to 0 per how CSS percentage heights work. */}
+                <div style={{ width: '100%', height: 140, display: 'flex', alignItems: 'flex-end' }}>
+                  <div style={{ width: '100%', height: `${Math.max(6, d.pct * 100)}%`, borderRadius: 5, background: i === trend.length - 1 ? C.gold : C.ruleLight }} />
+                </div>
                 <div style={{ fontSize: 9, fontWeight: 800, color: C.inkSoft }}>{d.label}</div>
               </div>
             ))}
