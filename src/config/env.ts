@@ -46,7 +46,6 @@ export const publicEnv = {
   // JSON object containing optional custom keys configured in the AppyPay
   // portal. The official widget exposes this through `data-options`.
   appyPayOptions: import.meta.env.VITE_APPYPAY_OPTIONS || "",
-  livePaymentsEnabled: bool(import.meta.env.VITE_ENABLE_LIVE_PAYMENTS),
   messagingAutomationEnabled: bool(import.meta.env.VITE_ENABLE_MESSAGING_AUTOMATION),
   analyticsEnabled: bool(import.meta.env.VITE_ENABLE_ANALYTICS),
   metaPixelId: import.meta.env.VITE_META_PIXEL_ID || "",
