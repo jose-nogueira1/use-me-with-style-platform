@@ -99,6 +99,39 @@ export const T: Record<string, Record<Lang, string>> = {
   cartEmptyHint: { pt: 'Adicione peças para começar.', en: 'Add pieces to get started.' },
   itemSingular: { pt: 'peça', en: 'item' },
   itemPlural: { pt: 'peças', en: 'items' },
+  // Market-switch cart follow-up (2026-07-27): each market has its own
+  // separately-stored cart, but a stale one can still reference a product
+  // that's no longer available there, or a colour/size that's since sold
+  // out in this specific market -- see Cart.tsx's cleanup effect and
+  // variant-stock re-check.
+  cartItemsRemovedUnavailable: {
+    pt: 'Alguns artigos foram removidos do carrinho por já não estarem disponíveis neste mercado.',
+    en: 'Some items were removed from your cart because they’re no longer available in this market.',
+  },
+  cartOutOfStockBlockNotice: {
+    pt: 'Remova ou ajuste os artigos esgotados antes de finalizar a compra.',
+    en: 'Remove or adjust the out-of-stock items before checking out.',
+  },
+  // Clear-all (2026-07-27, user request): the reducer already had a CLEAR
+  // action (used internally after a completed order) but nothing in the UI
+  // triggered it. Uses an inline two-step confirm rather than
+  // window.confirm() -- nothing else in this app uses a native browser
+  // dialog, so one here would look out of place.
+  clearCart: { pt: 'Limpar carrinho', en: 'Clear cart' },
+  clearCartConfirmQuestion: { pt: 'Remover todos os artigos do carrinho?', en: 'Remove all items from your cart?' },
+  clearCartConfirmYes: { pt: 'Sim, limpar', en: 'Yes, clear it' },
+  clearCartConfirmCancel: { pt: 'Cancelar', en: 'Cancel' },
+  // Market-switch communication fix (2026-07-27): AO and PT keep fully
+  // separate carts (matching production, where they're separate
+  // subdomains/sites with their own browser storage) -- without this, a
+  // shopper switching markets just sees the cart's contents silently swap
+  // with no explanation, which reads as a glitch rather than "you're now
+  // looking at a different store's cart." Always shown, not just on a
+  // mismatch, so the boundary is clear before it ever causes confusion.
+  cartViewingMarketNotice: {
+    pt: 'A ver o carrinho da loja {market} — cada mercado tem o seu próprio carrinho.',
+    en: 'Viewing your {market} store cart — each market keeps its own separate cart.',
+  },
   subtotal: { pt: 'Subtotal', en: 'Subtotal' },
   total: { pt: 'Total', en: 'Total' },
   checkout: { pt: 'Finalizar compra', en: 'Checkout' },
@@ -181,6 +214,28 @@ export const T: Record<string, Record<Lang, string>> = {
   couponCheckFailed: {
     pt: 'Não foi possível verificar este código. Tente novamente.',
     en: "Couldn't check this code. Please try again.",
+  },
+  // Shown when switching payment/delivery method forces an automatic
+  // re-check of an already-applied coupon (see Checkout.tsx) and that
+  // re-check comes back invalid -- e.g. the code no longer qualifies once
+  // an Angola order moves from Kz to EUR settlement. Previously the coupon
+  // was silently dropped with no message at all; this makes sure the
+  // shopper is told their discount was removed instead of just seeing the
+  // total quietly go up.
+  couponRemovedOnMethodChange: {
+    pt: 'O seu código de desconto foi removido porque o método selecionado alterou o valor a pagar. Pode reaplicá-lo acima.',
+    en: 'Your discount code was removed because the selected method changed how the order settles. You can reapply it above.',
+  },
+  // Shown above the order summary only for Angola orders paying by Card
+  // (Stripe) or PayPal -- neither gateway supports Kwanza, so those two
+  // methods settle in EUR even though every other Angola payment method
+  // (Multicaixa Express) and the rest of the site stays in Kz. Without this,
+  // the summary switching from Kz to EUR right as the shopper picks Stripe/
+  // PayPal could look like a bug rather than a deliberate, necessary
+  // currency change -- see Checkout.tsx's usesEurSettlement.
+  eurSettlementNotice: {
+    pt: 'Este método de pagamento processa o valor em euros (EUR), já que o Multicaixa não é suportado pela Stripe/PayPal. O total abaixo reflete o valor exato a ser cobrado.',
+    en: 'This payment method settles in euros (EUR), since Stripe/PayPal don’t support Kwanza. The total below reflects the exact amount you’ll be charged.',
   },
   discount: { pt: 'Desconto', en: 'Discount' },
 
