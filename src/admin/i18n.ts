@@ -585,6 +585,11 @@ export const T: Record<string, Record<Lang, string>> = {
   perCustomerLimit: { en: 'Per-customer limit', pt: 'Limite por cliente' },
   internalNoteOptional: { en: 'Internal note (optional)', pt: 'Nota interna (opcional)' },
   internalNotePlaceholder: { en: 'Which campaign this is for', pt: 'Para que campanha se destina' },
+  // Market scoping (2026-07-27, market-switch follow-up) -- same
+  // availableAO/availablePT pattern as the Products form.
+  availableAngolaCheckboxLabel: { en: 'Available in Angola', pt: 'Disponível em Angola' },
+  availablePortugalCheckboxLabel: { en: 'Available in Portugal', pt: 'Disponível em Portugal' },
+  marketRestrictedBadge: { en: 'Restricted', pt: 'Restrito' },
 
   // ---- Product settings (taxonomies) ----
   couldntCreateEntry: { en: "Couldn't create the entry.", pt: 'Não foi possível criar a entrada.' },

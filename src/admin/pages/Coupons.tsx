@@ -32,6 +32,8 @@ const emptyDraft: CouponInput = {
   endDate: null,
   usageLimit: null,
   maxRedemptionsPerEmail: null,
+  availableAO: true,
+  availablePT: true,
 };
 
 function toDateInputValue(value?: string | null): string {
@@ -81,6 +83,8 @@ export function Coupons() {
       endDate: c.endDate ?? null,
       usageLimit: c.usageLimit ?? null,
       maxRedemptionsPerEmail: c.maxRedemptionsPerEmail ?? null,
+      availableAO: c.availableAO ?? true,
+      availablePT: c.availablePT ?? true,
     });
     setEditing(c.id);
     setError(null);
@@ -169,6 +173,15 @@ export function Coupons() {
               <div style={{ fontSize: 10, color: c.active === false ? '#B95545' : '#3C8A5E', fontWeight: 700, textTransform: 'uppercase', marginTop: 2 }}>
                 {c.active === false ? t('inactiveStatus', lang) : t('activeStatusSingular', lang)}
               </div>
+              {/* Market scoping (2026-07-27): only shown when the coupon is
+                  actually restricted, so an unrestricted (default, both
+                  true) coupon's row looks exactly like it did before this
+                  field existed. */}
+              {(c.availableAO === false || c.availablePT === false) && (
+                <div style={{ fontSize: 10, color: C.goldDeep, fontWeight: 700, textTransform: 'uppercase', marginTop: 2 }}>
+                  {t('marketRestrictedBadge', lang)}: {[c.availableAO !== false && 'AO', c.availablePT !== false && 'PT'].filter(Boolean).join(' + ') || '—'}
+                </div>
+              )}
             </div>
             <div style={{ fontSize: 12, color: C.ink, minWidth: 140 }}>
               {c.type === 'percent'
@@ -234,6 +247,8 @@ function CouponForm({
           options={[{ value: 'percent', label: t('percentageOffOption', lang) }, { value: 'fixed', label: t('fixedAmountOffOption', lang) }]}
         />
         <CheckboxField label={t('activeCheckboxLabel', lang)} checked={draft.active ?? true} onChange={(v) => setDraft({ ...draft, active: v })} />
+        <CheckboxField label={t('availableAngolaCheckboxLabel', lang)} checked={draft.availableAO ?? true} onChange={(v) => setDraft({ ...draft, availableAO: v })} />
+        <CheckboxField label={t('availablePortugalCheckboxLabel', lang)} checked={draft.availablePT ?? true} onChange={(v) => setDraft({ ...draft, availablePT: v })} />
       </div>
 
       {draft.type === 'percent' ? (

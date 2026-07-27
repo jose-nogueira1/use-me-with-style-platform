@@ -238,6 +238,12 @@ export type ApiCoupon = {
   usageLimit?: number | null;
   usageCount?: number;
   maxRedemptionsPerEmail?: number | null;
+  /** Market scoping (2026-07-27, market-switch follow-up) -- same
+   * availableAO/availablePT pattern as ApiProduct. Both default true, so an
+   * older coupon predating this field is still valid everywhere until an
+   * admin deliberately restricts it. */
+  availableAO?: boolean | null;
+  availablePT?: boolean | null;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -1092,6 +1098,8 @@ export type CouponInput = {
   endDate?: string | null;
   usageLimit?: number | null;
   maxRedemptionsPerEmail?: number | null;
+  availableAO?: boolean | null;
+  availablePT?: boolean | null;
 };
 
 export async function adminCreateCoupon(input: CouponInput): Promise<ApiCoupon> {
