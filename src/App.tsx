@@ -50,6 +50,14 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
         .ump-hover-lift { transition: transform 0.2s ease, box-shadow 0.2s ease; }
         .ump-hover-lift:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
 
+        /* Generic loading placeholder (2026-07-26, cart-pricing QA fix) --
+           used wherever real data hasn't arrived yet and showing a real-
+           looking but wrong number (e.g. "0 Kz") would be misleading. Plain
+           background-color rather than the theme's --c-* vars so it stays
+           visible against both light and dark subtle-bg tones. */
+        @keyframes ump-pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+        .ump-skeleton { display: inline-block; border-radius: 4px; background: currentColor; opacity: 0.16; animation: ump-pulse 1.4s ease-in-out infinite; }
+
         button { cursor: pointer; border: none; background: none; font-family: inherit; }
         a { color: inherit; }
         :focus-visible { outline: 3px solid ${C.gold}; outline-offset: 3px; }

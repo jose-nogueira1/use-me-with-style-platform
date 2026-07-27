@@ -106,7 +106,7 @@ export function Footer() {
         <button onClick={clearAnalyticsConsent} style={{ fontSize: 11, color: C.inkSoft, textDecoration: 'underline' }}>
           {lang === 'pt' ? 'Preferências de cookies' : 'Cookie preferences'}
         </button>
-        {market === 'PT' && <ComplaintsBookLink lang={lang} />}
+        <ComplaintsBookLink lang={lang} visible={market === 'PT'} />
         <MarketSwitchLink market={market} setMarket={setMarket} lang={lang} />
       </div>
     </footer>
@@ -159,12 +159,24 @@ function MarketSwitchLink({
 // must be on the seller's website in a visible and highlighted form" -- so
 // this gets the same bordered-badge treatment as the market-switch link
 // next to it, not a plain text link buried in a list.
-function ComplaintsBookLink({ lang }: { lang: Lang }) {
+//
+// Layout-jump fix (2026-07-27): this used to be conditionally MOUNTED
+// (`market === 'PT' && <ComplaintsBookLink />`), which meant switching
+// markets added/removed a whole flex item from the footer's bottom row --
+// on narrower viewports that changed whether the row wrapped, so the
+// MarketSwitchLink button next to it visibly jumped ~45px between markets.
+// Since your cursor stays where the button *was*, a follow-up click often
+// missed it entirely (reported as "the switch feels stuck"). Now it's
+// always mounted (reserving its box in the flex flow) and only its
+// visibility toggles, so the sibling button's position never changes.
+function ComplaintsBookLink({ lang, visible }: { lang: Lang; visible: boolean }) {
   return (
     <a
       href="https://www.livroreclamacoes.pt/Inicio/"
       target="_blank"
       rel="noopener noreferrer"
+      aria-hidden={!visible}
+      tabIndex={visible ? undefined : -1}
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -177,6 +189,8 @@ function ComplaintsBookLink({ lang }: { lang: Lang }) {
         fontSize: 11,
         fontWeight: 800,
         textDecoration: 'none',
+        visibility: visible ? 'visible' : 'hidden',
+        pointerEvents: visible ? 'auto' : 'none',
       }}
     >
       <FileText size={13} color={C.goldDeep} />
