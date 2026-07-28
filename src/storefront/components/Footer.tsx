@@ -48,7 +48,7 @@ export function Footer() {
           </div>
           <div style={{ fontSize: 12, color: C.inkSoft, lineHeight: 1.6, maxWidth: 260 }}>{t('footerAbout', lang)}</div>
           <a
-            href="https://wa.me/244939615501"
+            href="https://wa.me/244933617878"
             style={{
               display: 'inline-flex',
               alignItems: 'center',

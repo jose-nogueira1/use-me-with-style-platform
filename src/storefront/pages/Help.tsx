@@ -159,7 +159,7 @@ export function Help() {
         {t('helpBody', lang)}
       </div>
       <a
-        href="https://wa.me/244939615501"
+        href="https://wa.me/244933617878"
         style={{
           display: 'inline-block',
           padding: '12px 24px',
