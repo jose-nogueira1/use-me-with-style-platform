@@ -12,6 +12,7 @@
     "env:check": "node scripts/check-env.mjs development",
     "env:check:staging": "node scripts/check-env.mjs staging",
     "env:check:production": "node scripts/check-env.mjs production",
+    "domain:check": "node scripts/check-production-domains.mjs",
     "export:storefront-screenshots": "node scripts/export-storefront-screenshots.mjs",
     "export:admin-screenshots": "node scripts/export-admin-screenshots.mjs",
     "lint": "eslint .",

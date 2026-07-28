@@ -33,6 +33,7 @@ type LocationLike = {
   port: string;
   pathname: string;
   search: string;
+  hash?: string;
 };
 
 /**
@@ -49,7 +50,7 @@ export function siblingMarketUrl(targetMarket: Market, location: LocationLike): 
   const rest = location.hostname.split('.').slice(1).join('.');
   const nextHost = `${MARKET_SUBDOMAINS[targetMarket]}.${rest}`;
   const port = location.port ? `:${location.port}` : '';
-  return `${location.protocol}//${nextHost}${port}${location.pathname}${location.search}`;
+  return `${location.protocol}//${nextHost}${port}${location.pathname}${location.search}${location.hash ?? ''}`;
 }
 
 /**
@@ -57,10 +58,10 @@ export function siblingMarketUrl(targetMarket: Market, location: LocationLike): 
  * usemewithstyle.com -> ao.usemewithstyle.com -- stripping a leading "www."
  * first so we don't produce "ao.www.usemewithstyle.com".
  */
-function apexToMarketUrl(targetMarket: Market, location: LocationLike): string {
+export function apexToMarketUrl(targetMarket: Market, location: LocationLike): string {
   const bareHost = location.hostname.replace(/^www\./i, '');
   const port = location.port ? `:${location.port}` : '';
-  return `${location.protocol}//${MARKET_SUBDOMAINS[targetMarket]}.${bareHost}${port}${location.pathname}${location.search}`;
+  return `${location.protocol}//${MARKET_SUBDOMAINS[targetMarket]}.${bareHost}${port}${location.pathname}${location.search}${location.hash ?? ''}`;
 }
 
 /**
