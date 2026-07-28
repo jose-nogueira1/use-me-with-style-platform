@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useState, type CSSProperties } from 'react';
 import { C, F } from '../../theme';
 import { useApp } from '../../state/AppContext';
 import {
@@ -54,13 +54,15 @@ export function Coupons() {
   const [draft, setDraft] = useState<CouponInput>(emptyDraft);
   const [busy, setBusy] = useState(false);
 
-  const load = () => {
+  const load = useCallback(() => {
     adminListCoupons()
       .then(setCoupons)
       .catch(() => setError(t('couldntConnectBackend', lang)));
-  };
+  }, [lang]);
 
-  useEffect(load, []);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const startCreate = () => {
     setDraft(emptyDraft);

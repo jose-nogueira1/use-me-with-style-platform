@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { C } from '../../theme';
 import { useApp } from '../../state/AppContext';
 import { adminDeleteMedia, adminListMedia, adminUploadMedia, type ApiMedia } from '../../lib/api';
@@ -18,13 +18,15 @@ export function Media() {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const load = () => {
+  const load = useCallback(() => {
     adminListMedia()
       .then(setItems)
       .catch(() => setError(t('couldntConnectBackend', lang)));
-  };
+  }, [lang]);
 
-  useEffect(load, []);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const handleUpload = async (file?: File) => {
     if (!file) return;

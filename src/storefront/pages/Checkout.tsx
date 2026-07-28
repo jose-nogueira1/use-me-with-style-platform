@@ -16,6 +16,7 @@ import { isAppyPayWidgetConfigured } from '../../config/env';
 import { AppyPayWidget } from '../components/AppyPayWidget';
 import { getMetaOrderContext } from '../../lib/analyticsConsent';
 import { PaypalButton } from '../components/PaypalButton';
+import { localizeCouponError } from '../couponError';
 
 // 2026-07-10 decision: Angola delivery is local courier only; payment is
 // Multicaixa Express (via AppyPay), Stripe, and PayPal. Angola's Stripe/
@@ -689,7 +690,7 @@ export function Checkout() {
         setAppliedCoupon({ code: result.code, discountAmount: result.discountAmount, label: result.label });
       } else {
         setAppliedCoupon(null);
-        setCouponError(result.reason);
+        setCouponError(localizeCouponError(result.reason, lang));
       }
     } catch {
       setAppliedCoupon(null);

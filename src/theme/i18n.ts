@@ -215,6 +215,31 @@ export const T: Record<string, Record<Lang, string>> = {
     pt: 'Não foi possível verificar este código. Tente novamente.',
     en: "Couldn't check this code. Please try again.",
   },
+  couponMissing: { pt: 'Introduza um código de desconto.', en: 'Enter a discount code.' },
+  couponNotFound: { pt: 'Este código não foi encontrado.', en: 'This code was not found.' },
+  couponInactive: { pt: 'Este código já não está ativo.', en: 'This code is no longer active.' },
+  couponWrongMarket: {
+    pt: 'Este código não está disponível neste mercado.',
+    en: 'This code is not available in this market.',
+  },
+  couponNotStarted: { pt: 'Este código ainda não está ativo.', en: 'This code is not active yet.' },
+  couponExpired: { pt: 'Este código expirou.', en: 'This code has expired.' },
+  couponMinimumOrder: {
+    pt: 'Este código requer uma encomenda mínima de {amount}.',
+    en: 'This code requires a minimum order of {amount}.',
+  },
+  couponUsageLimit: {
+    pt: 'Este código atingiu o limite de utilizações.',
+    en: 'This code has reached its usage limit.',
+  },
+  couponCustomerLimit: {
+    pt: 'Já utilizou este código o número máximo de vezes.',
+    en: 'You have already used this code the maximum number of times.',
+  },
+  couponUnavailableOrder: {
+    pt: 'Este código não está disponível para esta encomenda.',
+    en: 'This code is not available for this order.',
+  },
   // Shown when switching payment/delivery method forces an automatic
   // re-check of an already-applied coupon (see Checkout.tsx) and that
   // re-check comes back invalid -- e.g. the code no longer qualifies once
