@@ -205,18 +205,26 @@ export function Settings() {
             <ConfigRow
               label={t('municipalityPrices', lang)}
               value={
-                <div style={{ display: 'grid', gap: 8 }}>
-                  {LUANDA_MUNICIPALITIES.map((municipality) => (
-                    <NumberSetting
-                      key={municipality}
-                      label={`${municipality} (Kz)`}
-                      value={Number(settings.angolaMunicipalityPrices[municipality] ?? 0)}
-                      step={100}
-                      onChange={(value) => setSettings((s) => ({ ...s, angolaMunicipalityPrices: { ...s.angolaMunicipalityPrices, [municipality]: value } }))}
-                    />
-                  ))}
-                  <NumberSetting label={t('freeShippingThresholdKz', lang)} value={settings.angolaFreeShippingThreshold} step={1000} onChange={(value) => setSettings((s) => ({ ...s, angolaFreeShippingThreshold: value }))} />
-                </div>
+                <details style={{ border: `1px solid ${C.ruleLight}`, borderRadius: 7, background: C.subtleBg }}>
+                  <summary style={{ cursor: 'pointer', padding: '10px 12px', fontWeight: 800, color: C.ink, userSelect: 'none' }}>
+                    {t('editMunicipalityPrices', lang)}
+                    <span style={{ display: 'block', marginTop: 2, fontSize: 9, fontWeight: 500, color: C.inkSoft }}>
+                      {t('municipalityPricesHint', lang)}
+                    </span>
+                  </summary>
+                  <div style={{ display: 'grid', gap: 8, padding: '4px 12px 12px', borderTop: `1px solid ${C.ruleLight}` }}>
+                    {LUANDA_MUNICIPALITIES.map((municipality) => (
+                      <NumberSetting
+                        key={municipality}
+                        label={`${municipality} (Kz)`}
+                        value={Number(settings.angolaMunicipalityPrices[municipality] ?? 0)}
+                        step={100}
+                        onChange={(value) => setSettings((s) => ({ ...s, angolaMunicipalityPrices: { ...s.angolaMunicipalityPrices, [municipality]: value } }))}
+                      />
+                    ))}
+                    <NumberSetting label={t('freeShippingThresholdKz', lang)} value={settings.angolaFreeShippingThreshold} step={1000} onChange={(value) => setSettings((s) => ({ ...s, angolaFreeShippingThreshold: value }))} />
+                  </div>
+                </details>
               }
             />
             <ConfigRow label={t('orderFlowLabel', lang)} value={t('angolaOrderFlow', lang)} last />

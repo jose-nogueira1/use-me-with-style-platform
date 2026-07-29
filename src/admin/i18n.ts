@@ -436,6 +436,8 @@ export const T: Record<string, Record<Lang, string>> = {
   cttTrackedPrice: { en: 'CTT Registered (€)', pt: 'CTT Registado (€)' },
   freeShippingThreshold: { en: 'Free from (€)', pt: 'Grátis a partir de (€)' },
   municipalityPrices: { en: 'Municipality prices', pt: 'Preços por município' },
+  editMunicipalityPrices: { en: 'Edit 16 municipality prices', pt: 'Editar preços dos 16 municípios' },
+  municipalityPricesHint: { en: 'Includes the free-delivery threshold', pt: 'Inclui o limite de entrega gratuita' },
   freeShippingThresholdKz: { en: 'Free from (Kz)', pt: 'Grátis a partir de (Kz)' },
   deliveryRegionLabel: { en: 'Delivery region', pt: 'Região de entrega' },
   cttTrackingCodeLabel: { en: 'CTT tracking code', pt: 'Código de rastreio CTT' },
