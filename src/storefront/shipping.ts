@@ -1,19 +1,33 @@
-export const PT_FREE_SHIPPING_THRESHOLD_EUR = 75;
-
-const PT_DELIVERY_PRICES_EUR: Record<string, number> = {
-  // Historical values are retained in the API/database: `ctt` is Correio
-  // Normal (untracked), while `courier_pt` is CTT Correio Registado
-  // (tracked). Renaming the stored values would invalidate older orders.
-  ctt: 4.9,
-  courier_pt: 6.9,
+export type PortugalShippingConfig = {
+  portugalStandardShippingPrice?: number | null;
+  portugalTrackedShippingPrice?: number | null;
+  portugalFreeShippingThreshold?: number | null;
 };
+
+export const DEFAULT_PORTUGAL_SHIPPING = {
+  standardPrice: 4.9,
+  trackedPrice: 6.9,
+  freeThreshold: 75,
+} as const;
+
+export function normalizePortugalShipping(config?: PortugalShippingConfig | null) {
+  const valid = (value: number | null | undefined, fallback: number) =>
+    typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : fallback;
+  return {
+    standardPrice: valid(config?.portugalStandardShippingPrice, DEFAULT_PORTUGAL_SHIPPING.standardPrice),
+    trackedPrice: valid(config?.portugalTrackedShippingPrice, DEFAULT_PORTUGAL_SHIPPING.trackedPrice),
+    freeThreshold: valid(config?.portugalFreeShippingThreshold, DEFAULT_PORTUGAL_SHIPPING.freeThreshold),
+  };
+}
 
 export function checkoutShippingCost(
   market: 'AO' | 'PT',
   deliveryMethod: string,
   merchandiseTotalAfterDiscount: number,
+  config?: PortugalShippingConfig | null,
 ): number {
   if (market === 'AO') return 0;
-  if (merchandiseTotalAfterDiscount >= PT_FREE_SHIPPING_THRESHOLD_EUR) return 0;
-  return PT_DELIVERY_PRICES_EUR[deliveryMethod] ?? 0;
+  const prices = normalizePortugalShipping(config);
+  if (merchandiseTotalAfterDiscount >= prices.freeThreshold) return 0;
+  return deliveryMethod === 'courier_pt' ? prices.trackedPrice : prices.standardPrice;
 }

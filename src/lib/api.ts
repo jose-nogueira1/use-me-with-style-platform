@@ -339,6 +339,8 @@ export type ApiOrder = CreateOrderInput & {
    * above. discountAmount is 0/absent when no coupon was applied. */
   discountAmount?: number;
   discountLabel?: string | null;
+  deliveryRegion?: 'mainland' | 'madeira' | 'azores' | null;
+  cttTrackingCode?: string | null;
   // Provider/diagnostic fields -- all admin-set or admin-read-only in
   // Payload (see Orders.ts), surfaced here so the storefront admin's order
   // detail can display the same troubleshooting info Payload admin shows.
@@ -360,7 +362,7 @@ export type ApiOrder = CreateOrderInput & {
 
 export type PublicOrderStatus = Pick<
   ApiOrder,
-  'orderNumber' | 'status' | 'paymentStatus' | 'total' | 'currency' | 'updatedAt'
+  'orderNumber' | 'status' | 'paymentStatus' | 'total' | 'currency' | 'deliveryRegion' | 'cttTrackingCode' | 'updatedAt'
 >;
 
 export type MarketSettings = {
@@ -378,6 +380,9 @@ export type MarketSettings = {
   angolaDeliveryMethods: string[];
   portugalPaymentMethods: string[];
   portugalDeliveryMethods: string[];
+  portugalStandardShippingPrice: number;
+  portugalTrackedShippingPrice: number;
+  portugalFreeShippingThreshold: number;
   /** Client-provided legal copy (JOS-64, added 2026-07-23). Angola and
    * Portugal/EU have materially different terms (48h exchange-only vs.
    * 14-day statutory withdrawal with refund), so these are separate fields

@@ -17,7 +17,7 @@ import { AppyPayWidget } from '../components/AppyPayWidget';
 import { getMetaOrderContext } from '../../lib/analyticsConsent';
 import { PaypalButton } from '../components/PaypalButton';
 import { localizeCouponError } from '../couponError';
-import { checkoutShippingCost, PT_FREE_SHIPPING_THRESHOLD_EUR } from '../shipping';
+import { checkoutShippingCost, normalizePortugalShipping } from '../shipping';
 
 // 2026-07-10 decision: Angola delivery is local courier only; payment is
 // Multicaixa Express (via AppyPay), Stripe, and PayPal. Angola's Stripe/
@@ -38,6 +38,9 @@ const DEFAULT_MARKET_SETTINGS: MarketSettings = {
   angolaDeliveryMethods: ['courier_ao'],
   portugalPaymentMethods: ['paypal', 'stripe', 'mbway'],
   portugalDeliveryMethods: ['ctt', 'courier_pt'],
+  portugalStandardShippingPrice: 4.9,
+  portugalTrackedShippingPrice: 6.9,
+  portugalFreeShippingThreshold: 75,
   angolaReturnsPolicyTextPT: '',
   angolaReturnsPolicyTextEN: '',
   portugalReturnsPolicyTextPT: '',
@@ -538,7 +541,8 @@ export function Checkout() {
   // buildOrderInput's own EUR-branch total exactly, instead of computing an
   // independent (and previously inconsistent) display value.
   const merchandiseTotalAfterDiscount = Math.max(0, settlementSubtotal - discountAmount);
-  const shippingCost = checkoutShippingCost(market, deliveryMethod, merchandiseTotalAfterDiscount);
+  const portugalShipping = normalizePortugalShipping(settings);
+  const shippingCost = checkoutShippingCost(market, deliveryMethod, merchandiseTotalAfterDiscount, settings);
   const total = merchandiseTotalAfterDiscount + shippingCost;
   const fmt = (n: number) => (market === 'PT' || usesEurSettlement ? `€${n.toFixed(2)}` : `${formatKz(n, lang)} Kz`);
 
@@ -864,7 +868,7 @@ export function Checkout() {
               hint={t('countryLockedAO', lang)}
             />
           ) : (
-            <Field label={t('country', lang)} value={form.country} onChange={(v) => setForm({ ...form, country: v })} required />
+            <Field label={t('country', lang)} value={form.country} onChange={() => {}} required disabled hint={t('countryLockedPT', lang)} />
           )}
           <Field
             label={t('taxIdOptional', lang)}
@@ -881,7 +885,7 @@ export function Checkout() {
           ))}
           {market === 'PT' && (
             <div style={{ marginTop: 8, fontSize: 11, color: C.inkSoft, lineHeight: 1.5 }}>
-              {t('portugalDeliveryTerms', lang).replace('{amount}', `€${PT_FREE_SHIPPING_THRESHOLD_EUR.toFixed(2)}`)}
+              {t('portugalDeliveryTerms', lang).replace('{amount}', `€${portugalShipping.freeThreshold.toFixed(2)}`)}
             </div>
           )}
         </Section>

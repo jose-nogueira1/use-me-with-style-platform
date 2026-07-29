@@ -34,6 +34,7 @@ type EditableFields = {
   notes: string;
   paymentStatus: string;
   deliveryMethod: string;
+  cttTrackingCode: string;
 };
 
 function toEditable(order: ApiOrder): EditableFields {
@@ -50,6 +51,7 @@ function toEditable(order: ApiOrder): EditableFields {
     notes: order.notes ?? '',
     paymentStatus: order.paymentStatus,
     deliveryMethod: order.deliveryMethod,
+    cttTrackingCode: order.cttTrackingCode ?? '',
   };
 }
 
@@ -210,6 +212,8 @@ export function OrderDetail() {
               </select>
             </label>
             <EditField label={t('deliveryMethodLabel', lang)} value={form.deliveryMethod} onChange={(v) => setField('deliveryMethod', v)} />
+            <EditField label={t('deliveryRegionLabel', lang)} value={order.deliveryRegion ?? ''} onChange={() => {}} disabled />
+            <EditField label={t('cttTrackingCodeLabel', lang)} value={form.cttTrackingCode} onChange={(v) => setField('cttTrackingCode', v.toUpperCase().replace(/\s/g, ''))} />
             <label style={{ display: 'block', gridColumn: 'span 3' }}>
               <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>{t('notesLabel', lang)}</div>
               <textarea
@@ -306,7 +310,7 @@ function PaymentDiagnostics({ order, lang }: { order: ApiOrder; lang: Lang }) {
   );
 }
 
-function EditField({ label, value, onChange, type = 'text' }: { label: string; value: string; onChange: (v: string) => void; type?: string }) {
+function EditField({ label, value, onChange, type = 'text', disabled = false }: { label: string; value: string; onChange: (v: string) => void; type?: string; disabled?: boolean }) {
   return (
     <label style={{ display: 'block' }}>
       <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>{label}</div>
@@ -314,6 +318,7 @@ function EditField({ label, value, onChange, type = 'text' }: { label: string; v
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        disabled={disabled}
         style={{ width: '100%', padding: '11px 10px', fontSize: 12, fontWeight: 700, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, color: C.ink }}
       />
     </label>

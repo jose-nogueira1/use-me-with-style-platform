@@ -201,6 +201,20 @@ export function ConfirmationLookup() {
             <div style={{ fontSize: 13, color: C.inkSoft, marginTop: 8 }}>
               {result.total} {result.currency}
             </div>
+            {result.cttTrackingCode && (
+              <div style={{ marginTop: 16, paddingTop: 14, borderTop: `1px solid ${C.ruleLight}` }}>
+                <div style={{ fontSize: 10, color: C.goldDeep, fontWeight: 800, textTransform: 'uppercase' }}>{t('cttTrackingHeading', lang)}</div>
+                <div style={{ fontSize: 13, color: C.ink, fontWeight: 800, marginTop: 5 }}>{result.cttTrackingCode}</div>
+                <a
+                  href="https://appserver.ctt.pt/CustomerArea/PublicArea"
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ display: 'inline-block', marginTop: 9, padding: '9px 13px', borderRadius: 6, background: C.black, color: C.onDarkGold, fontSize: 11, fontWeight: 800, textDecoration: 'none' }}
+                >
+                  {t('trackWithCtt', lang)}
+                </a>
+              </div>
+            )}
           </div>
         )}
       </div>

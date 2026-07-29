@@ -36,6 +36,9 @@ const DEFAULTS: MarketSettings = {
   angolaDeliveryMethods: ['courier_ao'],
   portugalPaymentMethods: ['paypal', 'stripe', 'mbway'],
   portugalDeliveryMethods: ['ctt', 'courier_pt'],
+  portugalStandardShippingPrice: 4.9,
+  portugalTrackedShippingPrice: 6.9,
+  portugalFreeShippingThreshold: 75,
   angolaReturnsPolicyTextPT: '',
   angolaReturnsPolicyTextEN: '',
   portugalReturnsPolicyTextPT: '',
@@ -219,6 +222,16 @@ export function Settings() {
                   onChange={(e) => setSettings((s) => ({ ...s, portugalDeliveryMethods: e.target.value.split(',').map((v) => v.trim()).filter(Boolean) }))}
                   style={{ width: '100%', padding: 8, fontSize: 11, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg }}
                 />
+              }
+            />
+            <ConfigRow
+              label={t('portugalShippingPrices', lang)}
+              value={
+                <div style={{ display: 'grid', gap: 8 }}>
+                  <NumberSetting label={t('cttStandardPrice', lang)} value={settings.portugalStandardShippingPrice} onChange={(value) => setSettings((s) => ({ ...s, portugalStandardShippingPrice: value }))} />
+                  <NumberSetting label={t('cttTrackedPrice', lang)} value={settings.portugalTrackedShippingPrice} onChange={(value) => setSettings((s) => ({ ...s, portugalTrackedShippingPrice: value }))} />
+                  <NumberSetting label={t('freeShippingThreshold', lang)} value={settings.portugalFreeShippingThreshold} onChange={(value) => setSettings((s) => ({ ...s, portugalFreeShippingThreshold: value }))} />
+                </div>
               }
             />
             <ConfigRow label={t('orderFlowLabel', lang)} value={t('portugalOrderFlow', lang)} last />
@@ -882,5 +895,21 @@ function ConfigRow({ label, value, last }: { label: string; value: React.ReactNo
       <div style={{ fontSize: 11, fontWeight: 800, color: C.ink }}>{label}</div>
       <div style={{ fontSize: 11, color: C.inkSoft, lineHeight: 1.5 }}>{value}</div>
     </div>
+  );
+}
+
+function NumberSetting({ label, value, onChange }: { label: string; value: number; onChange: (value: number) => void }) {
+  return (
+    <label style={{ display: 'grid', gridTemplateColumns: '1fr 88px', gap: 8, alignItems: 'center' }}>
+      <span style={{ fontSize: 10 }}>{label}</span>
+      <input
+        type="number"
+        min="0"
+        step="0.01"
+        value={value}
+        onChange={(e) => onChange(Math.max(0, Number(e.target.value)))}
+        style={{ width: '100%', padding: 8, fontSize: 11, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg }}
+      />
+    </label>
   );
 }
