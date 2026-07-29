@@ -177,6 +177,10 @@ export const T: Record<string, Record<Lang, string>> = {
     pt: 'Envio grátis em encomendas de {amount} ou mais. Tarifas válidas para Portugal Continental, Madeira e Açores, até 2 kg. Os prazos para as ilhas podem ser mais longos.',
     en: 'Free delivery on orders of {amount} or more. Rates apply to mainland Portugal, Madeira, and the Azores, up to 2 kg. Island delivery may take longer.',
   },
+  heavyParcelTrackedOnly: {
+    pt: 'Esta encomenda pesa aproximadamente {weight} kg. Acima de 2 kg está disponível apenas entrega com rastreio: {mainland} no continente ou {islands} na Madeira/Açores. A entrega continua gratuita acima do limite promocional.',
+    en: 'This order weighs approximately {weight} kg. Above 2 kg, tracked delivery is required: {mainland} on the mainland or {islands} in Madeira/Azores. Delivery remains free above the promotional threshold.',
+  },
   angolaDeliveryTerms: {
     pt: 'Entrega por estafeta local apenas nos 16 municípios de Luanda. Envio grátis em encomendas de {amount} ou mais. Sem rastreio online; a equipa coordena a entrega manualmente.',
     en: 'Local courier delivery only within Luanda’s 16 municipalities. Free delivery on orders of {amount} or more. No online tracking; the team coordinates delivery manually.',

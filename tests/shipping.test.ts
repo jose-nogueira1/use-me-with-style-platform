@@ -24,6 +24,13 @@ test('Portugal shipping uses admin configuration', () => {
   assert.equal(checkoutShippingCost('PT', 'ctt', 90, config), 0);
 });
 
+test('Portugal parcels over 2 kg use tracked mainland/island rates while free delivery still wins', () => {
+  assert.equal(checkoutShippingCost('PT', 'courier_pt', 50, undefined, undefined, 2500, '1000-001'), 9.9);
+  assert.equal(checkoutShippingCost('PT', 'courier_pt', 50, undefined, undefined, 2500, '9000-001'), 14.9);
+  assert.equal(checkoutShippingCost('PT', 'courier_pt', 50, undefined, undefined, 2500, '9500-001'), 14.9);
+  assert.equal(checkoutShippingCost('PT', 'courier_pt', 75, undefined, undefined, 2500, '9500-001'), 0);
+});
+
 test('Angola local-courier pricing is municipality-specific and free from Kz 80,000', () => {
   assert.equal(checkoutShippingCost('AO', 'courier_ao', 79_999, undefined, 'Ingombota'), 2500);
   assert.equal(checkoutShippingCost('AO', 'courier_ao', 79_999, undefined, 'Mussulo'), 8000);

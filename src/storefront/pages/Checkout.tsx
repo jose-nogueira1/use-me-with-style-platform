@@ -44,6 +44,9 @@ const DEFAULT_MARKET_SETTINGS: MarketSettings = {
   portugalStandardShippingPrice: 4.9,
   portugalTrackedShippingPrice: 6.9,
   portugalFreeShippingThreshold: 75,
+  portugalStandardWeightLimitGrams: 2000,
+  portugalHeavyMainlandShippingPrice: 9.9,
+  portugalHeavyIslandsShippingPrice: 14.9,
   angolaReturnsPolicyTextPT: '',
   angolaReturnsPolicyTextEN: '',
   portugalReturnsPolicyTextPT: '',
@@ -423,7 +426,15 @@ export function Checkout() {
   const PT_POSTAL_CODE_RE = /^\d{4}-\d{3}$/;
   const PT_TAX_ID_RE = /^\d{9}$/;
 
-  const deliveryOptions = market === 'AO' ? settings.angolaDeliveryMethods : settings.portugalDeliveryMethods;
+  const totalWeightGrams = cart.reduce((sum, item) => {
+    const product = products.find((candidate) => candidate.id === item.id);
+    return sum + (product?.shippingWeightGrams ?? 500) * item.qty;
+  }, 0);
+  const portugalShipping = normalizePortugalShipping(settings);
+  const isHeavyPortugalParcel = market === 'PT' && totalWeightGrams > portugalShipping.standardWeightLimitGrams;
+  const deliveryOptions = market === 'AO'
+    ? settings.angolaDeliveryMethods
+    : isHeavyPortugalParcel ? ['courier_pt'] : settings.portugalDeliveryMethods;
   const paymentOptions = market === 'AO' ? ['multicaixa_express'] : settings.portugalPaymentMethods;
   // Deployed widget credentials are the authoritative readiness signal. The
   // CMS toggle remains backwards-compatible, but a stale `false` must not
@@ -462,6 +473,10 @@ export function Checkout() {
     // The option arrays are selected from settings above; settings is the stable source.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [market, settings]);
+
+  useEffect(() => {
+    if (isHeavyPortugalParcel) setDeliveryMethod('courier_pt');
+  }, [isHeavyPortugalParcel]);
 
   // A coupon's discountAmount is resolved in whichever currency the
   // settlement actually happens in (see eurSubtotal/settlementSubtotal
@@ -544,9 +559,8 @@ export function Checkout() {
   // buildOrderInput's own EUR-branch total exactly, instead of computing an
   // independent (and previously inconsistent) display value.
   const merchandiseTotalAfterDiscount = Math.max(0, settlementSubtotal - discountAmount);
-  const portugalShipping = normalizePortugalShipping(settings);
   const angolaShipping = normalizeAngolaShipping(settings);
-  const shippingCost = checkoutShippingCost(market, deliveryMethod, merchandiseTotalAfterDiscount, settings, form.city);
+  const shippingCost = checkoutShippingCost(market, deliveryMethod, merchandiseTotalAfterDiscount, settings, form.city, totalWeightGrams, form.postalCode);
   const total = merchandiseTotalAfterDiscount + shippingCost;
   const fmt = (n: number) => (market === 'PT' || usesEurSettlement ? `€${n.toFixed(2)}` : `${formatKz(n, lang)} Kz`);
 
@@ -907,6 +921,14 @@ export function Checkout() {
           {market === 'PT' && (
             <div style={{ marginTop: 8, fontSize: 11, color: C.inkSoft, lineHeight: 1.5 }}>
               {t('portugalDeliveryTerms', lang).replace('{amount}', `€${portugalShipping.freeThreshold.toFixed(2)}`)}
+            </div>
+          )}
+          {isHeavyPortugalParcel && (
+            <div style={{ marginTop: 8, padding: 10, background: C.subtleBg, borderRadius: 6, fontSize: 11, color: C.ink, lineHeight: 1.5 }}>
+              {t('heavyParcelTrackedOnly', lang)
+                .replace('{weight}', (totalWeightGrams / 1000).toFixed(1))
+                .replace('{mainland}', `€${portugalShipping.heavyMainlandPrice.toFixed(2)}`)
+                .replace('{islands}', `€${portugalShipping.heavyIslandsPrice.toFixed(2)}`)}
             </div>
           )}
           {market === 'AO' && (

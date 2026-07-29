@@ -76,6 +76,7 @@ export type Product = {
    * priceKz/priceEur directly. */
   effectivePriceKz: number;
   effectivePriceEur: number;
+  shippingWeightGrams: number;
   sizes: string[];
   /** Stock for the CURRENT market, keyed by size, SUMMED across colours --
    * coarse availability for cards/lists. Use `variants` for the exact

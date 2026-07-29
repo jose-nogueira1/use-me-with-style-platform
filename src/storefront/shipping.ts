@@ -2,6 +2,9 @@ export type PortugalShippingConfig = {
   portugalStandardShippingPrice?: number | null;
   portugalTrackedShippingPrice?: number | null;
   portugalFreeShippingThreshold?: number | null;
+  portugalStandardWeightLimitGrams?: number | null;
+  portugalHeavyMainlandShippingPrice?: number | null;
+  portugalHeavyIslandsShippingPrice?: number | null;
 };
 
 export const LUANDA_MUNICIPALITIES = [
@@ -36,6 +39,9 @@ export const DEFAULT_PORTUGAL_SHIPPING = {
   standardPrice: 4.9,
   trackedPrice: 6.9,
   freeThreshold: 75,
+  standardWeightLimitGrams: 2000,
+  heavyMainlandPrice: 9.9,
+  heavyIslandsPrice: 14.9,
 } as const;
 
 export function normalizePortugalShipping(config?: PortugalShippingConfig | null) {
@@ -45,7 +51,19 @@ export function normalizePortugalShipping(config?: PortugalShippingConfig | null
     standardPrice: valid(config?.portugalStandardShippingPrice, DEFAULT_PORTUGAL_SHIPPING.standardPrice),
     trackedPrice: valid(config?.portugalTrackedShippingPrice, DEFAULT_PORTUGAL_SHIPPING.trackedPrice),
     freeThreshold: valid(config?.portugalFreeShippingThreshold, DEFAULT_PORTUGAL_SHIPPING.freeThreshold),
+    standardWeightLimitGrams: valid(config?.portugalStandardWeightLimitGrams, DEFAULT_PORTUGAL_SHIPPING.standardWeightLimitGrams),
+    heavyMainlandPrice: valid(config?.portugalHeavyMainlandShippingPrice, DEFAULT_PORTUGAL_SHIPPING.heavyMainlandPrice),
+    heavyIslandsPrice: valid(config?.portugalHeavyIslandsShippingPrice, DEFAULT_PORTUGAL_SHIPPING.heavyIslandsPrice),
   };
+}
+
+export function portugalDeliveryRegion(postalCode: unknown): 'mainland' | 'madeira' | 'azores' | null {
+  const match = String(postalCode ?? '').trim().match(/^(\d{4})-\d{3}$/);
+  if (!match) return null;
+  const prefix = Number(match[1]);
+  if (prefix >= 9000 && prefix <= 9499) return 'madeira';
+  if (prefix >= 9500 && prefix <= 9999) return 'azores';
+  return 'mainland';
 }
 
 export function checkoutShippingCost(
@@ -54,6 +72,8 @@ export function checkoutShippingCost(
   merchandiseTotalAfterDiscount: number,
   config?: MarketShippingConfig | null,
   municipality?: string,
+  totalWeightGrams = 0,
+  postalCode?: string,
 ): number {
   if (market === 'AO') {
     const values = normalizeAngolaShipping(config);
@@ -62,5 +82,8 @@ export function checkoutShippingCost(
   }
   const prices = normalizePortugalShipping(config);
   if (merchandiseTotalAfterDiscount >= prices.freeThreshold) return 0;
+  if (totalWeightGrams > prices.standardWeightLimitGrams) {
+    return portugalDeliveryRegion(postalCode) === 'mainland' ? prices.heavyMainlandPrice : prices.heavyIslandsPrice;
+  }
   return deliveryMethod === 'courier_pt' ? prices.trackedPrice : prices.standardPrice;
 }

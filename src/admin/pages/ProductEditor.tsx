@@ -68,6 +68,7 @@ type FormState = {
   stock: Record<string, StockCell>;
   priceAOKz: string;
   pricePTEur: string;
+  shippingWeightGrams: string;
   /** Sale pricing (2026-07-25, discounts phase 1) -- all optional; blank
    * means "no sale price for this market" / "no start/end restriction". */
   saleAOKz: string;
@@ -79,7 +80,7 @@ type FormState = {
   availablePT: boolean;
 };
 
-const EMPTY: FormState = { name: '', namePT: '', nameEN: '', slug: '', category: '', description: '', descriptionPT: '', descriptionEN: '', sizeGuide: '', fitNotePT: '', fitNoteEN: '', tag: '', colorIds: [], sizes: ['S', 'M', 'L'], stock: {}, priceAOKz: '', pricePTEur: '', saleAOKz: '', salePTEur: '', saleStartDate: '', saleEndDate: '', active: false, availableAO: true, availablePT: true };
+const EMPTY: FormState = { name: '', namePT: '', nameEN: '', slug: '', category: '', description: '', descriptionPT: '', descriptionEN: '', sizeGuide: '', fitNotePT: '', fitNoteEN: '', tag: '', colorIds: [], sizes: ['S', 'M', 'L'], stock: {}, priceAOKz: '', pricePTEur: '', shippingWeightGrams: '500', saleAOKz: '', salePTEur: '', saleStartDate: '', saleEndDate: '', active: false, availableAO: true, availablePT: true };
 
 /** Payload date fields round-trip as full ISO datetimes; the admin form uses
  * a plain <input type="date">, which needs just the YYYY-MM-DD portion. */
@@ -157,6 +158,7 @@ export function ProductEditor() {
           ...formFromVariants(p.variants ?? []),
           priceAOKz: String(p.priceAOKz),
           pricePTEur: String(p.pricePTEur),
+          shippingWeightGrams: String(p.shippingWeightGrams ?? 500),
           saleAOKz: p.saleAOKz != null ? String(p.saleAOKz) : '',
           salePTEur: p.salePTEur != null ? String(p.salePTEur) : '',
           saleStartDate: toDateInputValue(p.saleStartDate),
@@ -232,6 +234,7 @@ export function ProductEditor() {
       variants,
       priceAOKz: Number(form.priceAOKz) || 0,
       pricePTEur: Number(form.pricePTEur) || 0,
+      shippingWeightGrams: Math.max(1, Number(form.shippingWeightGrams) || 500),
       // null (not undefined) so clearing a sale price actually removes it --
       // same pattern as sizeGuide/tag above.
       saleAOKz: form.saleAOKz.trim() ? Number(form.saleAOKz) : null,
@@ -386,10 +389,11 @@ export function ProductEditor() {
             {t('taxonomyManagedNotePrefix', lang)} <Link to="/admin/definicoes?tab=products" style={{ color: C.goldDeep, fontWeight: 800 }}>{t('settingsProductsLink', lang)}</Link>.
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }} className="ump-admin-fields-grid">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }} className="ump-admin-fields-grid">
             <ReadOnlyField label={t('slugLabel', lang)} value={form.slug || (isNew ? t('generatedAutomatically', lang) : '')} />
             <FieldInput label={t('angolaPriceKz', lang)} value={form.priceAOKz} onChange={(v) => set('priceAOKz', v)} type="number" />
             <FieldInput label={t('portugalPriceEur', lang)} value={form.pricePTEur} onChange={(v) => set('pricePTEur', v)} type="number" />
+            <FieldInput label={t('shippingWeightGrams', lang)} value={form.shippingWeightGrams} onChange={(v) => set('shippingWeightGrams', v)} type="number" />
           </div>
 
           {/* Sale pricing (2026-07-25, discounts phase 1): optional, mirrors

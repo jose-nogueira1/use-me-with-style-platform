@@ -42,6 +42,9 @@ const DEFAULTS: MarketSettings = {
   portugalStandardShippingPrice: 4.9,
   portugalTrackedShippingPrice: 6.9,
   portugalFreeShippingThreshold: 75,
+  portugalStandardWeightLimitGrams: 2000,
+  portugalHeavyMainlandShippingPrice: 9.9,
+  portugalHeavyIslandsShippingPrice: 14.9,
   angolaReturnsPolicyTextPT: '',
   angolaReturnsPolicyTextEN: '',
   portugalReturnsPolicyTextPT: '',
@@ -259,6 +262,9 @@ export function Settings() {
                   <NumberSetting label={t('cttStandardPrice', lang)} value={settings.portugalStandardShippingPrice} onChange={(value) => setSettings((s) => ({ ...s, portugalStandardShippingPrice: value }))} />
                   <NumberSetting label={t('cttTrackedPrice', lang)} value={settings.portugalTrackedShippingPrice} onChange={(value) => setSettings((s) => ({ ...s, portugalTrackedShippingPrice: value }))} />
                   <NumberSetting label={t('freeShippingThreshold', lang)} value={settings.portugalFreeShippingThreshold} onChange={(value) => setSettings((s) => ({ ...s, portugalFreeShippingThreshold: value }))} />
+                  <NumberSetting label={t('standardWeightLimit', lang)} value={settings.portugalStandardWeightLimitGrams} step={100} onChange={(value) => setSettings((s) => ({ ...s, portugalStandardWeightLimitGrams: value }))} />
+                  <NumberSetting label={t('heavyMainlandPrice', lang)} value={settings.portugalHeavyMainlandShippingPrice} onChange={(value) => setSettings((s) => ({ ...s, portugalHeavyMainlandShippingPrice: value }))} />
+                  <NumberSetting label={t('heavyIslandsPrice', lang)} value={settings.portugalHeavyIslandsShippingPrice} onChange={(value) => setSettings((s) => ({ ...s, portugalHeavyIslandsShippingPrice: value }))} />
                 </div>
               }
             />

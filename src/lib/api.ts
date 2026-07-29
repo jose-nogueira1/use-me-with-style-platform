@@ -173,6 +173,7 @@ export type ApiProduct = {
   images?: { image: ApiProductImageRef }[];
   priceAOKz: number;
   pricePTEur: number;
+  shippingWeightGrams: number;
   /** Sale pricing (2026-07-25, discounts phase 1) -- optional per-market
    * override, replacing the regular price at checkout while set and within
    * the optional start/end window. See productAdapters.ts's
@@ -385,6 +386,9 @@ export type MarketSettings = {
   portugalStandardShippingPrice: number;
   portugalTrackedShippingPrice: number;
   portugalFreeShippingThreshold: number;
+  portugalStandardWeightLimitGrams: number;
+  portugalHeavyMainlandShippingPrice: number;
+  portugalHeavyIslandsShippingPrice: number;
   /** Client-provided legal copy (JOS-64, added 2026-07-23). Angola and
    * Portugal/EU have materially different terms (48h exchange-only vs.
    * 14-day statutory withdrawal with refund), so these are separate fields

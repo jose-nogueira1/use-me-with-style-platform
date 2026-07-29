@@ -113,6 +113,7 @@ export function adaptApiProduct(api: ApiProduct, market: 'AO' | 'PT', lang: 'pt'
     onSale,
     effectivePriceKz,
     effectivePriceEur,
+    shippingWeightGrams: Math.max(1, Number(api.shippingWeightGrams ?? 500)),
     sizes,
     stock,
     variants,
