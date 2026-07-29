@@ -44,6 +44,12 @@ const MARKET_SETTINGS = {
   angolaBankTransferInstructionsEN: '',
   angolaPaymentMethods: ['multicaixa_express', 'stripe', 'paypal'],
   angolaDeliveryMethods: ['courier_ao'],
+  angolaMunicipalityPrices: {
+    Luanda: 3000, Cacuaco: 5000, Cazenga: 3500, Viana: 6000, Belas: 6500, Talatona: 4000,
+    Mussulo: 8000, Sambizanga: 3000, Rangel: 3000, Maianga: 2500, Samba: 3500, Camama: 4500,
+    Mulenvos: 5500, Kilamba: 5000, 'Hoji Ya Henda': 3500, Ingombota: 2500,
+  },
+  angolaFreeShippingThreshold: 80000,
   portugalPaymentMethods: ['paypal', 'stripe', 'mbway'],
   portugalDeliveryMethods: ['ctt', 'courier_pt'],
   portugalStandardShippingPrice: 4.9,

@@ -17,13 +17,10 @@ import { AppyPayWidget } from '../components/AppyPayWidget';
 import { getMetaOrderContext } from '../../lib/analyticsConsent';
 import { PaypalButton } from '../components/PaypalButton';
 import { localizeCouponError } from '../couponError';
-import { checkoutShippingCost, normalizePortugalShipping } from '../shipping';
+import { checkoutShippingCost, LUANDA_MUNICIPALITIES, normalizeAngolaShipping, normalizePortugalShipping } from '../shipping';
 
-// 2026-07-10 decision: Angola delivery is local courier only; payment is
-// Multicaixa Express (via AppyPay), Stripe, and PayPal. Angola's Stripe/
-// PayPal charges settle in EUR (see the EUR-settlement block in
-// buildOrderInput below) since neither gateway supports AOA -- shipping has
-// no separate EUR leg since AO courier is free either way.
+// Angola delivery is local courier only and payment is Multicaixa Express
+// through AppyPay. Portugal retains its separate online-payment methods.
 
 const DEFAULT_MARKET_SETTINGS: MarketSettings = {
   angolaPaymentLive: false,
@@ -34,8 +31,14 @@ const DEFAULT_MARKET_SETTINGS: MarketSettings = {
     'As instruções de pagamento Multicaixa Express são enviadas por WhatsApp assim que a encomenda for confirmada.',
   angolaBankTransferInstructionsEN:
     'Multicaixa Express payment instructions are sent by WhatsApp once the order is confirmed.',
-  angolaPaymentMethods: ['multicaixa_express', 'stripe', 'paypal'],
+  angolaPaymentMethods: ['multicaixa_express'],
   angolaDeliveryMethods: ['courier_ao'],
+  angolaMunicipalityPrices: {
+    Luanda: 3000, Cacuaco: 5000, Cazenga: 3500, Viana: 6000, Belas: 6500, Talatona: 4000,
+    Mussulo: 8000, Sambizanga: 3000, Rangel: 3000, Maianga: 2500, Samba: 3500, Camama: 4500,
+    Mulenvos: 5500, Kilamba: 5000, 'Hoji Ya Henda': 3500, Ingombota: 2500,
+  },
+  angolaFreeShippingThreshold: 80000,
   portugalPaymentMethods: ['paypal', 'stripe', 'mbway'],
   portugalDeliveryMethods: ['ctt', 'courier_pt'],
   portugalStandardShippingPrice: 4.9,
@@ -421,7 +424,7 @@ export function Checkout() {
   const PT_TAX_ID_RE = /^\d{9}$/;
 
   const deliveryOptions = market === 'AO' ? settings.angolaDeliveryMethods : settings.portugalDeliveryMethods;
-  const paymentOptions = market === 'AO' ? settings.angolaPaymentMethods : settings.portugalPaymentMethods;
+  const paymentOptions = market === 'AO' ? ['multicaixa_express'] : settings.portugalPaymentMethods;
   // Deployed widget credentials are the authoritative readiness signal. The
   // CMS toggle remains backwards-compatible, but a stale `false` must not
   // force a configured production checkout back to the manual fallback.
@@ -542,7 +545,8 @@ export function Checkout() {
   // independent (and previously inconsistent) display value.
   const merchandiseTotalAfterDiscount = Math.max(0, settlementSubtotal - discountAmount);
   const portugalShipping = normalizePortugalShipping(settings);
-  const shippingCost = checkoutShippingCost(market, deliveryMethod, merchandiseTotalAfterDiscount, settings);
+  const angolaShipping = normalizeAngolaShipping(settings);
+  const shippingCost = checkoutShippingCost(market, deliveryMethod, merchandiseTotalAfterDiscount, settings, form.city);
   const total = merchandiseTotalAfterDiscount + shippingCost;
   const fmt = (n: number) => (market === 'PT' || usesEurSettlement ? `€${n.toFixed(2)}` : `${formatKz(n, lang)} Kz`);
 
@@ -857,7 +861,24 @@ export function Checkout() {
               required
             />
           )}
-          <Field label={t('city', lang)} value={form.city} onChange={(v) => setForm({ ...form, city: v })} required />
+          {market === 'AO' ? (
+            <label style={{ display: 'block', marginBottom: 12 }}>
+              <div style={{ fontSize: 10, fontWeight: 800, color: C.ink, marginBottom: 6 }}>{t('municipality', lang)} *</div>
+              <select
+                value={form.city}
+                onChange={(e) => setForm({ ...form, city: e.target.value })}
+                required
+                style={{ width: '100%', padding: '11px 12px', fontSize: 13, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.paper, color: C.ink }}
+              >
+                <option value="">{t('selectMunicipality', lang)}</option>
+                {LUANDA_MUNICIPALITIES.map((municipality) => (
+                  <option key={municipality} value={municipality}>{municipality} — {angolaShipping.municipalityPrices[municipality].toLocaleString('pt-PT')} Kz</option>
+                ))}
+              </select>
+            </label>
+          ) : (
+            <Field label={t('city', lang)} value={form.city} onChange={(v) => setForm({ ...form, city: v })} required />
+          )}
           {market === 'AO' ? (
             <Field
               label={t('country', lang)}
@@ -886,6 +907,11 @@ export function Checkout() {
           {market === 'PT' && (
             <div style={{ marginTop: 8, fontSize: 11, color: C.inkSoft, lineHeight: 1.5 }}>
               {t('portugalDeliveryTerms', lang).replace('{amount}', `€${portugalShipping.freeThreshold.toFixed(2)}`)}
+            </div>
+          )}
+          {market === 'AO' && (
+            <div style={{ marginTop: 8, fontSize: 11, color: C.inkSoft, lineHeight: 1.5 }}>
+              {t('angolaDeliveryTerms', lang).replace('{amount}', `${angolaShipping.freeThreshold.toLocaleString('pt-PT')} Kz`)}
             </div>
           )}
         </Section>

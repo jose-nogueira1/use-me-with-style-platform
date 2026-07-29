@@ -378,6 +378,8 @@ export type MarketSettings = {
    * EUR). Portugal: PayPal + Stripe + MB WAY, unchanged. */
   angolaPaymentMethods: string[];
   angolaDeliveryMethods: string[];
+  angolaMunicipalityPrices: Record<string, number>;
+  angolaFreeShippingThreshold: number;
   portugalPaymentMethods: string[];
   portugalDeliveryMethods: string[];
   portugalStandardShippingPrice: number;

@@ -27,13 +27,16 @@ import { PageHeader } from '../components/PageHeader';
 import { Badge } from '../components/Badge';
 import { ProductTaxonomySettings } from './ProductSettings';
 import { t, type Lang } from '../i18n';
+import { DEFAULT_ANGOLA_MUNICIPALITY_PRICES, LUANDA_MUNICIPALITIES } from '../../storefront/shipping';
 
 const DEFAULTS: MarketSettings = {
   angolaPaymentLive: false,
   angolaBankTransferInstructionsPT: '',
   angolaBankTransferInstructionsEN: '',
-  angolaPaymentMethods: ['multicaixa_express', 'stripe', 'paypal'],
+  angolaPaymentMethods: ['multicaixa_express'],
   angolaDeliveryMethods: ['courier_ao'],
+  angolaMunicipalityPrices: DEFAULT_ANGOLA_MUNICIPALITY_PRICES,
+  angolaFreeShippingThreshold: 80000,
   portugalPaymentMethods: ['paypal', 'stripe', 'mbway'],
   portugalDeliveryMethods: ['ctt', 'courier_pt'],
   portugalStandardShippingPrice: 4.9,
@@ -112,7 +115,7 @@ export function Settings() {
 
   useEffect(() => {
     fetchMarketSettings()
-      .then(setSettings)
+      .then((value) => setSettings({ ...value, angolaPaymentMethods: ['multicaixa_express'] }))
       .catch(() => setError(t('couldntLoadSettingsDefaults', lang)))
       .finally(() => setLoading(false));
   }, [lang]);
@@ -122,8 +125,8 @@ export function Settings() {
     setError(null);
     setSaved(false);
     try {
-      const updated = await adminUpdateMarketSettings(settings);
-      setSettings(updated);
+      const updated = await adminUpdateMarketSettings({ ...settings, angolaPaymentMethods: ['multicaixa_express'] });
+      setSettings({ ...updated, angolaPaymentMethods: ['multicaixa_express'] });
       setSaved(true);
     } catch {
       setError(t('couldntSaveBackend', lang));
@@ -168,8 +171,8 @@ export function Settings() {
                     {t('appyPayLiveLabel', lang)}
                   </label>
                   <input
-                    value={settings.angolaPaymentMethods.join(', ')}
-                    onChange={(e) => setSettings((s) => ({ ...s, angolaPaymentMethods: e.target.value.split(',').map((v) => v.trim()).filter(Boolean) }))}
+                    value="multicaixa_express"
+                    readOnly
                     style={{ width: '100%', padding: 8, fontSize: 11, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, marginBottom: 8 }}
                   />
                   <textarea
@@ -197,6 +200,23 @@ export function Settings() {
                   onChange={(e) => setSettings((s) => ({ ...s, angolaDeliveryMethods: e.target.value.split(',').map((v) => v.trim()).filter(Boolean) }))}
                   style={{ width: '100%', padding: 8, fontSize: 11, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg }}
                 />
+              }
+            />
+            <ConfigRow
+              label={t('municipalityPrices', lang)}
+              value={
+                <div style={{ display: 'grid', gap: 8 }}>
+                  {LUANDA_MUNICIPALITIES.map((municipality) => (
+                    <NumberSetting
+                      key={municipality}
+                      label={`${municipality} (Kz)`}
+                      value={Number(settings.angolaMunicipalityPrices[municipality] ?? 0)}
+                      step={100}
+                      onChange={(value) => setSettings((s) => ({ ...s, angolaMunicipalityPrices: { ...s.angolaMunicipalityPrices, [municipality]: value } }))}
+                    />
+                  ))}
+                  <NumberSetting label={t('freeShippingThresholdKz', lang)} value={settings.angolaFreeShippingThreshold} step={1000} onChange={(value) => setSettings((s) => ({ ...s, angolaFreeShippingThreshold: value }))} />
+                </div>
               }
             />
             <ConfigRow label={t('orderFlowLabel', lang)} value={t('angolaOrderFlow', lang)} last />
@@ -898,14 +918,14 @@ function ConfigRow({ label, value, last }: { label: string; value: React.ReactNo
   );
 }
 
-function NumberSetting({ label, value, onChange }: { label: string; value: number; onChange: (value: number) => void }) {
+function NumberSetting({ label, value, onChange, step = 0.01 }: { label: string; value: number; onChange: (value: number) => void; step?: number }) {
   return (
     <label style={{ display: 'grid', gridTemplateColumns: '1fr 88px', gap: 8, alignItems: 'center' }}>
       <span style={{ fontSize: 10 }}>{label}</span>
       <input
         type="number"
         min="0"
-        step="0.01"
+        step={step}
         value={value}
         onChange={(e) => onChange(Math.max(0, Number(e.target.value)))}
         style={{ width: '100%', padding: 8, fontSize: 11, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg }}

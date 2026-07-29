@@ -24,6 +24,8 @@ test('Portugal shipping uses admin configuration', () => {
   assert.equal(checkoutShippingCost('PT', 'ctt', 90, config), 0);
 });
 
-test('Angola local-courier pricing remains unchanged', () => {
-  assert.equal(checkoutShippingCost('AO', 'courier_ao', 10), 0);
+test('Angola local-courier pricing is municipality-specific and free from Kz 80,000', () => {
+  assert.equal(checkoutShippingCost('AO', 'courier_ao', 79_999, undefined, 'Ingombota'), 2500);
+  assert.equal(checkoutShippingCost('AO', 'courier_ao', 79_999, undefined, 'Mussulo'), 8000);
+  assert.equal(checkoutShippingCost('AO', 'courier_ao', 80_000, undefined, 'Mussulo'), 0);
 });

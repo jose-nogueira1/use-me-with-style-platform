@@ -194,7 +194,7 @@ export function OrderDetail() {
             <EditField label={t('addressField', lang)} value={form.address} onChange={(v) => setField('address', v)} />
             <EditField label={t('floorDoorPT', lang)} value={form.addressLine2} onChange={(v) => setField('addressLine2', v)} />
             <EditField label={t('postalCodePT', lang)} value={form.postalCode} onChange={(v) => setField('postalCode', v)} />
-            <EditField label={t('cityField', lang)} value={form.city} onChange={(v) => setField('city', v)} />
+            <EditField label={t(order.market === 'AO' ? 'municipalityField' : 'cityField', lang)} value={form.city} onChange={(v) => setField('city', v)} />
             <EditField label={t('countryField', lang)} value={form.country} onChange={(v) => setField('country', v)} />
             <EditField label={t('nifTaxId', lang)} value={form.taxId} onChange={(v) => setField('taxId', v)} />
             <label style={{ display: 'block' }}>
@@ -213,7 +213,7 @@ export function OrderDetail() {
             </label>
             <EditField label={t('deliveryMethodLabel', lang)} value={form.deliveryMethod} onChange={(v) => setField('deliveryMethod', v)} />
             <EditField label={t('deliveryRegionLabel', lang)} value={order.deliveryRegion ?? ''} onChange={() => {}} disabled />
-            <EditField label={t('cttTrackingCodeLabel', lang)} value={form.cttTrackingCode} onChange={(v) => setField('cttTrackingCode', v.toUpperCase().replace(/\s/g, ''))} />
+            {order.market === 'PT' && <EditField label={t('cttTrackingCodeLabel', lang)} value={form.cttTrackingCode} onChange={(v) => setField('cttTrackingCode', v.toUpperCase().replace(/\s/g, ''))} />}
             <label style={{ display: 'block', gridColumn: 'span 3' }}>
               <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>{t('notesLabel', lang)}</div>
               <textarea

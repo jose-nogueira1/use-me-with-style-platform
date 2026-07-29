@@ -145,6 +145,8 @@ export const T: Record<string, Record<Lang, string>> = {
   addressLine2Optional: { pt: 'Andar / Porta (opcional)', en: 'Floor / Door (optional)' },
   postalCode: { pt: 'Código Postal', en: 'Postal Code' },
   city: { pt: 'Cidade', en: 'City' },
+  municipality: { pt: 'Município', en: 'Municipality' },
+  selectMunicipality: { pt: 'Selecione o município', en: 'Select municipality' },
   country: { pt: 'País', en: 'Country' },
   countryLockedAO: {
     pt: 'Entregamos apenas dentro de Angola.',
@@ -174,6 +176,10 @@ export const T: Record<string, Record<Lang, string>> = {
   portugalDeliveryTerms: {
     pt: 'Envio grátis em encomendas de {amount} ou mais. Tarifas válidas para Portugal Continental, Madeira e Açores, até 2 kg. Os prazos para as ilhas podem ser mais longos.',
     en: 'Free delivery on orders of {amount} or more. Rates apply to mainland Portugal, Madeira, and the Azores, up to 2 kg. Island delivery may take longer.',
+  },
+  angolaDeliveryTerms: {
+    pt: 'Entrega por estafeta local apenas nos 16 municípios de Luanda. Envio grátis em encomendas de {amount} ou mais. Sem rastreio online; a equipa coordena a entrega manualmente.',
+    en: 'Local courier delivery only within Luanda’s 16 municipalities. Free delivery on orders of {amount} or more. No online tracking; the team coordinates delivery manually.',
   },
   countryLockedPT: { pt: 'As tarifas CTT desta loja aplicam-se apenas a moradas em Portugal.', en: 'This store’s CTT rates apply only to addresses in Portugal.' },
   cttTrackingHeading: { pt: 'Rastreio CTT', en: 'CTT tracking' },
