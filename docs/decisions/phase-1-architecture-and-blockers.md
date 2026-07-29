@@ -26,8 +26,8 @@ admin/API layer**, on the hosting already wired in `.env.production`:
 | Layer | Phase 1 choice | Rationale |
 |-------|----------------|-----------|
 | Storefront + Admin UI | Existing React + Vite SPA | Already built; Phase 1 traffic is Instagram-driven, not SEO-driven |
-| Backend / API / Admin data | **Payload CMS** (`cms.usemewithstyle.com/admin`) | Gives products, orders, customers, settings models + REST/GraphQL API + auth out of the box — no separate service to build |
-| Database | PostgreSQL (Railway) | Per `.env.production` (`api.usemewithstyle.com`) |
+| Backend / API / Admin data | **Payload CMS** (`cms.usemewithstyle.shop/admin`) | Gives products, orders, customers, settings models + REST/GraphQL API + auth out of the box — no separate service to build |
+| Database | PostgreSQL (Railway) | Accessed by the CMS service; storefront API requests use the same-origin Vercel rewrite |
 | Media | Cloudinary / S3 | Placeholders until client photography |
 | Payments | Stripe, PayPal, MBWay (PT) · Appy Pay (AO) | Via Payload endpoints / serverless functions |
 | Hosting | Vercel (frontend) + Railway (Payload/DB) | Already provisioned |

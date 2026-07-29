@@ -3,8 +3,8 @@ import type { Market } from '../state/AppContext';
 const MARKET_SUBDOMAINS: Record<Market, string> = { AO: 'ao', PT: 'pt' };
 
 /**
- * Reads the market off the subdomain (ao.usemewithstyle.com /
- * pt.usemewithstyle.com). Returns null when the hostname carries no market
+ * Reads the market off the subdomain (ao.usemewithstyle.shop /
+ * pt.usemewithstyle.shop). Returns null when the hostname carries no market
  * label -- localhost, an apex domain, or a Vercel preview URL -- so callers
  * can fall back to geo-detection/env defaults instead of asserting a market
  * that isn't actually locked in by the URL.
@@ -38,8 +38,8 @@ type LocationLike = {
 
 /**
  * Builds the URL for the sibling market's subdomain, preserving the current
- * path/search -- e.g. ao.usemewithstyle.com/catalogo?cat=vestidos ->
- * pt.usemewithstyle.com/catalogo?cat=vestidos -- instead of dropping the
+ * path/search -- e.g. ao.usemewithstyle.shop/catalogo?cat=vestidos ->
+ * pt.usemewithstyle.shop/catalogo?cat=vestidos -- instead of dropping the
  * visitor back at the home page of the other site. Returns null if the
  * current hostname isn't already market-locked (nothing to swap).
  */
@@ -55,8 +55,8 @@ export function siblingMarketUrl(targetMarket: Market, location: LocationLike): 
 
 /**
  * Builds the market subdomain URL from an apex/root hostname -- e.g.
- * usemewithstyle.com -> ao.usemewithstyle.com -- stripping a leading "www."
- * first so we don't produce "ao.www.usemewithstyle.com".
+ * usemewithstyle.shop -> ao.usemewithstyle.shop -- stripping a leading "www."
+ * first so we don't produce "ao.www.usemewithstyle.shop".
  */
 export function apexToMarketUrl(targetMarket: Market, location: LocationLike): string {
   const bareHost = location.hostname.replace(/^www\./i, '');

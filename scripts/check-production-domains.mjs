@@ -1,6 +1,6 @@
 import { resolveAny } from 'node:dns/promises';
 
-const apex = (process.env.DOMAIN_APEX || 'usemewithstyle.com').trim().toLowerCase();
+const apex = (process.env.DOMAIN_APEX || 'usemewithstyle.shop').trim().toLowerCase();
 const hosts = [apex, `www.${apex}`, `ao.${apex}`, `pt.${apex}`, `cms.${apex}`];
 let failed = false;
 

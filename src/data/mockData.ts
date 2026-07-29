@@ -382,8 +382,8 @@ export const MARKETING_DRAFTS = [
     },
     scheduledFor: { pt: "Pronto a enviar", en: "Ready to send" },
     content: {
-      pt: "Olá — atualização rápida.\n\nO Vestido Marés em S voltou ao stock. Estava na lista de espera.\n\nReserve o seu: usemewithstyle.com\n(geralmente esgota em 48h)",
-      en: "Hey — quick update.\n\nThe Marés Dress in S is back in stock. You were on the waitlist.\n\nReserve yours: usemewithstyle.com\n(usually sells out in 48h)",
+      pt: "Olá — atualização rápida.\n\nO Vestido Marés em S voltou ao stock. Estava na lista de espera.\n\nReserve o seu: usemewithstyle.shop\n(geralmente esgota em 48h)",
+      en: "Hey — quick update.\n\nThe Marés Dress in S is back in stock. You were on the waitlist.\n\nReserve yours: usemewithstyle.shop\n(usually sells out in 48h)",
     },
   },
   {
