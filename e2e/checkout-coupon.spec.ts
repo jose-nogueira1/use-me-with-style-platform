@@ -91,15 +91,16 @@ test.describe('Checkout coupon behaviour across payment-method switches', () => 
     await page.goto('/checkout');
 
     // Starts on PayPal (PT's first configured payment option) with CTT
-    // delivery (€4 shipping).
+    // delivery. The mocked €100 basket qualifies for free shipping.
     await expect(page.locator('input[name="payment"][value="paypal"]')).toBeChecked();
     await expect(page.locator('input[name="delivery"][value="ctt"]')).toBeChecked();
 
     await page.getByLabel(t('couponLabel', 'en')).fill('SAVE10');
     await page.getByRole('button', { name: t('couponApply', 'en') }).click();
     await expect(page.getByTestId('applied-coupon')).toContainText('SAVE10');
-    // €100 - €10 (10%) + €4 CTT shipping.
-    await expect(page.getByTestId('checkout-total')).toContainText('€94.00');
+    // €100 - €10 (10%) remains above the €75 free-shipping threshold.
+    await expect(page.getByTestId('checkout-shipping')).toContainText(t('free', 'en'));
+    await expect(page.getByTestId('checkout-total')).toContainText('€90.00');
 
     // PT never changes settlement currency, but every payment method still
     // re-triggers the revalidation effect -- confirm the coupon survives
@@ -108,7 +109,7 @@ test.describe('Checkout coupon behaviour across payment-method switches', () => 
       await page.locator(`input[name="payment"][value="${method}"]`).check();
       await expect(page.getByTestId('applied-coupon')).toContainText('SAVE10');
       await expect(page.getByTestId('checkout-discount')).toContainText('-€10.00');
-      await expect(page.getByTestId('checkout-total')).toContainText('€94.00');
+      await expect(page.getByTestId('checkout-total')).toContainText('€90.00');
       await expect(page.getByTestId('coupon-error')).toHaveCount(0);
     }
 
@@ -116,8 +117,9 @@ test.describe('Checkout coupon behaviour across payment-method switches', () => 
     // revalidate rather than only reacting to payment-method changes.
     await page.locator('input[name="delivery"][value="courier_pt"]').check();
     await expect(page.getByTestId('applied-coupon')).toContainText('SAVE10');
-    // Shipping goes from CTT's €4 to courier's €6 -- total shifts by €2,
-    // but the coupon itself must still be intact, not dropped.
-    await expect(page.getByTestId('checkout-total')).toContainText('€96.00');
+    // Switching to tracked delivery keeps free shipping because the
+    // discounted merchandise total remains above €75.
+    await expect(page.getByTestId('checkout-shipping')).toContainText(t('free', 'en'));
+    await expect(page.getByTestId('checkout-total')).toContainText('€90.00');
   });
 });

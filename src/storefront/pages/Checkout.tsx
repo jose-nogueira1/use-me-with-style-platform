@@ -17,13 +17,13 @@ import { AppyPayWidget } from '../components/AppyPayWidget';
 import { getMetaOrderContext } from '../../lib/analyticsConsent';
 import { PaypalButton } from '../components/PaypalButton';
 import { localizeCouponError } from '../couponError';
+import { checkoutShippingCost, PT_FREE_SHIPPING_THRESHOLD_EUR } from '../shipping';
 
 // 2026-07-10 decision: Angola delivery is local courier only; payment is
 // Multicaixa Express (via AppyPay), Stripe, and PayPal. Angola's Stripe/
 // PayPal charges settle in EUR (see the EUR-settlement block in
 // buildOrderInput below) since neither gateway supports AOA -- shipping has
 // no separate EUR leg since AO courier is free either way.
-const SHIPPING_COST = { AO_courier: 0, PT_ctt: 4, PT_courier_pt: 6 } as const;
 
 const DEFAULT_MARKET_SETTINGS: MarketSettings = {
   angolaPaymentLive: false,
@@ -493,12 +493,6 @@ export function Checkout() {
     .filter((i): i is NonNullable<typeof i> => i !== null);
 
   const subtotal = items.reduce((sum, i) => sum + i.unitPrice * i.qty, 0);
-  const shippingCost =
-    market === 'AO'
-      ? SHIPPING_COST.AO_courier
-      : deliveryMethod === 'ctt'
-        ? SHIPPING_COST.PT_ctt
-        : SHIPPING_COST.PT_courier_pt;
   const discountAmount = appliedCoupon?.discountAmount ?? 0;
 
   // Angola orders paid via Stripe or PayPal have to actually settle in EUR --
@@ -543,7 +537,9 @@ export function Checkout() {
   // behaviour for the usesEurSettlement case. This also now matches
   // buildOrderInput's own EUR-branch total exactly, instead of computing an
   // independent (and previously inconsistent) display value.
-  const total = Math.max(0, settlementSubtotal - discountAmount) + shippingCost;
+  const merchandiseTotalAfterDiscount = Math.max(0, settlementSubtotal - discountAmount);
+  const shippingCost = checkoutShippingCost(market, deliveryMethod, merchandiseTotalAfterDiscount);
+  const total = merchandiseTotalAfterDiscount + shippingCost;
   const fmt = (n: number) => (market === 'PT' || usesEurSettlement ? `€${n.toFixed(2)}` : `${formatKz(n, lang)} Kz`);
 
   // Re-check (never silently drop) an already-applied coupon whenever the
@@ -883,6 +879,11 @@ export function Checkout() {
           {deliveryOptions.map((opt) => (
             <RadioRow key={opt} name="delivery" value={opt} checked={deliveryMethod === opt} onSelect={() => setDeliveryMethod(opt)} label={DELIVERY_LABEL_KEYS[opt] ? t(DELIVERY_LABEL_KEYS[opt], lang) : opt} />
           ))}
+          {market === 'PT' && (
+            <div style={{ marginTop: 8, fontSize: 11, color: C.inkSoft, lineHeight: 1.5 }}>
+              {t('portugalDeliveryTerms', lang).replace('{amount}', `€${PT_FREE_SHIPPING_THRESHOLD_EUR.toFixed(2)}`)}
+            </div>
+          )}
         </Section>
 
         <Section title={t('payment', lang)}>
