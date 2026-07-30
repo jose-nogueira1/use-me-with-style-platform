@@ -39,6 +39,7 @@ const DEFAULT_MARKET_SETTINGS: MarketSettings = {
     Mulenvos: 5500, Kilamba: 5000, 'Hoji Ya Henda': 3500, Ingombota: 2500,
   },
   angolaFreeShippingThreshold: 80000,
+  portugalPaymentsEnabled: false,
   portugalPaymentMethods: ['paypal', 'stripe'],
   portugalDeliveryMethods: ['ctt', 'courier_pt'],
   portugalStandardShippingPrice: 4.9,
@@ -435,14 +436,15 @@ export function Checkout() {
   const deliveryOptions = market === 'AO'
     ? settings.angolaDeliveryMethods
     : isHeavyPortugalParcel ? ['courier_pt'] : settings.portugalDeliveryMethods;
-  const paymentOptions = market === 'AO' ? ['multicaixa_express'] : settings.portugalPaymentMethods;
+  const portugalCheckoutDeferred = market === 'PT' && !settings.portugalPaymentsEnabled;
+  const paymentOptions = market === 'AO' ? ['multicaixa_express'] : portugalCheckoutDeferred ? [] : settings.portugalPaymentMethods;
   // Deployed widget credentials are the authoritative readiness signal. The
   // CMS toggle remains backwards-compatible, but a stale `false` must not
   // force a configured production checkout back to the manual fallback.
   const appyPayLive = settings.angolaPaymentLive || isAppyPayWidgetConfigured();
 
   const [deliveryMethod, setDeliveryMethod] = useState(deliveryOptions[0]);
-  const [paymentMethod, setPaymentMethod] = useState(paymentOptions[0]);
+  const [paymentMethod, setPaymentMethod] = useState(paymentOptions[0] ?? '');
 
   useEffect(() => {
     fetchMarketSettings()
@@ -464,7 +466,7 @@ export function Checkout() {
     // Market settings are external configuration; reset dependent form controls.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setDeliveryMethod(deliveryOptions[0]);
-    setPaymentMethod(paymentOptions[0]);
+    setPaymentMethod(paymentOptions[0] ?? '');
     setForm((f) => ({
       ...f,
       country: market === 'AO' ? 'Angola' : 'Portugal',
@@ -760,6 +762,10 @@ export function Checkout() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (portugalCheckoutDeferred) {
+      setError(t('portugalPaymentsDeferredBody', lang));
+      return;
+    }
     // PayPal has its own button/flow (see buildOrderInputForPaypal below) --
     // guards against an implicit form submit (e.g. pressing Enter in a
     // field) bypassing it, since no submit button is rendered in that case.
@@ -942,6 +948,12 @@ export function Checkout() {
         </Section>
 
         <Section title={t('payment', lang)}>
+          {portugalCheckoutDeferred && (
+            <div role="status" style={{ padding: 12, background: C.subtleBg, border: `1px solid ${C.ruleLight}`, borderRadius: 6, fontSize: 12, color: C.ink, lineHeight: 1.5 }}>
+              <strong>{t('portugalPaymentsDeferredTitle', lang)}</strong><br />
+              {t('portugalPaymentsDeferredBody', lang)}
+            </div>
+          )}
           {paymentOptions.map((opt) => (
             <RadioRow key={opt} name="payment" value={opt} checked={paymentMethod === opt} onSelect={() => handleSelectPaymentMethod(opt)} label={PAYMENT_LABEL_KEYS[opt] ? t(PAYMENT_LABEL_KEYS[opt], lang) : opt} />
           ))}
@@ -1025,7 +1037,7 @@ export function Checkout() {
           </div>
         )}
 
-        {appyPayOrder ? null : paymentMethod === 'paypal' ? (
+        {portugalCheckoutDeferred ? null : appyPayOrder ? null : paymentMethod === 'paypal' ? (
           <PaypalButton
             buildOrderInput={buildOrderInputForPaypal}
             onSuccess={handlePaypalSuccess}

@@ -451,6 +451,8 @@ export const T: Record<string, Record<Lang, string>> = {
   portugalCurrencyNote: { en: 'Euro, prices shown as EUR.', pt: 'Euro, com preços em EUR.' },
   portugalOrderFlow: { en: 'New, Processing, Shipped, Delivered, Cancelled.', pt: 'Nova, Em processamento, Enviada, Entregue, Cancelada.' },
   configuredBadge: { en: 'Configured', pt: 'Configurado' },
+  deferredBadge: { en: 'Deferred', pt: 'Adiado' },
+  portugalPaymentsEnabledLabel: { en: 'Enable Portugal checkout payments', pt: 'Ativar pagamentos no checkout de Portugal' },
   messagingCardTitle: { en: 'Messaging', pt: 'Mensagens' },
   phase1Badge: { en: 'Phase 1', pt: 'Fase 1' },
   whatsappLabel: { en: 'WhatsApp', pt: 'WhatsApp' },

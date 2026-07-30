@@ -37,6 +37,7 @@ const DEFAULTS: MarketSettings = {
   angolaDeliveryMethods: ['courier_ao'],
   angolaMunicipalityPrices: DEFAULT_ANGOLA_MUNICIPALITY_PRICES,
   angolaFreeShippingThreshold: 80000,
+  portugalPaymentsEnabled: false,
   portugalPaymentMethods: ['paypal', 'stripe'],
   portugalDeliveryMethods: ['ctt', 'courier_pt'],
   portugalStandardShippingPrice: 4.9,
@@ -233,8 +234,12 @@ export function Settings() {
             <ConfigRow label={t('orderFlowLabel', lang)} value={t('angolaOrderFlow', lang)} last />
           </Card>
 
-          <Card title={t('portugalOption', lang)} badge={t('configuredBadge', lang)} tone="green">
+          <Card title={t('portugalOption', lang)} badge={settings.portugalPaymentsEnabled ? t('configuredBadge', lang) : t('deferredBadge', lang)} tone={settings.portugalPaymentsEnabled ? 'green' : 'gold'}>
             <ConfigRow label={t('currencyLabel', lang)} value={t('portugalCurrencyNote', lang)} />
+            <ConfigRow
+              label={t('portugalPaymentsEnabledLabel', lang)}
+              value={<input type="checkbox" checked={settings.portugalPaymentsEnabled} onChange={(e) => setSettings((s) => ({ ...s, portugalPaymentsEnabled: e.target.checked }))} />}
+            />
             <ConfigRow
               label={t('paymentLabel', lang)}
               value={

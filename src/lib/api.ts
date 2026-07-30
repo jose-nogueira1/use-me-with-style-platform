@@ -374,13 +374,13 @@ export type MarketSettings = {
    * pickBilingual(), same as every other bilingual CMS field. */
   angolaBankTransferInstructionsPT?: string;
   angolaBankTransferInstructionsEN?: string;
-  /** Per-market payment/delivery method lists (2026-07-10 decision). Angola:
-   * Multicaixa Express (AppyPay) + Stripe + PayPal (Stripe/PayPal settle in
-   * EUR). Portugal Phase 1: PayPal + Stripe. */
+  /** Angola launches with AppyPay. Portugal checkout remains disabled until
+   * the client has a Portuguese legal entity and approved providers. */
   angolaPaymentMethods: string[];
   angolaDeliveryMethods: string[];
   angolaMunicipalityPrices: Record<string, number>;
   angolaFreeShippingThreshold: number;
+  portugalPaymentsEnabled: boolean;
   portugalPaymentMethods: string[];
   portugalDeliveryMethods: string[];
   portugalStandardShippingPrice: number;

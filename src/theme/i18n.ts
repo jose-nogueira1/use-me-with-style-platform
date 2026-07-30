@@ -177,6 +177,14 @@ export const T: Record<string, Record<Lang, string>> = {
     pt: 'Envio grátis em encomendas de {amount} ou mais. Tarifas válidas para Portugal Continental, Madeira e Açores, até 2 kg. Os prazos para as ilhas podem ser mais longos.',
     en: 'Free delivery on orders of {amount} or more. Rates apply to mainland Portugal, Madeira, and the Azores, up to 2 kg. Island delivery may take longer.',
   },
+  portugalPaymentsDeferredTitle: {
+    pt: 'Pagamentos em Portugal temporariamente indisponíveis',
+    en: 'Portugal payments temporarily unavailable',
+  },
+  portugalPaymentsDeferredBody: {
+    pt: 'O checkout de Portugal será ativado quando a entidade legal e os serviços de pagamento estiverem concluídos. Entretanto, não é possível finalizar encomendas neste mercado.',
+    en: 'Portugal checkout will be enabled after the legal entity and payment services are ready. Orders cannot be completed in this market in the meantime.',
+  },
   heavyParcelTrackedOnly: {
     pt: 'Esta encomenda pesa aproximadamente {weight} kg. Acima de 2 kg está disponível apenas entrega com rastreio: {mainland} no continente ou {islands} na Madeira/Açores. A entrega continua gratuita acima do limite promocional.',
     en: 'This order weighs approximately {weight} kg. Above 2 kg, tracked delivery is required: {mainland} on the mainland or {islands} in Madeira/Azores. Delivery remains free above the promotional threshold.',
