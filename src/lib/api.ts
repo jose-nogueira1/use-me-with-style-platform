@@ -471,6 +471,11 @@ export type InvoiceSettings = {
   issuerNameAO?: string;
   issuerTaxIdAO?: string;
   issuerAddressAO?: string;
+  bankNameAO?: string;
+  accountHolderAO?: string;
+  bankAccountAO?: string;
+  swiftBicAO?: string;
+  paymentInstructionsAO?: string;
   vatRateAO: number;
   taxNoteAO?: string;
   invoicePrefixAO?: string;
@@ -479,6 +484,11 @@ export type InvoiceSettings = {
   issuerNamePT?: string;
   issuerTaxIdPT?: string;
   issuerAddressPT?: string;
+  bankNamePT?: string;
+  accountHolderPT?: string;
+  bankAccountPT?: string;
+  swiftBicPT?: string;
+  paymentInstructionsPT?: string;
   vatRatePT: number;
   taxNotePT?: string;
   invoicePrefixPT?: string;

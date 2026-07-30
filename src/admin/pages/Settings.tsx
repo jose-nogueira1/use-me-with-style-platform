@@ -426,6 +426,11 @@ const INVOICE_SETTINGS_DEFAULTS: InvoiceSettings = {
   issuerNameAO: 'Use Me With Style',
   issuerTaxIdAO: '',
   issuerAddressAO: '',
+  bankNameAO: '',
+  accountHolderAO: '',
+  bankAccountAO: '',
+  swiftBicAO: '',
+  paymentInstructionsAO: '',
   vatRateAO: 0,
   taxNoteAO: '',
   invoicePrefixAO: 'UMWS-AO',
@@ -434,6 +439,11 @@ const INVOICE_SETTINGS_DEFAULTS: InvoiceSettings = {
   issuerNamePT: 'Use Me With Style',
   issuerTaxIdPT: '',
   issuerAddressPT: '',
+  bankNamePT: '',
+  accountHolderPT: '',
+  bankAccountPT: '',
+  swiftBicPT: '',
+  paymentInstructionsPT: '',
   vatRatePT: 0,
   taxNotePT: '',
   invoicePrefixPT: 'UMWS-PT',
@@ -540,6 +550,11 @@ function InvoiceMarketCard({
   const nameKey = `issuerName${market}` as const;
   const taxIdKey = `issuerTaxId${market}` as const;
   const addressKey = `issuerAddress${market}` as const;
+  const bankNameKey = `bankName${market}` as const;
+  const accountHolderKey = `accountHolder${market}` as const;
+  const bankAccountKey = `bankAccount${market}` as const;
+  const swiftBicKey = `swiftBic${market}` as const;
+  const paymentInstructionsKey = `paymentInstructions${market}` as const;
   const vatKey = `vatRate${market}` as const;
   const taxNoteKey = `taxNote${market}` as const;
   const prefixKey = `invoicePrefix${market}` as const;
@@ -555,6 +570,16 @@ function InvoiceMarketCard({
       <SettingsField label={t('issuerName', lang)} value={settings[nameKey] ?? ''} onChange={(v) => set(nameKey, v)} />
       <SettingsField label={t('issuerTaxId', lang)} value={settings[taxIdKey] ?? ''} onChange={(v) => set(taxIdKey, v)} />
       <SettingsTextarea label={t('issuerAddress', lang)} value={settings[addressKey] ?? ''} onChange={(v) => set(addressKey, v)} rows={2} />
+      <details style={{ margin: '12px 0', borderTop: `1px solid ${C.ruleLight}`, borderBottom: `1px solid ${C.ruleLight}`, padding: '10px 0' }}>
+        <summary style={{ cursor: 'pointer', fontSize: 10, fontWeight: 800, color: C.goldDeep }}>{t('bankPaymentDetails', lang)}</summary>
+        <div style={{ paddingTop: 12 }}>
+          <SettingsField label={t('bankNameLabel', lang)} value={settings[bankNameKey] ?? ''} onChange={(v) => set(bankNameKey, v)} />
+          <SettingsField label={t('accountHolderLabel', lang)} value={settings[accountHolderKey] ?? ''} onChange={(v) => set(accountHolderKey, v)} />
+          <SettingsField label={t('bankAccountLabel', lang)} value={settings[bankAccountKey] ?? ''} onChange={(v) => set(bankAccountKey, v)} />
+          <SettingsField label={t('swiftBicLabel', lang)} value={settings[swiftBicKey] ?? ''} onChange={(v) => set(swiftBicKey, v)} />
+          <SettingsTextarea label={t('paymentInstructionsLabel', lang)} value={settings[paymentInstructionsKey] ?? ''} onChange={(v) => set(paymentInstructionsKey, v)} rows={3} />
+        </div>
+      </details>
       <SettingsField label={t('vatRateLabel', lang)} value={String(settings[vatKey] ?? 0)} onChange={(v) => set(vatKey, Number(v) || 0)} type="number" />
       <SettingsField label={t('vatNoteLabel', lang)} value={settings[taxNoteKey] ?? ''} onChange={(v) => set(taxNoteKey, v)} />
       <SettingsField label={t('invoicePrefixLabel', lang)} value={settings[prefixKey] ?? ''} onChange={(v) => set(prefixKey, v)} />
