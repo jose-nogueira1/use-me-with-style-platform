@@ -115,8 +115,15 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
            column here is 360px, proportionally much wider, so it needs more
            total width before splitting into two columns reads as
            comfortable rather than cramped. */
+        /* padding-bottom (2026-07-30): in the stacked single-column layout
+           neither column had any bottom spacing, so the summary card --
+           "Finalizar compra" on cart, "Pagar agora" on checkout -- butted
+           straight against the top edge of the footer with no gap, reading
+           as if the two were one block. Applied to the shared container
+           rather than to .ump-*-summary so the items/form column clears the
+           footer too whenever it happens to be the taller of the two. */
         .ump-checkout-layout,
-        .ump-cart-layout { max-width: 480px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+        .ump-cart-layout { max-width: 480px; margin: 0 auto; width: 100%; box-sizing: border-box; padding-bottom: 32px; }
         @media (min-width: 720px) {
           .ump-checkout-layout,
           .ump-cart-layout { max-width: 640px; }
@@ -200,10 +207,18 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
         }
         .ump-footer-bottom { padding: 16px 20px 22px; border-top: 1px solid ${C.ruleLight}; }
 
-        /* Home hero: single column on mobile, headline + photo side-by-side
-           on desktop (per "07. Desktop Home and Collection"). */
+        /* Home hero: headline above the photo on mobile, side-by-side on
+           desktop (per "07. Desktop Home and Collection").
+           The mobile rule used to be "display: none", which hid the hero
+           visual outright on every viewport under 860px -- i.e. on every
+           phone, the single most-viewed screen opened with a wall of text
+           and no imagery, on a fashion storefront (2026-07-30 fix). The
+           vestigial "margin-top: 20px" on that same hidden rule is the
+           giveaway that stacking was always the intent. It now shows at the
+           260px height the element already carries inline, with the desktop
+           override lifting it to 360px alongside the copy. */
         .ump-hero-grid { display: block; }
-        .ump-hero-photo { display: none; margin-top: 20px; }
+        .ump-hero-photo { display: block; margin-top: 20px; }
         @media (min-width: 860px) {
           .ump-hero-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 40px; align-items: center; }
           .ump-hero-photo { display: block; margin-top: 0; height: 360px !important; }

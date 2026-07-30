@@ -68,7 +68,8 @@ export function About() {
           style={{
             display: 'inline-block',
             padding: '13px 22px',
-            background: C.black,
+            background: C.ctaBg,
+            border: `1px solid ${C.ctaBorder}`,
             color: C.onDarkGold,
             fontSize: 11,
             fontWeight: 800,

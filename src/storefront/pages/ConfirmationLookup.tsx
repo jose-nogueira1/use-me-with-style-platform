@@ -161,7 +161,7 @@ export function ConfirmationLookup() {
             onChange={(e) => setOrderNumber(e.target.value)}
             placeholder={t('orderNumber', lang)}
             required
-            style={{ padding: '10px 12px', fontSize: 13, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.paper }}
+            style={{ padding: '10px 12px', fontSize: 13, border: `1px solid ${C.fieldBorder}`, borderRadius: 6, background: C.paper }}
           />
           <input
             value={email}
@@ -169,23 +169,23 @@ export function ConfirmationLookup() {
             placeholder={t('email', lang)}
             type="email"
             required
-            style={{ padding: '10px 12px', fontSize: 13, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.paper }}
+            style={{ padding: '10px 12px', fontSize: 13, border: `1px solid ${C.fieldBorder}`, borderRadius: 6, background: C.paper }}
           />
           <button
             type="submit"
             disabled={loading}
-            style={{ padding: 12, background: C.black, color: C.onDarkGold, fontSize: 12, fontWeight: 800, letterSpacing: 1.5, textTransform: 'uppercase', borderRadius: 8 }}
+            style={{ padding: 12, background: C.ctaBg, border: `1px solid ${C.ctaBorder}`, color: C.onDarkGold, fontSize: 12, fontWeight: 800, letterSpacing: 1.5, textTransform: 'uppercase', borderRadius: 8 }}
           >
             {loading ? '…' : t('trackOrder', lang)}
           </button>
         </form>
 
         {result === 'not_found' && (
-          <div role="status" style={{ marginTop: 20, fontSize: 13, color: '#A6483A' }}>{t('orderNotFound', lang)}</div>
+          <div role="status" style={{ marginTop: 20, fontSize: 13, color: C.danger }}>{t('orderNotFound', lang)}</div>
         )}
 
         {result === 'service_error' && (
-          <div role="alert" style={{ marginTop: 20, fontSize: 13, color: '#A6483A' }}>
+          <div role="alert" style={{ marginTop: 20, fontSize: 13, color: C.danger }}>
             {lang === 'pt'
               ? 'Não foi possível consultar a encomenda agora. Tente novamente dentro de instantes.'
               : 'We could not check the order right now. Please try again shortly.'}
@@ -209,7 +209,7 @@ export function ConfirmationLookup() {
                   href="https://appserver.ctt.pt/CustomerArea/PublicArea"
                   target="_blank"
                   rel="noreferrer"
-                  style={{ display: 'inline-block', marginTop: 9, padding: '9px 13px', borderRadius: 6, background: C.black, color: C.onDarkGold, fontSize: 11, fontWeight: 800, textDecoration: 'none' }}
+                  style={{ display: 'inline-block', marginTop: 9, padding: '9px 13px', borderRadius: 6, background: C.ctaBg, border: `1px solid ${C.ctaBorder}`, color: C.onDarkGold, fontSize: 11, fontWeight: 800, textDecoration: 'none' }}
                 >
                   {t('trackWithCtt', lang)}
                 </a>

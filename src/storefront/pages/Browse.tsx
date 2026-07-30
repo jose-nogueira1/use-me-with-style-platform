@@ -179,7 +179,7 @@ export function Browse() {
                   padding: '8px 10px',
                   fontSize: 12,
                   borderRadius: 6,
-                  border: `1px solid ${sortBy === s.key ? C.gold : C.rule}`,
+                  border: `1px solid ${sortBy === s.key ? C.gold : C.fieldBorder}`,
                   background: sortBy === s.key ? C.tagBg : C.paper,
                   color: sortBy === s.key ? C.goldDeep : C.ink,
                 }}
@@ -194,7 +194,7 @@ export function Browse() {
       <div className="ump-browse-main">
         <h1 className="ump-sr-only">{t('shopAll', lang)}</h1>
         <div style={{ padding: '12px 20px', borderBottom: `1px solid ${C.ruleLight}` }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: C.paper, borderRadius: 8, border: `1px solid ${C.rule}` }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: C.paper, borderRadius: 8, border: `1px solid ${C.fieldBorder}` }}>
             <Search size={16} color={C.inkSoft} />
             <input
               type="text"
@@ -222,9 +222,9 @@ export function Browse() {
                 fontSize: 11,
                 fontWeight: 700,
                 borderRadius: 20,
-                background: activeCat === c.key ? C.black : C.paper,
+                background: activeCat === c.key ? C.ctaBg : C.paper,
                 color: activeCat === c.key ? C.onDarkGold : C.ink,
-                border: `1px solid ${activeCat === c.key ? C.black : C.rule}`,
+                border: `1px solid ${activeCat === c.key ? C.ctaBorder : C.fieldBorder}`,
               }}
             >
               {c.label}
@@ -323,7 +323,7 @@ function FilterGroup({
               fontSize: 11,
               fontWeight: 700,
               borderRadius: 6,
-              border: `1px solid ${active === opt.value ? C.gold : C.rule}`,
+              border: `1px solid ${active === opt.value ? C.gold : C.fieldBorder}`,
               background: active === opt.value ? C.tagBg : C.paper,
               color: active === opt.value ? C.goldDeep : C.ink,
               display: 'inline-flex',
@@ -339,7 +339,7 @@ function FilterGroup({
                   height: 12,
                   borderRadius: '50%',
                   flexShrink: 0,
-                  border: `1px solid ${C.rule}`,
+                  border: `1px solid ${C.fieldBorder}`,
                   background: swatchBackground(opt),
                 }}
               />

@@ -82,7 +82,7 @@ function AccordionSection({
 const inputStyle = {
   padding: '10px 12px',
   fontSize: 13,
-  border: `1px solid ${C.rule}`,
+  border: `1px solid ${C.fieldBorder}`,
   borderRadius: 6,
   background: C.paper,
   fontFamily: 'inherit',
@@ -163,7 +163,8 @@ export function Help() {
         style={{
           display: 'inline-block',
           padding: '12px 24px',
-          background: C.black,
+          background: C.ctaBg,
+          border: `1px solid ${C.ctaBorder}`,
           color: C.onDarkGold,
           fontSize: 11,
           fontWeight: 800,
@@ -241,14 +242,14 @@ export function Help() {
             disabled={sendState === 'sending'}
             style={{
               padding: 12,
-              background: C.black,
-              color: C.onDarkGold,
+              background: sendState === 'sending' ? C.disabledBg : C.ctaBg,
+              color: sendState === 'sending' ? C.disabledFg : C.onDarkGold,
               fontSize: 12,
               fontWeight: 800,
               letterSpacing: 1.5,
               textTransform: 'uppercase',
               borderRadius: 8,
-              border: 'none',
+              border: `1px solid ${sendState === 'sending' ? C.disabledBg : C.ctaBorder}`,
               cursor: sendState === 'sending' ? 'default' : 'pointer',
             }}
           >
@@ -261,7 +262,7 @@ export function Help() {
           </div>
         )}
         {sendState === 'error' && (
-          <div role="alert" style={{ marginTop: 12, fontSize: 12.5, color: '#A6483A', textAlign: 'center' }}>
+          <div role="alert" style={{ marginTop: 12, fontSize: 12.5, color: C.danger, textAlign: 'center' }}>
             {t('contactMessageFailed', lang)}
           </div>
         )}

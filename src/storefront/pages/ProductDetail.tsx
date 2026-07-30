@@ -101,7 +101,7 @@ export function ProductDetail() {
               right: 16,
               width: 38,
               height: 38,
-              background: 'rgba(255,255,255,0.85)',
+              background: C.photoChipBg,
               borderRadius: 19,
               display: 'flex',
               alignItems: 'center',
@@ -109,7 +109,11 @@ export function ProductDetail() {
               backdropFilter: 'blur(8px)',
             }}
           >
-            <Heart size={18} fill={isFav ? C.gold : 'none'} color={isFav ? C.gold : C.ink} />
+            {/* photoChipFg, not C.ink (2026-07-30): C.ink flips to near-white
+                in dark mode and the icon disappeared against the chip at
+                1.06:1. goldDeep for the active state keeps the filled heart
+                above 3:1 on the chip in both themes (C.gold managed 2.2:1). */}
+            <Heart size={18} fill={isFav ? C.goldDeep : 'none'} color={isFav ? C.goldDeep : C.photoChipFg} />
           </button>
           {product.tag && (
             <div style={{ position: 'absolute', top: 16, left: 16, background: C.black, color: C.onDarkGold, fontSize: 9, letterSpacing: 1.5, padding: '6px 10px', borderRadius: 6, fontWeight: 800 }}>
@@ -129,14 +133,14 @@ export function ProductDetail() {
                 {fmtOriginalPrice(product)}
               </span>
             )}
-            <span style={{ fontSize: 20, fontWeight: 800, color: product.onSale ? '#B95545' : C.black }}>{fmtPrice(product)}</span>
+            <span style={{ fontSize: 20, fontWeight: 800, color: product.onSale ? C.dangerStrong : C.ink }}>{fmtPrice(product)}</span>
           </div>
 
           <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
             {isOutOfStock ? (
-              <span style={{ fontSize: 11, color: '#A6483A', fontWeight: 700 }}>● {t('outOfStock', lang)}</span>
+              <span style={{ fontSize: 11, color: C.danger, fontWeight: 700 }}>● {t('outOfStock', lang)}</span>
             ) : isLowStock ? (
-              <span style={{ fontSize: 11, color: '#A6483A', fontWeight: 700 }}>● {t('fewLeftStock', lang, { n: stockForSize })}</span>
+              <span style={{ fontSize: 11, color: C.danger, fontWeight: 700 }}>● {t('fewLeftStock', lang, { n: stockForSize })}</span>
             ) : (
               <span style={{ fontSize: 11, color: C.successText, fontWeight: 700 }}>● {t('inStockCount', lang, { n: stockForSize })}</span>
             )}
@@ -164,8 +168,8 @@ export function ProductDetail() {
                       fontSize: 12,
                       fontWeight: 700,
                       borderRadius: 6,
-                      border: `1px solid ${activeSize === s ? C.black : C.rule}`,
-                      background: activeSize === s ? C.black : C.paper,
+                      border: `1px solid ${activeSize === s ? C.ctaBorder : C.fieldBorder}`,
+                      background: activeSize === s ? C.ctaBg : C.paper,
                       color: outForThisSize ? C.inkSoft : activeSize === s ? C.onDarkGold : C.ink,
                       opacity: outForThisSize ? 0.4 : 1,
                       textDecoration: outForThisSize ? 'line-through' : 'none',
@@ -193,7 +197,7 @@ export function ProductDetail() {
                     padding: '6px 12px',
                     fontSize: 11,
                     borderRadius: 20,
-                    border: `1.5px solid ${activeColor === co.id ? C.gold : C.rule}`,
+                    border: `1.5px solid ${activeColor === co.id ? C.gold : C.fieldBorder}`,
                     background: activeColor === co.id ? C.tagBg : C.paper,
                     color: activeColor === co.id ? C.goldDeep : C.ink,
                     fontWeight: activeColor === co.id ? 700 : 500,
@@ -244,7 +248,7 @@ export function ProductDetail() {
       </div>
 
       {showSizeGuide && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(5,5,5,0.4)', zIndex: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+        <div style={{ position: 'fixed', inset: 0, background: C.scrim, zIndex: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
           <div role="dialog" aria-modal="true" aria-labelledby="size-guide-title" style={{ background: C.paper, borderRadius: 10, padding: 20, width: '100%', maxWidth: 360, boxShadow: '0 20px 50px rgba(0,0,0,0.24)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
               <div id="size-guide-title" style={{ fontFamily: F.display, fontSize: 20, fontWeight: 800 }}>{t('sizeGuide', lang)}</div>
@@ -310,7 +314,7 @@ export function ProductDetail() {
         <button
           onClick={() => navigate('/catalogo')}
           aria-label={lang === 'pt' ? 'Explorar catálogo' : 'Browse catalogue'}
-          style={{ width: 44, height: 44, flexShrink: 0, borderRadius: 8, border: `1px solid ${C.rule}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.ink }}
+          style={{ width: 44, height: 44, flexShrink: 0, borderRadius: 8, border: `1px solid ${C.fieldBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.ink }}
         >
           <Search size={16} />
         </button>
@@ -320,8 +324,9 @@ export function ProductDetail() {
           style={{
             flex: 1,
             padding: 14,
-            background: added ? C.successText : isOutOfStock ? C.inkSoft : C.black,
-            color: added ? C.onDark : isOutOfStock ? C.onDark : C.onDarkGold,
+            background: added ? C.successText : isOutOfStock ? C.disabledBg : C.ctaBg,
+            border: `1px solid ${added ? C.successText : isOutOfStock ? C.disabledBg : C.ctaBorder}`,
+            color: added ? C.onDark : isOutOfStock ? C.disabledFg : C.onDarkGold,
             fontSize: 12,
             fontWeight: 800,
             letterSpacing: 1.5,

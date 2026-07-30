@@ -74,7 +74,7 @@ export function InstagramFeed() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                background: 'rgba(5,5,5,0.35)',
+                background: C.scrimSoft,
                 opacity: 0,
               }}
             >
@@ -97,7 +97,7 @@ export function InstagramFeed() {
             padding: '11px 20px',
             borderRadius: 8,
             background: C.paper,
-            border: `1px solid ${C.rule}`,
+            border: `1px solid ${C.fieldBorder}`,
             color: C.ink,
             fontSize: 11,
             fontWeight: 800,

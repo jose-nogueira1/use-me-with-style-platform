@@ -32,13 +32,13 @@ export function NotFound() {
       <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 10 }}>
         <Link
           to="/catalogo"
-          style={{ padding: '12px 18px', borderRadius: 8, background: C.black, color: C.onDarkGold, fontWeight: 800, textDecoration: 'none' }}
+          style={{ padding: '12px 18px', borderRadius: 8, background: C.ctaBg, border: `1px solid ${C.ctaBorder}`, color: C.onDarkGold, fontWeight: 800, textDecoration: 'none' }}
         >
           {copy.shop}
         </Link>
         <Link
           to="/"
-          style={{ padding: '12px 18px', borderRadius: 8, border: `1px solid ${C.rule}`, color: C.ink, fontWeight: 700, textDecoration: 'none' }}
+          style={{ padding: '12px 18px', borderRadius: 8, border: `1px solid ${C.fieldBorder}`, color: C.ink, fontWeight: 700, textDecoration: 'none' }}
         >
           {copy.home}
         </Link>

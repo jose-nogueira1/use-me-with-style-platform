@@ -269,7 +269,7 @@ function LanguageSwitch({
           padding: '0 10px',
           borderRadius: 8,
           background: dark ? C.heroFieldBg : C.paper,
-          border: `1px solid ${dark ? C.heroFieldBorder : C.rule}`,
+          border: `1px solid ${dark ? C.heroFieldBorder : C.fieldBorder}`,
           color: dark ? C.heroAccent : C.ink,
           fontSize: 11,
           fontWeight: 800,
@@ -289,7 +289,7 @@ function LanguageSwitch({
             zIndex: 30,
             width: 160,
             background: C.paper,
-            border: `1px solid ${C.rule}`,
+            border: `1px solid ${C.fieldBorder}`,
             borderRadius: 10,
             padding: 12,
             boxShadow: '0 16px 40px rgba(0,0,0,0.18)',
@@ -337,7 +337,8 @@ function PillGroup({
               borderRadius: 6,
               fontSize: 11,
               fontWeight: 800,
-              background: active === opt.key ? C.black : 'transparent',
+              background: active === opt.key ? C.ctaBg : 'transparent',
+              border: `1px solid ${active === opt.key ? C.ctaBorder : 'transparent'}`,
               color: active === opt.key ? C.onDarkGold : C.inkSoft,
             }}
           >
@@ -377,7 +378,7 @@ function ThemeToggle({
         flexShrink: 0,
         borderRadius: 15,
         background: isDark ? C.black : C.subtleBg,
-        border: `1px solid ${dark ? C.heroFieldBorder : C.rule}`,
+        border: `1px solid ${dark ? C.heroFieldBorder : C.fieldBorder}`,
       }}
     >
       <span
@@ -429,7 +430,7 @@ function IconButton({
         justifyContent: 'center',
         borderRadius: 8,
         background: dark ? C.heroFieldBg : C.paper,
-        border: `1px solid ${dark ? C.heroFieldBorder : C.rule}`,
+        border: `1px solid ${dark ? C.heroFieldBorder : C.fieldBorder}`,
         color: dark ? C.heroAccent : C.ink,
       }}
     >

@@ -62,7 +62,7 @@ export function ProductCard({ product, size = 'grid' }: { product: Product; size
               {fmtOriginalPrice(product)}
             </span>
           )}
-          <span style={{ fontSize: 11, fontWeight: 800, color: product.onSale ? '#B95545' : C.black }}>{fmtPrice(product)}</span>
+          <span style={{ fontSize: 11, fontWeight: 800, color: product.onSale ? C.dangerStrong : C.ink }}>{fmtPrice(product)}</span>
         </div>
       </div>
     </Link>

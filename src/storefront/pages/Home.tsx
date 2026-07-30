@@ -180,7 +180,7 @@ export function Home() {
                   style={{
                     position: 'absolute',
                     inset: 0,
-                    background: 'linear-gradient(to top, rgba(0,0,0,0.62) 0%, rgba(0,0,0,0.0) 45%)',
+                    background: C.tileScrim,
                   }}
                 />
                 <div
@@ -193,7 +193,10 @@ export function Home() {
                     fontWeight: 800,
                     letterSpacing: 1,
                     textTransform: 'uppercase',
-                    color: '#fff',
+                    // Sits on the tileScrim gradient, which darkens whatever
+                    // artwork is beneath it -- so this stays constant across
+                    // themes by design (11.7:1 over the scrim).
+                    color: C.onDark,
                   }}
                 >
                   {label}

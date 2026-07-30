@@ -60,7 +60,7 @@ export function Cart() {
         <div style={{ fontSize: 13, color: C.inkSoft, marginBottom: 24, lineHeight: 1.5 }}>{t('cartEmptyHint', lang)}</div>
         <Link
           to="/"
-          style={{ padding: '12px 24px', background: C.black, color: C.onDarkGold, fontSize: 11, fontWeight: 800, letterSpacing: 1.5, textTransform: 'uppercase', borderRadius: 8, textDecoration: 'none' }}
+          style={{ padding: '12px 24px', background: C.ctaBg, border: `1px solid ${C.ctaBorder}`, color: C.onDarkGold, fontSize: 11, fontWeight: 800, letterSpacing: 1.5, textTransform: 'uppercase', borderRadius: 8, textDecoration: 'none' }}
         >
           {t('continueShopping', lang)}
         </Link>
@@ -119,7 +119,7 @@ export function Cart() {
                   dispatchCart({ type: 'CLEAR' });
                   setConfirmingClear(false);
                 }}
-                style={{ fontSize: 11, fontWeight: 800, color: '#B95545', textDecoration: 'underline', whiteSpace: 'nowrap' }}
+                style={{ fontSize: 11, fontWeight: 800, color: C.dangerStrong, textDecoration: 'underline', whiteSpace: 'nowrap' }}
               >
                 {t('clearCartConfirmYes', lang)}
               </button>
@@ -218,23 +218,26 @@ export function Cart() {
                       (possibly under the other market, or before stock
                       changed) but isn't now. */}
                   {isOutOfStock && (
-                    <div style={{ marginTop: 4, fontSize: 11, fontWeight: 700, color: '#B95545' }}>{t('outOfStock', lang)}</div>
+                    <div style={{ marginTop: 4, fontSize: 11, fontWeight: 700, color: C.dangerStrong }}>{t('outOfStock', lang)}</div>
                   )}
                   {isLowStock && (
                     <div style={{ marginTop: 4, fontSize: 11, fontWeight: 700, color: C.goldDeep }}>{t('fewLeftStock', lang, { n: variantStock })}</div>
                   )}
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, border: `1px solid ${C.rule}`, borderRadius: 6, padding: '4px 8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, border: `1px solid ${C.fieldBorder}`, borderRadius: 6, padding: '4px 8px' }}>
                     <button aria-label={`${lang === 'pt' ? 'Diminuir quantidade de' : 'Decrease quantity of'} ${p.name}`} onClick={() => dispatchCart({ type: 'DEC', idx })}>
                       <Minus size={12} />
                     </button>
-                    <span style={{ fontSize: 12, minWidth: 14, textAlign: 'center' }}>{item.qty}</span>
+                    {/* Explicit colour (2026-07-30 dark-mode QA): with none
+                        set this inherited the UA default black and vanished
+                        against the dark page at 1.08:1. */}
+                    <span style={{ fontSize: 12, minWidth: 14, textAlign: 'center', color: C.ink }}>{item.qty}</span>
                     <button aria-label={`${lang === 'pt' ? 'Aumentar quantidade de' : 'Increase quantity of'} ${p.name}`} onClick={() => dispatchCart({ type: 'INC', idx })}>
                       <Plus size={12} />
                     </button>
                   </div>
-                  <div style={{ fontSize: 13, fontWeight: 800, color: C.black }}>{fmtPrice(p)}</div>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: C.ink }}>{fmtPrice(p)}</div>
                 </div>
               </div>
             </div>
@@ -244,7 +247,7 @@ export function Cart() {
 
       <div className="ump-cart-summary" style={{ padding: '0 20px' }}>
         {hasOutOfStockLine && (
-          <div style={{ marginBottom: 12, padding: '10px 12px', background: '#FBEAE4', color: '#A6483A', fontSize: 11, borderRadius: 6, lineHeight: 1.5 }}>
+          <div style={{ marginBottom: 12, padding: '10px 12px', background: C.dangerBg, color: C.danger, fontSize: 11, borderRadius: 6, lineHeight: 1.5 }}>
             {t('cartOutOfStockBlockNotice', lang)}
           </div>
         )}
@@ -281,8 +284,9 @@ export function Cart() {
             style={{
               width: '100%',
               padding: 14,
-              background: loading || hasOutOfStockLine ? C.inkSoft : C.black,
-              color: C.onDarkGold,
+              background: loading || hasOutOfStockLine ? C.disabledBg : C.ctaBg,
+              border: `1px solid ${loading || hasOutOfStockLine ? C.disabledBg : C.ctaBorder}`,
+              color: loading || hasOutOfStockLine ? C.disabledFg : C.onDarkGold,
               fontSize: 12,
               fontWeight: 800,
               letterSpacing: 1.5,

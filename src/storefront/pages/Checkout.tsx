@@ -891,7 +891,7 @@ export function Checkout() {
                 value={form.city}
                 onChange={(e) => setForm({ ...form, city: e.target.value })}
                 required
-                style={{ width: '100%', padding: '11px 12px', fontSize: 13, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.paper, color: C.ink }}
+                style={{ width: '100%', padding: '11px 12px', fontSize: 13, border: `1px solid ${C.fieldBorder}`, borderRadius: 6, background: C.paper, color: C.ink }}
               >
                 <option value="">{t('selectMunicipality', lang)}</option>
                 {LUANDA_MUNICIPALITIES.map((municipality) => (
@@ -984,19 +984,19 @@ export function Checkout() {
                 onChange={(e) => setCouponInput(e.target.value)}
                 placeholder={t('couponPlaceholder', lang)}
                 aria-label={t('couponLabel', lang)}
-                style={{ flex: 1, minWidth: 0, padding: '10px 12px', fontSize: 13, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.paper, color: C.ink, textTransform: 'uppercase' }}
+                style={{ flex: 1, minWidth: 0, padding: '10px 12px', fontSize: 13, border: `1px solid ${C.fieldBorder}`, borderRadius: 6, background: C.paper, color: C.ink, textTransform: 'uppercase' }}
               />
               <button
                 type="button"
                 onClick={handleApplyCoupon}
                 disabled={couponChecking || !couponInput.trim()}
-                style={{ padding: '0 16px', fontSize: 11, fontWeight: 800, color: C.ink, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.paper, flexShrink: 0 }}
+                style={{ padding: '0 16px', fontSize: 11, fontWeight: 800, color: C.ink, border: `1px solid ${C.fieldBorder}`, borderRadius: 6, background: C.paper, flexShrink: 0 }}
               >
                 {couponChecking ? t('couponChecking', lang) : t('couponApply', lang)}
               </button>
             </div>
           )}
-          {couponError && <div data-testid="coupon-error" style={{ marginTop: 6, fontSize: 11, color: '#B95545' }}>{couponError}</div>}
+          {couponError && <div data-testid="coupon-error" style={{ marginTop: 6, fontSize: 11, color: C.dangerStrong }}>{couponError}</div>}
         </div>
 
         {usesEurSettlement && (
@@ -1015,7 +1015,7 @@ export function Checkout() {
         </div>
 
         {error && (
-          <div ref={errorRef} role="alert" tabIndex={-1} style={{ marginTop: 16, padding: 12, background: '#FBEAE4', color: '#A6483A', fontSize: 12, borderRadius: 6 }}>{error}</div>
+          <div ref={errorRef} role="alert" tabIndex={-1} style={{ marginTop: 16, padding: 12, background: C.dangerBg, color: C.danger, fontSize: 12, borderRadius: 6 }}>{error}</div>
         )}
 
         {appyPayOrder && (
@@ -1053,8 +1053,9 @@ export function Checkout() {
               width: '100%',
               marginTop: 20,
               padding: 14,
-              background: submitting ? C.inkSoft : C.black,
-              color: C.onDarkGold,
+              background: submitting ? C.disabledBg : C.ctaBg,
+              border: `1px solid ${submitting ? C.disabledBg : C.ctaBorder}`,
+              color: submitting ? C.disabledFg : C.onDarkGold,
               fontSize: 12,
               fontWeight: 800,
               letterSpacing: 1.5,
@@ -1115,7 +1116,7 @@ function Field({
           width: '100%',
           padding: '10px 12px',
           fontSize: 13,
-          border: `1px solid ${C.rule}`,
+          border: `1px solid ${C.fieldBorder}`,
           borderRadius: 6,
           background: disabled ? C.subtleBg : C.paper,
           color: disabled ? C.inkSoft : C.ink,
@@ -1210,7 +1211,7 @@ function PhoneField({
               width: 96,
               padding: '10px 6px',
               fontSize: 13,
-              border: `1px solid ${C.rule}`,
+              border: `1px solid ${C.fieldBorder}`,
               borderRadius: 6,
               background: C.paper,
               color: C.ink,
@@ -1240,7 +1241,7 @@ function PhoneField({
                 // audit, Finding 5).
                 width: 'min(270px, calc(100vw - 48px))',
                 background: C.paper,
-                border: `1px solid ${C.rule}`,
+                border: `1px solid ${C.fieldBorder}`,
                 borderRadius: 8,
                 boxShadow: '0 10px 28px rgba(0,0,0,0.16)',
                 zIndex: 50,
@@ -1267,7 +1268,7 @@ function PhoneField({
                   margin: 8,
                   padding: '8px 10px',
                   fontSize: 13,
-                  border: `1px solid ${C.rule}`,
+                  border: `1px solid ${C.fieldBorder}`,
                   borderRadius: 6,
                   background: C.paper,
                   color: C.ink,
@@ -1316,7 +1317,7 @@ function PhoneField({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           required={required}
-          style={{ flex: 1, minWidth: 0, padding: '10px 12px', fontSize: 13, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.paper, color: C.ink }}
+          style={{ flex: 1, minWidth: 0, padding: '10px 12px', fontSize: 13, border: `1px solid ${C.fieldBorder}`, borderRadius: 6, background: C.paper, color: C.ink }}
         />
       </div>
     </label>
@@ -1331,7 +1332,7 @@ function RadioRow({ checked, onSelect, label, name, value }: { checked: boolean;
         alignItems: 'center',
         gap: 10,
         padding: '10px 12px',
-        border: `1px solid ${checked ? C.gold : C.rule}`,
+        border: `1px solid ${checked ? C.gold : C.fieldBorder}`,
         borderRadius: 6,
         background: checked ? C.tagBg : C.paper,
         textAlign: 'left',

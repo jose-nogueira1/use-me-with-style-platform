@@ -45,6 +45,7 @@ export function ProductPhoto({
   if (imageUrl && failedUrl !== imageUrl) {
     return (
       <img
+        data-artwork
         src={imageUrl}
         alt={image?.alt || ''}
         loading="lazy"
@@ -57,7 +58,14 @@ export function ProductPhoto({
 
   const s = TONE_STYLES[tone];
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%', background: s.bg, overflow: 'hidden', borderRadius: radius }}>
+    // data-artwork (2026-07-30): marks this as imagery for the contrast
+    // guard in e2e/helpers/contrast.ts. The placeholder is built from plain
+    // background colours -- no <img>, no gradient, no <svg> -- so there is
+    // nothing for the guard to detect heuristically, and anything painted on
+    // top of it would otherwise be scored against the page colour behind it
+    // instead of the artwork actually under it. Purely a test hook; it has
+    // no styling or behavioural effect.
+    <div data-artwork style={{ position: 'relative', width: '100%', height: '100%', background: s.bg, overflow: 'hidden', borderRadius: radius }}>
       <div style={{ position: 'absolute', inset: 0, height: '45%', background: s.highlight, opacity: 0.42 }} />
       <div
         style={{

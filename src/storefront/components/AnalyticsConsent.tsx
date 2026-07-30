@@ -34,8 +34,8 @@ export function AnalyticsConsentManager() {
         {lang === 'pt' ? 'Usamos cookies analíticos opcionais da Meta para medir visitas e compras e melhorar a loja. Pode recusar sem afetar a sua compra.' : 'We use optional Meta analytics cookies to measure visits and purchases and improve the shop. You can reject them without affecting your purchase.'}
       </div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 14 }}>
-        <button onClick={() => choose('rejected')} style={{ padding: '10px 14px', border: `1px solid ${C.rule}`, borderRadius: 7, color: C.ink, fontWeight: 700 }}>{lang === 'pt' ? 'Recusar' : 'Reject'}</button>
-        <button onClick={() => choose('accepted')} style={{ padding: '10px 14px', borderRadius: 7, background: C.black, color: C.onDarkGold, fontWeight: 800 }}>{lang === 'pt' ? 'Aceitar' : 'Accept'}</button>
+        <button onClick={() => choose('rejected')} style={{ padding: '10px 14px', border: `1px solid ${C.fieldBorder}`, borderRadius: 7, color: C.ink, fontWeight: 700 }}>{lang === 'pt' ? 'Recusar' : 'Reject'}</button>
+        <button onClick={() => choose('accepted')} style={{ padding: '10px 14px', borderRadius: 7, background: C.ctaBg, border: `1px solid ${C.ctaBorder}`, color: C.onDarkGold, fontWeight: 800 }}>{lang === 'pt' ? 'Aceitar' : 'Accept'}</button>
       </div>
     </section>
   );
