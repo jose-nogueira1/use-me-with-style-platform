@@ -57,6 +57,7 @@ export function trackMetaEvent(name: string, params: MetaEventParams = {}) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
+      analyticsConsent: true,
       eventName: name,
       eventId: id,
       eventSourceUrl: window.location.href,
