@@ -68,14 +68,12 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
         }
 
         /* --- Responsive storefront: mobile-first, desktop-ready --- */
-        /* The shell itself is full-bleed on desktop (header/hero/footer
-           backgrounds span the whole browser width, matching the Figma
-           desktop frames) -- only a phone-width column on mobile, where
-           there's no "page chrome vs. content" distinction yet. Individual
-           content rows use .ump-content-width below to stay a readable
-           max-width without capping the surrounding page background. */
-        .ump-shell { max-width: 480px; margin: 0 auto; width: 100%; }
-        @media (min-width: 720px) { .ump-shell { max-width: none; } }
+        /* The shell always fills the viewport. Content rows below provide
+           their own readable max-widths. The previous 480px shell cap stayed
+           active all the way to the 720px desktop breakpoint, producing a
+           phone-width storefront with large side gutters on tablets, split
+           view, and zoomed browser windows in the 481-719px range. */
+        .ump-shell { width: 100%; }
 
         /* Content rows stay a comfortable reading width on typical monitors,
            but scale up further on larger/ultra-wide screens instead of
@@ -400,17 +398,12 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
           .ump-admin-product-grid { grid-template-columns: minmax(0, 1fr) !important; }
         }
 
-        /* PageHeader's search/notification popovers are positioned
-           right: 0 relative to their own icon button so they line up under
-           the icon on desktop, where the button cluster sits at the far
-           right of the header row. Below 860px the header row wraps and the
-           icon cluster moves to the left edge (see PageHeader.tsx's
-           space-between layout with only one item on the wrapped line), so a
-           fixed 360px-wide, right-anchored popover would extend off-screen
-           to the left. Re-anchor to the button's left edge and cap the width
-           to the viewport instead. */
+        /* Mobile search/notification controls live at the right edge of the
+           persistent admin bar. Keep their popovers right-anchored so they
+           grow back into the viewport; left-anchoring here made the panel
+           extend beyond the right edge and clip its content. */
         @media (max-width: 860px) {
-          .ump-admin-popover { left: 0 !important; right: auto !important; width: min(340px, calc(100vw - 56px)) !important; }
+          .ump-admin-popover { left: auto !important; right: 0 !important; width: min(340px, calc(100vw - 32px)) !important; }
         }
 
         /* Admin two/three-column card grids (dashboard, orders + side panel,
