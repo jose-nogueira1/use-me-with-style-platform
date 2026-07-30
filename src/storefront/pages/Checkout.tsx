@@ -475,6 +475,9 @@ export function Checkout() {
   }, [market, settings]);
 
   useEffect(() => {
+    // Weight crossing the courier-only threshold invalidates the selected
+    // delivery method, so synchronize this dependent form control.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (isHeavyPortugalParcel) setDeliveryMethod('courier_pt');
   }, [isHeavyPortugalParcel]);
 

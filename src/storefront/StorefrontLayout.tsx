@@ -29,6 +29,37 @@ export function StorefrontLayout() {
   const isRoot = ROOT_PATHS.includes(location.pathname);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Each market has its own public hostname, so canonical metadata must be
+  // derived from the live origin rather than the apex-domain env value. Keep
+  // query strings and fragments out of the canonical URL: catalogue filters,
+  // Stripe return parameters, and in-page anchors are alternate states of the
+  // same route, not separately indexable pages.
+  useEffect(() => {
+    const canonicalUrl = `${window.location.origin}${location.pathname}`;
+    const ensureLink = () => {
+      let element = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+      if (!element) {
+        element = document.createElement('link');
+        element.rel = 'canonical';
+        document.head.appendChild(element);
+      }
+      element.href = canonicalUrl;
+    };
+    const ensureMeta = (property: string, content: string) => {
+      let element = document.head.querySelector<HTMLMetaElement>(`meta[property="${property}"]`);
+      if (!element) {
+        element = document.createElement('meta');
+        element.setAttribute('property', property);
+        document.head.appendChild(element);
+      }
+      element.content = content;
+    };
+
+    ensureLink();
+    ensureMeta('og:url', canonicalUrl);
+    ensureMeta('og:site_name', 'Use Me With Style');
+  }, [location.pathname]);
+
   // Real brand wordmark (see components/BrandLogo.tsx for why gold is
   // synthesized via a CSS mask rather than loaded from a separate asset).
   // Gold matches the original design's use of the accent color for the Home
