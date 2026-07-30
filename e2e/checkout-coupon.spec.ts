@@ -37,7 +37,7 @@ test.describe('Checkout authoritative delivery and coupon behaviour', () => {
     expect(digitsOnly(await page.getByTestId('checkout-total').innerText())).toContain('80000');
   });
 
-  test('PT: coupon survives a PayPal -> Stripe -> MB WAY chain and a delivery-method switch', async ({ page }) => {
+  test('PT: coupon survives a PayPal -> Stripe switch and a delivery-method switch', async ({ page }) => {
     await mockCheckoutBackend(page);
     await seedCheckout(page, { market: 'PT', lang: 'en' });
     await page.goto('/checkout');
@@ -57,7 +57,7 @@ test.describe('Checkout authoritative delivery and coupon behaviour', () => {
     // PT never changes settlement currency, but every payment method still
     // re-triggers the revalidation effect -- confirm the coupon survives
     // the whole chain instead of only the first switch.
-    for (const method of ['stripe', 'mbway']) {
+    for (const method of ['stripe']) {
       await page.locator(`input[name="payment"][value="${method}"]`).check();
       await expect(page.getByTestId('applied-coupon')).toContainText('SAVE10');
       await expect(page.getByTestId('checkout-discount')).toContainText('-€10.00');

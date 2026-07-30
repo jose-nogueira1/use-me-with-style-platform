@@ -366,6 +366,7 @@ function ThemeToggle({
   const isDark = mode === 'dark';
   return (
     <button
+      className="ump-theme-toggle"
       onClick={() => onChange(isDark ? 'light' : 'dark')}
       aria-label={mode === 'dark' ? (lang === 'pt' ? 'Usar tema claro' : 'Use light theme') : (lang === 'pt' ? 'Usar tema escuro' : 'Use dark theme')}
       aria-pressed={isDark}

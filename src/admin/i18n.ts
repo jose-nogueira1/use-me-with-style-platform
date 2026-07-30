@@ -157,7 +157,7 @@ export const T: Record<string, Record<Lang, string>> = {
   },
   marketSetup: { en: 'Market setup', pt: 'Configuração dos mercados' },
   portugalPayments: { en: 'Portugal payments', pt: 'Pagamentos em Portugal' },
-  portugalPaymentsDetail: { en: 'PayPal, Stripe, MBWay placeholders ready.', pt: 'PayPal, Stripe e MB WAY preparados.' },
+  portugalPaymentsDetail: { en: 'PayPal and Stripe configured.', pt: 'PayPal e Stripe configurados.' },
   readyBadge: { en: 'Ready', pt: 'Pronto' },
   angolaPayments: { en: 'Angola payments', pt: 'Pagamentos em Angola' },
   angolaPaymentsDetail: { en: 'Appy Pay team response pending.', pt: 'A aguardar resposta da equipa AppyPay.' },
@@ -719,8 +719,8 @@ export const T: Record<string, Record<Lang, string>> = {
     en: 'Order capture and statuses (New → Review → Processing → Shipped → Delivered)',
   },
   roadmapPhase1Item3: {
-    pt: 'Pagamento: PayPal/Stripe/MBWay (PT), transferência bancária manual (AO)',
-    en: 'Payments: PayPal/Stripe/MB WAY (PT), manual bank transfer (AO)',
+    pt: 'Pagamento: PayPal/Stripe (PT), widget AppyPay (AO)',
+    en: 'Payments: PayPal/Stripe (PT), AppyPay widget (AO)',
   },
   roadmapPhase1Item4: {
     pt: 'Admin: encomendas, produtos, clientes, definições de mercado',

@@ -166,6 +166,9 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
           .ump-mobile-menu-btn { display: none !important; }
           .ump-mobile-menu { display: none !important; }
         }
+        @media (max-width: 340px) {
+          .ump-theme-toggle { display: none !important; }
+        }
 
         /* Bottom tab bar is a mobile pattern; desktop uses the header nav.
            Same 720px cutover as the header chrome above -- it used to be

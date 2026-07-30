@@ -37,7 +37,7 @@ const DEFAULTS: MarketSettings = {
   angolaDeliveryMethods: ['courier_ao'],
   angolaMunicipalityPrices: DEFAULT_ANGOLA_MUNICIPALITY_PRICES,
   angolaFreeShippingThreshold: 80000,
-  portugalPaymentMethods: ['paypal', 'stripe', 'mbway'],
+  portugalPaymentMethods: ['paypal', 'stripe'],
   portugalDeliveryMethods: ['ctt', 'courier_pt'],
   portugalStandardShippingPrice: 4.9,
   portugalTrackedShippingPrice: 6.9,

@@ -39,7 +39,7 @@ const DEFAULT_MARKET_SETTINGS: MarketSettings = {
     Mulenvos: 5500, Kilamba: 5000, 'Hoji Ya Henda': 3500, Ingombota: 2500,
   },
   angolaFreeShippingThreshold: 80000,
-  portugalPaymentMethods: ['paypal', 'stripe', 'mbway'],
+  portugalPaymentMethods: ['paypal', 'stripe'],
   portugalDeliveryMethods: ['ctt', 'courier_pt'],
   portugalStandardShippingPrice: 4.9,
   portugalTrackedShippingPrice: 6.9,

@@ -376,7 +376,7 @@ export type MarketSettings = {
   angolaBankTransferInstructionsEN?: string;
   /** Per-market payment/delivery method lists (2026-07-10 decision). Angola:
    * Multicaixa Express (AppyPay) + Stripe + PayPal (Stripe/PayPal settle in
-   * EUR). Portugal: PayPal + Stripe + MB WAY, unchanged. */
+   * EUR). Portugal Phase 1: PayPal + Stripe. */
   angolaPaymentMethods: string[];
   angolaDeliveryMethods: string[];
   angolaMunicipalityPrices: Record<string, number>;
