@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { MessageCircle, FileText } from 'lucide-react';
+import { MessageCircle, FileText, Mail } from 'lucide-react';
 import { C, t, type Lang } from '../../theme';
 import { useApp, type Market } from '../../state/AppContext';
 import { BrandLogo } from '../../components/BrandLogo';
@@ -7,9 +7,8 @@ import { clearAnalyticsConsent } from '../../lib/analyticsConsent';
 
 // Site-wide footer, rendered once from StorefrontLayout so it appears on
 // every storefront page -- previously the only "footer" was a two-line
-// tagline baked into Home.tsx alone. The WhatsApp temporarily routes to the
-// developer's number until the client business account is ready for
-// handoff.
+// tagline baked into Home.tsx alone. Customer-support and legal contacts are
+// client-owned domain mailboxes and therefore remain consistent site-wide.
 //
 // Legal links (added 2026-07-24, user request): Privacy Policy and Terms &
 // Conditions link to real pages now (/politica-privacidade,
@@ -67,6 +66,10 @@ export function Footer() {
             <MessageCircle size={14} color={C.goldDeep} />
             {t('chatOnWhatsapp', lang)}
           </a>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 14 }}>
+            <ContactLink href="mailto:support@usemewithstyle.shop" label={lang === 'pt' ? 'Apoio' : 'Support'} email="support@usemewithstyle.shop" />
+            <ContactLink href="mailto:legal@usemewithstyle.shop" label={lang === 'pt' ? 'Legal e privacidade' : 'Legal and privacy'} email="legal@usemewithstyle.shop" />
+          </div>
         </div>
 
         <FooterCol heading={t('footerShopHeading', lang)} links={SHOP_LINKS} lang={lang} />
@@ -110,6 +113,15 @@ export function Footer() {
         <MarketSwitchLink market={market} setMarket={setMarket} lang={lang} />
       </div>
     </footer>
+  );
+}
+
+function ContactLink({ href, label, email }: { href: string; label: string; email: string }) {
+  return (
+    <a href={href} style={{ display: 'inline-flex', alignItems: 'flex-start', gap: 7, color: C.ink, fontSize: 10.5, lineHeight: 1.35, textDecoration: 'none' }}>
+      <Mail size={13} color={C.goldDeep} style={{ marginTop: 1, flexShrink: 0 }} />
+      <span><span style={{ color: C.inkSoft }}>{label}:</span><br />{email}</span>
+    </a>
   );
 }
 
