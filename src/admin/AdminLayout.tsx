@@ -6,6 +6,7 @@ import { useApp } from '../state/AppContext';
 import { useAdminAuth } from './AdminAuthContext';
 import { adminListOrders, adminListProducts } from '../lib/api';
 import { BrandLogo } from '../components/BrandLogo';
+import { RouteToast } from './components/Toast';
 import { AdminLanguageSwitch } from './AdminTranslation';
 import { NotificationsButton, SearchButton } from './components/PageHeader';
 import { t } from './i18n';
@@ -174,6 +175,10 @@ export function AdminLayout() {
           <Outlet />
         </div>
       </div>
+      {/* Lives above the router outlet so a confirmation survives the
+          navigation that triggered it -- saving a product sends the admin
+          back to the list, which unmounts the editor. */}
+      <RouteToast />
     </div>
   );
 }

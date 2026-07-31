@@ -138,6 +138,8 @@ export function OrderDetail() {
         subtitle={t('orderDetailSubtitle', lang)}
         cta={order.status === 'payment_review' ? t('confirmPayment', lang) : t('updateStatus', lang)}
         onCta={() => handleStatusChange(order.status === 'payment_review' ? 'processing' : order.status)}
+        backTo="/admin/encomendas"
+        backLabel={t('backToOrders', lang)}
       />
 
       <div style={{ padding: '20px 28px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>

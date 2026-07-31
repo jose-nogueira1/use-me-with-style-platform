@@ -1332,7 +1332,7 @@ function RadioRow({ checked, onSelect, label, name, value }: { checked: boolean;
         alignItems: 'center',
         gap: 10,
         padding: '10px 12px',
-        border: `1px solid ${checked ? C.gold : C.fieldBorder}`,
+        border: `1px solid ${checked ? C.goldDeep : C.fieldBorder}`,
         borderRadius: 6,
         background: checked ? C.tagBg : C.paper,
         textAlign: 'left',

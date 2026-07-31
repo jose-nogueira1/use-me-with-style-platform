@@ -197,7 +197,7 @@ export function ProductDetail() {
                     padding: '6px 12px',
                     fontSize: 11,
                     borderRadius: 20,
-                    border: `1.5px solid ${activeColor === co.id ? C.gold : C.fieldBorder}`,
+                    border: `1.5px solid ${activeColor === co.id ? C.goldDeep : C.fieldBorder}`,
                     background: activeColor === co.id ? C.tagBg : C.paper,
                     color: activeColor === co.id ? C.goldDeep : C.ink,
                     fontWeight: activeColor === co.id ? 700 : 500,

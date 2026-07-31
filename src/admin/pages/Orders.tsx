@@ -158,7 +158,28 @@ export function Orders() {
                 ]}
               />
               {orders.map((o) => (
-                <div key={o.id} onClick={() => setSelected(o)} style={{ cursor: 'pointer', background: selected?.id === o.id ? '#FFF7DD' : 'transparent' }}>
+                // Clicking anywhere on the row opens the order (2026-07-30
+                // user report: the row only highlighted a summary panel, and
+                // the detail view needed a second click on a button). The
+                // summary panel still updates, so it stays useful when
+                // navigating back.
+                <div
+                  key={o.id}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={t('openOrderDetail', lang)}
+                  onClick={() => {
+                    setSelected(o);
+                    navigate(`/admin/encomendas/${o.id}`);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      navigate(`/admin/encomendas/${o.id}`);
+                    }
+                  }}
+                  style={{ cursor: 'pointer', background: selected?.id === o.id ? '#FFF7DD' : 'transparent' }}
+                >
                   <TableRow
                     cells={[
                       `#${o.orderNumber}`,

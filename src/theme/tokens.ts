@@ -105,6 +105,12 @@ export const C = {
   photoChipBg: 'var(--c-photo-chip-bg)',
   photoChipFg: 'var(--c-photo-chip-fg)',
 
+  // Border for the champagne-filled hero CTA. The fill is only 1.43:1
+  // against the cream hero band in light mode, so the button had no
+  // perceivable edge; in dark mode the same fill is 10.32:1 and the border
+  // is set to the fill colour, i.e. invisible and unchanged.
+  heroCtaBorder: 'var(--c-hero-cta-border)',
+
   // Scrims over imagery/modals. Constant across themes on purpose: they
   // darken whatever is beneath them, so they don't need to flip.
   scrim: 'rgba(5,5,5,0.4)',
@@ -139,7 +145,14 @@ export const LIGHT_VARS: Record<string, string> = {
   '--c-paper': '#FFFDF8',
   '--c-ink': '#171514',
   '--c-ink-soft': '#6C655D',
-  '--c-gold-deep': '#937027',
+  // Darkened from #937027 on 2026-07-30, approved by the client. The old
+  // value scored exactly 4.50:1 on paper -- tuned to just clear AA there --
+  // which meant it failed on every tinted surface the design also uses it
+  // on: hero band 3.79:1, footer 4.17:1, tag/chip backgrounds 4.13:1. It is
+  // the storefront's eyebrow-label, footer-heading and icon colour, so that
+  // was most of the small gold text on the site. Now 5.00-5.95:1 across all
+  // four surfaces. The dark-mode value is unchanged; it was already 9.4+.
+  '--c-gold-deep': '#7E5D1F',
   '--c-white': '#FFFFFF',
   '--c-tag-bg': '#FCF3D8',
   '--c-rule': '#D8CDB7',
@@ -151,10 +164,18 @@ export const LIGHT_VARS: Record<string, string> = {
   '--c-success-text': '#4B5944',
   '--c-hero-bg': '#F1E9D6',
   '--c-hero-text': '#171514',
-  '--c-hero-accent': '#937027',
+  // Darkened alongside --c-gold-deep, which it happened to share a value
+  // with. This is the hero eyebrow on Home and About, the order-number and
+  // continue-shopping link in the confirmation hero, and the header text and
+  // wordmark while they sit over the hero band -- 3.79:1 -> 5.00:1.
+  '--c-hero-accent': '#7E5D1F',
   '--c-hero-subtitle': '#6C655D',
   '--c-hero-field-bg': '#FFFFFF',
-  '--c-hero-field-border': '#D8CDB7',
+  // 1.30:1 -> 3.53:1 against the hero band. This is the border on the
+  // header's market/theme/cart controls while they sit over the hero, and
+  // on the order-number box in the confirmation hero.
+  '--c-hero-field-border': '#877868',
+  '--c-hero-cta-border': '#8A6C24',
   // Same value as the fill -> the border is invisible and light mode renders
   // exactly as it did before these tokens were introduced.
   '--c-cta-bg': '#050505',
@@ -189,7 +210,11 @@ export const DARK_VARS: Record<string, string> = {
   '--c-hero-accent': '#E5C24F',
   '--c-hero-subtitle': '#D9D1C2',
   '--c-hero-field-bg': '#171310',
-  '--c-hero-field-border': '#6B531E',
+  // 2.45:1 -> 3.61:1 against the dark hero band.
+  '--c-hero-field-border': '#8A6C24',
+  // Same as the champagne fill -> invisible border. Dark mode already had
+  // 10.32:1 of fill contrast here, so nothing needed to change visually.
+  '--c-hero-cta-border': '#E5C24F',
   // Fill stays black (brand), but the deep-gold edge gives the button a
   // perceivable boundary: 3.93:1 against --c-paper, clearing WCAG 1.4.11.
   '--c-cta-bg': '#050505',

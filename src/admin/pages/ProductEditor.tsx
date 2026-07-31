@@ -25,6 +25,7 @@ import {
   type ApiVariant,
 } from '../../lib/api';
 import { PageHeader } from '../components/PageHeader';
+import { navigateWithToast } from '../lib/toastNavigation';
 import { t } from '../i18n';
 
 // Catalogue taxonomies are managed in the Product settings page
@@ -248,9 +249,14 @@ export function ProductEditor() {
     try {
       if (isNew) {
         const created = await adminCreateProduct(payload);
-        navigate(`/admin/produtos/${created.id}`);
+        // Stays in the editor rather than bouncing to the list: image upload
+        // needs a saved product to attach to, so sending the admin away here
+        // would mean re-opening the item they just made in order to add
+        // photographs.
+        navigateWithToast(navigate, `/admin/produtos/${created.id}`, t('productCreated', lang, { name: payload.name ?? '' }));
       } else if (existing) {
         await adminUpdateProduct(existing.id, payload);
+        navigateWithToast(navigate, '/admin/produtos', t('productSaved', lang, { name: payload.name ?? '' }));
       }
     } catch {
       setError(t('couldntSaveBackend', lang));
@@ -266,7 +272,7 @@ export function ProductEditor() {
     setError(null);
     try {
       await adminDeleteProduct(existing.id);
-      navigate('/admin/produtos');
+      navigateWithToast(navigate, '/admin/produtos', t('productDeleted', lang, { name: form.name }));
     } catch {
       setError(t('couldntDeleteProduct', lang));
       setSaving(false);
@@ -304,6 +310,9 @@ export function ProductEditor() {
         subtitle={t('enterEverythingSubtitle', lang)}
         cta={isNew ? t('publishProduct', lang) : t('saveChanges', lang)}
         onCta={handleSave}
+        ctaBusy={saving}
+        backTo="/admin/produtos"
+        backLabel={t('backToProducts', lang)}
       />
 
       {error && <div style={{ margin: '16px 28px 0', fontSize: 13, color: '#B95545' }}>{error}</div>}

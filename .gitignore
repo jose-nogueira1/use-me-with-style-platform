@@ -25,3 +25,19 @@ dist-ssr
 *.sln
 *.sw?
 .vercel
+
+# Generated QA / build artefacts (2026-07-30). These accumulate hundreds of
+# files -- PDF page renders, Playwright traces and screenshots -- and were
+# only ever untracked by luck: a single `git add -A` would have swept the
+# lot into a commit.
+#
+# Deliberately NOT ignoring tmp/ or output/ wholesale: the client-facing
+# PDFs (output/pdf/) and the scripts that generate them (tmp/pdfs/*.py) are
+# tracked on purpose. Only the throwaway render directories are ignored.
+test-results/
+playwright-report/
+.playwright-cli/
+output/playwright/
+tmp/pdf-review/
+tmp/pdfs/render-*/
+tmp/pdfs/rendered*/

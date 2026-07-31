@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { AlertTriangle, Bell, Clock, MessageCircle, Package, Search, ShoppingBag, User, X } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { AlertTriangle, ArrowLeft, Bell, Clock, MessageCircle, Package, Search, ShoppingBag, User, X } from 'lucide-react';
 import { C, F } from '../../theme';
 import { useApp } from '../../state/AppContext';
 import { t } from '../i18n';
@@ -52,12 +52,25 @@ export function PageHeader({
   subtitle,
   cta,
   onCta,
+  ctaBusy,
+  backTo,
+  backLabel,
 }: {
   eyebrow: string;
   title: string;
   subtitle: string;
   cta?: string;
   onCta?: () => void;
+  /** Disables the CTA and shows a pending state. Without this the header
+   * button gave no sign it had done anything, which read as "the top save
+   * button is broken" while the identical one at the bottom of the form --
+   * which does show a pending state -- appeared to work (2026-07-30). */
+  ctaBusy?: boolean;
+  /** Renders a back control above the title. Detail screens previously had
+   * only the breadcrumb text, which isn't clickable, so the only way back to
+   * a list was the sidebar or the browser's Back button. */
+  backTo?: string;
+  backLabel?: string;
 }) {
   return (
     <div
@@ -71,6 +84,28 @@ export function PageHeader({
       }}
     >
       <div style={{ maxWidth: 680 }}>
+        {backTo && (
+          <Link
+            to={backTo}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 5,
+              marginBottom: 10,
+              padding: '5px 10px 5px 7px',
+              borderRadius: 6,
+              border: `1px solid ${C.rule}`,
+              background: C.paper,
+              color: C.ink,
+              fontSize: 11,
+              fontWeight: 700,
+              textDecoration: 'none',
+            }}
+          >
+            <ArrowLeft size={13} />
+            {backLabel}
+          </Link>
+        )}
         <div style={{ fontSize: 10, fontWeight: 800, color: C.goldDeep, marginBottom: 4 }}>{eyebrow}</div>
         <div style={{ fontFamily: F.display, fontSize: 30, fontWeight: 800, color: C.ink, lineHeight: 1.2 }}>{title}</div>
         <div style={{ fontSize: 12, color: C.inkSoft, marginTop: 8 }}>{subtitle}</div>
@@ -88,9 +123,21 @@ export function PageHeader({
         {cta && (
           <button
             onClick={onCta}
-            style={{ padding: '0 20px', height: 42, borderRadius: 6, background: C.black, color: C.onDarkGold, fontSize: 11, fontWeight: 800, whiteSpace: 'nowrap' }}
+            disabled={ctaBusy}
+            aria-busy={ctaBusy || undefined}
+            style={{
+              padding: '0 20px',
+              height: 42,
+              borderRadius: 6,
+              background: ctaBusy ? C.disabledBg : C.black,
+              color: ctaBusy ? C.disabledFg : C.onDarkGold,
+              fontSize: 11,
+              fontWeight: 800,
+              whiteSpace: 'nowrap',
+              cursor: ctaBusy ? 'default' : 'pointer',
+            }}
           >
-            {cta}
+            {ctaBusy ? '…' : cta}
           </button>
         )}
       </div>

@@ -89,13 +89,27 @@ export function Browse() {
   // render (comparing against the last-seen URL value) rather than in a
   // useEffect, per https://react.dev/learn/you-might-not-need-an-effect --
   // avoids an extra render pass and the associated lint rule.
-  const urlCat = searchParams.get('cat') || 'all';
-  const [activeCat, setActiveCat] = useState(urlCat);
-  const [syncedUrlCat, setSyncedUrlCat] = useState(urlCat);
-  if (urlCat !== syncedUrlCat) {
-    setSyncedUrlCat(urlCat);
-    setActiveCat(urlCat);
-  }
+  //
+  // Multi-select since 2026-07-30, encoded as a comma-separated list
+  // (?cat=vestidos,tops). A single value still parses, so every existing
+  // nav link, home category tile and bookmarked URL keeps working
+  // unchanged. An empty list means "all" -- 'all' is never stored, it's
+  // just the absence of a selection.
+  //
+  // The mirrored local state + render-time resync described above is gone:
+  // now that selecting a category writes through to ?cat=, the URL can just
+  // BE the state. Keeping both would reintroduce the same class of bug from
+  // the other side -- setSearchParams triggers a router navigation, and if
+  // that landed in a later render than the local setState, the resync would
+  // briefly revert the selection the shopper just made.
+  const activeCats = useMemo(
+    () =>
+      (searchParams.get('cat') || '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter((s) => s && s !== 'all'),
+    [searchParams],
+  );
 
   // ?tag=<slug> "collection" filter (2026-07-25 follow-up): the home hero
   // button can now point at a merchandising tag instead of just a category
@@ -120,22 +134,88 @@ export function Browse() {
 
   const [showFilters, setShowFilters] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterSize, setFilterSize] = useState<string | null>(null);
-  const [filterColor, setFilterColor] = useState<string | null>(null);
+  // Category, size and colour are all multi-select (2026-07-30): a shopper
+  // who wears S or M, or who is happy with black or navy, or who wants to
+  // browse dresses and sets together, should be able to say so in one pass.
+  // Standard faceted behaviour applies -- OR within a dimension, AND across
+  // dimensions, so "dresses or sets" AND "S or M" AND "black or navy".
+  const [filterSizes, setFilterSizes] = useState<string[]>([]);
+  const [filterColors, setFilterColors] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<'default' | 'price-asc' | 'price-desc'>('default');
+
+  const toggleInList = (setter: React.Dispatch<React.SetStateAction<string[]>>) => (value: string | null) => {
+    if (value === null) {
+      setter([]);
+      return;
+    }
+    setter((prev) => (prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]));
+  };
+  const toggleSize = toggleInList(setFilterSizes);
+  const toggleColor = toggleInList(setFilterColors);
+
+  // Category writes straight to ?cat=, keeping the filtered view shareable
+  // and bookmarkable. `replace` so that toggling chips doesn't stack up
+  // history entries the shopper has to click Back through one at a time.
+  const setCats = (next: string[]) => {
+    setSearchParams(
+      (prev) => {
+        const p = new URLSearchParams(prev);
+        if (next.length) p.set('cat', next.join(','));
+        else p.delete('cat');
+        return p;
+      },
+      { replace: true },
+    );
+  };
+  const toggleCat = (value: string | null) => {
+    // 'all' is a reset affordance rather than a value that can be combined.
+    if (value === null || value === 'all') {
+      setCats([]);
+      return;
+    }
+    setCats(activeCats.includes(value) ? activeCats.filter((v) => v !== value) : [...activeCats, value]);
+  };
 
   const filtered = useMemo(() => {
     let list = products;
-    if (activeCat === 'new') list = list.filter((p) => p.isNewArrival);
-    else if (activeCat !== 'all') list = list.filter((p) => p.cat === activeCat);
+    // 'new' is a pseudo-category backed by a merch tag rather than a real
+    // category slug, so it needs its own predicate inside the OR.
+    if (activeCats.length) {
+      list = list.filter((p) => activeCats.some((c) => (c === 'new' ? p.isNewArrival : p.cat === c)));
+    }
     if (activeTag) list = list.filter((p) => p.tagSlug === activeTag);
     if (searchTerm) list = list.filter((p) => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
-    if (filterSize) list = list.filter((p) => p.sizes.includes(filterSize));
-    if (filterColor) list = list.filter((p) => p.colors.some((c) => c.id === filterColor));
+    if (filterSizes.length) list = list.filter((p) => filterSizes.some((s) => p.sizes.includes(s)));
+    if (filterColors.length) list = list.filter((p) => p.colors.some((c) => filterColors.includes(c.id)));
     if (sortBy === 'price-asc') list = [...list].sort((a, b) => (market === 'AO' ? a.priceKz - b.priceKz : a.priceEur - b.priceEur));
     if (sortBy === 'price-desc') list = [...list].sort((a, b) => (market === 'AO' ? b.priceKz - a.priceKz : b.priceEur - a.priceEur));
     return list;
-  }, [products, activeCat, activeTag, searchTerm, filterSize, filterColor, sortBy, market]);
+  }, [products, activeCats, activeTag, searchTerm, filterSizes, filterColors, sortBy, market]);
+
+  // Clear-all-filters (2026-07-30, user request). Six independent filter
+  // dimensions had accumulated -- category, collection tag, search, size,
+  // colour and sort -- and only the tag banner and the search box had their
+  // own clear affordance, so a shopper who had narrowed on three or four at
+  // once had to undo each by hand to get back to the full catalogue.
+  //
+  // `activeTag` lives in the URL rather than in component state, so resetting
+  // it means removing the query param; everything else is local state.
+  const hasActiveFilters =
+    activeCats.length > 0 || Boolean(activeTag) || Boolean(searchTerm) ||
+    filterSizes.length > 0 || filterColors.length > 0 || sortBy !== 'default';
+
+  const clearAllFilters = () => {
+    setSearchTerm('');
+    setFilterSizes([]);
+    setFilterColors([]);
+    setSortBy('default');
+    setSearchParams((prev) => {
+      const p = new URLSearchParams(prev);
+      p.delete('tag');
+      p.delete('cat');
+      return p;
+    });
+  };
 
   const allSizes = ['XS', 'S', 'M', 'L', 'XL'];
   // Dedupe by colour id (2026-07-25 bilingual follow-up: was name, but two
@@ -149,20 +229,82 @@ export function Browse() {
     return Array.from(byId.values());
   }, [products]);
 
+  // One badge per active filter, each individually removable (2026-07-30).
+  // Derived from exactly the same state that clearAllFilters resets, so the
+  // badges are always an honest picture of what "Limpar filtros" will clear
+  // -- including sort, which is reset too and would otherwise vanish with no
+  // badge to explain it.
+  const clearTagParam = () =>
+    setSearchParams((prev) => {
+      const p = new URLSearchParams(prev);
+      p.delete('tag');
+      return p;
+    });
+
+  const activeFilterBadges: { key: string; label: string; onRemove: () => void }[] = [];
+  for (const c of activeCats) {
+    activeFilterBadges.push({
+      key: `cat:${c}`,
+      label: `${t('category', lang)}: ${cats.find((x) => x.key === c)?.label ?? c}`,
+      onRemove: () => toggleCat(c),
+    });
+  }
+  if (activeTag) {
+    activeFilterBadges.push({
+      key: 'tag',
+      label: `${t('collection', lang)}: ${activeTagLabel ?? activeTag}`,
+      onRemove: clearTagParam,
+    });
+  }
+  if (searchTerm) {
+    activeFilterBadges.push({
+      key: 'search',
+      label: `${t('searchFilterLabel', lang)}: "${searchTerm}"`,
+      onRemove: () => setSearchTerm(''),
+    });
+  }
+  // One badge per selected value rather than one per dimension, so a shopper
+  // who picked S, M and L can drop just the L.
+  for (const s of filterSizes) {
+    activeFilterBadges.push({
+      key: `size:${s}`,
+      label: `${t('size', lang)}: ${s}`,
+      onRemove: () => toggleSize(s),
+    });
+  }
+  for (const id of filterColors) {
+    activeFilterBadges.push({
+      key: `color:${id}`,
+      label: `${t('colour', lang)}: ${allColors.find((c) => c.value === id)?.label ?? id}`,
+      onRemove: () => toggleColor(id),
+    });
+  }
+  if (sortBy !== 'default') {
+    activeFilterBadges.push({
+      key: 'sort',
+      label: `${t('sort', lang)}: ${t(sortBy === 'price-asc' ? 'sortPriceAsc' : 'sortPriceDesc', lang)}`,
+      onRemove: () => setSortBy('default'),
+    });
+  }
+
   return (
     <div className="ump-browse-layout" style={{ background: C.paper }}>
       <div className="ump-browse-sidebar">
-        <div style={{ fontSize: 10, letterSpacing: 2, color: C.goldDeep, fontWeight: 800, textTransform: 'uppercase', marginBottom: 12 }}>
-          {t('filters', lang)}
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, marginBottom: 12 }}>
+          <div style={{ fontSize: 10, letterSpacing: 2, color: C.goldDeep, fontWeight: 800, textTransform: 'uppercase' }}>
+            {t('filters', lang)}
+          </div>
+          {hasActiveFilters && <ClearFiltersButton onClick={clearAllFilters} lang={lang} />}
         </div>
         <FilterGroup
           label={t('category', lang)}
           options={cats.map((c) => ({ value: c.key, label: c.label }))}
-          active={activeCat === 'all' ? null : activeCat}
-          onSelect={(key) => setActiveCat(key ?? 'all')}
+          active={activeCats}
+          onSelect={toggleCat}
+          allKey="all"
         />
-        <FilterGroup label={t('size', lang)} options={allSizes.map((s) => ({ value: s, label: s }))} active={filterSize} onSelect={setFilterSize} />
-        <FilterGroup label={t('colour', lang)} options={allColors} active={filterColor} onSelect={setFilterColor} />
+        <FilterGroup label={t('size', lang)} options={allSizes.map((s) => ({ value: s, label: s }))} active={filterSizes} onSelect={toggleSize} />
+        <FilterGroup label={t('colour', lang)} options={allColors} active={filterColors} onSelect={toggleColor} />
         <div>
           <FilterLabel>{t('sort', lang)}</FilterLabel>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -179,7 +321,7 @@ export function Browse() {
                   padding: '8px 10px',
                   fontSize: 12,
                   borderRadius: 6,
-                  border: `1px solid ${sortBy === s.key ? C.gold : C.fieldBorder}`,
+                  border: `1px solid ${sortBy === s.key ? C.goldDeep : C.fieldBorder}`,
                   background: sortBy === s.key ? C.tagBg : C.paper,
                   color: sortBy === s.key ? C.goldDeep : C.ink,
                 }}
@@ -215,16 +357,17 @@ export function Browse() {
           {cats.map((c) => (
             <button
               key={c.key}
-              onClick={() => setActiveCat(c.key)}
+              onClick={() => toggleCat(c.key)}
+              aria-pressed={c.key === 'all' ? activeCats.length === 0 : activeCats.includes(c.key)}
               style={{
                 flexShrink: 0,
                 padding: '7px 16px',
                 fontSize: 11,
                 fontWeight: 700,
                 borderRadius: 20,
-                background: activeCat === c.key ? C.ctaBg : C.paper,
-                color: activeCat === c.key ? C.onDarkGold : C.ink,
-                border: `1px solid ${activeCat === c.key ? C.ctaBorder : C.fieldBorder}`,
+                background: (c.key === 'all' ? activeCats.length === 0 : activeCats.includes(c.key)) ? C.ctaBg : C.paper,
+                color: (c.key === 'all' ? activeCats.length === 0 : activeCats.includes(c.key)) ? C.onDarkGold : C.ink,
+                border: `1px solid ${(c.key === 'all' ? activeCats.length === 0 : activeCats.includes(c.key)) ? C.ctaBorder : C.fieldBorder}`,
               }}
             >
               {c.label}
@@ -232,23 +375,31 @@ export function Browse() {
           ))}
         </div>
 
-        {activeTagLabel && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', background: C.tagBg, borderBottom: `1px solid ${C.ruleLight}` }}>
-            <span style={{ fontSize: 11, color: C.goldDeep, fontWeight: 700 }}>
-              {lang === 'en' ? 'Collection: ' : 'Coleção: '}{activeTagLabel}
-            </span>
-            <button
-              onClick={() => setSearchParams((prev) => { const p = new URLSearchParams(prev); p.delete('tag'); return p; })}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 700, color: C.inkSoft }}
-            >
-              <X size={11} /> {lang === 'en' ? 'Clear' : 'Limpar'}
-            </button>
-          </div>
-        )}
+        {/* The standalone "Coleção: X" banner that used to sit here was
+            folded into the badge row below on 2026-07-30 -- with every other
+            active filter rendered as a removable badge, keeping a separate
+            tinted strip for this one meant the collection appeared twice in
+            adjacent rows, which reads as a bug rather than emphasis. */}
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 20px', borderBottom: `1px solid ${C.ruleLight}` }}>
-          <div style={{ fontSize: 11, color: C.inkSoft }}>
-            {loading ? '…' : `${filtered.length} ${t(filtered.length === 1 ? 'productSingular' : 'productPlural', lang)}`}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '8px 20px', borderBottom: `1px solid ${C.ruleLight}`, flexWrap: 'wrap' }}>
+          {/* Wraps rather than scrolls: six filters can be active at once and
+              a horizontally-scrolled row would hide some of them off-screen,
+              which defeats the point of showing what's applied. */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, rowGap: 6, flexWrap: 'wrap', minWidth: 0 }}>
+            <div style={{ fontSize: 11, color: C.inkSoft, flexShrink: 0 }}>
+              {loading ? '…' : `${filtered.length} ${t(filtered.length === 1 ? 'productSingular' : 'productPlural', lang)}`}
+            </div>
+            {activeFilterBadges.map((b) => (
+              <FilterBadge key={b.key} label={b.label} onRemove={b.onRemove} lang={lang} />
+            ))}
+            {/* Also surfaced next to the result count, not just inside the
+                filter surfaces: on mobile the panel is collapsed by default,
+                so a shopper looking at "0 produtos" would otherwise have to
+                open it before discovering how to undo the filter. Only shown
+                alongside two or more badges -- with a single filter active
+                its badge already clears everything, so both controls would
+                do exactly the same thing. */}
+            {activeFilterBadges.length > 1 && <ClearFiltersButton onClick={clearAllFilters} lang={lang} />}
           </div>
           <button
             className="ump-browse-filter-toggle"
@@ -262,14 +413,26 @@ export function Browse() {
 
         {showFilters && (
           <div className="ump-slide-up ump-browse-filter-toggle" style={{ padding: '16px 20px', background: C.subtleBg, borderBottom: `1px solid ${C.ruleLight}` }}>
-            <FilterGroup label={t('size', lang)} options={allSizes.map((s) => ({ value: s, label: s }))} active={filterSize} onSelect={setFilterSize} />
-            <FilterGroup label={t('colour', lang)} options={allColors} active={filterColor} onSelect={setFilterColor} />
+            <FilterGroup label={t('size', lang)} options={allSizes.map((s) => ({ value: s, label: s }))} active={filterSizes} onSelect={toggleSize} />
+            <FilterGroup label={t('colour', lang)} options={allColors} active={filterColors} onSelect={toggleColor} />
+            {hasActiveFilters && (
+              <div style={{ paddingTop: 4 }}>
+                <ClearFiltersButton onClick={clearAllFilters} lang={lang} />
+              </div>
+            )}
           </div>
         )}
 
         <div className="ump-grid-auto" style={{ padding: '16px 20px', minHeight: 200 }}>
           {!loading && filtered.length === 0 && (
-            <div style={{ gridColumn: '1/-1', padding: '40px 20px', textAlign: 'center', color: C.inkSoft, fontSize: 13 }}>{t('noProductsFound', lang)}</div>
+            <div style={{ gridColumn: '1/-1', padding: '40px 20px', textAlign: 'center', color: C.inkSoft, fontSize: 13 }}>
+              {hasActiveFilters ? t('noProductsFoundFiltered', lang) : t('noProductsFound', lang)}
+              {hasActiveFilters && (
+                <div style={{ marginTop: 14 }}>
+                  <ClearFiltersButton onClick={clearAllFilters} lang={lang} />
+                </div>
+              )}
+            </div>
           )}
           {filtered.map((p) => (
             <ProductCard key={p.id} product={p} />
@@ -277,6 +440,78 @@ export function Browse() {
         </div>
       </div>
     </div>
+  );
+}
+
+/** One active filter, with its own remove control. The whole badge is the
+ * button: at 11px the × alone would be a ~12px hit target, well under the
+ * 24px minimum, and there's nothing else useful to click a badge for. */
+function FilterBadge({ label, onRemove, lang }: { label: string; onRemove: () => void; lang: 'pt' | 'en' }) {
+  return (
+    <button
+      type="button"
+      onClick={onRemove}
+      aria-label={`${t('removeFilter', lang)}: ${label}`}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 5,
+        padding: '5px 9px',
+        borderRadius: 20,
+        border: `1px solid ${C.goldDeep}`,
+        background: C.tagBg,
+        color: C.goldDeep,
+        fontSize: 11,
+        fontWeight: 700,
+        maxWidth: 220,
+        flexShrink: 0,
+      }}
+    >
+      <span
+        style={{
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+          minWidth: 0,
+        }}
+      >
+        {label}
+      </span>
+      <X size={11} style={{ flexShrink: 0 }} aria-hidden />
+    </button>
+  );
+}
+
+/** Reset control for every active filter. Rendered in four places -- the
+ * desktop sidebar header, the mobile filter panel, beside the result count,
+ * and in the zero-results empty state -- so it's reachable wherever the
+ * shopper notices the problem. Callers gate it on `hasActiveFilters`; it
+ * deliberately doesn't render itself as disabled, since a permanently
+ * greyed-out button is just noise. */
+function ClearFiltersButton({ onClick, lang }: { onClick: () => void; lang: 'pt' | 'en' }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={t('clearFiltersAria', lang)}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 4,
+        padding: '5px 10px',
+        borderRadius: 6,
+        border: `1px solid ${C.fieldBorder}`,
+        background: C.paper,
+        color: C.ink,
+        fontSize: 11,
+        fontWeight: 700,
+        whiteSpace: 'nowrap',
+        flexShrink: 0,
+      }}
+    >
+      <X size={11} />
+      {t('clearFilters', lang)}
+    </button>
   );
 }
 
@@ -298,55 +533,81 @@ type FilterOption = {
   swatchUrl?: string;
 };
 
+/** A group of filter chips.
+ *
+ * `active` accepts either a single value (category, which stays
+ * single-select) or an array (size and colour, which are multi-select since
+ * 2026-07-30). Multi-select groups report `aria-pressed` per chip so screen
+ * readers convey that several can be on at once -- with a single-select
+ * group that would be misleading, so those get `aria-current` instead. */
 function FilterGroup({
   label,
   options,
   active,
   onSelect,
+  allKey,
 }: {
   label: string;
   options: FilterOption[];
-  active: string | null;
+  active: string | null | string[];
   onSelect: (v: string | null) => void;
+  /** Option that means "no filter" rather than a value of its own (the
+   * category group's "Tudo"/"All"). It reads as selected precisely when
+   * nothing else is, and selecting it clears the group. */
+  allKey?: string;
 }) {
+  const multi = Array.isArray(active);
+  const isActive = (value: string) => {
+    if (allKey && value === allKey) return multi ? (active as string[]).length === 0 : active === null;
+    return multi ? (active as string[]).includes(value) : active === value;
+  };
+
   return (
     <div style={{ marginBottom: 16 }}>
       <FilterLabel>{label}</FilterLabel>
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-        {options.map((opt) => (
-          <button
-            key={opt.value}
-            onClick={() => onSelect(active === opt.value ? null : opt.value)}
-            style={{
-              minWidth: 36,
-              padding: '6px 10px',
-              fontSize: 11,
-              fontWeight: 700,
-              borderRadius: 6,
-              border: `1px solid ${active === opt.value ? C.gold : C.fieldBorder}`,
-              background: active === opt.value ? C.tagBg : C.paper,
-              color: active === opt.value ? C.goldDeep : C.ink,
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-            }}
-          >
-            {hasSwatch(opt) && (
-              <span
-                aria-hidden
-                style={{
-                  width: 12,
-                  height: 12,
-                  borderRadius: '50%',
-                  flexShrink: 0,
-                  border: `1px solid ${C.fieldBorder}`,
-                  background: swatchBackground(opt),
-                }}
-              />
-            )}
-            {opt.label}
-          </button>
-        ))}
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }} role="group" aria-label={label}>
+        {options.map((opt) => {
+          const on = isActive(opt.value);
+          return (
+            <button
+              key={opt.value}
+              // Single-select toggles off by re-selecting; multi-select
+              // toggling is handled by the caller's setter, which is why the
+              // value is passed straight through here.
+              onClick={() => onSelect(multi ? opt.value : on ? null : opt.value)}
+              aria-pressed={multi ? on : undefined}
+              aria-current={!multi && on ? 'true' : undefined}
+              style={{
+                minWidth: 36,
+                padding: '6px 10px',
+                fontSize: 11,
+                fontWeight: 700,
+                borderRadius: 6,
+                border: `1px solid ${on ? C.goldDeep : C.fieldBorder}`,
+                background: on ? C.tagBg : C.paper,
+                color: on ? C.goldDeep : C.ink,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+              }}
+            >
+              {hasSwatch(opt) && (
+                <span
+                  aria-hidden
+                  style={{
+                    width: 12,
+                    height: 12,
+                    borderRadius: '50%',
+                    flexShrink: 0,
+                    border: `1px solid ${C.fieldBorder}`,
+                    background: swatchBackground(opt),
+                  }}
+                />
+              )}
+              {opt.label}
+            </button>
+          );
+        })}
       </div>
     </div>
   );

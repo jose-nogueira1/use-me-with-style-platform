@@ -103,6 +103,7 @@ export function Home() {
                 display: 'inline-block',
                 padding: '13px 22px',
                 background: C.champagne,
+                border: `1px solid ${C.heroCtaBorder}`,
                 color: C.black,
                 fontSize: 11,
                 fontWeight: 800,

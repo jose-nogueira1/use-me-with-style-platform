@@ -67,6 +67,8 @@ export function CustomerDetail() {
         eyebrow={t('navCustomers', lang)}
         title={customer.name}
         subtitle={t('contactRecordSubtitle', lang)}
+        backTo="/admin/clientes"
+        backLabel={t('backToCustomers', lang)}
         cta={saving ? '…' : t('saveChanges', lang)}
         onCta={handleSave}
       />

@@ -55,6 +55,18 @@ export const T: Record<string, Record<Lang, string>> = {
   productSingular: { pt: 'produto', en: 'product' },
   productPlural: { pt: 'produtos', en: 'products' },
   noProductsFound: { pt: 'Nenhum produto encontrado.', en: 'No products found.' },
+  clearFilters: { pt: 'Limpar filtros', en: 'Clear filters' },
+  clearFiltersAria: { pt: 'Limpar todos os filtros', en: 'Clear all filters' },
+  collection: { pt: 'Coleção', en: 'Collection' },
+  searchFilterLabel: { pt: 'Pesquisa', en: 'Search' },
+  removeFilter: { pt: 'Remover filtro', en: 'Remove filter' },
+  // Shown in the empty state when the shopper has filtered themselves into
+  // zero results -- the fix is almost always "clear a filter", not "the shop
+  // is empty", so say so rather than leaving them at a dead end.
+  noProductsFoundFiltered: {
+    pt: 'Nenhum produto corresponde aos filtros selecionados.',
+    en: 'No products match the selected filters.',
+  },
 
   // Product detail
   productNotFound: { pt: 'Produto não encontrado', en: 'Product not found' },
