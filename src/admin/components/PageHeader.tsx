@@ -500,9 +500,22 @@ export function NotificationsButton() {
   const wrapRef = usePopover(close);
 
   useEffect(() => {
-    Promise.all([adminListOrders({ status: 'payment_review' }), adminListProducts(), adminListMessages()])
-      .then(([reviewOrders, products, messages]) => {
+    // Was adminListOrders({ status: 'payment_review' }) -- confirmed via
+    // 2026-07-31 follow-up report ("check if notifications are indeed
+    // working... when a new one shows up") that this status is basically
+    // never what a fresh order actually gets: every order is created with
+    // status 'new' (see Orders.ts), and 'payment_review' is ONLY reached
+    // later, when an automated AppyPay charge comes back Failed
+    // (endpoints/payments.ts) -- an edge case, not the normal path. The
+    // normal "an admin needs to go confirm this payment" case (any manual
+    // method: MB WAY, Multicaixa Express, bank transfer) sits at 'new' and
+    // was never surfaced here at all. Fetches everything and filters
+    // client-side to both statuses, same pattern already used below for
+    // low-stock products.
+    Promise.all([adminListOrders(), adminListProducts(), adminListMessages()])
+      .then(([allOrders, products, messages]) => {
         const next: NotificationItem[] = [];
+        const reviewOrders = allOrders.filter((o) => o.status === 'new' || o.status === 'payment_review');
         for (const o of reviewOrders) {
           const stuckSince = new Date(o.createdAt).getTime();
           const urgent = Number.isFinite(stuckSince) && Date.now() - stuckSince > PAYMENT_REVIEW_URGENT_AFTER_MS;

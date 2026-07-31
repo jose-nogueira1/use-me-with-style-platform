@@ -113,7 +113,14 @@ export const T: Record<string, Record<Lang, string>> = {
   dismissNotification: { en: 'Dismiss notification', pt: 'Dispensar notificação' },
   clearAll: { en: 'Clear all', pt: 'Limpar tudo' },
   allCaughtUp: { en: 'All caught up -- no notifications.', pt: 'Tudo em dia — sem notificações.' },
-  notifNeedsPaymentReview: { en: '#{n} needs payment review', pt: '#{n} precisa de revisão de pagamento' },
+  // Was "needs payment review" (2026-07-31 follow-up report: "check if
+  // notifications are indeed working when a new order shows up" -- they
+  // weren't, for the common case; see the fetch below). Renamed to match
+  // what actually triggers it now: any order still needing its payment
+  // confirmed, whether that's a fresh order (status 'new', the normal
+  // case for every manual payment method) or one an automated gateway
+  // already flagged for manual review.
+  notifNeedsPaymentReview: { en: '#{n} needs payment confirmation', pt: '#{n} precisa de confirmação de pagamento' },
   notifWaitingOver24h: { en: 'Waiting over 24h', pt: 'À espera há mais de 24h' },
   notifOutOfStock: { en: '{name} is out of stock', pt: '{name} está esgotado' },
   notifLowOnStock: { en: '{name} is low on stock', pt: '{name} tem stock reduzido' },
@@ -127,10 +134,19 @@ export const T: Record<string, Record<Lang, string>> = {
     pt: 'Encomendas de Angola e Portugal, revisão de pagamentos, stock reduzido e tarefas de lançamento.',
   },
   exportSummary: { en: 'Export summary', pt: 'Exportar resumo' },
+  // Orders page's own export (2026-08-01 request) -- distinct from
+  // Dashboard's "Export summary" (always just today); this one downloads
+  // whatever's currently filtered on the Orders page.
+  exportOrders: { en: 'Export CSV', pt: 'Exportar CSV' },
   ordersToday: { en: 'Orders today', pt: 'Encomendas de hoje' },
   revenueToday: { en: 'Revenue today', pt: 'Receita de hoje' },
   separatelyNote: { en: 'EUR {amount} separately', pt: 'EUR {amount} em separado' },
   manualConfirmationNeeded: { en: 'Manual confirmation needed', pt: 'Confirmação manual necessária' },
+  // Dashboard metric label (2026-07-31 follow-up fix) -- separate from
+  // statusPaymentReview, which still correctly names just that one status
+  // elsewhere. This metric counts 'new' orders too, so it needed its own,
+  // broader label rather than borrowing the status pill's name.
+  needsConfirmationMetric: { en: 'Needs confirmation', pt: 'Precisa de confirmação' },
   ordersBeingFulfilled: { en: 'Orders being fulfilled', pt: 'Encomendas em preparação' },
   lowStockMetric: { en: 'Low stock', pt: 'Stock reduzido' },
   sizesWithFewUnits: { en: 'Sizes with 2 units or less', pt: 'Tamanhos com 2 unidades ou menos' },
@@ -173,12 +189,22 @@ export const T: Record<string, Record<Lang, string>> = {
     en: 'Keyword-based auto-replies for order/payment/delivery FAQs; sensitive topics always escalate to you.',
     pt: 'Respostas automáticas por palavras-chave para encomendas, pagamentos e entregas; assuntos sensíveis são sempre encaminhados.',
   },
-  dashAttnReviewTitle: { en: '#{orderNumber} {customerName} needs payment review', pt: '#{orderNumber} {customerName} precisa de revisão de pagamento' },
+  // Was "needs payment review" (2026-07-31 follow-up fix) -- this item now
+  // also covers brand-new orders (status 'new'), which aren't literally "in
+  // payment review", just still awaiting confirmation. See attentionItems.
+  dashAttnReviewTitle: { en: '#{orderNumber} {customerName} needs payment confirmation', pt: '#{orderNumber} {customerName} precisa de confirmação de pagamento' },
   dashAttnReviewDetail: {
     en: '{market} order, {paymentMethod}, manual confirmation pending.',
     pt: 'Encomenda de {market}, {paymentMethod}, confirmação manual pendente.',
   },
   reviewBadge: { en: 'Review', pt: 'Rever' },
+  // SLA flag (2026-08-01 request) -- distinguishes an order that's genuinely
+  // overdue (48h+ waiting on manual confirmation) from one that's simply new.
+  dashAttnReviewOverdueDetail: {
+    en: 'Waiting {days}+ days for confirmation -- past the 24h target.',
+    pt: 'À espera de confirmação há {days}+ dias -- acima do prazo de 24h.',
+  },
+  overdueBadge: { en: 'Overdue', pt: 'Atrasado' },
   dashAttnStockoutTitle: { en: '{name} has a variant stockout', pt: '{name} tem um esgotamento de variante' },
   dashAttnStockoutDetail: {
     en: 'Keep published for in-stock sizes and mark the rest unavailable.',
@@ -200,6 +226,19 @@ export const T: Record<string, Record<Lang, string>> = {
   },
   filterAll: { en: 'All {n}', pt: 'Todos {n}' },
   noOrdersFound: { en: 'No orders found.', pt: 'Nenhuma encomenda encontrada.' },
+  // Search + fetch-limit warning (2026-08-01 request).
+  searchOrdersPlaceholder: { en: 'Search order #, name, phone, email', pt: 'Procurar nº encomenda, nome, telefone, email' },
+  ordersTruncatedWarning: {
+    en: 'Showing the most recent {shown} of {total} orders -- narrow the date range to see the rest.',
+    pt: 'A mostrar as {shown} encomendas mais recentes de {total} -- reduza o intervalo de datas para ver as restantes.',
+  },
+  // Status-change audit trail + packing slip (2026-08-01 request).
+  statusHistoryLabel: { en: 'Status history', pt: 'Histórico de estado' },
+  systemActor: { en: 'automatic', pt: 'automático' },
+  printPackingSlip: { en: 'Print packing slip', pt: 'Imprimir guia de embalagem' },
+  packingSlipTitle: { en: 'Packing slip', pt: 'Guia de embalagem' },
+  packingSlipSizeHeader: { en: 'Size / colour', pt: 'Tamanho / cor' },
+  packingSlipQtyHeader: { en: 'Qty', pt: 'Qtd' },
   // Date/market drill-down from the Dashboard chart (2026-07-27) -- Orders
   // previously only supported a status filter.
   filteredToRangeLabel: { en: 'Filtered to {range}', pt: 'Filtrado para {range}' },
@@ -240,11 +279,51 @@ export const T: Record<string, Record<Lang, string>> = {
   approveAndProcess: { en: 'Approve and process', pt: 'Aprovar e processar' },
   confirmPayment: { en: 'Confirm payment', pt: 'Confirmar pagamento' },
   updateStatus: { en: 'Update status', pt: 'Atualizar estado' },
+  // NEXT_STEP labels past payment confirmation (2026-07-31 follow-up: the
+  // CTA vanished entirely once an order reached 'processing', with nothing
+  // to replace it -- "no button, no nothing"). Order matches STATUSES.
+  markAsShipped: { en: 'Mark as shipped', pt: 'Marcar como enviada' },
+  markAsDelivered: { en: 'Mark as delivered', pt: 'Marcar como entregue' },
+  // Order total breakdown (2026-07-31, Orders QA: the admin only ever saw
+  // the final total, with no visibility into subtotal/shipping/discount --
+  // one of the things making the whole screen feel opaque).
+  subtotalLabel: { en: 'Subtotal', pt: 'Subtotal' },
+  shippingCostLabel: { en: 'Shipping', pt: 'Envio' },
+  discountAppliedLabel: { en: 'Discount', pt: 'Desconto' },
+  freeShippingValue: { en: 'Free', pt: 'Grátis' },
+  // Clicking a status pill that moves the order BACKWARD (or to cancelled)
+  // used to silently succeed with no guard at all -- confirmed via QA that
+  // e.g. a delivered order could be reverted to "processing" in one
+  // misclick, with inventory/notification side effects already final.
+  confirmStatusRegression: {
+    en: 'Move this order back to "{status}"? It was already further along -- the customer may have been notified.',
+    pt: 'Mover esta encomenda para trás, para "{status}"? Já estava mais avançada -- o cliente pode já ter sido notificado.',
+  },
+  // 'cancelled' is a terminal status (2026-07-31) -- see Orders.ts's
+  // server-side guard and OrderDetail.tsx's locked pills.
+  cancelledOrderLocked: {
+    en: 'This order is cancelled and cannot be reopened. Create a new order if the customer needs one.',
+    pt: 'Esta encomenda está cancelada e não pode ser reaberta. Crie uma nova encomenda se o cliente precisar.',
+  },
+  // Payment/delivery method values as stored (paypal, stripe, mbway,
+  // multicaixa_express / ctt, courier_pt, courier_ao) were rendered raw in
+  // both the Orders table and this detail screen (2026-07-31 QA finding).
+  paymentMethodPaypal: { en: 'PayPal', pt: 'PayPal' },
+  paymentMethodStripe: { en: 'Card (Stripe)', pt: 'Cartão (Stripe)' },
+  paymentMethodMbway: { en: 'MB WAY', pt: 'MB WAY' },
+  paymentMethodMulticaixaExpress: { en: 'Multicaixa Express (AppyPay)', pt: 'Multicaixa Express (AppyPay)' },
+  deliveryMethodCtt: { en: 'CTT Standard (untracked)', pt: 'CTT Standard (sem rastreio)' },
+  deliveryMethodCourierPt: { en: 'CTT Registered (tracked)', pt: 'CTT Registado (com rastreio)' },
+  deliveryMethodCourierAo: { en: 'Local courier', pt: 'Estafeta local' },
   orderDetailSubtitle: {
     en: 'Manual payment confirmation before processing and manual Angola coordination.',
     pt: 'Confirmação manual do pagamento antes do processamento e coordenação manual em Angola.',
   },
   paymentDiagnostics: { en: 'Payment diagnostics (read-only)', pt: 'Diagnóstico de pagamento (só leitura)' },
+  // Invoice attached to the order (2026-08-01 request) -- see OrderDetail.tsx.
+  invoiceLabel: { en: 'Invoice', pt: 'Fatura' },
+  viewInvoicePdf: { en: 'View PDF', pt: 'Ver PDF' },
+  invoiceFailedNote: { en: 'Generation failed -- see Invoices for details', pt: 'Falha na geração -- ver detalhes em Faturas' },
   diagPaymentReference: { en: 'Payment reference', pt: 'Referência de pagamento' },
   diagMerchantTxId: { en: 'AppyPay merchant transaction ID', pt: 'ID de transação do comerciante AppyPay' },
   diagTransactionId: { en: 'AppyPay transaction ID', pt: 'ID de transação AppyPay' },

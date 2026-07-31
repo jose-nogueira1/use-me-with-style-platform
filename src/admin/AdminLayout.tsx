@@ -47,7 +47,18 @@ export function AdminLayout() {
 
   useEffect(() => {
     if (!user) return;
-    adminListOrders({ status: 'payment_review' })
+    // Was filtered to status: 'payment_review' (2026-07-31 admin report:
+    // "the nav tab shows 0 orders, even if the orders tab shows 2" -- with
+    // nothing stuck in payment_review, this badge read 0 while the Orders
+    // page it sits next to showed the real count). Products' badge right
+    // below it has always shown a plain total with no filter, so the same
+    // badge component was silently carrying two different meanings
+    // depending on which nav item it was attached to, with no visual cue
+    // telling them apart. The "orders needing attention" signal this used
+    // to carry still exists and is more discoverable there: the
+    // notification bell's payment-review items, which get urgent styling
+    // and an explicit label once something's actually been waiting.
+    adminListOrders()
       .then((rows) => setOrdersCount(rows.length))
       .catch(() => setOrdersCount(null));
     adminListProducts()
@@ -140,9 +151,9 @@ export function AdminLayout() {
         </div>
 
         <div className="ump-admin-groups" style={{ gap: 6, marginBottom: 'auto' }}>
-          <div className="ump-admin-group-label" style={{ fontSize: 9, letterSpacing: 1.5, color: '#6C6656', textTransform: 'uppercase', padding: '4px 11px 2px' }}>
-            {t('navMore', lang)}
-          </div>
+          {/* "More" group label removed (2026-07-31 admin request) -- the
+              secondary nav items below still render, just without the
+              heading text above them. */}
           {SECONDARY_NAV.map((item) => (
             <NavItem key={item.to} to={item.to} label={t(item.labelKey, lang)} onClick={closeNav} />
           ))}

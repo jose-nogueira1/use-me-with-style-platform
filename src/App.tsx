@@ -448,6 +448,19 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
           .ump-mensagens-shell { flex-direction: column; height: auto; }
           .ump-mensagens-list { width: 100%; max-height: 40vh; }
         }
+
+        /* Packing slip (2026-08-01, OrderDetail.tsx) -- .ump-packing-slip
+           renders off-screen at all times (display: none) and is only made
+           visible, full-width, when the browser's print dialog is actually
+           open, with every other element on the page hidden. Standard
+           "print only this one element" technique -- no separate print
+           route or PDF generation needed. */
+        .ump-packing-slip { display: none; }
+        @media print {
+          body * { visibility: hidden; }
+          .ump-packing-slip, .ump-packing-slip * { visibility: visible; }
+          .ump-packing-slip { display: block; position: absolute; top: 0; left: 0; width: 100%; padding: 24px; color: #000; }
+        }
       `}</style>
 
       <AppErrorBoundary>

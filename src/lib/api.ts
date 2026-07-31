@@ -370,6 +370,11 @@ export type ApiOrder = CreateOrderInput & {
   inventoryReservationStatus?: string;
   inventoryReservationExpiresAt?: string;
   inventoryReservationReleasedAt?: string;
+  // Automatic audit trail of status changes (2026-08-01 request) -- see
+  // Orders.ts's beforeChange hook, which appends to this on every status
+  // change (create included). Admin-read-only; there's no editable form for
+  // it anywhere, it's only ever displayed.
+  statusHistory?: { status: string; changedAt: string; changedBy?: string }[];
 };
 
 export type PublicOrderStatus = Pick<
@@ -738,18 +743,44 @@ export async function adminMe(): Promise<{ user: { id: string; email: string } |
   return request('/users/me', {}, { auth: true });
 }
 
+// Orders.tsx/Dashboard.tsx fetch the whole list once and do all
+// filtering/counting client-side (see Orders.tsx's countFor/marketCountFor
+// comments for why) -- there's no server-side pagination on this page, so
+// this limit is really "how many orders can exist before the admin list
+// silently starts dropping older ones". Raised from 200 to 500 (2026-08-01)
+// as a stopgap, paired with adminCountOrders below so the UI can at least
+// WARN when the true count exceeds what was fetched, instead of silently
+// truncating. A real fix (server-side pagination + a separate aggregate-
+// count endpoint for the pill totals) is a bigger rearchitecture of this
+// page's whole filtering model, not worth doing before order volume is
+// anywhere near this limit.
 export async function adminListOrders(params: { status?: string; market?: string } = {}): Promise<ApiOrder[]> {
-  const search = new URLSearchParams({ limit: '200', sort: '-createdAt' });
+  const search = new URLSearchParams({ limit: '500', sort: '-createdAt' });
   if (params.status) search.set('where[status][equals]', params.status);
   if (params.market) search.set('where[market][equals]', params.market);
   const data = await request<{ docs: ApiOrder[] }>(`/orders?${search.toString()}`, {}, { auth: true });
   return data.docs;
 }
 
-export async function adminUpdateOrderStatus(id: string, status: string): Promise<ApiOrder> {
+// True total order count, independent of the 500-row fetch cap above --
+// `limit=0` still returns accurate Payload pagination metadata (docs: [],
+// totalDocs: <real count>). Orders.tsx uses this to show a warning if
+// adminListOrders() ever comes back truncated.
+export async function adminCountOrders(): Promise<number> {
+  const data = await request<{ totalDocs: number }>('/orders?limit=0', {}, { auth: true });
+  return data.totalDocs;
+}
+
+// `extra` (2026-07-31, Orders QA) lets a status change carry additional
+// fields in the SAME PATCH -- specifically paymentStatus, so "confirm
+// payment" can move status and paymentStatus together in one atomic
+// request instead of two separate calls (which previously let an admin
+// advance an order's status while paymentStatus silently stayed
+// 'pending', see OrderDetail.tsx's handleConfirmPayment).
+export async function adminUpdateOrderStatus(id: string, status: string, extra?: Record<string, unknown>): Promise<ApiOrder> {
   const data = await request<{ doc: ApiOrder }>(
     `/orders/${id}`,
-    { method: 'PATCH', body: JSON.stringify({ status }) },
+    { method: 'PATCH', body: JSON.stringify({ status, ...extra }) },
     { auth: true },
   );
   return data.doc;
@@ -1078,6 +1109,18 @@ export async function adminRestoreHomeContentVersion(id: string | number): Promi
 export async function adminListInvoices(): Promise<ApiInvoice[]> {
   const data = await request<{ docs: ApiInvoice[] }>('/invoices?limit=200&sort=-issuedAt&depth=0', {}, { auth: true });
   return data.docs;
+}
+
+/** The single invoice (if any) generated for one order -- added so
+ * OrderDetail.tsx can show/link the invoice directly on the order itself,
+ * instead of only being reachable by cross-referencing the order number on
+ * the separate Invoices page. An order only gets an invoice once
+ * paymentStatus reaches 'paid' (see notifyOrderEvent.ts's justPaid branch),
+ * so this is commonly null -- that's expected, not an error. */
+export async function adminGetInvoiceForOrder(orderId: string): Promise<ApiInvoice | null> {
+  const search = new URLSearchParams({ limit: '1', depth: '0', 'where[relatedOrder][equals]': orderId });
+  const data = await request<{ docs: ApiInvoice[] }>(`/invoices?${search.toString()}`, {}, { auth: true });
+  return data.docs[0] ?? null;
 }
 
 /** Direct download URL for an issued invoice's PDF -- see

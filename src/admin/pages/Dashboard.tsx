@@ -6,51 +6,10 @@ import { adminListOrders, adminListProducts, type ApiOrder, type ApiProduct } fr
 import { PageHeader } from '../components/PageHeader';
 import { Badge, statusBadgeProps } from '../components/Badge';
 import { t, type Lang } from '../i18n';
+import { deliveryMethodLabel, paymentMethodLabel } from '../lib/orderLabels';
+import { downloadOrdersCsv } from '../lib/ordersCsv';
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-function csvValue(v: string | number): string {
-  const s = String(v);
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-}
-
-/** Real "Export summary" behavior -- previously this CTA had no onCta at
- * all and did nothing when clicked. Downloads today's orders as a CSV.
- * The CSV itself is an admin export file, not on-screen UI copy, so its
- * column headers stay in English regardless of the admin's language toggle
- * (consistent with how spreadsheet exports are usually kept in one
- * language for anyone downstream who opens the file). */
-function downloadOrdersCsv(rows: ApiOrder[], lang: Lang) {
-  const headers = ['Order', 'Customer', 'Market', 'Status', 'Payment', 'Delivery', 'City', 'Total', 'Currency', 'Created At'];
-  const lines = [headers.join(',')];
-  for (const o of rows) {
-    lines.push(
-      [
-        o.orderNumber,
-        o.customerName,
-        o.market,
-        statusBadgeProps(o.status, lang).label,
-        o.paymentMethod,
-        o.deliveryMethod,
-        o.city,
-        o.total,
-        o.currency,
-        new Date(o.createdAt).toLocaleString('en-US'),
-      ]
-        .map(csvValue)
-        .join(','),
-    );
-  }
-  const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `orders-${new Date().toISOString().slice(0, 10)}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
 
 function localISODate(d: Date): string {
   const y = d.getFullYear();
@@ -83,7 +42,12 @@ export function Dashboard() {
   const todayPT = todayOrders.filter((o) => o.market === 'PT').length;
   const revenueTodayKz = todayOrders.filter((o) => o.currency === 'Kz').reduce((s, o) => s + o.total, 0);
   const revenueTodayEur = todayOrders.filter((o) => o.currency === 'EUR').reduce((s, o) => s + o.total, 0);
-  const reviewCount = orders?.filter((o) => o.status === 'payment_review').length ?? 0;
+  // Was status === 'payment_review' only (2026-07-31 follow-up report:
+  // notifications and this "needs confirmation" metric were both missing
+  // the common case -- a fresh order sits at status 'new', not
+  // 'payment_review', which is only reached later via an automated AppyPay
+  // failure). See PageHeader.tsx's NotificationsButton for the same fix.
+  const reviewCount = orders?.filter((o) => o.status === 'new' || o.status === 'payment_review').length ?? 0;
   const processingCount = orders?.filter((o) => o.status === 'processing').length ?? 0;
   const lowStockCount = products?.filter((p) => p.variants.some((v) => v.stockAO + v.stockPT <= 2)).length ?? 0;
 
@@ -208,18 +172,47 @@ export function Dashboard() {
     );
   }, [orders]);
 
+  // SLA flag (2026-08-01 request) -- orders waiting 48h+ in New/Payment
+  // Review now surface first and read differently from a fresh one. Two
+  // things changed together here: previously this sliced straight off
+  // `orders` (sorted newest-first, same as the table), so the queue always
+  // showed the 2 MOST RECENT orders needing confirmation -- the opposite of
+  // useful for an "attention queue", which should surface whatever's been
+  // waiting longest, not whatever just came in. Sorting oldest-first before
+  // slicing fixes both: the queue now naturally leads with what needs
+  // attention most, and the ones that have actually breached the SLA get a
+  // distinct red badge instead of blending in with a brand-new order.
+  // 24h matches PageHeader.tsx's NotificationsButton, which already treats
+  // a review-needed order as "urgent" past the same threshold -- one SLA
+  // number for the concept, not a different one per screen.
+  const REVIEW_SLA_HOURS = 24;
+  // `new Date().getTime()`, not `Date.now()` -- the latter trips the React
+  // Compiler's purity lint rule (react-hooks/purity: "Date.now is an
+  // impure function") even called directly in the render body; `new
+  // Date()` doesn't, and is what the rest of this file (todayOrders,
+  // quietMarkets) already uses for the same "current moment" purpose.
+  const now = new Date().getTime();
   const attentionItems = [
     ...(orders ?? [])
-      .filter((o) => o.status === 'payment_review')
+      .filter((o) => o.status === 'new' || o.status === 'payment_review')
+      .slice()
+      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
       .slice(0, 2)
-      .map((o) => ({
-        title: t('dashAttnReviewTitle', lang, { orderNumber: o.orderNumber, customerName: o.customerName }),
-        detail: t('dashAttnReviewDetail', lang, { market: o.market === 'AO' ? t('angolaOption', lang) : t('portugalOption', lang), paymentMethod: o.paymentMethod }),
-        badge: t('reviewBadge', lang),
-        tone: 'gold' as const,
-        priority: C.gold,
-        to: `/admin/encomendas/${o.id}`,
-      })),
+      .map((o) => {
+        const hoursWaiting = (now - new Date(o.createdAt).getTime()) / 3_600_000;
+        const overdue = hoursWaiting >= REVIEW_SLA_HOURS;
+        const daysWaiting = Math.floor(hoursWaiting / 24);
+        return {
+          title: t('dashAttnReviewTitle', lang, { orderNumber: o.orderNumber, customerName: o.customerName }),
+          detail: overdue
+            ? t('dashAttnReviewOverdueDetail', lang, { days: daysWaiting })
+            : t('dashAttnReviewDetail', lang, { market: o.market === 'AO' ? t('angolaOption', lang) : t('portugalOption', lang), paymentMethod: paymentMethodLabel(o.paymentMethod, lang) }),
+          badge: overdue ? t('overdueBadge', lang) : t('reviewBadge', lang),
+          tone: (overdue ? 'red' : 'gold') as const,
+          priority: overdue ? '#B95545' : C.gold,
+          to: `/admin/encomendas/${o.id}`,
+        };
+      }),
     ...quietMarkets.map((m) => ({
       title: t('dashAttnQuietMarketTitle', lang, { market: m === 'AO' ? t('angolaOption', lang) : t('portugalOption', lang) }),
       detail: t('dashAttnQuietMarketDetail', lang),
@@ -262,7 +255,13 @@ export function Dashboard() {
       <div style={{ padding: '20px 28px 0', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }} className="ump-admin-metric-grid">
         <Metric label={t('ordersToday', lang)} value={String(todayOrders.length)} sub={`${todayAO} ${t('angolaOption', lang)}, ${todayPT} ${t('portugalOption', lang)}`} />
         <Metric label={t('revenueToday', lang)} value={`${revenueTodayKz.toLocaleString('en-US')} Kz`} sub={t('separatelyNote', lang, { amount: revenueTodayEur.toFixed(0) })} />
-        <Metric label={t('statusPaymentReview', lang)} value={String(reviewCount)} sub={t('manualConfirmationNeeded', lang)} tone="gold" />
+        {/* Was labelled with the 'statusPaymentReview' status name -- now
+            that reviewCount also counts 'new' orders, that label would
+            misrepresent most of what it's showing (2026-07-31 follow-up
+            fix). 'statusPaymentReview' is still used correctly elsewhere,
+            for the literal status badge/pill -- this is a separate,
+            broader "needs confirmation" metric. */}
+        <Metric label={t('needsConfirmationMetric', lang)} value={String(reviewCount)} sub={t('manualConfirmationNeeded', lang)} tone="gold" />
         <Metric label={t('statusProcessing', lang)} value={String(processingCount)} sub={t('ordersBeingFulfilled', lang)} />
         <Metric label={t('lowStockMetric', lang)} value={String(lowStockCount)} sub={t('sizesWithFewUnits', lang)} tone="red" />
       </div>
@@ -305,7 +304,10 @@ export function Dashboard() {
                   <Badge label={b.label} tone={b.tone} />
                 </div>
                 <div style={{ fontSize: 10, color: C.inkSoft, marginTop: 2 }}>
-                  {o.city}, {o.paymentMethod}, {o.deliveryMethod}
+                  {/* Was o.paymentMethod/o.deliveryMethod raw (2026-07-31 QA
+                      follow-up) -- same "mbway"/"courier_pt" bug already
+                      fixed on the Orders table and detail screen. */}
+                  {o.city}, {paymentMethodLabel(o.paymentMethod, lang)}, {deliveryMethodLabel(o.deliveryMethod, lang)}
                 </div>
               </Link>
             );
