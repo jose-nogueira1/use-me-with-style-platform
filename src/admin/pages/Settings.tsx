@@ -4,7 +4,9 @@ import { C, F } from '../../theme';
 import { useApp } from '../../state/AppContext';
 import {
   adminFetchInvoiceSettings,
+  adminListCategories,
   adminListHomeContentVersions,
+  adminListMerchTags,
   adminRestoreHomeContentVersion,
   adminUpdateHomeContent,
   adminUpdateInvoiceSettings,
@@ -16,6 +18,8 @@ import {
   fetchMarketSettings,
   refId,
   resolveRef,
+  type ApiCategory,
+  type ApiMerchTag,
   type HomeContent,
   type HomeContentVersion,
   type InvoiceSettings,
@@ -25,6 +29,7 @@ import {
 import { absoluteMediaUrl } from '../../lib/productAdapters';
 import { PageHeader } from '../components/PageHeader';
 import { Badge } from '../components/Badge';
+import { useDirty } from '../lib/useDirty';
 import { ProductTaxonomySettings } from './ProductSettings';
 import { t, type Lang } from '../i18n';
 import { DEFAULT_ANGOLA_MUNICIPALITY_PRICES, LUANDA_MUNICIPALITIES } from '../../storefront/shipping';
@@ -112,14 +117,23 @@ export function Settings() {
     }, { replace: true });
   };
   const [settings, setSettings] = useState<MarketSettings>(DEFAULTS);
+  // Snapshot of `settings` exactly as loaded (or last saved), to disable
+  // Save until something actually changed (2026-07-31 admin report) -- see
+  // admin/lib/useDirty.ts.
+  const [originalSettings, setOriginalSettings] = useState<MarketSettings | null>(null);
   const [loading, setLoading] = useState(true);
-  const [, setSaving] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const isDirty = useDirty(settings, originalSettings);
 
   useEffect(() => {
     fetchMarketSettings()
-      .then((value) => setSettings({ ...value, angolaPaymentMethods: ['multicaixa_express'] }))
+      .then((value) => {
+        const loaded = { ...value, angolaPaymentMethods: ['multicaixa_express'] as const };
+        setSettings(loaded);
+        setOriginalSettings(loaded);
+      })
       .catch(() => setError(t('couldntLoadSettingsDefaults', lang)))
       .finally(() => setLoading(false));
   }, [lang]);
@@ -130,7 +144,9 @@ export function Settings() {
     setSaved(false);
     try {
       const updated = await adminUpdateMarketSettings({ ...settings, angolaPaymentMethods: ['multicaixa_express'] });
-      setSettings({ ...updated, angolaPaymentMethods: ['multicaixa_express'] });
+      const savedSettings: MarketSettings = { ...updated, angolaPaymentMethods: ['multicaixa_express'] };
+      setSettings(savedSettings);
+      setOriginalSettings(savedSettings);
       setSaved(true);
     } catch {
       setError(t('couldntSaveBackend', lang));
@@ -151,6 +167,8 @@ export function Settings() {
         subtitle={t(TAB_META[tab].subtitleKey, lang)}
         cta={showsMarketSettingsCta ? t('saveSettings', lang) : undefined}
         onCta={showsMarketSettingsCta ? handleSave : undefined}
+        ctaBusy={showsMarketSettingsCta ? saving : undefined}
+        ctaDisabled={showsMarketSettingsCta ? !isDirty : undefined}
       />
 
       <div style={{ padding: '20px 28px 0', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -458,14 +476,22 @@ const INVOICE_SETTINGS_DEFAULTS: InvoiceSettings = {
 function InvoicingSettingsSection() {
   const { lang } = useApp();
   const [settings, setSettings] = useState<InvoiceSettings>(INVOICE_SETTINGS_DEFAULTS);
+  // Snapshot of `settings` exactly as loaded (or last saved), to disable
+  // Save until something actually changed (2026-07-31 admin report) -- see
+  // admin/lib/useDirty.ts.
+  const [originalSettings, setOriginalSettings] = useState<InvoiceSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const isDirty = useDirty(settings, originalSettings);
 
   useEffect(() => {
     adminFetchInvoiceSettings()
-      .then(setSettings)
+      .then((s) => {
+        setSettings(s);
+        setOriginalSettings(s);
+      })
       .catch(() => setError(t('couldntLoadInvoicingSettings', lang)))
       .finally(() => setLoading(false));
   }, [lang]);
@@ -477,6 +503,7 @@ function InvoicingSettingsSection() {
     try {
       const updated = await adminUpdateInvoiceSettings(settings);
       setSettings(updated);
+      setOriginalSettings(updated);
       setSaved(true);
     } catch {
       setError(t('couldntSaveInvoicingSettings', lang));
@@ -493,8 +520,17 @@ function InvoicingSettingsSection() {
         </div>
         <button
           onClick={handleSave}
-          disabled={loading || saving}
-          style={{ padding: '9px 18px', background: C.black, color: C.onDarkGold, fontSize: 11, fontWeight: 800, borderRadius: 6, flexShrink: 0 }}
+          disabled={loading || saving || !isDirty}
+          style={{
+            padding: '9px 18px',
+            background: loading || saving || !isDirty ? C.disabledBg : C.black,
+            color: loading || saving || !isDirty ? C.disabledFg : C.onDarkGold,
+            fontSize: 11,
+            fontWeight: 800,
+            borderRadius: 6,
+            flexShrink: 0,
+            cursor: loading || saving || !isDirty ? 'default' : 'pointer',
+          }}
         >
           {saving ? '…' : t('saveInvoicingSettings', lang)}
         </button>
@@ -607,6 +643,33 @@ function SettingsField({ label, value, onChange, type = 'text' }: { label: strin
   );
 }
 
+function SettingsSelect({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+}) {
+  return (
+    <label style={{ display: 'block', marginBottom: 10 }}>
+      <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 5 }}>{label}</div>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        style={{ width: '100%', padding: '8px 10px', fontSize: 12, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, color: C.ink }}
+      >
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>{o.label}</option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 function SettingsTextarea({ label, value, onChange, rows = 2 }: { label: string; value: string; onChange: (v: string) => void; rows?: number }) {
   return (
     <label style={{ display: 'block', marginBottom: 10 }}>
@@ -630,14 +693,22 @@ function SettingsTextarea({ label, value, onChange, rows = 2 }: { label: string;
 function LegalPagesSection() {
   const { lang } = useApp();
   const [content, setContent] = useState<LegalContent>({ privacyPolicyTextPT: '', privacyPolicyTextEN: '', termsTextPT: '', termsTextEN: '' });
+  // Snapshot of `content` exactly as loaded (or last saved), to disable
+  // Save until something actually changed (2026-07-31 admin report) -- see
+  // admin/lib/useDirty.ts.
+  const [originalContent, setOriginalContent] = useState<LegalContent | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const isDirty = useDirty(content, originalContent);
 
   useEffect(() => {
     fetchLegalContent()
-      .then(setContent)
+      .then((c) => {
+        setContent(c);
+        setOriginalContent(c);
+      })
       .catch(() => setError(t('couldntLoadLegalPages', lang)))
       .finally(() => setLoading(false));
   }, [lang]);
@@ -649,6 +720,7 @@ function LegalPagesSection() {
     try {
       const updated = await adminUpdateLegalContent(content);
       setContent(updated);
+      setOriginalContent(updated);
       setSaved(true);
     } catch {
       setError(t('couldntSaveLoggedIn', lang));
@@ -665,8 +737,17 @@ function LegalPagesSection() {
         </div>
         <button
           onClick={handleSave}
-          disabled={loading || saving}
-          style={{ padding: '9px 18px', background: C.black, color: C.onDarkGold, fontSize: 11, fontWeight: 800, borderRadius: 6, flexShrink: 0 }}
+          disabled={loading || saving || !isDirty}
+          style={{
+            padding: '9px 18px',
+            background: loading || saving || !isDirty ? C.disabledBg : C.black,
+            color: loading || saving || !isDirty ? C.disabledFg : C.onDarkGold,
+            fontSize: 11,
+            fontWeight: 800,
+            borderRadius: 6,
+            flexShrink: 0,
+            cursor: loading || saving || !isDirty ? 'default' : 'pointer',
+          }}
         >
           {saving ? '…' : t('saveLegalPages', lang)}
         </button>
@@ -711,18 +792,28 @@ const HOME_CONTENT_DEFAULTS: HomeContent = {
   heroSubtitleEN: '',
   heroCtaLabelPT: '',
   heroCtaLabelEN: '',
-  heroCtaHref: '/catalogo',
+  heroCtaType: 'all',
+  heroCtaCategorySlug: null,
+  heroCtaTagSlug: null,
   heroImage: null,
 };
 
 function HomeHeroSection() {
   const { lang } = useApp();
   const [content, setContent] = useState<HomeContent>(HOME_CONTENT_DEFAULTS);
+  // Snapshot of `content` exactly as loaded (or last saved/restored), to
+  // disable Save until something actually changed (2026-07-31 admin
+  // report) -- see admin/lib/useDirty.ts. A freshly-uploaded hero image
+  // (handleImageUpload below) deliberately does NOT update this snapshot,
+  // since that upload alone hasn't been saved to home-content yet -- it
+  // should read as a pending change same as any text edit.
+  const [originalContent, setOriginalContent] = useState<HomeContent | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const isDirty = useDirty(content, originalContent);
 
   // Version history (2026-07-25 follow-up, "save old homepage creations, in
   // case I want to re-activate them later"): Payload auto-snapshots the
@@ -733,6 +824,13 @@ function HomeHeroSection() {
   const [versionsError, setVersionsError] = useState<string | null>(null);
   const [restoringId, setRestoringId] = useState<string | null>(null);
 
+  // 2026-07-31 fix (hero pointed at "SS26" but sent shoppers to the full
+  // catalogue): the button link is now a picker sourced from the real
+  // categories/tags lists instead of a hand-typed URL -- reusing the exact
+  // fetchers ProductEditor.tsx already uses for its own category/tag pickers.
+  const [categories, setCategories] = useState<ApiCategory[]>([]);
+  const [tags, setTags] = useState<ApiMerchTag[]>([]);
+
   const loadVersions = () => {
     adminListHomeContentVersions()
       .then(setVersions)
@@ -741,10 +839,17 @@ function HomeHeroSection() {
 
   useEffect(() => {
     fetchHomeContent()
-      .then(setContent)
+      .then((c) => {
+        setContent(c);
+        setOriginalContent(c);
+      })
       .catch(() => setError(t('couldntLoadHomeContent', lang)))
       .finally(() => setLoading(false));
     loadVersions();
+    Promise.all([adminListCategories(), adminListMerchTags()]).then(([cats, tagDocs]) => {
+      setCategories(cats);
+      setTags(tagDocs);
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang]);
 
@@ -755,6 +860,7 @@ function HomeHeroSection() {
     try {
       const updated = await adminUpdateHomeContent({ ...content, heroImage: refId(content.heroImage) || null });
       setContent(updated);
+      setOriginalContent(updated);
       setSaved(true);
       loadVersions();
     } catch {
@@ -771,6 +877,7 @@ function HomeHeroSection() {
     try {
       const restored = await adminRestoreHomeContentVersion(version.id);
       setContent(restored);
+      setOriginalContent(restored);
       setSaved(true);
       loadVersions();
     } catch {
@@ -804,8 +911,17 @@ function HomeHeroSection() {
         </div>
         <button
           onClick={() => void handleSave()}
-          disabled={loading || saving}
-          style={{ padding: '9px 18px', background: C.black, color: C.onDarkGold, fontSize: 11, fontWeight: 800, borderRadius: 6, flexShrink: 0 }}
+          disabled={loading || saving || !isDirty}
+          style={{
+            padding: '9px 18px',
+            background: loading || saving || !isDirty ? C.disabledBg : C.black,
+            color: loading || saving || !isDirty ? C.disabledFg : C.onDarkGold,
+            fontSize: 11,
+            fontWeight: 800,
+            borderRadius: 6,
+            flexShrink: 0,
+            cursor: loading || saving || !isDirty ? 'default' : 'pointer',
+          }}
         >
           {saving ? '…' : t('saveHomePage', lang)}
         </button>
@@ -836,7 +952,38 @@ function HomeHeroSection() {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }} className="ump-admin-orders-grid">
             <div>
-              <SettingsField label={t('buttonLinkLabel', lang)} value={content.heroCtaHref ?? ''} onChange={(v) => setContent((c) => ({ ...c, heroCtaHref: v }))} />
+              <SettingsSelect
+                label={t('buttonLinkTypeLabel', lang)}
+                value={content.heroCtaType ?? 'all'}
+                onChange={(v) => setContent((c) => ({ ...c, heroCtaType: v as HomeContent['heroCtaType'] }))}
+                options={[
+                  { value: 'all', label: t('buttonLinkTypeAll', lang) },
+                  { value: 'category', label: t('buttonLinkTypeCategory', lang) },
+                  { value: 'tag', label: t('buttonLinkTypeTag', lang) },
+                ]}
+              />
+              {content.heroCtaType === 'category' && (
+                <SettingsSelect
+                  label={t('buttonLinkCategoryLabel', lang)}
+                  value={content.heroCtaCategorySlug ?? ''}
+                  onChange={(v) => setContent((c) => ({ ...c, heroCtaCategorySlug: v }))}
+                  options={[
+                    { value: '', label: t('chooseEllipsis', lang) },
+                    ...categories.filter((cat) => cat.slug).map((cat) => ({ value: cat.slug as string, label: cat.namePT })),
+                  ]}
+                />
+              )}
+              {content.heroCtaType === 'tag' && (
+                <SettingsSelect
+                  label={t('buttonLinkTagLabel', lang)}
+                  value={content.heroCtaTagSlug ?? ''}
+                  onChange={(v) => setContent((c) => ({ ...c, heroCtaTagSlug: v }))}
+                  options={[
+                    { value: '', label: t('chooseEllipsis', lang) },
+                    ...tags.filter((tag) => tag.slug).map((tag) => ({ value: tag.slug as string, label: tag.labelPT })),
+                  ]}
+                />
+              )}
               <div style={{ fontSize: 10, color: C.inkSoft, marginTop: -4 }}>
                 {t('buttonLinkNote', lang)}
               </div>

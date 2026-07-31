@@ -72,6 +72,9 @@ export const T: Record<string, Record<Lang, string>> = {
   productNotFound: { pt: 'Produto não encontrado', en: 'Product not found' },
   continueShopping: { pt: 'Continuar a comprar', en: 'Continue shopping' },
   outOfStock: { pt: 'Esgotado', en: 'Out of stock' },
+  // 2026-07-31 stock cap fix: distinct from outOfStock -- the variant DOES
+  // have stock, the shopper's cart already holds all of it.
+  allInCart: { pt: 'Já tem tudo no carrinho', en: 'All in your cart' },
   fewLeftStock: { pt: 'Quase esgotado — {n} em stock', en: 'Few left — {n} in stock' },
   inStockCount: { pt: '{n}+ em stock', en: '{n}+ in stock' },
   sizeGuide: { pt: 'Guia de tamanhos', en: 'Size guide' },

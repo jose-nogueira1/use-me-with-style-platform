@@ -58,9 +58,15 @@ export function adaptApiProduct(api: ApiProduct, market: 'AO' | 'PT', lang: 'pt'
   // shape is still tolerated -- it just falls back to blank/empty rather
   // than crashing.
   const category = resolveRef(api.category);
-  const tag = resolveRef(api.tag);
-  const isNewArrival = Boolean(
-    tag && [tag.labelPT, tag.labelEN].some((label) => label && NEW_ARRIVAL_TAG_LABELS.has(label.trim().toLowerCase())),
+  // tag is hasMany since 2026-07-31 -- Payload returns an array; resolveRef
+  // unwraps each entry the same way it always has for a single ref.
+  const tagDocs = (api.tag ?? []).map((ref) => resolveRef(ref)).filter((doc): doc is NonNullable<typeof doc> => doc !== null);
+  const tags = tagDocs.map((doc) => ({
+    label: (lang === 'en' ? doc.labelEN : doc.labelPT)?.trim() || doc.labelPT,
+    slug: doc.slug,
+  }));
+  const isNewArrival = tagDocs.some((doc) =>
+    [doc.labelPT, doc.labelEN].some((label) => label && NEW_ARRIVAL_TAG_LABELS.has(label.trim().toLowerCase())),
   );
 
   // Variant-level inventory: colours, sizes, and stock all derive from the
@@ -118,8 +124,7 @@ export function adaptApiProduct(api: ApiProduct, market: 'AO' | 'PT', lang: 'pt'
     stock,
     variants,
     colors,
-    tag: tag ? ((lang === 'en' ? tag.labelEN : tag.labelPT)?.trim() || tag.labelPT) : undefined,
-    tagSlug: tag?.slug ?? undefined,
+    tags,
     isNewArrival,
     description: localizedDescription,
     sizeGuide,

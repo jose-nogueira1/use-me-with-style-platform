@@ -5,6 +5,7 @@ import { useApp } from '../../state/AppContext';
 import { adminGetOrder, adminUpdateOrder, adminUpdateOrderStatus, type ApiOrder } from '../../lib/api';
 import { PageHeader } from '../components/PageHeader';
 import { Badge, statusBadgeProps } from '../components/Badge';
+import { useDirty } from '../lib/useDirty';
 import { t, type Lang } from '../i18n';
 
 const STATUSES = ['new', 'payment_review', 'processing', 'shipped', 'delivered', 'cancelled'] as const;
@@ -60,16 +61,25 @@ export function OrderDetail() {
   const { id } = useParams<{ id: string }>();
   const [order, setOrder] = useState<ApiOrder | null>(null);
   const [form, setForm] = useState<EditableFields | null>(null);
+  // Snapshot of `form` exactly as loaded (or last saved), to disable the
+  // fields Save until something actually changed (2026-07-31 admin report)
+  // -- see admin/lib/useDirty.ts. Kept in sync everywhere `form` is reset
+  // from the server (initial load, a status change, or a successful save),
+  // since all three make `form` match what the server now holds.
+  const [originalForm, setOriginalForm] = useState<EditableFields | null>(null);
   const [error, setError] = useState(false);
   const [saving, setSaving] = useState(false);
   const [fieldsSaved, setFieldsSaved] = useState(false);
+  const isFieldsDirty = useDirty(form, originalForm);
 
   useEffect(() => {
     if (!id) return;
     adminGetOrder(id)
       .then((o) => {
         setOrder(o);
-        setForm(toEditable(o));
+        const loaded = toEditable(o);
+        setForm(loaded);
+        setOriginalForm(loaded);
       })
       .catch(() => setError(true));
   }, [id]);
@@ -80,7 +90,9 @@ export function OrderDetail() {
     try {
       const updated = await adminUpdateOrderStatus(order.id, status);
       setOrder(updated);
-      setForm(toEditable(updated));
+      const loaded = toEditable(updated);
+      setForm(loaded);
+      setOriginalForm(loaded);
     } catch {
       setError(true);
     } finally {
@@ -106,7 +118,9 @@ export function OrderDetail() {
         notes: form.notes || undefined,
       });
       setOrder(updated);
-      setForm(toEditable(updated));
+      const loaded = toEditable(updated);
+      setForm(loaded);
+      setOriginalForm(loaded);
       setFieldsSaved(true);
     } catch {
       setError(true);
@@ -182,8 +196,16 @@ export function OrderDetail() {
               {fieldsSaved && <span style={{ fontSize: 11, color: '#3F754D' }}>{t('savedNotice', lang)}</span>}
               <button
                 onClick={handleSaveFields}
-                disabled={saving}
-                style={{ padding: '8px 16px', background: C.black, color: C.onDarkGold, fontSize: 11, fontWeight: 800, borderRadius: 6 }}
+                disabled={saving || !isFieldsDirty}
+                style={{
+                  padding: '8px 16px',
+                  background: saving || !isFieldsDirty ? C.disabledBg : C.black,
+                  color: saving || !isFieldsDirty ? C.disabledFg : C.onDarkGold,
+                  fontSize: 11,
+                  fontWeight: 800,
+                  borderRadius: 6,
+                  cursor: saving || !isFieldsDirty ? 'default' : 'pointer',
+                }}
               >
                 {saving ? '…' : t('saveChanges', lang)}
               </button>

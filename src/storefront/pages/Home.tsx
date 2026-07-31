@@ -58,7 +58,15 @@ export function Home() {
   const heroHeadline = (lang === 'en' ? hero?.heroHeadlineEN : hero?.heroHeadlinePT)?.trim() || t('heroHeadline', lang);
   const heroSubtitle = (lang === 'en' ? hero?.heroSubtitleEN : hero?.heroSubtitlePT)?.trim() || t('heroSubtitle', lang);
   const heroCtaLabel = (lang === 'en' ? hero?.heroCtaLabelEN : hero?.heroCtaLabelPT)?.trim() || t('shopAll', lang);
-  const heroCtaHref = hero?.heroCtaHref?.trim() || '/catalogo';
+  // 2026-07-31 fix: heroCtaHref (a hand-typed URL, prone to slug typos/drift)
+  // is replaced by heroCtaType + a slug picked from a real dropdown --
+  // derive the actual href here instead of trusting a raw string.
+  const heroCtaHref =
+    hero?.heroCtaType === 'tag' && hero.heroCtaTagSlug
+      ? `/catalogo?tag=${encodeURIComponent(hero.heroCtaTagSlug)}`
+      : hero?.heroCtaType === 'category' && hero.heroCtaCategorySlug
+        ? `/catalogo?cat=${encodeURIComponent(hero.heroCtaCategorySlug)}`
+        : '/catalogo';
   const heroImageUrl = absoluteMediaUrl(resolveRef(hero?.heroImage)?.url);
 
   const [categories, setCategories] = useState<ApiCategory[]>(FALLBACK_CATEGORIES);

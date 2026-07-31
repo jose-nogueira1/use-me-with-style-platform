@@ -15,7 +15,7 @@ import { hasSwatch, swatchBackground } from '../../lib/colorSwatch';
 export function ProductDetail() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const { market, lang, dispatchCart, favorites, toggleFavorite } = useApp();
+  const { market, lang, cart, dispatchCart, favorites, toggleFavorite } = useApp();
   const { products, loading } = useProducts(market, lang);
   const fmtPrice = useFormatPrice();
   const fmtOriginalPrice = useFormatOriginalPrice();
@@ -72,9 +72,17 @@ export function ProductDetail() {
   const isFav = favorites.has(product.id);
   const recommendations = products.filter((p) => p.cat === product.cat && p.id !== product.id).slice(0, 4);
 
+  // Already-in-cart quantity for this exact colour+size, so a repeated
+  // click at the stock cap can be told apart from one that actually added
+  // something (2026-07-31 stock cap fix).
+  const qtyInCart = cart.find((i) => i.id === product.id && i.size === activeSize && i.color === activeColor)?.qty ?? 0;
+  const atCartMax = !isOutOfStock && qtyInCart >= stockForSize;
+
   const handleAdd = () => {
-    if (isOutOfStock) return;
-    dispatchCart({ type: 'ADD', id: product.id, size: activeSize, color: activeColor });
+    if (isOutOfStock || qtyInCart >= stockForSize) return;
+    // max: repeatedly clicking Add-to-Cart used to keep incrementing past
+    // the same unbounded path as the cart stepper -- see cartReducer.ts.
+    dispatchCart({ type: 'ADD', id: product.id, size: activeSize, color: activeColor, max: stockForSize });
     trackMetaEvent('AddToCart', {
       content_ids: [product.id],
       content_name: product.name,
@@ -115,9 +123,16 @@ export function ProductDetail() {
                 above 3:1 on the chip in both themes (C.gold managed 2.2:1). */}
             <Heart size={18} fill={isFav ? C.goldDeep : 'none'} color={isFav ? C.goldDeep : C.photoChipFg} />
           </button>
-          {product.tag && (
-            <div style={{ position: 'absolute', top: 16, left: 16, background: C.black, color: C.onDarkGold, fontSize: 9, letterSpacing: 1.5, padding: '6px 10px', borderRadius: 6, fontWeight: 800 }}>
-              {tagLabel(product.tag, lang)}
+          {product.tags.length > 0 && (
+            <div style={{ position: 'absolute', top: 16, left: 16, display: 'flex', flexWrap: 'wrap', gap: 6, maxWidth: 'calc(100% - 70px)' }}>
+              {product.tags.map((tag) => (
+                <div
+                  key={tag.slug}
+                  style={{ background: C.black, color: C.onDarkGold, fontSize: 9, letterSpacing: 1.5, padding: '6px 10px', borderRadius: 6, fontWeight: 800 }}
+                >
+                  {tagLabel(tag.label, lang)}
+                </div>
+              ))}
             </div>
           )}
         </div>
@@ -320,13 +335,13 @@ export function ProductDetail() {
         </button>
         <button
           onClick={handleAdd}
-          disabled={isOutOfStock}
+          disabled={isOutOfStock || atCartMax}
           style={{
             flex: 1,
             padding: 14,
-            background: added ? C.successText : isOutOfStock ? C.disabledBg : C.ctaBg,
-            border: `1px solid ${added ? C.successText : isOutOfStock ? C.disabledBg : C.ctaBorder}`,
-            color: added ? C.onDark : isOutOfStock ? C.disabledFg : C.onDarkGold,
+            background: added ? C.successText : isOutOfStock || atCartMax ? C.disabledBg : C.ctaBg,
+            border: `1px solid ${added ? C.successText : isOutOfStock || atCartMax ? C.disabledBg : C.ctaBorder}`,
+            color: added ? C.onDark : isOutOfStock || atCartMax ? C.disabledFg : C.onDarkGold,
             fontSize: 12,
             fontWeight: 800,
             letterSpacing: 1.5,
@@ -336,7 +351,7 @@ export function ProductDetail() {
             alignItems: 'center',
             justifyContent: 'center',
             gap: 8,
-            cursor: isOutOfStock ? 'not-allowed' : 'pointer',
+            cursor: isOutOfStock || atCartMax ? 'not-allowed' : 'pointer',
           }}
         >
           {added ? (
@@ -345,6 +360,8 @@ export function ProductDetail() {
             </>
           ) : isOutOfStock ? (
             t('outOfStock', lang)
+          ) : atCartMax ? (
+            t('allInCart', lang)
           ) : (
             <>
               {t('addToCart', lang)} · {fmtPrice(product)}

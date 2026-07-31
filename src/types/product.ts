@@ -41,6 +41,17 @@ export type ProductVariant = {
   stock: number;
 };
 
+/** One merchandising badge on a product (e.g. "Novidade", "Bestseller").
+ * hasMany since 2026-07-31 -- a product can carry more than one at once, so
+ * this replaces the old single `tag`/`tagSlug` string pair. `slug` is the
+ * stable identifier used by the ?tag= collection-link filter in Browse.tsx
+ * (an unrelated feature -- a curated collection URL matches against any one
+ * of a product's tags, not the product's single tag). */
+export type ProductTag = {
+  label: string;
+  slug: string;
+};
+
 /** One row of the shared measurement chart (cm, language-neutral --
  * labels are translated by the storefront). */
 export type SizeGuideRow = {
@@ -85,13 +96,11 @@ export type Product = {
   /** Exact per colour+size stock for the current market. */
   variants: ProductVariant[];
   colors: ProductColor[];
-  tag?: string;
-  /** Merch tag's stable slug (2026-07-25 follow-up, "collections"). Matches
-   * the ?tag= URL param, the same way `cat` matches ?cat= -- lets the home
-   * hero button link at a curated set of products via a merchandising tag
-   * (e.g. /catalogo?tag=ss26) rather than just one category. */
-  tagSlug?: string;
-  /** True when the product's merch tag is a recognised "new arrival" marker
+  /** Merchandising badges (2026-07-31: multi-select, was a single tag).
+   * Empty array means no tags. */
+  tags: ProductTag[];
+  /** True when ANY of the product's merch tags is a recognised "new
+   * arrival" marker
    * (2026-07-25 navbar fix) -- checked against BOTH labelPT and labelEN on
    * the tag doc, not the current display language, so it's stable across
    * a language switch. Drives the "Novidades"/"New arrivals" nav link,

@@ -15,7 +15,6 @@ export function ProductCard({ product, size = 'grid' }: { product: Product; size
   const fmtPrice = useFormatPrice();
   const fmtOriginalPrice = useFormatOriginalPrice();
   const isSmall = size === 'small';
-  const tagStyle = product.tag ? TAG_STYLE[product.tag] ?? DEFAULT_TAG_STYLE : null;
 
   return (
     <Link
@@ -38,21 +37,30 @@ export function ProductCard({ product, size = 'grid' }: { product: Product; size
         <ProductPhoto tone={product.tone} radius={0} image={product.images[0]} variant="card" />
       </div>
       <div style={{ padding: '10px 8px 12px' }}>
-        {tagStyle && (
-          <div
-            style={{
-              display: 'inline-block',
-              background: tagStyle.bg,
-              color: tagStyle.text,
-              fontSize: 9,
-              fontWeight: 800,
-              padding: '4px 8px',
-              borderRadius: 6,
-              border: `1px solid ${C.rule}`,
-              marginBottom: 6,
-            }}
-          >
-            {t((product.tag && TAG_KEY[product.tag]) || '', lang) || product.tag}
+        {/* Multi-select since 2026-07-31 -- a product can carry more than
+            one badge (e.g. both "Novidade" and "Bestseller") at once. */}
+        {product.tags.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 6 }}>
+            {product.tags.map((tag) => {
+              const tagStyle = TAG_STYLE[tag.label] ?? DEFAULT_TAG_STYLE;
+              return (
+                <div
+                  key={tag.slug}
+                  style={{
+                    display: 'inline-block',
+                    background: tagStyle.bg,
+                    color: tagStyle.text,
+                    fontSize: 9,
+                    fontWeight: 800,
+                    padding: '4px 8px',
+                    borderRadius: 6,
+                    border: `1px solid ${C.rule}`,
+                  }}
+                >
+                  {t(TAG_KEY[tag.label] || '', lang) || tag.label}
+                </div>
+              );
+            })}
           </div>
         )}
         <div style={{ fontFamily: F.sans, fontSize: 12, fontWeight: 800, color: C.ink }}>{product.name}</div>

@@ -169,7 +169,11 @@ export type ApiProduct = {
   sizeGuide?: ApiSizeGuideRef | null;
   fitNotePT?: string;
   fitNoteEN?: string;
-  tag?: ApiMerchTagRef | null;
+  /** hasMany since 2026-07-31 (admin bug report: "I can only select one
+   * merchandising tag per item") -- a product can carry several badges at
+   * once. Payload returns an array for hasMany relationships; an unpopulated
+   * or empty product may still send null/undefined, so both are tolerated. */
+  tag?: ApiMerchTagRef[] | null;
   images?: { image: ApiProductImageRef }[];
   priceAOKz: number;
   pricePTEur: number;
@@ -228,7 +232,10 @@ export type ApiCoupon = {
   code: string;
   active?: boolean;
   description?: string | null;
-  type: 'percent' | 'fixed';
+  // 2026-07-31: free_shipping is a shipping waiver (no percentOff/fixedOff
+  // amount of its own) rather than a merchandise discount -- see
+  // couponPricing.ts's resolveCoupon (CMS) for how it's resolved.
+  type: 'percent' | 'fixed' | 'free_shipping';
   percentOff?: number | null;
   fixedOffAOKz?: number | null;
   fixedOffPTEur?: number | null;
@@ -250,7 +257,11 @@ export type ApiCoupon = {
 };
 
 export type CouponValidationResult =
-  | { valid: true; code: string; discountAmount: number; label: string }
+  // freeShipping (2026-07-31 "free delivery" coupon type): mirrors
+  // couponPricing.ts's CouponResolution on the CMS side -- Checkout.tsx
+  // zeroes its own shippingCost calc when this is true, same pattern as
+  // discountAmount for merchandise discounts.
+  | { valid: true; code: string; discountAmount: number; freeShipping: boolean; label: string }
   | { valid: false; reason: string };
 
 /** Advisory-only check, powering the checkout "Apply" button so the shopper
@@ -434,7 +445,14 @@ export type HomeContent = {
   heroSubtitleEN?: string;
   heroCtaLabelPT?: string;
   heroCtaLabelEN?: string;
-  heroCtaHref?: string;
+  // 2026-07-31 (fixes hero CTA pointing at the full catalogue instead of a
+  // themed collection): replaces the old free-text heroCtaHref URL with a
+  // type + slug pair, driven by a dropdown in Settings.tsx sourced from the
+  // real categories/tags lists rather than hand-typed. See Home.tsx for how
+  // the actual href is derived from these.
+  heroCtaType?: 'all' | 'category' | 'tag';
+  heroCtaCategorySlug?: string | null;
+  heroCtaTagSlug?: string | null;
   heroImage?: string | number | ApiMedia | null;
 };
 
@@ -1109,7 +1127,10 @@ export type CouponInput = {
   code: string;
   active?: boolean;
   description?: string;
-  type: 'percent' | 'fixed';
+  // 2026-07-31: free_shipping is a shipping waiver (no percentOff/fixedOff
+  // amount of its own) rather than a merchandise discount -- see
+  // couponPricing.ts's resolveCoupon (CMS) for how it's resolved.
+  type: 'percent' | 'fixed' | 'free_shipping';
   percentOff?: number | null;
   fixedOffAOKz?: number | null;
   fixedOffPTEur?: number | null;

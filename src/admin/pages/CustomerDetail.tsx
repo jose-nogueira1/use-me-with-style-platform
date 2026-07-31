@@ -5,6 +5,7 @@ import { useApp } from '../../state/AppContext';
 import { adminGetCustomer, adminListOrdersByEmail, adminUpdateCustomer, type ApiCustomer, type ApiOrder } from '../../lib/api';
 import { PageHeader } from '../components/PageHeader';
 import { Badge, statusBadgeProps } from '../components/Badge';
+import { useDirty } from '../lib/useDirty';
 import { t } from '../i18n';
 
 // Customer detail/edit + order history -- previously the Customers list was
@@ -17,16 +18,22 @@ export function CustomerDetail() {
   const [customer, setCustomer] = useState<ApiCustomer | null>(null);
   const [orders, setOrders] = useState<ApiOrder[] | null>(null);
   const [form, setForm] = useState({ name: '', email: '', phone: '', market: 'AO' as 'AO' | 'PT' });
+  // Snapshot of `form` exactly as loaded, to disable Save until something
+  // actually changed (2026-07-31 admin report) -- see admin/lib/useDirty.ts.
+  const [originalForm, setOriginalForm] = useState<typeof form | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const isDirty = useDirty(form, originalForm);
 
   useEffect(() => {
     if (!id) return;
     adminGetCustomer(id)
       .then((c) => {
         setCustomer(c);
-        setForm({ name: c.name, email: c.email, phone: c.phone ?? '', market: c.market });
+        const loaded = { name: c.name, email: c.email, phone: c.phone ?? '', market: c.market };
+        setForm(loaded);
+        setOriginalForm(loaded);
         return adminListOrdersByEmail(c.email);
       })
       .then(setOrders)
@@ -41,6 +48,7 @@ export function CustomerDetail() {
     try {
       const updated = await adminUpdateCustomer(customer.id, { ...form, phone: form.phone || undefined });
       setCustomer(updated);
+      setOriginalForm(form);
       setSaved(true);
     } catch {
       setError(t('couldntSaveChanges', lang));
@@ -69,8 +77,10 @@ export function CustomerDetail() {
         subtitle={t('contactRecordSubtitle', lang)}
         backTo="/admin/clientes"
         backLabel={t('backToCustomers', lang)}
-        cta={saving ? '…' : t('saveChanges', lang)}
+        cta={t('saveChanges', lang)}
         onCta={handleSave}
+        ctaBusy={saving}
+        ctaDisabled={!isDirty}
       />
 
       {error && <div style={{ margin: '16px 28px 0', fontSize: 13, color: '#B95545' }}>{error}</div>}

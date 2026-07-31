@@ -46,6 +46,44 @@ function fmtDate(value?: string | null): string {
   return new Date(value).toLocaleDateString();
 }
 
+// Status badge (2026-07-31 fix): previously read only the stored `active`
+// flag, so a coupon like SUMMER10 with `active: true` but a past `endDate`
+// still showed green "Active" -- checkout already rejects it correctly
+// (see couponPricing.ts's resolveCoupon), this was purely a display bug.
+// Dates take priority over the flag either direction: an expired or
+// not-yet-started coupon reads as such even if someone left `active` on,
+// and a coupon inside its date window still reads "Inactive" if the admin
+// explicitly turned it off.
+type CouponStatus = 'active' | 'inactive' | 'expired' | 'scheduled';
+
+function couponStatus(c: ApiCoupon): CouponStatus {
+  if (c.active === false) return 'inactive';
+  const now = new Date();
+  if (c.endDate && new Date(c.endDate) < now) return 'expired';
+  if (c.startDate && new Date(c.startDate) > now) return 'scheduled';
+  return 'active';
+}
+
+const couponStatusColor: Record<CouponStatus, string> = {
+  active: '#3C8A5E',
+  inactive: C.inkSoft,
+  expired: '#B95545',
+  scheduled: C.goldDeep,
+};
+
+function couponStatusLabel(status: CouponStatus, lang: Lang): string {
+  switch (status) {
+    case 'inactive':
+      return t('inactiveStatus', lang);
+    case 'expired':
+      return t('expiredStatus', lang);
+    case 'scheduled':
+      return t('scheduledStatus', lang);
+    default:
+      return t('activeStatusSingular', lang);
+  }
+}
+
 export function Coupons() {
   const { lang } = useApp();
   const [coupons, setCoupons] = useState<ApiCoupon[] | null>(null);
@@ -172,8 +210,8 @@ export function Coupons() {
           >
             <div style={{ minWidth: 120 }}>
               <div style={{ fontFamily: F.display, fontSize: 15, fontWeight: 800, color: C.ink }}>{c.code}</div>
-              <div style={{ fontSize: 10, color: c.active === false ? '#B95545' : '#3C8A5E', fontWeight: 700, textTransform: 'uppercase', marginTop: 2 }}>
-                {c.active === false ? t('inactiveStatus', lang) : t('activeStatusSingular', lang)}
+              <div style={{ fontSize: 10, color: couponStatusColor[couponStatus(c)], fontWeight: 700, textTransform: 'uppercase', marginTop: 2 }}>
+                {couponStatusLabel(couponStatus(c), lang)}
               </div>
               {/* Market scoping (2026-07-27): only shown when the coupon is
                   actually restricted, so an unrestricted (default, both
@@ -188,7 +226,9 @@ export function Coupons() {
             <div style={{ fontSize: 12, color: C.ink, minWidth: 140 }}>
               {c.type === 'percent'
                 ? t('percentOffLabel', lang, { pct: c.percentOff ?? 0 })
-                : t('fixedOffLabel', lang, { kz: c.fixedOffAOKz ?? 0, eur: c.fixedOffPTEur ?? 0 })}
+                : c.type === 'fixed'
+                  ? t('fixedOffLabel', lang, { kz: c.fixedOffAOKz ?? 0, eur: c.fixedOffPTEur ?? 0 })
+                  : t('freeShippingOffLabel', lang)}
             </div>
             <div style={{ fontSize: 11, color: C.inkSoft, minWidth: 160 }}>
               {fmtDate(c.startDate)} → {fmtDate(c.endDate)}
@@ -245,8 +285,12 @@ function CouponForm({
         <SelectField
           label={t('typeLabel', lang)}
           value={draft.type}
-          onChange={(v) => setDraft({ ...draft, type: v as 'percent' | 'fixed' })}
-          options={[{ value: 'percent', label: t('percentageOffOption', lang) }, { value: 'fixed', label: t('fixedAmountOffOption', lang) }]}
+          onChange={(v) => setDraft({ ...draft, type: v as 'percent' | 'fixed' | 'free_shipping' })}
+          options={[
+            { value: 'percent', label: t('percentageOffOption', lang) },
+            { value: 'fixed', label: t('fixedAmountOffOption', lang) },
+            { value: 'free_shipping', label: t('freeShippingOption', lang) },
+          ]}
         />
         <CheckboxField label={t('activeCheckboxLabel', lang)} checked={draft.active ?? true} onChange={(v) => setDraft({ ...draft, active: v })} />
         <CheckboxField label={t('availableAngolaCheckboxLabel', lang)} checked={draft.availableAO ?? true} onChange={(v) => setDraft({ ...draft, availableAO: v })} />
@@ -257,11 +301,13 @@ function CouponForm({
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginTop: 12 }}>
           <NumberField label={t('percentOffFieldLabel', lang)} value={draft.percentOff} onChange={(v) => setDraft({ ...draft, percentOff: v })} />
         </div>
-      ) : (
+      ) : draft.type === 'fixed' ? (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginTop: 12 }}>
           <NumberField label={t('fixedOffAngolaKz', lang)} value={draft.fixedOffAOKz} onChange={(v) => setDraft({ ...draft, fixedOffAOKz: v })} />
           <NumberField label={t('fixedOffPortugalEur', lang)} value={draft.fixedOffPTEur} onChange={(v) => setDraft({ ...draft, fixedOffPTEur: v })} />
         </div>
+      ) : (
+        <div style={{ marginTop: 12, fontSize: 11, color: C.inkSoft }}>{t('freeShippingNote', lang)}</div>
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginTop: 12 }}>

@@ -233,7 +233,12 @@ export function Cart() {
                         set this inherited the UA default black and vanished
                         against the dark page at 1.08:1. */}
                     <span style={{ fontSize: 12, minWidth: 14, textAlign: 'center', color: C.ink }}>{item.qty}</span>
-                    <button aria-label={`${lang === 'pt' ? 'Aumentar quantidade de' : 'Increase quantity of'} ${p.name}`} onClick={() => dispatchCart({ type: 'INC', idx })}>
+                    <button
+                      aria-label={`${lang === 'pt' ? 'Aumentar quantidade de' : 'Increase quantity of'} ${p.name}`}
+                      onClick={() => dispatchCart({ type: 'INC', idx, max: variantStock })}
+                      disabled={item.qty >= variantStock}
+                      style={{ opacity: item.qty >= variantStock ? 0.35 : 1, cursor: item.qty >= variantStock ? 'default' : 'pointer' }}
+                    >
                       <Plus size={12} />
                     </button>
                   </div>

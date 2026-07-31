@@ -26,6 +26,7 @@ import {
 } from '../../lib/api';
 import { PageHeader } from '../components/PageHeader';
 import { navigateWithToast } from '../lib/toastNavigation';
+import { useDirty } from '../lib/useDirty';
 import { t } from '../i18n';
 
 // Catalogue taxonomies are managed in the Product settings page
@@ -59,8 +60,10 @@ type FormState = {
   sizeGuide: string;
   fitNotePT: string;
   fitNoteEN: string;
-  /** Merch tag id (string form). Empty = no badge. */
-  tag: string;
+  /** Merch tag ids (string form). hasMany since 2026-07-31 (admin bug
+   * report: "I can only select one merchandising tag per item") -- empty
+   * array = no badges. */
+  tagIds: string[];
   /** Colours this piece comes in (matrix rows, in display order). */
   colorIds: string[];
   /** Sizes this piece comes in (matrix columns). */
@@ -81,7 +84,7 @@ type FormState = {
   availablePT: boolean;
 };
 
-const EMPTY: FormState = { name: '', namePT: '', nameEN: '', slug: '', category: '', description: '', descriptionPT: '', descriptionEN: '', sizeGuide: '', fitNotePT: '', fitNoteEN: '', tag: '', colorIds: [], sizes: ['S', 'M', 'L'], stock: {}, priceAOKz: '', pricePTEur: '', shippingWeightGrams: '500', saleAOKz: '', salePTEur: '', saleStartDate: '', saleEndDate: '', active: false, availableAO: true, availablePT: true };
+const EMPTY: FormState = { name: '', namePT: '', nameEN: '', slug: '', category: '', description: '', descriptionPT: '', descriptionEN: '', sizeGuide: '', fitNotePT: '', fitNoteEN: '', tagIds: [], colorIds: [], sizes: ['S', 'M', 'L'], stock: {}, priceAOKz: '', pricePTEur: '', shippingWeightGrams: '500', saleAOKz: '', salePTEur: '', saleStartDate: '', saleEndDate: '', active: false, availableAO: true, availablePT: true };
 
 /** Payload date fields round-trip as full ISO datetimes; the admin form uses
  * a plain <input type="date">, which needs just the YYYY-MM-DD portion. */
@@ -109,6 +112,9 @@ export function ProductEditor() {
   const isNew = id === 'novo';
   const navigate = useNavigate();
   const [form, setForm] = useState<FormState>(EMPTY);
+  // Snapshot of `form` exactly as loaded, to tell whether anything has
+  // actually changed (2026-07-31 admin report) -- see admin/lib/useDirty.ts.
+  const [originalForm, setOriginalForm] = useState<FormState | null>(null);
   const [existing, setExisting] = useState<ApiProduct | null>(null);
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
@@ -143,7 +149,7 @@ export function ProductEditor() {
           return;
         }
         setExisting(p);
-        setForm({
+        const loaded: FormState = {
           name: p.name,
           namePT: p.namePT ?? p.name,
           nameEN: p.nameEN ?? p.name,
@@ -155,7 +161,7 @@ export function ProductEditor() {
           sizeGuide: refId(p.sizeGuide),
           fitNotePT: p.fitNotePT ?? '',
           fitNoteEN: p.fitNoteEN ?? '',
-          tag: refId(p.tag),
+          tagIds: (p.tag ?? []).map((ref) => refId(ref)).filter(Boolean),
           ...formFromVariants(p.variants ?? []),
           priceAOKz: String(p.priceAOKz),
           pricePTEur: String(p.pricePTEur),
@@ -167,13 +173,25 @@ export function ProductEditor() {
           active: p.active,
           availableAO: p.availableAO,
           availablePT: p.availablePT,
-        });
+        };
+        setForm(loaded);
+        setOriginalForm(loaded);
       })
       .catch(() => setError(t('couldntConnectBackend', lang)))
       .finally(() => setLoading(false));
   }, [id, isNew, lang]);
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => setForm((f) => ({ ...f, [key]: value }));
+
+  // Hook called unconditionally every render (Rules of Hooks) -- isNew can
+  // flip to false mid-lifecycle without remounting (creating a product
+  // navigates to its own new /admin/produtos/:id, same route component,
+  // just a changed :id param), so the OR below, not a short-circuited call,
+  // is what keeps a brand-new record's Save always enabled: there's no
+  // "unchanged" baseline to speak of yet, subject to the validation
+  // handleSave already does.
+  const formIsDirty = useDirty(form, originalForm);
+  const isDirty = isNew || formIsDirty;
 
   /** Maps a string-form id back to the ORIGINAL id (number under Postgres,
    * string under SQLite) so Payload's relationship validation accepts it. */
@@ -184,6 +202,12 @@ export function ProductEditor() {
     setForm((f) => ({
       ...f,
       colorIds: f.colorIds.includes(colorId) ? f.colorIds.filter((c) => c !== colorId) : [...f.colorIds, colorId],
+    }));
+
+  const toggleTag = (tagId: string) =>
+    setForm((f) => ({
+      ...f,
+      tagIds: f.tagIds.includes(tagId) ? f.tagIds.filter((t) => t !== tagId) : [...f.tagIds, tagId],
     }));
 
   const toggleSize = (size: string) =>
@@ -230,8 +254,9 @@ export function ProductEditor() {
       sizeGuide: form.sizeGuide ? originalId(sizeGuides, form.sizeGuide) : null,
       fitNotePT: form.fitNotePT || undefined,
       fitNoteEN: form.fitNoteEN || undefined,
-      // null (not undefined) so removing a badge actually clears it.
-      tag: form.tag ? originalId(tags, form.tag) : null,
+      // Empty array (not undefined) so removing every badge actually clears
+      // them -- hasMany since 2026-07-31.
+      tag: form.tagIds.map((tagId) => originalId(tags, tagId)),
       variants,
       priceAOKz: Number(form.priceAOKz) || 0,
       pricePTEur: Number(form.pricePTEur) || 0,
@@ -311,6 +336,7 @@ export function ProductEditor() {
         cta={isNew ? t('publishProduct', lang) : t('saveChanges', lang)}
         onCta={handleSave}
         ctaBusy={saving}
+        ctaDisabled={!isDirty}
         backTo="/admin/produtos"
         backLabel={t('backToProducts', lang)}
       />
@@ -372,17 +398,40 @@ export function ProductEditor() {
                 ))}
               </select>
             </label>
-            <label style={{ display: 'block' }}>
+            <div style={{ display: 'block' }}>
+              {/* Multi-select since 2026-07-31 (admin bug report: "I can only
+                  select one merchandising tag per item") -- was a single
+                  <select>, now toggle chips matching the colours/sizes
+                  pattern below so a product can carry more than one badge. */}
               <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>{t('merchTagLabel', lang)}</div>
-              <select value={form.tag} onChange={(e) => set('tag', e.target.value)} style={selectStyle}>
-                <option value="">{t('noneOption', lang)}</option>
-                {tags.map((tg) => (
-                  <option key={String(tg.id)} value={String(tg.id)}>
-                    {tg.labelPT}{tg.labelEN && tg.labelEN !== tg.labelPT ? ` / ${tg.labelEN}` : ''}
-                  </option>
-                ))}
-              </select>
-            </label>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {tags.length === 0 && <span style={{ fontSize: 11, color: C.inkSoft }}>{t('noneOption', lang)}</span>}
+                {tags.map((tg) => {
+                  const tid = String(tg.id);
+                  const selected = form.tagIds.includes(tid);
+                  return (
+                    <button
+                      key={tid}
+                      type="button"
+                      onClick={() => toggleTag(tid)}
+                      aria-pressed={selected}
+                      style={{
+                        padding: '6px 10px',
+                        fontSize: 11,
+                        fontWeight: 700,
+                        borderRadius: 20,
+                        border: `1.5px solid ${selected ? C.gold : C.rule}`,
+                        background: selected ? C.tagBg : C.paper,
+                        color: selected ? C.goldDeep : C.ink,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {tg.labelPT}{tg.labelEN && tg.labelEN !== tg.labelPT ? ` / ${tg.labelEN}` : ''}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
             <label style={{ display: 'block' }}>
               <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>{t('sizeGuideLabel', lang)}</div>
               <select value={form.sizeGuide} onChange={(e) => set('sizeGuide', e.target.value)} style={selectStyle}>
@@ -596,8 +645,18 @@ export function ProductEditor() {
           <div style={{ display: 'flex', gap: 10 }}>
             <button
               onClick={handleSave}
-              disabled={saving}
-              style={{ padding: 12, background: C.black, color: C.onDarkGold, fontSize: 11, fontWeight: 800, borderRadius: 6, alignSelf: 'flex-start', minWidth: 160 }}
+              disabled={saving || !isDirty}
+              style={{
+                padding: 12,
+                background: saving || !isDirty ? C.disabledBg : C.black,
+                color: saving || !isDirty ? C.disabledFg : C.onDarkGold,
+                fontSize: 11,
+                fontWeight: 800,
+                borderRadius: 6,
+                alignSelf: 'flex-start',
+                minWidth: 160,
+                cursor: saving || !isDirty ? 'default' : 'pointer',
+              }}
             >
               {saving ? '…' : isNew ? t('publishProduct', lang) : t('saveChanges', lang)}
             </button>

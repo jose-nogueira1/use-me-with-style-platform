@@ -42,7 +42,7 @@ export function Browse() {
   // Merch tags as "collections" (2026-07-25 follow-up to the home hero
   // button -- see AskUserQuestion decision): only fetched to resolve a
   // ?tag=<slug> URL param into a display label for the "Filtered by" banner
-  // below. The actual product filtering uses Product.tagSlug directly
+  // below. The actual product filtering uses Product.tags directly
   // (productAdapters.ts), so this fetch failing just loses the label, not
   // the filter itself.
   const [tags, setTags] = useState<ApiMerchTag[]>([]);
@@ -183,7 +183,9 @@ export function Browse() {
     if (activeCats.length) {
       list = list.filter((p) => activeCats.some((c) => (c === 'new' ? p.isNewArrival : p.cat === c)));
     }
-    if (activeTag) list = list.filter((p) => p.tagSlug === activeTag);
+    // Multi-select tags since 2026-07-31: a product qualifies for the
+    // collection if ANY of its tags match, not just a single one.
+    if (activeTag) list = list.filter((p) => p.tags.some((tg) => tg.slug === activeTag));
     if (searchTerm) list = list.filter((p) => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
     if (filterSizes.length) list = list.filter((p) => filterSizes.some((s) => p.sizes.includes(s)));
     if (filterColors.length) list = list.filter((p) => p.colors.some((c) => filterColors.includes(c.id)));

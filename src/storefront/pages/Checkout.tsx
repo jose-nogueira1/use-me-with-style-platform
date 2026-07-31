@@ -399,7 +399,7 @@ export function Checkout() {
   // real at order-creation time (authoritativeOrder.ts) and rejects the
   // order if it's no longer valid by then, so this being stale is harmless.
   const [couponInput, setCouponInput] = useState('');
-  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountAmount: number; label: string } | null>(null);
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountAmount: number; freeShipping: boolean; label: string } | null>(null);
   const [couponError, setCouponError] = useState<string | null>(null);
   const [couponChecking, setCouponChecking] = useState(false);
 
@@ -565,7 +565,14 @@ export function Checkout() {
   // independent (and previously inconsistent) display value.
   const merchandiseTotalAfterDiscount = Math.max(0, settlementSubtotal - discountAmount);
   const angolaShipping = normalizeAngolaShipping(settings);
-  const shippingCost = checkoutShippingCost(market, deliveryMethod, merchandiseTotalAfterDiscount, settings, form.city, totalWeightGrams, form.postalCode);
+  // freeShipping (2026-07-31 "free delivery" coupon type): zeroes the
+  // shipping line directly rather than folding into discountAmount, so the
+  // summary can still show the real shipping price struck through/waived
+  // instead of silently vanishing into the merchandise discount number.
+  const freeShipping = appliedCoupon?.freeShipping ?? false;
+  const shippingCost = freeShipping
+    ? 0
+    : checkoutShippingCost(market, deliveryMethod, merchandiseTotalAfterDiscount, settings, form.city, totalWeightGrams, form.postalCode);
   const total = merchandiseTotalAfterDiscount + shippingCost;
   const fmt = (n: number) => (market === 'PT' || usesEurSettlement ? `€${n.toFixed(2)}` : `${formatKz(n, lang)} Kz`);
 
@@ -605,7 +612,7 @@ export function Checkout() {
       .then((result) => {
         if (cancelled) return;
         if (result.valid) {
-          setAppliedCoupon({ code: result.code, discountAmount: result.discountAmount, label: result.label });
+          setAppliedCoupon({ code: result.code, discountAmount: result.discountAmount, freeShipping: result.freeShipping, label: result.label });
         } else {
           setAppliedCoupon(null);
           setCouponInput(code);

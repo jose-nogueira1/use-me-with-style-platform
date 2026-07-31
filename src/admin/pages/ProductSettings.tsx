@@ -85,7 +85,9 @@ export function ProductTaxonomySettings() {
     };
     for (const p of products) {
       bump(byCategory, refId(p.category));
-      bump(byTag, refId(p.tag));
+      // hasMany since 2026-07-31 -- count every tag the product carries,
+      // not just a single one.
+      for (const tagKey of new Set((p.tag ?? []).map((ref) => refId(ref)))) bump(byTag, tagKey);
       bump(byGuide, refId(p.sizeGuide));
       for (const colorKey of new Set((p.variants ?? []).map((v) => refId(v.color)))) bump(byColor, colorKey);
     }

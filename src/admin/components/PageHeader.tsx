@@ -53,6 +53,7 @@ export function PageHeader({
   cta,
   onCta,
   ctaBusy,
+  ctaDisabled,
   backTo,
   backLabel,
 }: {
@@ -66,6 +67,12 @@ export function PageHeader({
    * button is broken" while the identical one at the bottom of the form --
    * which does show a pending state -- appeared to work (2026-07-30). */
   ctaBusy?: boolean;
+  /** Disables the CTA WITHOUT the pending "…" state -- for "nothing to
+   * save yet" (2026-07-31 admin report: clicking Save with no edits should
+   * do nothing, not silently re-save identical data). Kept separate from
+   * ctaBusy because the label still needs to read as the normal cta text,
+   * not a spinner, while simply disabled. */
+  ctaDisabled?: boolean;
   /** Renders a back control above the title. Detail screens previously had
    * only the breadcrumb text, which isn't clickable, so the only way back to
    * a list was the sidebar or the browser's Back button. */
@@ -123,18 +130,18 @@ export function PageHeader({
         {cta && (
           <button
             onClick={onCta}
-            disabled={ctaBusy}
+            disabled={ctaBusy || ctaDisabled}
             aria-busy={ctaBusy || undefined}
             style={{
               padding: '0 20px',
               height: 42,
               borderRadius: 6,
-              background: ctaBusy ? C.disabledBg : C.black,
-              color: ctaBusy ? C.disabledFg : C.onDarkGold,
+              background: ctaBusy || ctaDisabled ? C.disabledBg : C.black,
+              color: ctaBusy || ctaDisabled ? C.disabledFg : C.onDarkGold,
               fontSize: 11,
               fontWeight: 800,
               whiteSpace: 'nowrap',
-              cursor: ctaBusy ? 'default' : 'pointer',
+              cursor: ctaBusy || ctaDisabled ? 'default' : 'pointer',
             }}
           >
             {ctaBusy ? '…' : cta}
