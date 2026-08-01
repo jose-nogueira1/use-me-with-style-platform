@@ -344,6 +344,7 @@ export const T: Record<string, Record<Lang, string>> = {
   shippingHeading: { pt: 'Entregas e envios', en: 'Shipping & delivery' },
   privacyPolicyNav: { pt: 'Política de Privacidade', en: 'Privacy Policy' },
   termsNav: { pt: 'Termos e Condições', en: 'Terms & Conditions' },
+  dataDeletionNav: { pt: 'Eliminação de Dados', en: 'Data Deletion' },
   legalPageLoading: { pt: 'A carregar…', en: 'Loading…' },
   legalPagePending: {
     pt: 'Este conteúdo está a ser preparado. Contacte-nos no WhatsApp para qualquer questão.',

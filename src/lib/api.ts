@@ -435,6 +435,11 @@ export type LegalContent = {
   privacyPolicyTextEN?: string;
   termsTextPT?: string;
   termsTextEN?: string;
+  // Added 2026-08-01 for the Meta App Dashboard's "Data Deletion
+  // Instructions URL" requirement (needed to publish the WhatsApp/
+  // Instagram messaging app, JOS-58).
+  dataDeletionTextPT?: string;
+  dataDeletionTextEN?: string;
 };
 
 /** Storefront home hero content (2026-07-25 admin request) -- was hardcoded

@@ -608,6 +608,8 @@ export const T: Record<string, Record<Lang, string>> = {
   couldntLoadLegalPages: { en: "Couldn't load legal pages.", pt: 'Não foi possível carregar as páginas legais.' },
   privacyPolicyTitle: { en: 'Privacy Policy', pt: 'Política de Privacidade' },
   termsTitle: { en: 'Terms & Conditions', pt: 'Termos e Condições' },
+  dataDeletionTitle: { en: 'Data Deletion Instructions', pt: 'Instruções de Eliminação de Dados' },
+  dataDeletionNav: { en: 'Data Deletion Instructions', pt: 'Eliminação de Dados' },
 
   homeHeroNote: {
     en: 'Shown at the top of the storefront home page. Leave an English field blank to fall back to the Portuguese one.',

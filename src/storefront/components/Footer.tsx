@@ -87,6 +87,9 @@ export function Footer() {
             <Link to="/termos-condicoes" style={{ display: 'block', color: C.ink, fontSize: 11, fontWeight: 800, textDecoration: 'none' }}>
               {t('termsNav', lang)}
             </Link>
+            <Link to="/eliminacao-de-dados" style={{ display: 'block', color: C.ink, fontSize: 11, fontWeight: 800, textDecoration: 'none' }}>
+              {t('dataDeletionNav', lang)}
+            </Link>
           </div>
           <InfoLine label={t('shipping', lang)} value={market === 'AO' ? t('localCourierDelivery', lang) : t('businessDays', lang)} />
           <InfoLine

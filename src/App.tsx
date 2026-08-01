@@ -15,6 +15,7 @@ const Help = lazy(() => import('./storefront/pages/Help').then((m) => ({ default
 const About = lazy(() => import('./storefront/pages/About').then((m) => ({ default: m.About })));
 const PrivacyPolicy = lazy(() => import('./storefront/pages/PrivacyPolicy').then((m) => ({ default: m.PrivacyPolicy })));
 const Terms = lazy(() => import('./storefront/pages/Terms').then((m) => ({ default: m.Terms })));
+const DataDeletion = lazy(() => import('./storefront/pages/DataDeletion').then((m) => ({ default: m.DataDeletion })));
 const AdminRoutes = lazy(() => import('./admin/AdminRoutes').then((m) => ({ default: m.AdminRoutes })));
 const NotFound = lazy(() => import('./storefront/pages/NotFound').then((m) => ({ default: m.NotFound })));
 
@@ -479,6 +480,7 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
               <Route path="sobre" element={<About />} />
               <Route path="politica-privacidade" element={<PrivacyPolicy />} />
               <Route path="termos-condicoes" element={<Terms />} />
+              <Route path="eliminacao-de-dados" element={<DataDeletion />} />
               <Route path="*" element={<NotFound />} />
             </Route>
             <Route path="admin/*" element={<AdminRoutes />} />

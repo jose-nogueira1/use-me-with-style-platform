@@ -692,7 +692,14 @@ function SettingsTextarea({ label, value, onChange, rows = 2 }: { label: string;
 // storefront UI for it.
 function LegalPagesSection() {
   const { lang } = useApp();
-  const [content, setContent] = useState<LegalContent>({ privacyPolicyTextPT: '', privacyPolicyTextEN: '', termsTextPT: '', termsTextEN: '' });
+  const [content, setContent] = useState<LegalContent>({
+    privacyPolicyTextPT: '',
+    privacyPolicyTextEN: '',
+    termsTextPT: '',
+    termsTextEN: '',
+    dataDeletionTextPT: '',
+    dataDeletionTextEN: '',
+  });
   // Snapshot of `content` exactly as loaded (or last saved), to disable
   // Save until something actually changed (2026-07-31 admin report) -- see
   // admin/lib/useDirty.ts.
@@ -758,7 +765,7 @@ function LegalPagesSection() {
       {loading ? (
         <div style={{ fontSize: 12, color: C.inkSoft }}>{t('loadingEllipsis', lang)}</div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }} className="ump-admin-orders-grid">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }} className="ump-admin-orders-grid">
           <div>
             <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>{t('privacyPolicyTitle', lang)}</div>
             <PolicyTextarea label={t('portuguese', lang)} value={content.privacyPolicyTextPT ?? ''} onChange={(v) => setContent((c) => ({ ...c, privacyPolicyTextPT: v }))} lang={lang} />
@@ -768,6 +775,11 @@ function LegalPagesSection() {
             <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>{t('termsTitle', lang)}</div>
             <PolicyTextarea label={t('portuguese', lang)} value={content.termsTextPT ?? ''} onChange={(v) => setContent((c) => ({ ...c, termsTextPT: v }))} lang={lang} />
             <PolicyTextarea label={t('english', lang)} value={content.termsTextEN ?? ''} onChange={(v) => setContent((c) => ({ ...c, termsTextEN: v }))} lang={lang} />
+          </div>
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 10 }}>{t('dataDeletionTitle', lang)}</div>
+            <PolicyTextarea label={t('portuguese', lang)} value={content.dataDeletionTextPT ?? ''} onChange={(v) => setContent((c) => ({ ...c, dataDeletionTextPT: v }))} lang={lang} />
+            <PolicyTextarea label={t('english', lang)} value={content.dataDeletionTextEN ?? ''} onChange={(v) => setContent((c) => ({ ...c, dataDeletionTextEN: v }))} lang={lang} />
           </div>
         </div>
       )}
