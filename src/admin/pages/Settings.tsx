@@ -1116,10 +1116,15 @@ function InstagramSpotlightSection() {
     setError(null);
     setSaved(false);
     try {
-      const updated = await adminUpdateInstagramSpotlight({ highlightedPermalink: highlightedPermalink || null });
-      const savedValue = updated.highlightedPermalink ?? '';
-      setHighlightedPermalink(savedValue);
-      setOriginalHighlightedPermalink(savedValue);
+      await adminUpdateInstagramSpotlight({ highlightedPermalink: highlightedPermalink || null });
+      // Deliberately not overwriting `highlightedPermalink` from the
+      // response here (2026-08-02 bug report: "the pill disappears, and
+      // only reappears when I reload the page"). We already know exactly
+      // what was just persisted -- it's whatever the tiles were showing
+      // right before Save was clicked -- so there's no reason to let a
+      // round-tripped server value replace working local state; only the
+      // "is this dirty" baseline needs to move.
+      setOriginalHighlightedPermalink(highlightedPermalink);
       setSaved(true);
     } catch {
       setError(t('couldntSaveLoggedIn', lang));
@@ -1190,15 +1195,17 @@ function InstagramSpotlightSection() {
                   <div
                     style={{
                       position: 'absolute',
-                      top: 6,
-                      right: 6,
-                      padding: '3px 8px',
-                      borderRadius: 5,
+                      top: 8,
+                      right: 8,
+                      padding: '4px 10px',
+                      borderRadius: 999,
                       background: C.goldDeep,
                       color: C.onDarkGold,
                       fontSize: 9,
                       fontWeight: 800,
-                      letterSpacing: 0.3,
+                      letterSpacing: 0.4,
+                      textTransform: 'uppercase',
+                      boxShadow: '0 1px 4px rgba(0,0,0,0.25)',
                     }}
                   >
                     {t('instagramHighlightedBadge', lang)}
