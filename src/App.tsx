@@ -253,11 +253,45 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
            Finding 7). */
         @media (min-width: 1800px) { .ump-grid-auto { grid-template-columns: repeat(auto-fill, minmax(min(190px, 100%), 1fr)); } }
 
-        /* Home: Instagram feed (2026-07-10) -- 3 columns on mobile (matches
-           the real Instagram grid feel at small sizes), 6 on desktop so all
-           tiles sit in a single row. */
-        .ump-instagram-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-        @media (min-width: 720px) { .ump-instagram-grid { grid-template-columns: repeat(6, 1fr); gap: 10px; } }
+        /* Home: Instagram feed (2026-08-02 redesign) -- full-bleed,
+           auto-scrolling/draggable strip instead of a fixed-column grid, so
+           tiles can be meaningfully larger than the old 6-column layout
+           allowed inside .ump-content-width. Portrait 4:5 tiles (closer to
+           how the photos actually look on Instagram than the old 1:1 crop).
+           Scrollbar hidden across browsers since the strip auto-scrolls and
+           is drag/swipe-able -- a visible scrollbar would be redundant and
+           fight the edge-fade mask below. Edge fade masks give the strip a
+           "continues past the viewport" feel appropriate for a full-bleed
+           row instead of a hard-clipped edge. */
+        .ump-instagram-track {
+          display: flex;
+          gap: 12px;
+          overflow-x: auto;
+          overflow-y: hidden;
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+          padding: 4px 20px;
+          cursor: grab;
+          touch-action: pan-y;
+          -webkit-mask-image: linear-gradient(to right, transparent 0, black 24px, black calc(100% - 24px), transparent 100%);
+          mask-image: linear-gradient(to right, transparent 0, black 24px, black calc(100% - 24px), transparent 100%);
+        }
+        .ump-instagram-track::-webkit-scrollbar { display: none; }
+        .ump-instagram-track:active { cursor: grabbing; }
+        .ump-instagram-tile {
+          position: relative;
+          display: block;
+          flex: 0 0 auto;
+          width: 190px;
+          aspect-ratio: 4 / 5;
+          border-radius: 10px;
+          overflow: hidden;
+          user-select: none;
+          -webkit-user-drag: none;
+        }
+        @media (min-width: 560px) { .ump-instagram-tile { width: 230px; } }
+        @media (min-width: 900px) { .ump-instagram-tile { width: 260px; } }
+        @media (min-width: 1400px) { .ump-instagram-tile { width: 300px; } }
         .ump-instagram-tile-overlay { transition: opacity 0.15s ease; }
         .ump-instagram-tile:hover .ump-instagram-tile-overlay { opacity: 1 !important; }
 

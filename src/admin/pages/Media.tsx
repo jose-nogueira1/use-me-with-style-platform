@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { C } from '../../theme';
 import { useApp } from '../../state/AppContext';
 import { adminDeleteMedia, adminListMedia, adminUploadMedia, type ApiMedia } from '../../lib/api';
+import { absoluteMediaUrl } from '../../lib/productAdapters';
 import { PageHeader } from '../components/PageHeader';
 import { t } from '../i18n';
 
@@ -72,9 +73,19 @@ export function Media() {
         {(items ?? []).map((item) => (
           <div key={item.id} style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 10 }}>
             <div style={{ height: 130, borderRadius: 6, background: C.subtleBg, border: `1px solid ${C.rule}`, overflow: 'hidden' }}>
-              {(item.sizes?.thumbnail?.url || item.url) && (
-                <img src={item.sizes?.thumbnail?.url || item.url} alt={item.alt} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              )}
+              {(() => {
+                // Bug (2026-07-31, admin report: "Media tab is not showing
+                // the image"): Payload returns media URLs as paths relative
+                // to the CMS origin (e.g. /media/foo.png), not the admin
+                // site's own origin -- every other image in the admin/
+                // storefront already resolves through absoluteMediaUrl()
+                // (see ProductEditor, Settings.tsx's hero image, etc.) but
+                // this grid rendered the raw relative path directly, which
+                // 404s (or resolves against the wrong origin) in the
+                // browser.
+                const src = absoluteMediaUrl(item.sizes?.thumbnail?.url ?? item.url);
+                return src ? <img src={src} alt={item.alt} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : null;
+              })()}
             </div>
             <div style={{ fontSize: 11, fontWeight: 700, color: C.ink, marginTop: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {item.alt || item.filename || t('untitledMedia', lang)}

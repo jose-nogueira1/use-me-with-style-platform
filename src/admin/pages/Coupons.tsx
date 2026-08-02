@@ -11,6 +11,7 @@ import {
   type CouponInput,
 } from '../../lib/api';
 import { PageHeader } from '../components/PageHeader';
+import { useDirty } from '../lib/useDirty';
 import { t, type Lang } from '../i18n';
 
 // Discounts phase 2 (2026-07-25): admin CRUD for coupon codes, standalone
@@ -90,7 +91,16 @@ export function Coupons() {
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | number | 'new' | null>(null);
   const [draft, setDraft] = useState<CouponInput>(emptyDraft);
+  // Dirty-tracking (2026-07-31 admin report: "the save button on discounts
+  // should have the same behaviour as products") -- same useDirty pattern
+  // as ProductEditor/CustomerDetail/OrderDetail/Settings: snapshot the
+  // draft exactly as loaded (or last saved), disable Save until something
+  // actually changes. A brand-new coupon is always considered dirty (there's
+  // nothing to compare against yet), same as ProductEditor's isNew bypass.
+  const [originalDraft, setOriginalDraft] = useState<CouponInput | null>(null);
   const [busy, setBusy] = useState(false);
+  const draftIsDirty = useDirty(draft, originalDraft);
+  const isDirty = editing === 'new' || draftIsDirty;
 
   const load = useCallback(() => {
     adminListCoupons()
@@ -102,30 +112,35 @@ export function Coupons() {
     load();
   }, [load]);
 
+  const draftFromCoupon = (c: ApiCoupon): CouponInput => ({
+    code: c.code,
+    active: c.active ?? true,
+    description: c.description || '',
+    type: c.type,
+    percentOff: c.percentOff ?? null,
+    fixedOffAOKz: c.fixedOffAOKz ?? null,
+    fixedOffPTEur: c.fixedOffPTEur ?? null,
+    minOrderValueAOKz: c.minOrderValueAOKz ?? null,
+    minOrderValuePTEur: c.minOrderValuePTEur ?? null,
+    startDate: c.startDate ?? null,
+    endDate: c.endDate ?? null,
+    usageLimit: c.usageLimit ?? null,
+    maxRedemptionsPerEmail: c.maxRedemptionsPerEmail ?? null,
+    availableAO: c.availableAO ?? true,
+    availablePT: c.availablePT ?? true,
+  });
+
   const startCreate = () => {
     setDraft(emptyDraft);
+    setOriginalDraft(emptyDraft);
     setEditing('new');
     setError(null);
   };
 
   const startEdit = (c: ApiCoupon) => {
-    setDraft({
-      code: c.code,
-      active: c.active ?? true,
-      description: c.description || '',
-      type: c.type,
-      percentOff: c.percentOff ?? null,
-      fixedOffAOKz: c.fixedOffAOKz ?? null,
-      fixedOffPTEur: c.fixedOffPTEur ?? null,
-      minOrderValueAOKz: c.minOrderValueAOKz ?? null,
-      minOrderValuePTEur: c.minOrderValuePTEur ?? null,
-      startDate: c.startDate ?? null,
-      endDate: c.endDate ?? null,
-      usageLimit: c.usageLimit ?? null,
-      maxRedemptionsPerEmail: c.maxRedemptionsPerEmail ?? null,
-      availableAO: c.availableAO ?? true,
-      availablePT: c.availablePT ?? true,
-    });
+    const next = draftFromCoupon(c);
+    setDraft(next);
+    setOriginalDraft(next);
     setEditing(c.id);
     setError(null);
   };
@@ -186,7 +201,7 @@ export function Coupons() {
       {error && <div style={{ margin: '16px 28px 0', fontSize: 13, color: '#B95545' }}>{error}</div>}
 
       {editing !== null && (
-        <CouponForm draft={draft} setDraft={setDraft} busy={busy} onSave={save} onCancel={cancel} isNew={editing === 'new'} lang={lang} />
+        <CouponForm draft={draft} setDraft={setDraft} busy={busy} onSave={save} onCancel={cancel} isNew={editing === 'new'} isDirty={isDirty} lang={lang} />
       )}
 
       {coupons && coupons.length === 0 && editing === null && (
@@ -267,6 +282,7 @@ function CouponForm({
   onSave,
   onCancel,
   isNew,
+  isDirty,
   lang,
 }: {
   draft: CouponInput;
@@ -275,6 +291,7 @@ function CouponForm({
   onSave: () => void;
   onCancel: () => void;
   isNew: boolean;
+  isDirty: boolean;
   lang: Lang;
 }) {
   return (
@@ -332,8 +349,16 @@ function CouponForm({
       <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
         <button
           onClick={onSave}
-          disabled={busy}
-          style={{ padding: '9px 18px', fontSize: 11, fontWeight: 800, color: C.onDarkGold, background: C.black, borderRadius: 6 }}
+          disabled={busy || !isDirty}
+          style={{
+            padding: '9px 18px',
+            fontSize: 11,
+            fontWeight: 800,
+            color: busy || !isDirty ? C.disabledFg : C.onDarkGold,
+            background: busy || !isDirty ? C.disabledBg : C.black,
+            borderRadius: 6,
+            cursor: busy || !isDirty ? 'default' : 'pointer',
+          }}
         >
           {busy ? t('savingEllipsis', lang) : t('saveAction', lang)}
         </button>
