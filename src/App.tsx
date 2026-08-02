@@ -278,6 +278,9 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
         }
         .ump-instagram-track::-webkit-scrollbar { display: none; }
         .ump-instagram-track:active { cursor: grabbing; }
+        /* Tiles are <button>s now (2026-08-02 round 2 -- they open an
+           in-page lightbox rather than being a link), so browser button
+           defaults (border, background, font, text-align) are reset here. */
         .ump-instagram-tile {
           position: relative;
           display: block;
@@ -288,12 +291,94 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
           overflow: hidden;
           user-select: none;
           -webkit-user-drag: none;
+          border: none;
+          background: none;
+          padding: 0;
+          font: inherit;
+          text-align: inherit;
+          cursor: pointer;
         }
+        .ump-instagram-tile:disabled { cursor: default; }
         @media (min-width: 560px) { .ump-instagram-tile { width: 230px; } }
         @media (min-width: 900px) { .ump-instagram-tile { width: 260px; } }
         @media (min-width: 1400px) { .ump-instagram-tile { width: 300px; } }
-        .ump-instagram-tile-overlay { transition: opacity 0.15s ease; }
-        .ump-instagram-tile:hover .ump-instagram-tile-overlay { opacity: 1 !important; }
+        /* "Large" tiles (curated, or the every-4th-tile fallback pattern)
+           break the otherwise-uniform row -- roughly 1.3x a regular tile at
+           every breakpoint, not just the widest one. */
+        .ump-instagram-tile.ump-instagram-tile--large { width: 250px; }
+        @media (min-width: 560px) { .ump-instagram-tile.ump-instagram-tile--large { width: 305px; } }
+        @media (min-width: 900px) { .ump-instagram-tile.ump-instagram-tile--large { width: 345px; } }
+        @media (min-width: 1400px) { .ump-instagram-tile.ump-instagram-tile--large { width: 400px; } }
+        /* Hover-only "expand" cue -- supplementary to the always-visible
+           caption below, not a replacement for it (hover doesn't exist on
+           touch, so it can never be the only thing telling someone a tile
+           is interactive/has content). */
+        .ump-instagram-tile-hover {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: ${C.scrimSoft};
+          opacity: 0;
+          transition: opacity 0.15s ease;
+        }
+        .ump-instagram-tile:hover .ump-instagram-tile-hover,
+        .ump-instagram-tile:focus-visible .ump-instagram-tile-hover { opacity: 1; }
+        /* Persistent caption -- "a reason to exist beyond a photo". Always
+           visible (not hover-gated), 2-line clamp so a long fallback
+           caption never overruns a regular-width tile. */
+        .ump-instagram-tile-caption {
+          position: absolute;
+          left: 0; right: 0; bottom: 0;
+          padding: 20px 10px 10px;
+          background: linear-gradient(to top, rgba(5,5,5,0.72) 0%, rgba(5,5,5,0.38) 55%, transparent 100%);
+          pointer-events: none;
+        }
+        .ump-instagram-tile-caption span {
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          font-size: 11.5px;
+          font-weight: 700;
+          line-height: 1.35;
+          color: ${C.onDark};
+          text-align: left;
+        }
+
+        /* Lightbox (2026-08-02 round 2: "don't send people away
+           immediately" -- clicking a tile opens this instead of an instant
+           navigation to Instagram; the storefront's only other lightbox-
+           style overlay is ProductDetail's size-guide modal, whose
+           role="dialog"/scrim/close-button pattern this follows). */
+        .ump-instagram-lightbox-backdrop {
+          position: fixed; inset: 0; z-index: 40;
+          background: ${C.scrim};
+          display: flex; align-items: center; justify-content: center;
+          padding: 20px;
+        }
+        .ump-instagram-lightbox {
+          position: relative;
+          background: ${C.paper};
+          border-radius: 12px;
+          overflow: hidden;
+          width: 100%;
+          max-width: 420px;
+          max-height: 90vh;
+          display: flex;
+          flex-direction: column;
+          box-shadow: 0 20px 50px rgba(0,0,0,0.28);
+        }
+        .ump-instagram-lightbox-image { aspect-ratio: 4 / 5; max-height: 60vh; }
+        .ump-instagram-lightbox-body { padding: 16px 18px 18px; overflow-y: auto; }
+        .ump-instagram-lightbox-close {
+          position: absolute; top: 10px; right: 10px; z-index: 1;
+          width: 32px; height: 32px; border-radius: 999px;
+          display: flex; align-items: center; justify-content: center;
+          background: rgba(5,5,5,0.5); color: ${C.onDark};
+          border: none; cursor: pointer;
+        }
 
         .ump-cat-row { display: flex; gap: 10px; overflow-x: auto; }
         @media (min-width: 720px) { .ump-cat-row { display: grid; grid-template-columns: repeat(4, 1fr); overflow-x: visible; } }

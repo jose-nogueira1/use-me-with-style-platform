@@ -640,23 +640,43 @@ export type ApiInstagramPost = {
   imageUrl: string;
   permalink: string;
   caption: string;
+  // Server-cleaned short caption (hashtags/newlines stripped, truncated) --
+  // always present, the fallback tile label when no curated labelPT/labelEN
+  // is set. See use-me-with-style-cms's lib/instagramFeed.ts.
+  captionDisplay: string;
+  // Admin-curated overrides from the CMS's Instagram Spotlight global (2026-
+  // 08-02, "curate instead of latest N"). Absent when the tile isn't
+  // curated or the admin left the label blank for that language.
+  labelPT?: string;
+  labelEN?: string;
+  size: 'regular' | 'large';
+};
+
+export type InstagramFeedResult = {
+  posts: ApiInstagramPost[];
+  // True when these are admin-curated picks (CMS Instagram Spotlight global
+  // has at least one matching entry); false for the plain "latest N" feed.
+  // The storefront respects curated `size` values exactly when true, and
+  // applies its own rhythm-breaking pattern when false (nothing to respect
+  // otherwise -- every post/size is 'regular' in that case).
+  curated: boolean;
 };
 
 /**
  * Real posts from the client's Instagram Business account, via the CMS's
- * Graph API proxy (GET /api/instagram-feed). Returns an empty array --
- * never throws -- when Instagram credentials aren't configured yet (JOS-58)
- * or the CMS is unreachable, so callers can treat "no posts" as a normal
- * state and fall back to the static placeholder grid.
+ * Graph API proxy (GET /api/instagram-feed). Returns no posts -- never
+ * throws -- when Instagram credentials aren't configured yet (JOS-58) or
+ * the CMS is unreachable, so callers can treat "no posts" as a normal state
+ * and fall back to the static placeholder grid.
  */
-export async function fetchInstagramFeed(limit = 6): Promise<ApiInstagramPost[]> {
+export async function fetchInstagramFeed(limit = 6): Promise<InstagramFeedResult> {
   try {
-    const data = await request<{ configured: boolean; posts: ApiInstagramPost[] }>(
+    const data = await request<{ configured: boolean; curated: boolean; posts: ApiInstagramPost[] }>(
       `/instagram-feed?limit=${limit}`,
     );
-    return data.posts ?? [];
+    return { posts: data.posts ?? [], curated: Boolean(data.curated) };
   } catch {
-    return [];
+    return { posts: [], curated: false };
   }
 }
 
