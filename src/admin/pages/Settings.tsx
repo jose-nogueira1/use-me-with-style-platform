@@ -3,12 +3,14 @@ import { useSearchParams } from 'react-router-dom';
 import { C, F } from '../../theme';
 import { useApp } from '../../state/AppContext';
 import {
+  adminFetchInstagramSpotlight,
   adminFetchInvoiceSettings,
   adminListCategories,
   adminListHomeContentVersions,
   adminListMerchTags,
   adminRestoreHomeContentVersion,
   adminUpdateHomeContent,
+  adminUpdateInstagramSpotlight,
   adminUpdateInvoiceSettings,
   adminUpdateLegalContent,
   adminUpdateMarketSettings,
@@ -22,6 +24,7 @@ import {
   type ApiMerchTag,
   type HomeContent,
   type HomeContentVersion,
+  type InstagramSpotlightEntry,
   type InvoiceSettings,
   type LegalContent,
   type MarketSettings,
@@ -78,6 +81,13 @@ const TABS = [
   // the product editor's "Product settings" link has one obvious home
   // (was /admin/definicoes-produto; now this tab).
   { key: 'products', labelKey: 'tabProducts' },
+  // Instagram feed curation (2026-08-02, "curate instead of latest N" --
+  // see CMS globals/InstagramSpotlight.ts). The global existed and was
+  // deployed for a while before this tab did -- it's only reachable
+  // through Payload's own generic /admin UI otherwise, which nobody on
+  // this project actually uses day-to-day (every other global gets its
+  // own hand-built section here, same as Legal/Home above).
+  { key: 'instagram', labelKey: 'tabInstagram' },
 ] as const;
 type SettingsTab = (typeof TABS)[number]['key'];
 
@@ -88,6 +98,7 @@ const TAB_META: Record<SettingsTab, { titleKey: string; subtitleKey: string }> =
   legal: { titleKey: 'tabLegalTitle', subtitleKey: 'tabLegalSubtitle' },
   home: { titleKey: 'tabHomeTitle', subtitleKey: 'tabHomeSubtitle' },
   products: { titleKey: 'tabProductsTitle', subtitleKey: 'tabProductsSubtitle' },
+  instagram: { titleKey: 'tabInstagramTitle', subtitleKey: 'tabInstagramSubtitle' },
 };
 
 function isSettingsTab(value: string | null): value is SettingsTab {
@@ -414,6 +425,7 @@ export function Settings() {
       {tab === 'legal' && <LegalPagesSection />}
       {tab === 'home' && <HomeHeroSection />}
       {tab === 'products' && <ProductTaxonomySettings />}
+      {tab === 'instagram' && <InstagramSpotlightSection />}
     </div>
   );
 }
@@ -1056,6 +1068,170 @@ function HomeHeroSection() {
               </div>
             )}
           </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// Instagram feed curation (2026-08-02, Jay-P: "curate instead of latest N"
+// for the homepage Instagram feed section) -- CMS global `instagram-
+// spotlight`. Same self-contained fetch/save/isDirty pattern as
+// LegalPagesSection/InvoicingSettingsSection above. Entries have no stable
+// identity until first saved (a fresh row has no `id` yet), so array index
+// is used for both the React key and all edit/remove/reorder operations --
+// fine here since the whole list is always replaced as one unit on save,
+// never patched by id.
+function InstagramSpotlightSection() {
+  const { lang } = useApp();
+  const [entries, setEntries] = useState<InstagramSpotlightEntry[]>([]);
+  const [originalEntries, setOriginalEntries] = useState<InstagramSpotlightEntry[] | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const isDirty = useDirty(entries, originalEntries);
+
+  useEffect(() => {
+    adminFetchInstagramSpotlight()
+      .then((data) => {
+        const loaded = data.entries ?? [];
+        setEntries(loaded);
+        setOriginalEntries(loaded);
+      })
+      .catch(() => setError(t('couldntLoadInstagramFeed', lang)))
+      .finally(() => setLoading(false));
+  }, [lang]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    setSaved(false);
+    try {
+      const updated = await adminUpdateInstagramSpotlight({ entries });
+      const savedEntries = updated.entries ?? [];
+      setEntries(savedEntries);
+      setOriginalEntries(savedEntries);
+      setSaved(true);
+    } catch {
+      setError(t('couldntSaveLoggedIn', lang));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateEntry = (index: number, patch: Partial<InstagramSpotlightEntry>) => {
+    setEntries((list) => list.map((entry, i) => (i === index ? { ...entry, ...patch } : entry)));
+  };
+
+  const removeEntry = (index: number) => {
+    setEntries((list) => list.filter((_, i) => i !== index));
+  };
+
+  const moveEntry = (index: number, direction: -1 | 1) => {
+    setEntries((list) => {
+      const target = index + direction;
+      if (target < 0 || target >= list.length) return list;
+      const next = [...list];
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
+  };
+
+  const addEntry = () => {
+    setEntries((list) => [...list, { permalink: '', labelPT: '', labelEN: '', size: 'regular' }]);
+  };
+
+  return (
+    <div style={{ padding: '20px 28px 32px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+        <div style={{ fontSize: 11, color: C.inkSoft, maxWidth: 560 }}>{t('instagramFeedHint', lang)}</div>
+        <button
+          onClick={() => void handleSave()}
+          disabled={loading || saving || !isDirty}
+          style={{
+            padding: '9px 18px',
+            background: loading || saving || !isDirty ? C.disabledBg : C.black,
+            color: loading || saving || !isDirty ? C.disabledFg : C.onDarkGold,
+            fontSize: 11,
+            fontWeight: 800,
+            borderRadius: 6,
+            flexShrink: 0,
+            cursor: loading || saving || !isDirty ? 'default' : 'pointer',
+          }}
+        >
+          {saving ? '…' : t('saveInstagramFeed', lang)}
+        </button>
+      </div>
+      {error && <div style={{ fontSize: 12, color: '#B95545', marginBottom: 12 }}>{error}</div>}
+      {saved && <div style={{ fontSize: 12, color: '#3F754D', marginBottom: 12 }}>{t('savedNotice', lang)}</div>}
+
+      {loading ? (
+        <div style={{ fontSize: 12, color: C.inkSoft }}>{t('loadingEllipsis', lang)}</div>
+      ) : (
+        <>
+          {entries.length === 0 && (
+            <div style={{ fontSize: 11, color: C.inkSoft, marginBottom: 16 }}>{t('noFeaturedPostsYet', lang)}</div>
+          )}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
+            {entries.map((entry, index) => (
+              <div
+                key={index}
+                style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 16 }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
+                  <div style={{ flex: 1 }}>
+                    <SettingsField
+                      label={t('instagramPermalinkLabel', lang)}
+                      value={entry.permalink}
+                      onChange={(v) => updateEntry(index, { permalink: v })}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', gap: 6, flexShrink: 0, paddingTop: 18 }}>
+                    <SmallActionButton label="↑" onClick={() => moveEntry(index, -1)} disabled={index === 0} />
+                    <SmallActionButton label="↓" onClick={() => moveEntry(index, 1)} disabled={index === entries.length - 1} />
+                    <SmallActionButton label={t('removeAction', lang)} onClick={() => removeEntry(index)} />
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }} className="ump-admin-orders-grid">
+                  <SettingsField
+                    label={t('instagramLabelPTLabel', lang)}
+                    value={entry.labelPT ?? ''}
+                    onChange={(v) => updateEntry(index, { labelPT: v })}
+                  />
+                  <SettingsField
+                    label={t('instagramLabelENLabel', lang)}
+                    value={entry.labelEN ?? ''}
+                    onChange={(v) => updateEntry(index, { labelEN: v })}
+                  />
+                  <SettingsSelect
+                    label={t('instagramSizeLabel', lang)}
+                    value={entry.size}
+                    onChange={(v) => updateEntry(index, { size: v as InstagramSpotlightEntry['size'] })}
+                    options={[
+                      { value: 'regular', label: t('instagramSizeRegular', lang) },
+                      { value: 'large', label: t('instagramSizeLarge', lang) },
+                    ]}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+          <button
+            onClick={addEntry}
+            style={{
+              padding: '9px 16px',
+              fontSize: 11,
+              fontWeight: 800,
+              borderRadius: 6,
+              border: `1px solid ${C.rule}`,
+              background: 'transparent',
+              color: C.ink,
+              cursor: 'pointer',
+            }}
+          >
+            {t('addFeaturedPost', lang)}
+          </button>
         </>
       )}
     </div>

@@ -652,6 +652,22 @@ export type ApiInstagramPost = {
   size: 'regular' | 'large';
 };
 
+/** One admin-curated entry in the Instagram Spotlight global (2026-08-02,
+ * "curate instead of latest N"). Mirrors the CMS's InstagramSpotlight.ts
+ * array field shape exactly -- `id` is Payload's auto-generated row id for
+ * the array item, present once saved, absent for a not-yet-saved new row. */
+export type InstagramSpotlightEntry = {
+  id?: string;
+  permalink: string;
+  labelPT?: string;
+  labelEN?: string;
+  size: 'regular' | 'large';
+};
+
+export type InstagramSpotlight = {
+  entries: InstagramSpotlightEntry[];
+};
+
 export type InstagramFeedResult = {
   posts: ApiInstagramPost[];
   // True when these are admin-curated picks (CMS Instagram Spotlight global
@@ -1101,6 +1117,23 @@ export async function adminUpdateLegalContent(input: Partial<LegalContent>): Pro
 export async function adminUpdateHomeContent(input: Partial<HomeContent>): Promise<HomeContent> {
   return request<HomeContent>(
     '/globals/home-content?depth=1',
+    { method: 'POST', body: JSON.stringify(input) },
+    { auth: true },
+  );
+}
+
+/** Admin: Instagram feed curation (2026-08-02). Same self-contained
+ * fetch/save pattern as adminUpdateLegalContent above -- own Settings tab,
+ * own Save button. Public read (see fetchInstagramFeed above, used by the
+ * storefront), auth required to write, matching every other Settings
+ * global here. */
+export async function adminFetchInstagramSpotlight(): Promise<InstagramSpotlight> {
+  return request<InstagramSpotlight>('/globals/instagram-spotlight', {}, { auth: true });
+}
+
+export async function adminUpdateInstagramSpotlight(input: InstagramSpotlight): Promise<InstagramSpotlight> {
+  return request<InstagramSpotlight>(
+    '/globals/instagram-spotlight',
     { method: 'POST', body: JSON.stringify(input) },
     { auth: true },
   );
