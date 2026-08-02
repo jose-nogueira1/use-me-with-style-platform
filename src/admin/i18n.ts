@@ -505,30 +505,25 @@ export const T: Record<string, Record<Lang, string>> = {
     en: "Categories, merchandising tags, colours, and size guides. Products pick from these lists; entries in use can't be deleted until reassigned.",
     pt: 'Categorias, etiquetas comerciais, cores e guias de tamanhos. Os produtos escolhem destas listas; entradas em uso não podem ser eliminadas até serem reatribuídas.',
   },
-  // ---- Instagram feed curation (2026-08-02, "curate instead of latest N") ----
+  // ---- Instagram feed highlight (2026-08-02, simplified same day: "just
+  // show the most recent 12 posts and allow me to choose the highlighted
+  // post") ----
   tabInstagram: { en: 'Instagram feed', pt: 'Feed do Instagram' },
   tabInstagramTitle: { en: 'Instagram feed (homepage)', pt: 'Feed do Instagram (página inicial)' },
   tabInstagramSubtitle: {
-    en: 'Choose which Instagram posts show in the homepage feed section, and in what order. Leave empty to show the latest posts automatically.',
-    pt: 'Escolha quais publicações do Instagram aparecem na secção de feed da página inicial, e em que ordem. Deixe vazio para mostrar automaticamente as publicações mais recentes.',
+    en: 'The 12 most recent Instagram posts, shown automatically on the homepage. Click one to feature it as the large tile.',
+    pt: 'As 12 publicações mais recentes do Instagram, mostradas automaticamente na página inicial. Clique numa para a destacar como imagem grande.',
   },
   instagramFeedHint: {
-    en: 'Paste the post URL from Instagram (e.g. https://www.instagram.com/p/AbCdEfG/) — it must still be one of the ~12 most recent posts on the account, or it will be skipped.',
-    pt: 'Cole o URL da publicação do Instagram (ex.: https://www.instagram.com/p/AbCdEfG/) — tem de ser uma das ~12 publicações mais recentes da conta, caso contrário será ignorada.',
+    en: 'Click a post to highlight it (shown larger on the homepage). Click it again to remove the highlight. Captions are always the real Instagram caption.',
+    pt: 'Clique numa publicação para a destacar (aparece maior na página inicial). Clique novamente para remover o destaque. As legendas são sempre a legenda real do Instagram.',
   },
-  instagramPermalinkLabel: { en: 'Instagram post URL', pt: 'URL da publicação do Instagram' },
-  instagramLabelPTLabel: { en: 'Caption on tile — Portuguese', pt: 'Legenda na imagem — Português' },
-  instagramLabelENLabel: { en: 'Caption on tile — English', pt: 'Legenda na imagem — Inglês' },
-  instagramSizeLabel: { en: 'Tile size', pt: 'Tamanho da imagem' },
-  instagramSizeRegular: { en: 'Regular', pt: 'Regular' },
-  instagramSizeLarge: { en: 'Large', pt: 'Grande' },
-  addFeaturedPost: { en: '+ Add featured post', pt: '+ Adicionar publicação em destaque' },
-  noFeaturedPostsYet: {
-    en: 'No featured posts yet — the homepage is showing the latest Instagram posts automatically.',
-    pt: 'Ainda sem publicações em destaque — a página inicial mostra automaticamente as publicações mais recentes do Instagram.',
+  instagramHighlightedBadge: { en: 'Highlighted', pt: 'Destacado' },
+  instagramNoCaptionPlaceholder: { en: '(no caption)', pt: '(sem legenda)' },
+  noInstagramPostsYet: {
+    en: "No Instagram posts to show yet -- check that the Instagram connection is configured.",
+    pt: 'Ainda sem publicações do Instagram para mostrar -- verifique se a ligação ao Instagram está configurada.',
   },
-  moveUpAction: { en: 'Move up', pt: 'Mover para cima' },
-  moveDownAction: { en: 'Move down', pt: 'Mover para baixo' },
   saveInstagramFeed: { en: 'Save Instagram feed', pt: 'Guardar feed do Instagram' },
   couldntLoadInstagramFeed: {
     en: "Couldn't load the Instagram feed settings.",

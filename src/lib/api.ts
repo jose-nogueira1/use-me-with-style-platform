@@ -640,42 +640,28 @@ export type ApiInstagramPost = {
   imageUrl: string;
   permalink: string;
   caption: string;
-  // Server-cleaned short caption (hashtags/newlines stripped, truncated) --
-  // always present, the fallback tile label when no curated labelPT/labelEN
-  // is set. See use-me-with-style-cms's lib/instagramFeed.ts.
+  // Server-cleaned short caption (hashtags/newlines stripped, truncated),
+  // always the real Instagram caption -- see use-me-with-style-cms's
+  // lib/instagramFeed.ts's cleanCaptionForDisplay. No admin override exists
+  // (2026-08-02 simplification: "just show the most recent 12 posts and
+  // allow me to choose the highlighted post").
   captionDisplay: string;
-  // Admin-curated overrides from the CMS's Instagram Spotlight global (2026-
-  // 08-02, "curate instead of latest N"). Absent when the tile isn't
-  // curated or the admin left the label blank for that language.
-  labelPT?: string;
-  labelEN?: string;
+  // 'large' for the one post the admin picked to highlight (CMS's
+  // instagram-spotlight global), 'regular' for every other post.
   size: 'regular' | 'large';
 };
 
-/** One admin-curated entry in the Instagram Spotlight global (2026-08-02,
- * "curate instead of latest N"). Mirrors the CMS's InstagramSpotlight.ts
- * array field shape exactly -- `id` is Payload's auto-generated row id for
- * the array item, present once saved, absent for a not-yet-saved new row. */
-export type InstagramSpotlightEntry = {
-  id?: string;
-  permalink: string;
-  labelPT?: string;
-  labelEN?: string;
-  size: 'regular' | 'large';
-};
-
+/** Instagram feed highlight (2026-08-02, simplified same day from an
+ * ordered/labelled curation list -- "just show the most recent 12 posts and
+ * allow me to choose the highlighted post"). A single choice: which recent
+ * post's permalink gets the large tile. Empty/unset means nothing is
+ * highlighted -- every tile renders the same size. */
 export type InstagramSpotlight = {
-  entries: InstagramSpotlightEntry[];
+  highlightedPermalink?: string | null;
 };
 
 export type InstagramFeedResult = {
   posts: ApiInstagramPost[];
-  // True when these are admin-curated picks (CMS Instagram Spotlight global
-  // has at least one matching entry); false for the plain "latest N" feed.
-  // The storefront respects curated `size` values exactly when true, and
-  // applies its own rhythm-breaking pattern when false (nothing to respect
-  // otherwise -- every post/size is 'regular' in that case).
-  curated: boolean;
 };
 
 /**
@@ -687,12 +673,12 @@ export type InstagramFeedResult = {
  */
 export async function fetchInstagramFeed(limit = 6): Promise<InstagramFeedResult> {
   try {
-    const data = await request<{ configured: boolean; curated: boolean; posts: ApiInstagramPost[] }>(
+    const data = await request<{ configured: boolean; posts: ApiInstagramPost[] }>(
       `/instagram-feed?limit=${limit}`,
     );
-    return { posts: data.posts ?? [], curated: Boolean(data.curated) };
+    return { posts: data.posts ?? [] };
   } catch {
-    return { posts: [], curated: false };
+    return { posts: [] };
   }
 }
 

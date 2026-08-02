@@ -16,15 +16,16 @@ import {
   adminUpdateMarketSettings,
   adminUploadMedia,
   fetchHomeContent,
+  fetchInstagramFeed,
   fetchLegalContent,
   fetchMarketSettings,
   refId,
   resolveRef,
   type ApiCategory,
+  type ApiInstagramPost,
   type ApiMerchTag,
   type HomeContent,
   type HomeContentVersion,
-  type InstagramSpotlightEntry,
   type InvoiceSettings,
   type LegalContent,
   type MarketSettings,
@@ -1074,31 +1075,38 @@ function HomeHeroSection() {
   );
 }
 
-// Instagram feed curation (2026-08-02, Jay-P: "curate instead of latest N"
-// for the homepage Instagram feed section) -- CMS global `instagram-
-// spotlight`. Same self-contained fetch/save/isDirty pattern as
-// LegalPagesSection/InvoicingSettingsSection above. Entries have no stable
-// identity until first saved (a fresh row has no `id` yet), so array index
-// is used for both the React key and all edit/remove/reorder operations --
-// fine here since the whole list is always replaced as one unit on save,
-// never patched by id.
+// Instagram feed highlight (2026-08-02, simplified same day from an
+// ordered/labelled curation-list version -- Jay-P: "I actually don't like
+// this admin instagram feature... just show the most recent 12 posts and
+// allow me to choose the highlighted post, the caption should be the post
+// caption and tile size for highlighted post is large"). Down to one admin
+// choice: click a post to highlight it (large tile on the homepage), click
+// it again to clear the highlight. The 12 posts shown here are the same
+// live pool the storefront section pulls from (fetchInstagramFeed -- a
+// public read, no admin auth needed for that half); only the highlight pick
+// itself (CMS global `instagram-spotlight`) needs the authenticated
+// fetch/save, same self-contained pattern as every other tab here.
 function InstagramSpotlightSection() {
   const { lang } = useApp();
-  const [entries, setEntries] = useState<InstagramSpotlightEntry[]>([]);
-  const [originalEntries, setOriginalEntries] = useState<InstagramSpotlightEntry[] | null>(null);
+  const [posts, setPosts] = useState<ApiInstagramPost[]>([]);
+  const [postsError, setPostsError] = useState<string | null>(null);
+  const [highlightedPermalink, setHighlightedPermalink] = useState('');
+  const [originalHighlightedPermalink, setOriginalHighlightedPermalink] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
-  const isDirty = useDirty(entries, originalEntries);
+  const isDirty = useDirty(highlightedPermalink, originalHighlightedPermalink);
 
   useEffect(() => {
-    adminFetchInstagramSpotlight()
-      .then((data) => {
-        const loaded = data.entries ?? [];
-        setEntries(loaded);
-        setOriginalEntries(loaded);
-      })
+    Promise.all([
+      fetchInstagramFeed(12).then((result) => setPosts(result.posts)).catch(() => setPostsError(t('couldntLoadInstagramFeed', lang))),
+      adminFetchInstagramSpotlight().then((data) => {
+        const loaded = data.highlightedPermalink ?? '';
+        setHighlightedPermalink(loaded);
+        setOriginalHighlightedPermalink(loaded);
+      }),
+    ])
       .catch(() => setError(t('couldntLoadInstagramFeed', lang)))
       .finally(() => setLoading(false));
   }, [lang]);
@@ -1108,10 +1116,10 @@ function InstagramSpotlightSection() {
     setError(null);
     setSaved(false);
     try {
-      const updated = await adminUpdateInstagramSpotlight({ entries });
-      const savedEntries = updated.entries ?? [];
-      setEntries(savedEntries);
-      setOriginalEntries(savedEntries);
+      const updated = await adminUpdateInstagramSpotlight({ highlightedPermalink: highlightedPermalink || null });
+      const savedValue = updated.highlightedPermalink ?? '';
+      setHighlightedPermalink(savedValue);
+      setOriginalHighlightedPermalink(savedValue);
       setSaved(true);
     } catch {
       setError(t('couldntSaveLoggedIn', lang));
@@ -1120,26 +1128,9 @@ function InstagramSpotlightSection() {
     }
   };
 
-  const updateEntry = (index: number, patch: Partial<InstagramSpotlightEntry>) => {
-    setEntries((list) => list.map((entry, i) => (i === index ? { ...entry, ...patch } : entry)));
-  };
-
-  const removeEntry = (index: number) => {
-    setEntries((list) => list.filter((_, i) => i !== index));
-  };
-
-  const moveEntry = (index: number, direction: -1 | 1) => {
-    setEntries((list) => {
-      const target = index + direction;
-      if (target < 0 || target >= list.length) return list;
-      const next = [...list];
-      [next[index], next[target]] = [next[target], next[index]];
-      return next;
-    });
-  };
-
-  const addEntry = () => {
-    setEntries((list) => [...list, { permalink: '', labelPT: '', labelEN: '', size: 'regular' }]);
+  const toggleHighlight = (permalink: string) => {
+    setSaved(false);
+    setHighlightedPermalink((current) => (current === permalink ? '' : permalink));
   };
 
   return (
@@ -1164,75 +1155,62 @@ function InstagramSpotlightSection() {
         </button>
       </div>
       {error && <div style={{ fontSize: 12, color: '#B95545', marginBottom: 12 }}>{error}</div>}
+      {postsError && <div style={{ fontSize: 12, color: '#B95545', marginBottom: 12 }}>{postsError}</div>}
       {saved && <div style={{ fontSize: 12, color: '#3F754D', marginBottom: 12 }}>{t('savedNotice', lang)}</div>}
 
       {loading ? (
         <div style={{ fontSize: 12, color: C.inkSoft }}>{t('loadingEllipsis', lang)}</div>
+      ) : posts.length === 0 ? (
+        <div style={{ fontSize: 11, color: C.inkSoft }}>{t('noInstagramPostsYet', lang)}</div>
       ) : (
-        <>
-          {entries.length === 0 && (
-            <div style={{ fontSize: 11, color: C.inkSoft, marginBottom: 16 }}>{t('noFeaturedPostsYet', lang)}</div>
-          )}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
-            {entries.map((entry, index) => (
-              <div
-                key={index}
-                style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 16 }}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 14 }} className="ump-admin-media-grid">
+          {posts.map((post) => {
+            const isHighlighted = post.permalink === highlightedPermalink;
+            return (
+              <button
+                key={post.id}
+                type="button"
+                onClick={() => toggleHighlight(post.permalink)}
+                style={{
+                  position: 'relative',
+                  display: 'block',
+                  padding: 0,
+                  border: `2px solid ${isHighlighted ? C.goldDeep : C.ruleLight}`,
+                  borderRadius: 8,
+                  overflow: 'hidden',
+                  background: C.paper,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
-                  <div style={{ flex: 1 }}>
-                    <SettingsField
-                      label={t('instagramPermalinkLabel', lang)}
-                      value={entry.permalink}
-                      onChange={(v) => updateEntry(index, { permalink: v })}
-                    />
-                  </div>
-                  <div style={{ display: 'flex', gap: 6, flexShrink: 0, paddingTop: 18 }}>
-                    <SmallActionButton label="↑" onClick={() => moveEntry(index, -1)} disabled={index === 0} />
-                    <SmallActionButton label="↓" onClick={() => moveEntry(index, 1)} disabled={index === entries.length - 1} />
-                    <SmallActionButton label={t('removeAction', lang)} onClick={() => removeEntry(index)} />
-                  </div>
+                <div style={{ aspectRatio: '4 / 5', overflow: 'hidden' }}>
+                  <img src={post.imageUrl} alt={post.captionDisplay} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }} className="ump-admin-orders-grid">
-                  <SettingsField
-                    label={t('instagramLabelPTLabel', lang)}
-                    value={entry.labelPT ?? ''}
-                    onChange={(v) => updateEntry(index, { labelPT: v })}
-                  />
-                  <SettingsField
-                    label={t('instagramLabelENLabel', lang)}
-                    value={entry.labelEN ?? ''}
-                    onChange={(v) => updateEntry(index, { labelEN: v })}
-                  />
-                  <SettingsSelect
-                    label={t('instagramSizeLabel', lang)}
-                    value={entry.size}
-                    onChange={(v) => updateEntry(index, { size: v as InstagramSpotlightEntry['size'] })}
-                    options={[
-                      { value: 'regular', label: t('instagramSizeRegular', lang) },
-                      { value: 'large', label: t('instagramSizeLarge', lang) },
-                    ]}
-                  />
+                {isHighlighted && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 6,
+                      right: 6,
+                      padding: '3px 8px',
+                      borderRadius: 5,
+                      background: C.goldDeep,
+                      color: C.onDarkGold,
+                      fontSize: 9,
+                      fontWeight: 800,
+                      letterSpacing: 0.3,
+                    }}
+                  >
+                    {t('instagramHighlightedBadge', lang)}
+                  </div>
+                )}
+                <div style={{ padding: 8, fontSize: 10, color: C.inkSoft, lineHeight: 1.4, minHeight: 30 }}>
+                  {post.captionDisplay || t('instagramNoCaptionPlaceholder', lang)}
                 </div>
-              </div>
-            ))}
-          </div>
-          <button
-            onClick={addEntry}
-            style={{
-              padding: '9px 16px',
-              fontSize: 11,
-              fontWeight: 800,
-              borderRadius: 6,
-              border: `1px solid ${C.rule}`,
-              background: 'transparent',
-              color: C.ink,
-              cursor: 'pointer',
-            }}
-          >
-            {t('addFeaturedPost', lang)}
-          </button>
-        </>
+              </button>
+            );
+          })}
+        </div>
       )}
     </div>
   );

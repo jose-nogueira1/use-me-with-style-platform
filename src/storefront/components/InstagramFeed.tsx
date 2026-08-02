@@ -57,6 +57,20 @@ import { fetchInstagramFeed, type ApiInstagramPost } from '../../lib/api';
 // visible. Below MIN_TILES_TO_LOOP, tiles are no longer duplicated at all;
 // the auto-scroll loop below also stops trying to wrap seamlessly in that
 // case (there's no second copy to wrap into) and just clamps at the end.
+//
+// 2026-08-02, round 4 (Jay-P: "I actually don't like this admin instagram
+// feature... just show the most recent 12 posts and allow me to choose the
+// highlighted post, the caption should be the post caption and tile size
+// for highlighted post is large"): the round-2/3 curation model -- an
+// admin-ordered list of entries, each with its own optional caption
+// override and size choice -- is gone. Replaced with exactly one admin
+// choice (see Settings.tsx's InstagramSpotlightSection): which single post,
+// if any, is highlighted. Everything else is automatic again -- always the
+// latest ~12 posts, in that order, every caption is the real Instagram
+// caption (cleaned server-side), and only the highlighted post is 'large'.
+// `curated`/`labelPT`/`labelEN`/FALLBACK_LARGE_EVERY are gone with it --
+// `post.size` from the API is now always meaningful, no fallback rhythm
+// needed.
 const INSTAGRAM_URL = 'https://www.instagram.com/use_me_withstyle/';
 const TILE_COUNT = 10;
 const MIN_TILES_TO_LOOP = 6;
@@ -66,15 +80,10 @@ const AUTO_SCROLL_PX_PER_SEC = 26;
 // it's fighting the person who just scrolled it themselves.
 const RESUME_AFTER_MS = 1500;
 const DRAG_THRESHOLD_PX = 4;
-// Uncurated fallback rhythm: every 4th tile reads as "large". Arbitrary but
-// deliberate -- frequent enough to break up the row, rare enough that large
-// tiles still read as emphasis rather than a second uniform pattern.
-const FALLBACK_LARGE_EVERY = 4;
 
 export function InstagramFeed() {
   const { lang } = useApp();
   const [posts, setPosts] = useState<ApiInstagramPost[]>([]);
-  const [curated, setCurated] = useState(false);
   const [selectedPost, setSelectedPost] = useState<ApiInstagramPost | null>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const hoveringRef = useRef(false);
@@ -99,7 +108,6 @@ export function InstagramFeed() {
     fetchInstagramFeed(TILE_COUNT).then((result) => {
       if (cancelled) return;
       setPosts(result.posts);
-      setCurated(result.curated);
     });
     return () => {
       cancelled = true;
@@ -233,9 +241,9 @@ export function InstagramFeed() {
       >
         {loopedTiles.map((post, i) => {
           const originalIndex = i % tiles.length;
-          const isLarge = curated ? post?.size === 'large' : originalIndex % FALLBACK_LARGE_EVERY === 0;
+          const isLarge = post?.size === 'large';
           const displayLabel = post
-            ? (lang === 'pt' ? post.labelPT : post.labelEN) || post.captionDisplay || (lang === 'pt' ? 'Ver publicação' : 'View post')
+            ? post.captionDisplay || (lang === 'pt' ? 'Ver publicação' : 'View post')
             : undefined;
           const ariaLabel = post
             ? lang === 'pt'
