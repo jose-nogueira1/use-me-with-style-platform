@@ -46,8 +46,20 @@ import { fetchInstagramFeed, type ApiInstagramPost } from '../../lib/api';
 //    Capture is now deferred until the drag threshold is actually exceeded
 //    (see onPointerMove), so a plain click/tap never captures the pointer
 //    at all and always fires normally.
+//
+// 2026-08-02, round 3 bug fix (Jay-P: "I added one [curated post] in prod
+// to test, it doubled the post"): the seamless-infinite-scroll technique
+// below always rendered `[...tiles, ...tiles]` regardless of how many
+// tiles there were. That's invisible with a full row of ~10 posts -- the
+// two copies blend into one continuous strip -- but with only 1-2 curated
+// posts (exactly what an admin testing the new curation feature would add
+// first) it's just the same photo sitting twice, back to back, nakedly
+// visible. Below MIN_TILES_TO_LOOP, tiles are no longer duplicated at all;
+// the auto-scroll loop below also stops trying to wrap seamlessly in that
+// case (there's no second copy to wrap into) and just clamps at the end.
 const INSTAGRAM_URL = 'https://www.instagram.com/use_me_withstyle/';
 const TILE_COUNT = 10;
+const MIN_TILES_TO_LOOP = 6;
 const AUTO_SCROLL_PX_PER_SEC = 26;
 // How long after any manual interaction (drag, wheel, touch) the carousel
 // waits before resuming auto-scroll -- long enough that it doesn't feel like
@@ -118,6 +130,14 @@ export function InstagramFeed() {
     const track = trackRef.current;
     if (!track) return;
 
+    // Whether the render below actually duplicated the tile list -- see
+    // MIN_TILES_TO_LOOP's comment above. Recomputed from posts.length just
+    // like `tiles`/`loopedTiles` in the render below (this effect already
+    // re-runs whenever posts.length changes), so it always matches what's
+    // actually in the DOM.
+    const tileCount = posts.length > 0 ? posts.length : TILE_COUNT;
+    const loop = tileCount >= MIN_TILES_TO_LOOP;
+
     let raf = 0;
     let last = performance.now();
     const step = (now: number) => {
@@ -126,8 +146,18 @@ export function InstagramFeed() {
       const paused = hoveringRef.current || draggingRef.current || now - lastManualAtRef.current < RESUME_AFTER_MS || Boolean(selectedPostRef.current);
       if (!paused && track.scrollWidth > track.clientWidth) {
         track.scrollLeft += (AUTO_SCROLL_PX_PER_SEC * dt) / 1000;
-        const half = track.scrollWidth / 2;
-        if (track.scrollLeft >= half) track.scrollLeft -= half;
+        if (loop) {
+          // Duplicated content -- wrapping back by exactly half the scroll
+          // width at the halfway point loops seamlessly (the second copy is
+          // pixel-identical to the first).
+          const half = track.scrollWidth / 2;
+          if (track.scrollLeft >= half) track.scrollLeft -= half;
+        } else {
+          // Nothing duplicated to wrap into -- clamp at the end instead of
+          // snapping back to the start, which would look like a jump cut.
+          const max = track.scrollWidth - track.clientWidth;
+          if (track.scrollLeft >= max) track.scrollLeft = max;
+        }
       }
       raf = requestAnimationFrame(step);
     };
@@ -171,7 +201,9 @@ export function InstagramFeed() {
   // Real posts once loaded; otherwise TILE_COUNT placeholder slots so the
   // strip keeps its shape while the feed request is in flight.
   const tiles: (ApiInstagramPost | undefined)[] = posts.length > 0 ? posts : Array.from({ length: TILE_COUNT });
-  const loopedTiles = [...tiles, ...tiles];
+  // Below MIN_TILES_TO_LOOP, don't duplicate -- see the header comment.
+  const shouldLoop = tiles.length >= MIN_TILES_TO_LOOP;
+  const loopedTiles = shouldLoop ? [...tiles, ...tiles] : tiles;
 
   return (
     <div style={{ padding: '28px 0 40px' }}>
@@ -184,7 +216,7 @@ export function InstagramFeed() {
 
       <div
         ref={trackRef}
-        className="ump-instagram-track"
+        className={`ump-instagram-track${shouldLoop ? '' : ' ump-instagram-track--compact'}`}
         onMouseEnter={() => {
           hoveringRef.current = true;
         }}

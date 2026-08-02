@@ -278,6 +278,12 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
         }
         .ump-instagram-track::-webkit-scrollbar { display: none; }
         .ump-instagram-track:active { cursor: grabbing; }
+        /* Fewer than MIN_TILES_TO_LOOP tiles (e.g. a freshly-curated set of
+           1-3 posts) aren't duplicated for the auto-scroll loop (see
+           InstagramFeed.tsx) -- centered so a short row reads as a
+           deliberate, curated selection instead of a few tiles stranded at
+           the left edge of a full-bleed section. */
+        .ump-instagram-track--compact { justify-content: center; }
         /* Tiles are <button>s now (2026-08-02 round 2 -- they open an
            in-page lightbox rather than being a link), so browser button
            defaults (border, background, font, text-align) are reset here. */
