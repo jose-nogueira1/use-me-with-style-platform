@@ -842,6 +842,8 @@ const HOME_CONTENT_DEFAULTS: HomeContent = {
   heroCtaCategorySlug: null,
   heroCtaTagSlug: null,
   heroImage: null,
+  homepageCategorySlugs: [],
+  collections: [],
 };
 
 function HomeHeroSection() {
@@ -1062,6 +1064,117 @@ function HomeHeroSection() {
               />
               {uploading && <div style={{ fontSize: 10, color: C.inkSoft, marginTop: 4 }}>{t('uploadingEllipsis', lang)}</div>}
             </div>
+          </div>
+
+          {/* Homepage curation (2026-08-04, "admin should have total
+              control here" over which categories and merch-tag shelves
+              appear on the homepage). Both lists are optional/empty by
+              default -- Home.tsx falls back to showing every category and
+              the old fixed New Arrivals/Featured sections until an admin
+              fills these in. */}
+          <div style={{ marginTop: 24, paddingTop: 20, borderTop: `1px solid ${C.ruleLight}` }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 2 }}>{t('homepageCategoriesLabel', lang)}</div>
+            <div style={{ fontSize: 10, color: C.inkSoft, marginBottom: 10 }}>{t('homepageCategoriesNote', lang)}</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
+              {(content.homepageCategorySlugs ?? []).map((entry, index) => {
+                const label = categories.find((c) => c.slug === entry.slug)?.namePT || entry.slug;
+                const list = content.homepageCategorySlugs ?? [];
+                return (
+                  <div key={`${entry.slug}-${index}`} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 6, background: C.subtleBg, border: `1px solid ${C.ruleLight}` }}>
+                    <div style={{ flex: 1, fontSize: 12, color: C.ink }}>{label}</div>
+                    <SmallActionButton
+                      label="↑"
+                      disabled={index === 0}
+                      onClick={() => {
+                        const next = [...list];
+                        [next[index - 1], next[index]] = [next[index], next[index - 1]];
+                        setContent((c) => ({ ...c, homepageCategorySlugs: next }));
+                      }}
+                    />
+                    <SmallActionButton
+                      label="↓"
+                      disabled={index === list.length - 1}
+                      onClick={() => {
+                        const next = [...list];
+                        [next[index + 1], next[index]] = [next[index], next[index + 1]];
+                        setContent((c) => ({ ...c, homepageCategorySlugs: next }));
+                      }}
+                    />
+                    <SmallActionButton
+                      label={t('removeAction', lang)}
+                      onClick={() => setContent((c) => ({ ...c, homepageCategorySlugs: list.filter((_, i) => i !== index) }))}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+            <SettingsSelect
+              label={t('addCategoryAction', lang)}
+              value=""
+              onChange={(slug) => {
+                if (!slug) return;
+                setContent((c) => ({ ...c, homepageCategorySlugs: [...(c.homepageCategorySlugs ?? []), { slug }] }));
+              }}
+              options={[
+                { value: '', label: t('chooseEllipsis', lang) },
+                ...categories
+                  .filter((cat) => cat.slug && !(content.homepageCategorySlugs ?? []).some((entry) => entry.slug === cat.slug))
+                  .map((cat) => ({ value: cat.slug as string, label: cat.namePT })),
+              ]}
+            />
+          </div>
+
+          <div style={{ marginTop: 24, paddingTop: 20, borderTop: `1px solid ${C.ruleLight}` }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 2 }}>{t('homepageCollectionsLabel', lang)}</div>
+            <div style={{ fontSize: 10, color: C.inkSoft, marginBottom: 10 }}>{t('homepageCollectionsNote', lang)}</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 10 }}>
+              {(content.collections ?? []).map((row, index) => {
+                const list = content.collections ?? [];
+                const updateRow = (patch: Partial<(typeof list)[number]>) => {
+                  const next = [...list];
+                  next[index] = { ...next[index], ...patch };
+                  setContent((c) => ({ ...c, collections: next }));
+                };
+                return (
+                  <div key={index} style={{ padding: '10px 12px', borderRadius: 6, background: C.subtleBg, border: `1px solid ${C.ruleLight}` }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>
+                      <SettingsSelect
+                        label={t('collectionTagLabel', lang)}
+                        value={row.tagSlug ?? ''}
+                        onChange={(v) => updateRow({ tagSlug: v })}
+                        options={[
+                          { value: '', label: t('chooseEllipsis', lang) },
+                          ...tags.filter((tag) => tag.slug).map((tag) => ({ value: tag.slug as string, label: tag.labelPT })),
+                        ]}
+                      />
+                      <SettingsField label={t('collectionTitlePTLabel', lang)} value={row.titlePT ?? ''} onChange={(v) => updateRow({ titlePT: v })} />
+                      <SettingsField label={t('collectionTitleENLabel', lang)} value={row.titleEN ?? ''} onChange={(v) => updateRow({ titleEN: v })} />
+                      <SettingsField
+                        label={t('collectionItemLimitLabel', lang)}
+                        type="number"
+                        value={String(row.itemLimit ?? 8)}
+                        onChange={(v) => updateRow({ itemLimit: Number(v) || 8 })}
+                      />
+                    </div>
+                    <div style={{ marginTop: 8 }}>
+                      <SmallActionButton
+                        label={t('removeAction', lang)}
+                        onClick={() => setContent((c) => ({ ...c, collections: list.filter((_, i) => i !== index) }))}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <SmallActionButton
+              label={t('addCollectionAction', lang)}
+              onClick={() =>
+                setContent((c) => ({
+                  ...c,
+                  collections: [...(c.collections ?? []), { tagSlug: '', titlePT: '', titleEN: '', itemLimit: 8 }],
+                }))
+              }
+            />
           </div>
 
           <div style={{ marginTop: 24, paddingTop: 20, borderTop: `1px solid ${C.ruleLight}` }}>

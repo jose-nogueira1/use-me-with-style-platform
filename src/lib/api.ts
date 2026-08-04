@@ -273,6 +273,10 @@ export async function validateCoupon(input: {
   market: 'AO' | 'PT';
   usesEurSettlement?: boolean;
   subtotal: number;
+  // Sale-price exclusion (2026-08-04) -- the subtotal of only the cart
+  // lines NOT currently at a sale price. A percent-off coupon can only
+  // discount this portion; omit to fall back to full-subtotal behaviour.
+  eligibleSubtotal?: number;
   customerEmail?: string;
 }): Promise<CouponValidationResult> {
   return request<CouponValidationResult>('/coupons/validate', {
@@ -477,6 +481,13 @@ export type HomeContent = {
   heroCtaCategorySlug?: string | null;
   heroCtaTagSlug?: string | null;
   heroImage?: string | number | ApiMedia | null;
+  // Homepage curation (2026-08-04, "admin should have total control here"
+  // over which categories and merch-tag shelves appear on the homepage).
+  // Both empty by default -- Home.tsx falls back to the previous behaviour
+  // (every category shown; hardcoded New Arrivals/Featured sections) until
+  // an admin actually fills these in from Settings.
+  homepageCategorySlugs?: { id?: string; slug: string }[];
+  collections?: { id?: string; tagSlug: string; titlePT: string; titleEN: string; itemLimit?: number | null }[];
 };
 
 /** One auto-saved snapshot of home-content (2026-07-25 follow-up: "save old

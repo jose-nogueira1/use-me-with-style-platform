@@ -69,6 +69,26 @@ export function Home() {
         : '/catalogo';
   const heroImageUrl = absoluteMediaUrl(resolveRef(hero?.heroImage)?.url);
 
+  // Homepage curation (2026-08-04, "admin should have total control here"
+  // over which categories and merch-tag shelves appear on the homepage --
+  // plus a follow-up asking for e.g. an "SS26" shelf alongside New
+  // Arrivals/Featured). hero.collections generalises both the New Arrivals
+  // and Featured sections below into any number of admin-defined,
+  // tag-driven shelves. Empty -> falls back to exactly the newArrivals/
+  // featured sections defined above, unchanged, so nothing visibly changes
+  // until an admin actually configures a collection in Settings.
+  const customCollections = (hero?.collections ?? [])
+    .filter((c) => c.tagSlug)
+    .map((c) => {
+      const limit = Math.max(1, Math.min(24, c.itemLimit ?? 8));
+      return {
+        key: c.id ?? c.tagSlug,
+        title: (lang === 'en' ? c.titleEN : c.titlePT)?.trim() || c.titleEN?.trim() || c.titlePT?.trim() || c.tagSlug,
+        items: products.filter((p) => p.tags.some((tag) => tag.slug === c.tagSlug)).slice(0, limit),
+      };
+    })
+    .filter((shelf) => shelf.items.length > 0);
+
   const [categories, setCategories] = useState<ApiCategory[]>(FALLBACK_CATEGORIES);
   useEffect(() => {
     let cancelled = false;
@@ -83,6 +103,17 @@ export function Home() {
       cancelled = true;
     };
   }, []);
+
+  // Which categories show in the row, and in what order (2026-08-04) --
+  // hero.homepageCategorySlugs, when set, picks a subset/order out of the
+  // full `categories` list already fetched above; unmatched slugs (a
+  // category renamed/deleted since) are silently skipped rather than
+  // showing a broken tile. Empty -> every category shows, unchanged.
+  const displayCategories = hero?.homepageCategorySlugs?.length
+    ? (hero.homepageCategorySlugs
+        .map((entry) => categories.find((c) => c.slug === entry.slug))
+        .filter((c): c is ApiCategory => c !== undefined))
+    : categories;
 
   return (
     <div>
@@ -161,7 +192,7 @@ export function Home() {
           {t('categories', lang)}
         </div>
         <div className="ump-cat-row">
-          {categories.map((c, index) => {
+          {displayCategories.map((c, index) => {
             const slug = c.slug ?? String(c.id);
             const label = (lang === 'en' ? c.nameEN : c.namePT)?.trim() || c.namePT;
             const imageUrl = absoluteMediaUrl(resolveRef(c.image)?.url);
@@ -218,37 +249,64 @@ export function Home() {
 
       {loading && <div style={{ padding: 20, textAlign: 'center', fontSize: 12, color: C.inkSoft }}>{t('loadingProducts', lang)}</div>}
 
-      {/* New arrivals */}
-      {newArrivals.length > 0 && (
-        <div className="ump-content-width" style={{ padding: '20px 20px 0' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
-            <div style={{ fontSize: 10, letterSpacing: 3, color: C.goldDeep, fontWeight: 800, textTransform: 'uppercase' }}>
-              {t('newArrivals', lang)}
+      {customCollections.length > 0 ? (
+        // Admin-curated shelves (2026-08-04) -- any number of tag-driven
+        // collections configured in Settings, in the order the admin set.
+        // Same horizontal-scroll-with-"View all" layout New Arrivals
+        // already used, reused here so a shopper sees a consistent pattern
+        // regardless of how many shelves the admin has configured.
+        customCollections.map((shelf) => (
+          <div key={shelf.key} className="ump-content-width" style={{ padding: '20px 20px 0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
+              <div style={{ fontSize: 10, letterSpacing: 3, color: C.goldDeep, fontWeight: 800, textTransform: 'uppercase' }}>
+                {shelf.title}
+              </div>
+              <Link to="/catalogo" style={{ fontSize: 11, color: C.goldDeep, fontWeight: 800, textDecoration: 'none' }}>
+                {t('viewAll', lang)} →
+              </Link>
             </div>
-            <Link to="/catalogo" style={{ fontSize: 11, color: C.goldDeep, fontWeight: 800, textDecoration: 'none' }}>
-              {t('viewAll', lang)} →
-            </Link>
+            <div style={{ display: 'flex', gap: 10, overflowX: 'auto' }}>
+              {shelf.items.map((p) => (
+                <ProductCard key={p.id} product={p} size="small" />
+              ))}
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: 10, overflowX: 'auto' }}>
-            {newArrivals.map((p) => (
-              <ProductCard key={p.id} product={p} size="small" />
-            ))}
-          </div>
-        </div>
-      )}
+        ))
+      ) : (
+        <>
+          {/* New arrivals */}
+          {newArrivals.length > 0 && (
+            <div className="ump-content-width" style={{ padding: '20px 20px 0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
+                <div style={{ fontSize: 10, letterSpacing: 3, color: C.goldDeep, fontWeight: 800, textTransform: 'uppercase' }}>
+                  {t('newArrivals', lang)}
+                </div>
+                <Link to="/catalogo" style={{ fontSize: 11, color: C.goldDeep, fontWeight: 800, textDecoration: 'none' }}>
+                  {t('viewAll', lang)} →
+                </Link>
+              </div>
+              <div style={{ display: 'flex', gap: 10, overflowX: 'auto' }}>
+                {newArrivals.map((p) => (
+                  <ProductCard key={p.id} product={p} size="small" />
+                ))}
+              </div>
+            </div>
+          )}
 
-      {/* Featured grid */}
-      {featured.length > 0 && (
-        <div className="ump-content-width" style={{ padding: '20px 20px 24px' }}>
-          <div style={{ fontSize: 10, letterSpacing: 3, color: C.goldDeep, fontWeight: 800, textTransform: 'uppercase', marginBottom: 12 }}>
-            {t('featured', lang)}
-          </div>
-          <div className="ump-grid-auto">
-            {featured.map((p) => (
-              <ProductCard key={p.id} product={p} />
-            ))}
-          </div>
-        </div>
+          {/* Featured grid */}
+          {featured.length > 0 && (
+            <div className="ump-content-width" style={{ padding: '20px 20px 24px' }}>
+              <div style={{ fontSize: 10, letterSpacing: 3, color: C.goldDeep, fontWeight: 800, textTransform: 'uppercase', marginBottom: 12 }}>
+                {t('featured', lang)}
+              </div>
+              <div className="ump-grid-auto">
+                {featured.map((p) => (
+                  <ProductCard key={p.id} product={p} />
+                ))}
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Editorial remains out of launch scope until client content is approved. */}

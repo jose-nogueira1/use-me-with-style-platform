@@ -20,17 +20,14 @@ import { AppyPayWidget } from '../components/AppyPayWidget';
 import { getMetaOrderContext } from '../../lib/analyticsConsent';
 import { PaypalButton } from '../components/PaypalButton';
 import { localizeCouponError } from '../couponError';
-import { checkoutShippingCost, LUANDA_MUNICIPALITIES, normalizeAngolaShipping, normalizePortugalShipping, vatIncludedAmount } from '../shipping';
-
-// VAT rates (2026-08-04): same fallback defaults as the CMS's /tax-rates
-// endpoint (see taxRates.ts), used only until that endpoint's own response
-// arrives -- so the very first render already shows a correct-by-default
-// figure instead of hiding the VAT line until a network round trip
-// completes.
-const DEFAULT_TAX_RATES: TaxRates = {
-  AO: 14,
-  PT: { mainland: 23, madeira: 22, azores: 16 },
-};
+import {
+  checkoutShippingCost,
+  DEFAULT_TAX_RATES,
+  LUANDA_MUNICIPALITIES,
+  normalizeAngolaShipping,
+  normalizePortugalShipping,
+  vatIncludedAmount,
+} from '../shipping';
 
 // Angola delivery is local courier only and payment is Multicaixa Express
 // through AppyPay. Portugal retains its separate online-payment methods.
@@ -582,6 +579,25 @@ export function Checkout() {
   const eurSubtotal = eurItems.reduce((sum, i) => sum + i.unitPrice * i.qty, 0);
   const settlementSubtotal = usesEurSettlement ? eurSubtotal : subtotal;
 
+  // Sale-price exclusion (2026-08-04, user rule: a percent-off coupon
+  // "should not work on" a product already discounted by a running sale).
+  // Mirrors subtotal/eurSubtotal above but skips any line where
+  // p.onSale is true -- sent to /coupons/validate so the "Apply" preview
+  // matches exactly what authoritativeOrder.ts will enforce for real at
+  // order-creation time (it excludes the same lines, computed the same way
+  // server-side).
+  const eligibleSubtotal = cart.reduce((sum, item) => {
+    const p = products.find((pp) => pp.id === item.id);
+    if (!p || p.onSale) return sum;
+    return sum + p.effectivePriceKz * item.qty;
+  }, 0);
+  const eurEligibleSubtotal = cart.reduce((sum, item) => {
+    const p = products.find((pp) => pp.id === item.id);
+    if (!p || p.onSale) return sum;
+    return sum + p.effectivePriceEur * item.qty;
+  }, 0);
+  const settlementEligibleSubtotal = usesEurSettlement ? eurEligibleSubtotal : eligibleSubtotal;
+
   // The order summary/total and "Pay Now" amount must always be computed
   // and displayed in whichever currency actually settles -- previously this
   // subtracted a EUR-denominated discountAmount (see the coupon-revalidation
@@ -606,8 +622,13 @@ export function Checkout() {
   const fmt = (n: number) => (market === 'PT' || usesEurSettlement ? `€${n.toFixed(2)}` : `${formatKz(n, lang)} Kz`);
 
   // VAT included-in-price breakdown (2026-08-04) -- see vatIncludedAmount's
-  // own comment in shipping.ts for how the rate/region are chosen.
-  const { rate: vatRate, amount: vatAmount } = vatIncludedAmount(market, total, taxRates, form.postalCode);
+  // own comment in shipping.ts for how the rate/region are chosen. Base is
+  // merchandiseTotalAfterDiscount, NOT `total` -- shipping is a fixed price
+  // that's never taxed or discounted (confirmed rule, 2026-08-04), and VAT
+  // is computed from the price AFTER any coupon discount, matching the
+  // CMS's own calculateIncludedVatInvoice so checkout and the eventual
+  // invoice always show the identical amount.
+  const { rate: vatRate, amount: vatAmount } = vatIncludedAmount(market, merchandiseTotalAfterDiscount, taxRates, form.postalCode);
 
   // Re-check (never silently drop) an already-applied coupon whenever the
   // payment or delivery method changes. Re-runs handleApplyCoupon's same
@@ -640,6 +661,7 @@ export function Checkout() {
       market,
       usesEurSettlement,
       subtotal: settlementSubtotal,
+      eligibleSubtotal: settlementEligibleSubtotal,
       customerEmail: form.email || undefined,
     })
       .then((result) => {
@@ -757,6 +779,7 @@ export function Checkout() {
         market,
         usesEurSettlement,
         subtotal: settlementSubtotal,
+        eligibleSubtotal: settlementEligibleSubtotal,
         customerEmail: form.email || undefined,
       });
       if (result.valid) {

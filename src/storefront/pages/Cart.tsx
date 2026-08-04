@@ -6,6 +6,8 @@ import { useApp, useFormatPrice } from '../../state/AppContext';
 import { useProducts } from '../../hooks/useProducts';
 import { ProductPhoto } from '../../components/ProductPhoto';
 import { trackMetaEvent } from '../../lib/metaAnalytics';
+import { fetchTaxRates, type TaxRates } from '../../lib/api';
+import { DEFAULT_TAX_RATES, vatIncludedAmount } from '../shipping';
 
 // Placeholder for a price/line-item value that hasn't loaded for the
 // current market yet -- see the `loading` usage below. Sizing is passed per
@@ -37,6 +39,28 @@ export function Cart() {
   // total with no explanation.
   const [removedNotice, setRemovedNotice] = useState(false);
   const [confirmingClear, setConfirmingClear] = useState(false);
+
+  // VAT included-in-price display (2026-08-04, "VAT value should show on
+  // cart as well not only on checkout") -- same /tax-rates fetch and
+  // fallback Checkout.tsx already uses. No postal code is known yet at this
+  // stage, so a Portugal cart shows the mainland rate (vatIncludedAmount's
+  // own documented fallback) until the shopper reaches checkout and enters
+  // one -- Madeira/Azores shoppers may see the figure shift slightly there,
+  // same caveat as the shipping-cost estimate already shown at this stage.
+  const [taxRates, setTaxRates] = useState<TaxRates>(DEFAULT_TAX_RATES);
+  useEffect(() => {
+    let cancelled = false;
+    fetchTaxRates()
+      .then((rates) => {
+        if (!cancelled) setTaxRates(rates);
+      })
+      .catch(() => {
+        /* keep the default fallback */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   useEffect(() => {
     if (loading) return;
     const staleIdxs = cart
@@ -68,11 +92,24 @@ export function Cart() {
     );
   }
 
+  // effectivePriceKz/effectivePriceEur (2026-08-04 fix), not priceKz/
+  // priceEur -- this previously summed the REGULAR price even for a line
+  // on sale (fmtPrice(p) below already showed the discounted per-line
+  // price correctly), so a cart with any sale item overstated its own
+  // Subtotal/Total versus what checkout would actually charge. Found while
+  // adding the VAT line below: computing VAT off an already-wrong subtotal
+  // would have compounded the error.
   const subtotal = cart.reduce((sum, i) => {
     const p = products.find((p) => p.id === i.id);
     if (!p) return sum;
-    return sum + (market === 'AO' ? p.priceKz : p.priceEur) * i.qty;
+    return sum + (market === 'AO' ? p.effectivePriceKz : p.effectivePriceEur) * i.qty;
   }, 0);
+
+  // VAT included-in-price (2026-08-04) -- same back-calculation
+  // (vatIncludedAmount) and rate source as Checkout.tsx, off this
+  // corrected subtotal (no shipping/discount at this stage, both fixed/
+  // computed only once the shopper reaches checkout).
+  const { rate: vatRate, amount: vatAmount } = vatIncludedAmount(market, subtotal, taxRates);
 
   // Re-checks each cart line's stock for the CURRENT market -- a colour/size
   // that was in stock when added (possibly in the other market, or before
@@ -270,9 +307,18 @@ export function Cart() {
                 "still loading" instead of "your cart is worth nothing". */}
             {loading ? <SkeletonBar width={70} /> : <span>{market === 'AO' ? `${formatKz(subtotal, lang)} Kz` : `€${subtotal.toFixed(2)}`}</span>}
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 16, fontWeight: 800, color: C.ink, marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 16, fontWeight: 800, color: C.ink }}>
             <span>{t('total', lang)}</span>
             {loading ? <SkeletonBar width={90} height={16} /> : <span>{market === 'AO' ? `${formatKz(subtotal, lang)} Kz` : `€${subtotal.toFixed(2)}`}</span>}
+          </div>
+          <div data-testid="cart-vat-included" style={{ fontSize: 10, color: C.inkSoft, marginTop: 4, marginBottom: 16, textAlign: 'right' }}>
+            {loading ? (
+              <SkeletonBar width={90} height={10} />
+            ) : (
+              t('vatIncludedLabel', lang)
+                .replace('{rate}', String(vatRate))
+                .replace('{amount}', market === 'AO' ? `${formatKz(vatAmount, lang)} Kz` : `€${vatAmount.toFixed(2)}`)
+            )}
           </div>
           <button
             disabled={loading || hasOutOfStockLine}

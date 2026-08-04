@@ -71,6 +71,15 @@ export type TaxRatesConfig = {
   PT: { mainland: number; madeira: number; azores: number };
 };
 
+/** Fallback used before /tax-rates has loaded (or if it's unreachable) --
+ * matches the CMS's own InvoiceSettings defaults (AO 14%, PT mainland/
+ * Madeira/Azores 23/22/16%), so the very first paint already shows the
+ * right numbers for an admin who hasn't touched these settings. Shared
+ * between Checkout.tsx and Cart.tsx (2026-08-04, "VAT value should show on
+ * cart as well not only on checkout") so both pages start from the exact
+ * same default and can't drift apart. */
+export const DEFAULT_TAX_RATES: TaxRatesConfig = { AO: 14, PT: { mainland: 23, madeira: 22, azores: 16 } };
+
 /** VAT included-in-price breakdown (2026-08-04). Angola is a flat rate
  * regardless of settlement currency -- this is about the customer's
  * market/jurisdiction, not which gateway happens to process the charge.
