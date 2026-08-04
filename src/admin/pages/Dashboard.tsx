@@ -4,10 +4,19 @@ import { C, F } from '../../theme';
 import { useApp } from '../../state/AppContext';
 import { adminListOrders, adminListProducts, type ApiOrder, type ApiProduct } from '../../lib/api';
 import { PageHeader } from '../components/PageHeader';
-import { Badge, statusBadgeProps } from '../components/Badge';
+import { Badge, orderStatusBadgeProps } from '../components/Badge';
 import { t, type Lang } from '../i18n';
 import { deliveryMethodLabel, paymentMethodLabel } from '../lib/orderLabels';
 import { downloadOrdersCsv } from '../lib/ordersCsv';
+import { isCountedOrder, isRecognizedRevenue, ordersOnLocalDay } from '../lib/orderMetrics';
+import { formatOrderDateTime } from '../lib/orderDateRange';
+import {
+  ordersInWindow,
+  summarizeAppyPay,
+  summarizeFulfilment,
+  summarizeMarket,
+  type MarketSummary,
+} from '../lib/dashboardMetrics';
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -36,12 +45,15 @@ export function Dashboard() {
       .catch(() => setError(true));
   }, []);
 
-  const today = new Date().toDateString();
-  const todayOrders = orders?.filter((o) => new Date(o.createdAt).toDateString() === today) ?? [];
+  const allTodayOrders = ordersOnLocalDay(orders ?? [], new Date());
+  const todayISO = localISODate(new Date());
+  const todayOrders = allTodayOrders.filter(isCountedOrder);
+  const cancelledToday = allTodayOrders.length - todayOrders.length;
   const todayAO = todayOrders.filter((o) => o.market === 'AO').length;
   const todayPT = todayOrders.filter((o) => o.market === 'PT').length;
-  const revenueTodayKz = todayOrders.filter((o) => o.currency === 'Kz').reduce((s, o) => s + o.total, 0);
-  const revenueTodayEur = todayOrders.filter((o) => o.currency === 'EUR').reduce((s, o) => s + o.total, 0);
+  const paidTodayOrders = allTodayOrders.filter(isRecognizedRevenue);
+  const revenueTodayKz = paidTodayOrders.filter((o) => o.currency === 'Kz').reduce((s, o) => s + o.total, 0);
+  const revenueTodayEur = paidTodayOrders.filter((o) => o.currency === 'EUR').reduce((s, o) => s + o.total, 0);
   // Was status === 'payment_review' only (2026-07-31 follow-up report:
   // notifications and this "needs confirmation" metric were both missing
   // the common case -- a fresh order sits at status 'new', not
@@ -92,10 +104,11 @@ export function Dashboard() {
       endMs.setHours(23, 59, 59, 999);
       const bucketOrders = (orders ?? []).filter((o) => {
         const c = new Date(o.createdAt);
-        return c >= startMs && c <= endMs;
+        return c >= startMs && c <= endMs && isCountedOrder(o);
       });
-      const kzRevenue = bucketOrders.filter((o) => o.currency === 'Kz').reduce((s, o) => s + o.total, 0);
-      const eurRevenue = bucketOrders.filter((o) => o.currency === 'EUR').reduce((s, o) => s + o.total, 0);
+      const paidBucketOrders = bucketOrders.filter(isRecognizedRevenue);
+      const kzRevenue = paidBucketOrders.filter((o) => o.currency === 'Kz').reduce((s, o) => s + o.total, 0);
+      const eurRevenue = paidBucketOrders.filter((o) => o.currency === 'EUR').reduce((s, o) => s + o.total, 0);
       const aoCount = bucketOrders.filter((o) => o.market === 'AO').length;
       const ptCount = bucketOrders.filter((o) => o.market === 'PT').length;
       const label = size === 1 ? DAY_LABELS[start.getDay()] : `${start.getDate()}/${start.getMonth() + 1}–${end.getDate()}/${end.getMonth() + 1}`;
@@ -129,7 +142,7 @@ export function Dashboard() {
     prevStart.setHours(0, 0, 0, 0);
     const prevOrders = (orders ?? []).filter((o) => {
       const c = new Date(o.createdAt);
-      return c >= prevStart && c <= prevEnd;
+      return c >= prevStart && c <= prevEnd && isCountedOrder(o);
     });
     const currentTotals = {
       kz: withPct.reduce((s, b) => s + b.kzRevenue, 0),
@@ -138,8 +151,8 @@ export function Dashboard() {
       pt: withPct.reduce((s, b) => s + b.ptCount, 0),
     };
     const prevTotals = {
-      kz: prevOrders.filter((o) => o.currency === 'Kz').reduce((s, o) => s + o.total, 0),
-      eur: prevOrders.filter((o) => o.currency === 'EUR').reduce((s, o) => s + o.total, 0),
+      kz: prevOrders.filter((o) => o.currency === 'Kz' && isRecognizedRevenue(o)).reduce((s, o) => s + o.total, 0),
+      eur: prevOrders.filter((o) => o.currency === 'EUR' && isRecognizedRevenue(o)).reduce((s, o) => s + o.total, 0),
       ao: prevOrders.filter((o) => o.market === 'AO').length,
       pt: prevOrders.filter((o) => o.market === 'PT').length,
     };
@@ -148,6 +161,11 @@ export function Dashboard() {
 
     return {
       buckets: withPct,
+      currentWindow: {
+        start: new Date(starts[0]),
+        end: new Date(ends[ends.length - 1].getFullYear(), ends[ends.length - 1].getMonth(), ends[ends.length - 1].getDate(), 23, 59, 59, 999),
+      },
+      previousWindow: { start: prevStart, end: prevEnd },
       deltas: {
         kz: delta(currentTotals.kz, prevTotals.kz),
         eur: delta(currentTotals.eur, prevTotals.eur),
@@ -156,6 +174,24 @@ export function Dashboard() {
       },
     };
   }, [orders, rangeDays]);
+
+  const currentPeriodOrders = useMemo(
+    () => ordersInWindow(orders ?? [], chart.currentWindow.start, chart.currentWindow.end),
+    [chart.currentWindow.end, chart.currentWindow.start, orders],
+  );
+  const previousPeriodOrders = useMemo(
+    () => ordersInWindow(orders ?? [], chart.previousWindow.start, chart.previousWindow.end),
+    [chart.previousWindow.end, chart.previousWindow.start, orders],
+  );
+  const periodAO = useMemo(() => summarizeMarket(currentPeriodOrders, 'AO'), [currentPeriodOrders]);
+  const periodPT = useMemo(() => summarizeMarket(currentPeriodOrders, 'PT'), [currentPeriodOrders]);
+  const previousAO = useMemo(() => summarizeMarket(previousPeriodOrders, 'AO'), [previousPeriodOrders]);
+  const previousPT = useMemo(() => summarizeMarket(previousPeriodOrders, 'PT'), [previousPeriodOrders]);
+  const appyPayHealth = useMemo(() => summarizeAppyPay(currentPeriodOrders), [currentPeriodOrders]);
+  const fulfilmentHealth = useMemo(
+    () => summarizeFulfilment(currentPeriodOrders, new Date().getTime()),
+    [currentPeriodOrders],
+  );
 
   // "No orders in 2 days" attention-queue alert -- independent of the chart
   // controls above (always checks the last 2 full calendar days, i.e.
@@ -168,7 +204,7 @@ export function Dashboard() {
       return d.toDateString();
     });
     return (['AO', 'PT'] as const).filter(
-      (m) => !checkDates.some((ds) => (orders ?? []).some((o) => o.market === m && new Date(o.createdAt).toDateString() === ds)),
+      (m) => !checkDates.some((ds) => (orders ?? []).some((o) => isCountedOrder(o) && o.market === m && new Date(o.createdAt).toDateString() === ds)),
     );
   }, [orders]);
 
@@ -194,6 +230,17 @@ export function Dashboard() {
   const now = new Date().getTime();
   const attentionItems = [
     ...(orders ?? [])
+      .filter((o) => o.status === 'cancelled' && o.paymentStatus === 'paid')
+      .map((o) => ({
+        category: t('attentionPayment', lang),
+        title: t('dashAttnRefundTitle', lang, { orderNumber: o.orderNumber }),
+        detail: t('dashAttnRefundDetail', lang),
+        badge: t('urgentBadge', lang),
+        tone: 'red' as const,
+        priority: '#B95545',
+        to: `/admin/encomendas/${o.id}`,
+      })),
+    ...(orders ?? [])
       .filter((o) => o.status === 'new' || o.status === 'payment_review')
       .slice()
       .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
@@ -203,6 +250,7 @@ export function Dashboard() {
         const overdue = hoursWaiting >= REVIEW_SLA_HOURS;
         const daysWaiting = Math.floor(hoursWaiting / 24);
         return {
+          category: t('attentionPayment', lang),
           title: t('dashAttnReviewTitle', lang, { orderNumber: o.orderNumber, customerName: o.customerName }),
           detail: overdue
             ? t('dashAttnReviewOverdueDetail', lang, { days: daysWaiting })
@@ -213,7 +261,20 @@ export function Dashboard() {
           to: `/admin/encomendas/${o.id}`,
         };
       }),
+    ...(orders ?? [])
+      .filter((o) => o.status === 'processing' && o.paymentStatus === 'paid')
+      .filter((o) => now - new Date(o.updatedAt || o.createdAt).getTime() >= 24 * 3_600_000)
+      .map((o) => ({
+        category: t('attentionFulfilment', lang),
+        title: t('dashAttnFulfilmentTitle', lang, { orderNumber: o.orderNumber }),
+        detail: t('dashAttnFulfilmentDetail', lang),
+        badge: t('overdueBadge', lang),
+        tone: 'red' as const,
+        priority: '#B95545',
+        to: `/admin/encomendas/${o.id}`,
+      })),
     ...quietMarkets.map((m) => ({
+      category: t('attentionMarket', lang),
       title: t('dashAttnQuietMarketTitle', lang, { market: m === 'AO' ? t('angolaOption', lang) : t('portugalOption', lang) }),
       detail: t('dashAttnQuietMarketDetail', lang),
       badge: t('openBadge', lang),
@@ -225,6 +286,7 @@ export function Dashboard() {
       .filter((p) => p.variants.some((v) => v.stockAO + v.stockPT === 0))
       .slice(0, 2)
       .map((p) => ({
+        category: t('attentionInventory', lang),
         title: t('dashAttnStockoutTitle', lang, { name: p.name }),
         detail: t('dashAttnStockoutDetail', lang),
         badge: t('openBadge', lang),
@@ -232,7 +294,7 @@ export function Dashboard() {
         priority: C.sage,
         to: `/admin/produtos/${p.id}`,
       })),
-  ].slice(0, 3);
+  ].slice(0, 5);
 
   const recentOrders = (orders ?? []).slice(0, 5);
 
@@ -253,18 +315,84 @@ export function Dashboard() {
       )}
 
       <div style={{ padding: '20px 28px 0', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }} className="ump-admin-metric-grid">
-        <Metric label={t('ordersToday', lang)} value={String(todayOrders.length)} sub={`${todayAO} ${t('angolaOption', lang)}, ${todayPT} ${t('portugalOption', lang)}`} />
-        <Metric label={t('revenueToday', lang)} value={`${revenueTodayKz.toLocaleString('en-US')} Kz`} sub={t('separatelyNote', lang, { amount: revenueTodayEur.toFixed(0) })} />
+        <Metric linkLabel={t('viewDetailsAction', lang)} to={`/admin/encomendas?from=${todayISO}&to=${todayISO}&context=orders`} label={t('ordersToday', lang)} value={String(todayOrders.length)} sub={`${todayAO} ${t('angolaOption', lang)}, ${todayPT} ${t('portugalOption', lang)}`} />
+        <Metric linkLabel={t('viewDetailsAction', lang)} to={`/admin/encomendas?from=${todayISO}&to=${todayISO}&context=revenue`} label={t('revenueToday', lang)} value={`${revenueTodayKz.toLocaleString('en-US')} Kz`} sub={t('paidRevenueNote', lang, { amount: revenueTodayEur.toFixed(0) })} />
+        <Metric linkLabel={t('viewDetailsAction', lang)} to={`/admin/encomendas?from=${todayISO}&to=${todayISO}&status=cancelled`} label={t('cancelledToday', lang)} value={String(cancelledToday)} sub={t('excludedFromMetrics', lang)} tone={cancelledToday > 0 ? 'red' : undefined} />
         {/* Was labelled with the 'statusPaymentReview' status name -- now
             that reviewCount also counts 'new' orders, that label would
             misrepresent most of what it's showing (2026-07-31 follow-up
             fix). 'statusPaymentReview' is still used correctly elsewhere,
             for the literal status badge/pill -- this is a separate,
             broader "needs confirmation" metric. */}
-        <Metric label={t('needsConfirmationMetric', lang)} value={String(reviewCount)} sub={t('manualConfirmationNeeded', lang)} tone="gold" />
-        <Metric label={t('statusProcessing', lang)} value={String(processingCount)} sub={t('ordersBeingFulfilled', lang)} />
-        <Metric label={t('lowStockMetric', lang)} value={String(lowStockCount)} sub={t('sizesWithFewUnits', lang)} tone="red" />
+        <Metric linkLabel={t('viewDetailsAction', lang)} to="/admin/encomendas?context=confirmation" label={t('needsConfirmationMetric', lang)} value={String(reviewCount)} sub={t('manualConfirmationNeeded', lang)} tone="gold" />
+        <Metric linkLabel={t('viewDetailsAction', lang)} to="/admin/encomendas?status=processing" label={t('statusProcessing', lang)} value={String(processingCount)} sub={t('ordersBeingFulfilled', lang)} />
+        <Metric linkLabel={t('viewDetailsAction', lang)} to="/admin/produtos?filter=low" label={t('lowStockMetric', lang)} value={String(lowStockCount)} sub={t('sizesWithFewUnits', lang)} tone="red" />
       </div>
+
+      <section style={{ padding: '20px 28px 0' }} aria-labelledby="market-performance-heading">
+        <SectionHeading
+          id="market-performance-heading"
+          title={t('marketPerformance', lang)}
+          detail={t('selectedPeriodDays', lang, { n: rangeDays })}
+          actions={<RangeSelector value={rangeDays} onChange={setRangeDays} />}
+        />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 12 }}>
+          <MarketPerformanceCard
+            market="AO"
+            title={t('angolaOption', lang)}
+            currency="Kz"
+            summary={periodAO}
+            previous={previousAO}
+            rangeDays={rangeDays}
+            lang={lang}
+          />
+          <MarketPerformanceCard
+            market="PT"
+            title={t('portugalOption', lang)}
+            currency="EUR"
+            summary={periodPT}
+            previous={previousPT}
+            rangeDays={rangeDays}
+            lang={lang}
+          />
+        </div>
+      </section>
+
+      <section style={{ padding: '20px 28px 0' }} aria-labelledby="operations-health-heading">
+        <SectionHeading
+          id="operations-health-heading"
+          title={t('operationsHealth', lang)}
+          detail={t('selectedPeriodDays', lang, { n: rangeDays })}
+        />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 12 }}>
+          <HealthPanel
+            title={t('appyPayHealth', lang)}
+            detail={t('appyPayHealthDetail', lang)}
+            to={`/admin/encomendas?from=${localISODate(chart.currentWindow.start)}&to=${localISODate(chart.currentWindow.end)}&market=AO`}
+            lang={lang}
+            stats={[
+              { label: t('successRate', lang), value: appyPayHealth.successRate === null ? '—' : `${appyPayHealth.successRate}%`, tone: appyPayHealth.successRate !== null && appyPayHealth.successRate < 80 ? 'red' : 'green' },
+              { label: t('paymentAttempts', lang), value: String(appyPayHealth.attempts) },
+              { label: t('paidLabel', lang), value: String(appyPayHealth.paid), tone: 'green' },
+              { label: t('failedLabel', lang), value: String(appyPayHealth.failed), tone: appyPayHealth.failed ? 'red' : undefined },
+              { label: t('pendingLabel', lang), value: String(appyPayHealth.pending), tone: appyPayHealth.pending ? 'gold' : undefined },
+              { label: t('abandonedLabel', lang), value: String(appyPayHealth.abandoned), tone: appyPayHealth.abandoned ? 'red' : undefined },
+            ]}
+          />
+          <HealthPanel
+            title={t('fulfilmentHealth', lang)}
+            detail={t('fulfilmentHealthDetail', lang)}
+            to="/admin/encomendas?status=processing&payment=paid"
+            lang={lang}
+            stats={[
+              { label: t('activeFulfilment', lang), value: String(fulfilmentHealth.active) },
+              { label: t('overdue24h', lang), value: String(fulfilmentHealth.overdue), tone: fulfilmentHealth.overdue ? 'red' : 'green' },
+              { label: t('averageTimeToShip', lang), value: fulfilmentHealth.averageHoursToShip === null ? '—' : t('hoursShort', lang, { n: Math.round(fulfilmentHealth.averageHoursToShip) }) },
+              { label: t('shippedSample', lang), value: String(fulfilmentHealth.shipped) },
+            ]}
+          />
+        </div>
+      </section>
 
       <div style={{ padding: '20px 28px 0', display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }} className="ump-admin-dashboard-grid">
         <div style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 18, minWidth: 0 }}>
@@ -281,6 +409,7 @@ export function Dashboard() {
             >
               <div style={{ width: 4, alignSelf: 'stretch', borderRadius: 4, background: item.priority, flexShrink: 0 }} />
               <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 8.5, fontWeight: 900, color: item.priority, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 3 }}>{item.category}</div>
                 <div style={{ fontSize: 12, fontWeight: 800, color: C.ink }}>{item.title}</div>
                 <div style={{ fontSize: 10, color: C.inkSoft, marginTop: 2 }}>{item.detail}</div>
               </div>
@@ -292,7 +421,7 @@ export function Dashboard() {
         <div style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 18, minWidth: 0 }}>
           <div style={{ fontFamily: F.display, fontSize: 19, fontWeight: 800, color: C.ink, marginBottom: 14 }}>{t('recentOrders', lang)}</div>
           {recentOrders.map((o, i) => {
-            const b = statusBadgeProps(o.status, lang);
+            const b = orderStatusBadgeProps(o, lang);
             return (
               <Link
                 key={o.id}
@@ -307,7 +436,7 @@ export function Dashboard() {
                   {/* Was o.paymentMethod/o.deliveryMethod raw (2026-07-31 QA
                       follow-up) -- same "mbway"/"courier_pt" bug already
                       fixed on the Orders table and detail screen. */}
-                  {o.city}, {paymentMethodLabel(o.paymentMethod, lang)}, {deliveryMethodLabel(o.deliveryMethod, lang)}
+                  {formatOrderDateTime(o.createdAt, lang)} · {o.city}, {paymentMethodLabel(o.paymentMethod, lang)}, {deliveryMethodLabel(o.deliveryMethod, lang)}
                 </div>
               </Link>
             );
@@ -321,25 +450,7 @@ export function Dashboard() {
             <div style={{ fontFamily: F.display, fontSize: 19, fontWeight: 800, color: C.ink }}>
               {t(metric === 'revenue' ? 'revenueTrend' : 'ordersTrend', lang)}
             </div>
-            <div style={{ display: 'flex', gap: 6 }}>
-              {([7, 30, 90] as const).map((n) => (
-                <button
-                  key={n}
-                  onClick={() => setRangeDays(n)}
-                  style={{
-                    padding: '5px 10px',
-                    fontSize: 10,
-                    fontWeight: 800,
-                    borderRadius: 6,
-                    border: `1px solid ${rangeDays === n ? C.black : C.rule}`,
-                    background: rangeDays === n ? C.black : C.paper,
-                    color: rangeDays === n ? C.onDarkGold : C.inkSoft,
-                  }}
-                >
-                  {n}d
-                </button>
-              ))}
-            </div>
+            <RangeSelector value={rangeDays} onChange={setRangeDays} />
           </div>
 
           <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
@@ -371,6 +482,9 @@ export function Dashboard() {
             >
               {t('metricOrdersTab', lang)}
             </button>
+          </div>
+          <div style={{ margin: '-6px 0 14px', fontSize: 9.5, lineHeight: 1.45, color: C.inkSoft }}>
+            {t('dashboardMetricDefinition', lang)}
           </div>
 
           <div style={{ display: 'flex', gap: 20, marginBottom: 16, flexWrap: 'wrap' }}>
@@ -509,14 +623,141 @@ function LegendWithDelta({
   );
 }
 
-function Metric({ label, value, sub, tone }: { label: string; value: string; sub: string; tone?: 'gold' | 'red' }) {
+function Metric({ label, value, sub, tone, to, linkLabel }: { label: string; value: string; sub: string; tone?: 'gold' | 'red'; to: string; linkLabel: string }) {
   const bg = tone === 'gold' ? C.tagBg : tone === 'red' ? '#FFF0EB' : C.paper;
   const border = tone === 'gold' ? '#E8D28D' : tone === 'red' ? '#E1B3AA' : C.ruleLight;
   return (
-    <div style={{ background: bg, border: `1px solid ${border}`, borderRadius: 8, padding: 14 }}>
+    <Link to={to} style={{ display: 'block', background: bg, border: `1px solid ${border}`, borderRadius: 8, padding: 14, textDecoration: 'none' }}>
       <div style={{ fontSize: 10, fontWeight: 800, color: C.goldDeep }}>{label}</div>
       <div style={{ fontFamily: F.display, fontSize: 26, fontWeight: 800, color: C.ink, marginTop: 6 }}>{value}</div>
       <div style={{ fontSize: 10, color: C.inkSoft, marginTop: 6 }}>{sub}</div>
+      <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginTop: 9 }}>{linkLabel} →</div>
+    </Link>
+  );
+}
+
+function SectionHeading({ id, title, detail, actions }: { id: string; title: string; detail: string; actions?: React.ReactNode }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, marginBottom: 10 }}>
+      <h2 id={id} style={{ margin: 0, fontFamily: F.display, fontSize: 20, color: C.ink }}>{title}</h2>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ fontSize: 10, fontWeight: 800, color: C.inkSoft }}>{detail}</div>
+        {actions}
+      </div>
+    </div>
+  );
+}
+
+function RangeSelector({ value, onChange }: { value: 7 | 30 | 90; onChange: (value: 7 | 30 | 90) => void }) {
+  return (
+    <div style={{ display: 'flex', gap: 6 }} aria-label="Dashboard period">
+      {([7, 30, 90] as const).map((days) => (
+        <button
+          key={days}
+          type="button"
+          aria-pressed={value === days}
+          onClick={() => onChange(days)}
+          style={{
+            padding: '5px 10px',
+            fontSize: 10,
+            fontWeight: 800,
+            borderRadius: 6,
+            border: `1px solid ${value === days ? C.black : C.rule}`,
+            background: value === days ? C.black : C.paper,
+            color: value === days ? C.onDarkGold : C.inkSoft,
+          }}
+        >
+          {days}d
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function comparisonText(current: number, previous: number, lang: Lang): string {
+  if (previous === 0) return current > 0 ? t('newActivityBadge', lang) : t('noChangeLabel', lang);
+  const change = Math.round(((current - previous) / previous) * 100);
+  return `${change > 0 ? '+' : ''}${change}% ${t('vsPreviousPeriod', lang)}`;
+}
+
+function MarketPerformanceCard({
+  market,
+  title,
+  currency,
+  summary,
+  previous,
+  rangeDays,
+  lang,
+}: {
+  market: 'AO' | 'PT';
+  title: string;
+  currency: 'Kz' | 'EUR';
+  summary: MarketSummary;
+  previous: MarketSummary;
+  rangeDays: number;
+  lang: Lang;
+}) {
+  const end = new Date();
+  const start = new Date();
+  start.setDate(start.getDate() - (rangeDays - 1));
+  const ordersUrl = `/admin/encomendas?from=${localISODate(start)}&to=${localISODate(end)}&market=${market}&context=market`;
+  return (
+    <Link to={ordersUrl} style={{ display: 'block', padding: 16, border: `1px solid ${C.ruleLight}`, borderRadius: 8, background: C.paper, textDecoration: 'none' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center' }}>
+        <div>
+          <div style={{ fontSize: 9, fontWeight: 900, color: C.goldDeep, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{market}</div>
+          <div style={{ marginTop: 3, fontFamily: F.display, fontSize: 20, fontWeight: 800, color: C.ink }}>{title}</div>
+        </div>
+        <div style={{ padding: '5px 8px', borderRadius: 999, background: C.subtleBg, color: C.inkSoft, fontSize: 9, fontWeight: 900 }}>{currency}</div>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10, marginTop: 14 }}>
+        <MiniMetric label={t('recognizedRevenue', lang)} value={currency === 'EUR' ? `€${summary.revenue.toLocaleString('en-US')}` : `${summary.revenue.toLocaleString('en-US')} Kz`} detail={comparisonText(summary.revenue, previous.revenue, lang)} />
+        <MiniMetric label={t('validOrders', lang)} value={String(summary.orders)} detail={comparisonText(summary.orders, previous.orders, lang)} />
+        <MiniMetric label={t('averageOrderValue', lang)} value={currency === 'EUR' ? `€${Math.round(summary.averageOrderValue).toLocaleString('en-US')}` : `${Math.round(summary.averageOrderValue).toLocaleString('en-US')} Kz`} />
+        <MiniMetric label={t('cancelledLabel', lang)} value={String(summary.cancelled)} tone={summary.cancelled ? 'red' : undefined} />
+      </div>
+    </Link>
+  );
+}
+
+type HealthTone = 'red' | 'green' | 'gold' | undefined;
+
+function MiniMetric({ label, value, detail, tone }: { label: string; value: string; detail?: string; tone?: HealthTone }) {
+  const color = tone === 'red' ? '#B95545' : tone === 'green' ? C.successText : tone === 'gold' ? C.goldDeep : C.ink;
+  return (
+    <div style={{ minWidth: 0, padding: 10, borderRadius: 7, background: C.subtleBg }}>
+      <div style={{ fontSize: 8.5, fontWeight: 900, color: C.inkSoft, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
+      <div style={{ marginTop: 4, fontFamily: F.display, fontSize: 18, fontWeight: 800, color }}>{value}</div>
+      {detail && <div style={{ marginTop: 3, fontSize: 8.5, color: C.inkSoft }}>{detail}</div>}
+    </div>
+  );
+}
+
+function HealthPanel({
+  title,
+  detail,
+  stats,
+  to,
+  lang,
+}: {
+  title: string;
+  detail: string;
+  stats: { label: string; value: string; tone?: HealthTone }[];
+  to: string;
+  lang: Lang;
+}) {
+  return (
+    <div style={{ padding: 16, border: `1px solid ${C.ruleLight}`, borderRadius: 8, background: C.paper }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+        <div>
+          <div style={{ fontFamily: F.display, fontSize: 18, fontWeight: 800, color: C.ink }}>{title}</div>
+          <div style={{ marginTop: 3, fontSize: 9.5, lineHeight: 1.45, color: C.inkSoft }}>{detail}</div>
+        </div>
+        <Link to={to} style={{ flexShrink: 0, fontSize: 9, fontWeight: 900, color: C.goldDeep, textDecoration: 'none' }}>{t('viewDetailsAction', lang)} →</Link>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))', gap: 8, marginTop: 14 }}>
+        {stats.map((stat) => <MiniMetric key={stat.label} {...stat} />)}
+      </div>
     </div>
   );
 }

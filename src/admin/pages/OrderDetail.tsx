@@ -4,7 +4,7 @@ import { C, F } from '../../theme';
 import { useApp } from '../../state/AppContext';
 import { adminGetInvoiceForOrder, adminGetOrder, adminInvoicePdfUrl, adminUpdateOrder, adminUpdateOrderStatus, type ApiInvoice, type ApiOrder } from '../../lib/api';
 import { PageHeader } from '../components/PageHeader';
-import { Badge, statusBadgeProps } from '../components/Badge';
+import { Badge, orderStatusBadgeProps, statusBadgeProps } from '../components/Badge';
 import { useDirty } from '../lib/useDirty';
 import { DELIVERY_METHODS, deliveryMethodLabel, paymentMethodLabel } from '../lib/orderLabels';
 import { t, type Lang } from '../i18n';
@@ -224,7 +224,7 @@ export function OrderDetail() {
   }
 
   const activeIdx = STATUSES.indexOf(order.status as (typeof STATUSES)[number]);
-  const b = statusBadgeProps(order.status, lang);
+  const b = orderStatusBadgeProps(order, lang);
 
   return (
     <div style={{ paddingBottom: 32 }}>
