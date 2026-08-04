@@ -142,9 +142,8 @@ export function Settings() {
   useEffect(() => {
     fetchMarketSettings()
       .then((value) => {
-        const loaded = { ...value, angolaPaymentMethods: ['multicaixa_express'] as const };
-        setSettings(loaded);
-        setOriginalSettings(loaded);
+        setSettings(value);
+        setOriginalSettings(value);
       })
       .catch(() => setError(t('couldntLoadSettingsDefaults', lang)))
       .finally(() => setLoading(false));
@@ -155,10 +154,9 @@ export function Settings() {
     setError(null);
     setSaved(false);
     try {
-      const updated = await adminUpdateMarketSettings({ ...settings, angolaPaymentMethods: ['multicaixa_express'] });
-      const savedSettings: MarketSettings = { ...updated, angolaPaymentMethods: ['multicaixa_express'] };
-      setSettings(savedSettings);
-      setOriginalSettings(savedSettings);
+      const updated = await adminUpdateMarketSettings(settings);
+      setSettings(updated);
+      setOriginalSettings(updated);
       setSaved(true);
     } catch {
       setError(t('couldntSaveBackend', lang));
@@ -205,8 +203,8 @@ export function Settings() {
                     {t('appyPayLiveLabel', lang)}
                   </label>
                   <input
-                    value="multicaixa_express"
-                    readOnly
+                    value={settings.angolaPaymentMethods.join(', ')}
+                    onChange={(e) => setSettings((s) => ({ ...s, angolaPaymentMethods: e.target.value.split(',').map((v) => v.trim()).filter(Boolean) }))}
                     style={{ width: '100%', padding: 8, fontSize: 11, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, marginBottom: 8 }}
                   />
                   <textarea
