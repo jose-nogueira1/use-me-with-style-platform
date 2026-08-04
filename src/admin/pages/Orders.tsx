@@ -7,6 +7,7 @@ import { PageHeader } from '../components/PageHeader';
 import { Badge, orderStatusBadgeProps, statusBadgeProps } from '../components/Badge';
 import { deliveryMethodLabel, paymentMethodLabel } from '../lib/orderLabels';
 import { downloadOrdersCsv } from '../lib/ordersCsv';
+import { dateTimeInputValue, filterOrdersByDateTime, formatOrderDateTime, orderDateRange } from '../lib/orderDateRange';
 import { t } from '../i18n';
 
 const STATUSES = ['new', 'payment_review', 'processing', 'shipped', 'delivered', 'cancelled'] as const;
@@ -15,21 +16,29 @@ export function Orders() {
   const { lang } = useApp();
   const [allOrders, setAllOrders] = useState<ApiOrder[] | null>(null);
   const [totalOrders, setTotalOrders] = useState<number | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string>('');
   const [selected, setSelected] = useState<ApiOrder | null>(null);
   const [error, setError] = useState(false);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Date-range/market drill-down from the Dashboard chart (2026-07-27) --
-  // previously this page only supported a status filter. `from`/`to` are
-  // inclusive calendar-day ISO dates (YYYY-MM-DD); filtering is done
-  // client-side against the already-fetched list, same pattern as the
-  // Dashboard's own today/trend calculations, since adminListOrders has no
-  // date-range param.
+  // Dashboard drill-downs use inclusive YYYY-MM-DD values. The controls on
+  // this page use datetime-local values so an admin can narrow to an exact
+  // operational window; the shared parser supports both forms.
   const fromDate = searchParams.get('from');
   const toDate = searchParams.get('to');
   const marketFilter = searchParams.get('market');
+  const statusFilter = searchParams.get('status') ?? '';
+  const paymentFilter = searchParams.get('payment');
+  const attentionFilter = searchParams.get('attention');
+  const excludeCancelled = searchParams.get('excludeCancelled') === '1';
+  const dashboardContext = searchParams.get('context');
+  const setStatusFilter = (status: string) => {
+    const next = new URLSearchParams(searchParams);
+    if (status) next.set('status', status);
+    else next.delete('status');
+    next.delete('attention');
+    setSearchParams(next);
+  };
   // Free-text search (2026-08-01 request: "no way to jump straight to the
   // order Maria just messaged about") -- order number, customer name,
   // phone, or email. Stored in the URL like the other filters, so a search
@@ -70,13 +79,7 @@ export function Orders() {
   // rather than re-implementing the same date-range check three times.
   const dateFiltered = useMemo(() => {
     if (!allOrders) return allOrders;
-    if (!fromDate || !toDate) return allOrders;
-    const start = new Date(`${fromDate}T00:00:00`);
-    const end = new Date(`${toDate}T23:59:59.999`);
-    return allOrders.filter((o) => {
-      const created = new Date(o.createdAt);
-      return created >= start && created <= end;
-    });
+    return filterOrdersByDateTime(allOrders, fromDate, toDate);
   }, [allOrders, fromDate, toDate]);
 
   // Search, applied right after the date filter and before market/status --
@@ -96,24 +99,35 @@ export function Orders() {
     );
   }, [dateFiltered, searchQuery]);
 
+  const operationalFiltered = useMemo(() => {
+    if (!dateSearchFiltered) return dateSearchFiltered;
+    return dateSearchFiltered.filter((order) => {
+      if (excludeCancelled && order.status === 'cancelled') return false;
+      if (paymentFilter && order.paymentStatus !== paymentFilter) return false;
+      if (attentionFilter === 'confirmation' && !['new', 'payment_review'].includes(order.status)) return false;
+      if (attentionFilter === 'refund' && !(order.status === 'cancelled' && order.paymentStatus === 'paid')) return false;
+      return true;
+    });
+  }, [attentionFilter, dateSearchFiltered, excludeCancelled, paymentFilter]);
+
   // Date + search + market -- this is the base the STATUS pill counts are
   // computed from (countFor below), so a date/search/market filter still
   // scopes what those counts mean, but clicking a status pill doesn't also
   // collapse every other status pill's number to whatever's left in that
   // one status.
   const dateMarketFiltered = useMemo(() => {
-    if (!dateSearchFiltered) return dateSearchFiltered;
-    return marketFilter ? dateSearchFiltered.filter((o) => o.market === marketFilter) : dateSearchFiltered;
-  }, [dateSearchFiltered, marketFilter]);
+    if (!operationalFiltered) return operationalFiltered;
+    return marketFilter ? operationalFiltered.filter((o) => o.market === marketFilter) : operationalFiltered;
+  }, [marketFilter, operationalFiltered]);
 
   // Date + search + status -- the same idea, mirrored for the MARKET pills'
   // own counts (added 2026-08-01): a market pill's count must never be
   // derived from a list already filtered by market itself, same lesson as
   // the status-pill count bugs above.
   const dateStatusFiltered = useMemo(() => {
-    if (!dateSearchFiltered) return dateSearchFiltered;
-    return statusFilter ? dateSearchFiltered.filter((o) => o.status === statusFilter) : dateSearchFiltered;
-  }, [dateSearchFiltered, statusFilter]);
+    if (!operationalFiltered) return operationalFiltered;
+    return statusFilter ? operationalFiltered.filter((o) => o.status === statusFilter) : operationalFiltered;
+  }, [operationalFiltered, statusFilter]);
 
   // Table rows: date + market + status. Previously the status half of this
   // was implicit (the server had already applied it before this ever ran)
@@ -141,20 +155,44 @@ export function Orders() {
   // date range, which has no other UI control on this page. Otherwise
   // clicking "Clear" after deliberately picking a market pill would also
   // silently reset that pill.
-  const hasDateFilter = Boolean(fromDate && toDate);
+  const hasDateFilter = Boolean(fromDate || toDate);
+  const dateRangeValid = orderDateRange(fromDate, toDate).valid;
+  const setDateBoundary = (key: 'from' | 'to', value: string) => {
+    const next = new URLSearchParams(searchParams);
+    if (value) next.set(key, value);
+    else next.delete(key);
+    setSearchParams(next, { replace: true });
+  };
   const clearDateFilter = () => {
     const next = new URLSearchParams(searchParams);
     next.delete('from');
     next.delete('to');
     setSearchParams(next);
   };
+  const hasOperationalFilter = Boolean(paymentFilter || attentionFilter || excludeCancelled || dashboardContext);
+  const clearOperationalFilters = () => {
+    const next = new URLSearchParams(searchParams);
+    next.delete('payment');
+    next.delete('attention');
+    next.delete('excludeCancelled');
+    next.delete('context');
+    setSearchParams(next);
+  };
+  const dashboardContextMessage = dashboardContext === 'revenue'
+    ? t('dashboardRevenueContext', lang)
+    : dashboardContext === 'confirmation'
+      ? t('dashboardConfirmationContext', lang)
+      : dashboardContext === 'market'
+        ? t('dashboardMarketContext', lang)
+        : t('dashboardOrdersContext', lang);
   const dateRangeLabel = useMemo(() => {
-    if (!fromDate || !toDate) return null;
-    const start = new Date(`${fromDate}T00:00:00`);
-    const end = new Date(`${toDate}T00:00:00`);
-    const fmt = (d: Date) => `${d.getDate()}/${d.getMonth() + 1}`;
-    return fromDate === toDate ? fmt(start) : `${fmt(start)}–${fmt(end)}`;
-  }, [fromDate, toDate]);
+    const range = orderDateRange(fromDate, toDate);
+    const fmt = (d: Date) => formatOrderDateTime(d, lang);
+    if (range.start && range.end) return `${fmt(range.start)} – ${fmt(range.end)}`;
+    if (range.start) return t('fromDateTimeLabel', lang, { value: fmt(range.start) });
+    if (range.end) return t('toDateTimeLabel', lang, { value: fmt(range.end) });
+    return null;
+  }, [fromDate, lang, toDate]);
 
   // Computed from dateMarketFiltered (NOT `orders`, which already has the
   // status pill applied) -- otherwise every pill's count reflects only
@@ -209,14 +247,55 @@ export function Orders() {
         </div>
       )}
 
-      {hasDateFilter && (
-        <div style={{ margin: '12px 28px 0', display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', background: C.tagBg, border: '1px solid #E8D28D', borderRadius: 8, width: 'fit-content' }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: C.goldDeep }}>
-            {dateRangeLabel && t('filteredToRangeLabel', lang, { range: dateRangeLabel })}
-          </div>
-          <button onClick={clearDateFilter} style={{ fontSize: 11, fontWeight: 800, color: C.goldDeep, textDecoration: 'underline' }}>
+      <div style={{ margin: '16px 28px 0', padding: 14, background: C.paper, border: `1px solid ${dateRangeValid ? C.ruleLight : '#E1B3AA'}`, borderRadius: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
+          <label style={{ display: 'grid', gap: 5, minWidth: 220, flex: '1 1 220px', color: C.inkSoft, fontSize: 10, fontWeight: 800 }}>
+            {t('dateTimeFrom', lang)}
+            <input
+              type="datetime-local"
+              value={dateTimeInputValue(fromDate, 'start')}
+              max={dateTimeInputValue(toDate, 'end') || undefined}
+              onChange={(event) => setDateBoundary('from', event.target.value)}
+              style={{ padding: '9px 10px', border: `1px solid ${C.rule}`, borderRadius: 6, background: C.paper, color: C.ink, font: 'inherit' }}
+            />
+          </label>
+          <label style={{ display: 'grid', gap: 5, minWidth: 220, flex: '1 1 220px', color: C.inkSoft, fontSize: 10, fontWeight: 800 }}>
+            {t('dateTimeTo', lang)}
+            <input
+              type="datetime-local"
+              value={dateTimeInputValue(toDate, 'end')}
+              min={dateTimeInputValue(fromDate, 'start') || undefined}
+              onChange={(event) => setDateBoundary('to', event.target.value)}
+              style={{ padding: '9px 10px', border: `1px solid ${C.rule}`, borderRadius: 6, background: C.paper, color: C.ink, font: 'inherit' }}
+            />
+          </label>
+          <button
+            type="button"
+            onClick={clearDateFilter}
+            disabled={!hasDateFilter}
+            style={{ padding: '9px 14px', border: `1px solid ${C.rule}`, borderRadius: 6, background: C.paper, color: hasDateFilter ? C.ink : C.disabledFg, fontSize: 11, fontWeight: 800 }}
+          >
             {t('clearDateFilter', lang)}
           </button>
+        </div>
+        {dateRangeLabel && dateRangeValid && (
+          <div style={{ marginTop: 9, fontSize: 10.5, fontWeight: 700, color: C.goldDeep }}>
+            {t('filteredToRangeLabel', lang, { range: dateRangeLabel })}
+          </div>
+        )}
+        {!dateRangeValid && (
+          <div role="alert" style={{ marginTop: 9, fontSize: 10.5, fontWeight: 700, color: '#B95545' }}>
+            {t('invalidDateTimeRange', lang)}
+          </div>
+        )}
+      </div>
+
+      {hasOperationalFilter && (
+        <div style={{ margin: '10px 28px 0', display: 'flex', alignItems: 'center', gap: 10, width: 'fit-content', padding: '8px 12px', borderRadius: 8, background: C.tagBg, border: '1px solid #E8D28D' }}>
+          <div style={{ fontSize: 10.5, fontWeight: 800, color: C.goldDeep }}>
+            {dashboardContext ? dashboardContextMessage : t('dashboardFilterActive', lang)}
+          </div>
+          <button type="button" onClick={clearOperationalFilters} style={{ fontSize: 10.5, fontWeight: 900, color: C.goldDeep, textDecoration: 'underline' }}>{t('clearDateFilter', lang)}</button>
         </div>
       )}
 
@@ -289,6 +368,7 @@ export function Orders() {
                 header
                 cells={[
                   t('tableHeaderOrder', lang),
+                  t('tableHeaderOrderedAt', lang),
                   t('tableHeaderCustomer', lang),
                   t('tableHeaderMarket', lang),
                   t('tableHeaderPayment', lang),
@@ -323,6 +403,7 @@ export function Orders() {
                   <TableRow
                     cells={[
                       `#${o.orderNumber}`,
+                      formatOrderDateTime(o.createdAt, lang),
                       o.customerName,
                       o.market,
                       paymentMethodLabel(o.paymentMethod, lang),
@@ -365,7 +446,7 @@ function TableRow({ cells, header }: { cells: (string | React.ReactNode)[]; head
     <div
       style={{
         display: 'grid',
-        gridTemplateColumns: '0.8fr 1.3fr 0.6fr 0.9fr 0.8fr 1fr 0.9fr',
+        gridTemplateColumns: '0.75fr 1fr 1.2fr 0.55fr 0.9fr 0.8fr 1fr 0.85fr',
         gap: 8,
         alignItems: 'center',
         padding: '11px 16px',

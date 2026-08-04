@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { C, F } from '../../theme';
 import { useApp } from '../../state/AppContext';
 import { adminListProducts, productIsLowStock, resolveProductImage, type ApiProduct } from '../../lib/api';
@@ -9,9 +9,19 @@ import { t } from '../i18n';
 export function Products() {
   const { lang } = useApp();
   const [products, setProducts] = useState<ApiProduct[] | null>(null);
-  const [filter, setFilter] = useState<'all' | 'active' | 'draft' | 'low' | 'photo'>('all');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedFilter = searchParams.get('filter');
+  const filter = (['active', 'draft', 'low', 'photo'].includes(requestedFilter ?? '')
+    ? requestedFilter
+    : 'all') as 'all' | 'active' | 'draft' | 'low' | 'photo';
   const [error, setError] = useState(false);
   const navigate = useNavigate();
+  const setFilter = (value: 'all' | 'active' | 'draft' | 'low' | 'photo') => {
+    const next = new URLSearchParams(searchParams);
+    if (value === 'all') next.delete('filter');
+    else next.set('filter', value);
+    setSearchParams(next);
+  };
 
   useEffect(() => {
     adminListProducts()
