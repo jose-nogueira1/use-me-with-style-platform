@@ -344,7 +344,9 @@ export function Settings() {
           </Card>
 
           <Card title={t('messagingCardTitle', lang)} badge={t('phase1Badge', lang)} tone="blue">
-            <ConfigRow label={t('whatsappLabel', lang)} value={t('messagingAutomationDetail', lang)} />
+            {/* WhatsApp is dormant for now. Restore this row when the channel
+                is reactivated in the CMS webhook and storefront admin inbox. */}
+            {/* <ConfigRow label={t('whatsappLabel', lang)} value={t('messagingAutomationDetail', lang)} /> */}
             <ConfigRow label={t('instagramLabel', lang)} value={t('instagramNote', lang)} />
             <ConfigRow label={t('deferredLabel', lang)} value={t('deferredMessagingNote', lang)} />
             <ConfigRow label={t('storefrontLanguageLabel', lang)} value={t('storefrontLanguageNote', lang)} last />

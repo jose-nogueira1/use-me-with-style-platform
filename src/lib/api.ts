@@ -598,7 +598,9 @@ export type ApiMedia = {
   };
 };
 
-export type MessageChannel = 'whatsapp' | 'instagram';
+export type MessageChannel = 'instagram';
+// Dormant channel for future reactivation:
+// export type MessageChannel = 'instagram' | 'whatsapp';
 export type MessageStatus = 'open' | 'auto_handled' | 'escalated' | 'resolved';
 
 export type ApiMessage = {
@@ -895,9 +897,14 @@ export async function adminGetCustomer(id: string): Promise<ApiCustomer> {
   return request<ApiCustomer>(`/customers/${id}`, {}, { auth: true });
 }
 
-/** JOS-58 Phase 1 messaging foundation: conversation log (WhatsApp + Instagram). */
+/** Instagram-only admin inbox. Historical WhatsApp rows remain stored in the
+ * CMS, but are intentionally excluded from this active storefront-admin UI. */
 export async function adminListMessages(): Promise<ApiMessage[]> {
-  const data = await request<{ docs: ApiMessage[] }>('/messages?limit=300&sort=-createdAt&depth=0', {}, { auth: true });
+  const data = await request<{ docs: ApiMessage[] }>(
+    '/messages?where[channel][equals]=instagram&limit=300&sort=-createdAt&depth=0',
+    {},
+    { auth: true },
+  );
   return data.docs;
 }
 
@@ -910,10 +917,9 @@ export async function adminUpdateMessageStatus(id: string, status: MessageStatus
   return data.doc;
 }
 
-/** Admin-composed reply. `sentByAutomation` is left false so the backend's
- * `sendOutboundMessage` hook actually delivers it via WhatsApp/Instagram. */
+/** Admin-composed Instagram reply. `sentByAutomation` is left false so the
+ * backend's `sendOutboundMessage` hook delivers it through Instagram. */
 export async function adminSendMessage(input: {
-  channel: MessageChannel;
   contactHandle: string;
   customerName?: string;
   body: string;
@@ -923,7 +929,7 @@ export async function adminSendMessage(input: {
     '/messages',
     {
       method: 'POST',
-      body: JSON.stringify({ ...input, direction: 'outbound', status: 'resolved', sentByAutomation: false }),
+      body: JSON.stringify({ ...input, channel: 'instagram', direction: 'outbound', status: 'resolved', sentByAutomation: false }),
     },
     { auth: true },
   );

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { RefreshCw, Search } from 'lucide-react';
 import { C, F } from '../../theme';
 import { useApp } from '../../state/AppContext';
 import { adminListMessages, adminSendMessage, adminUpdateMessageStatus, type ApiMessage, type MessageStatus } from '../../lib/api';
@@ -33,6 +34,7 @@ type Conversation = {
 function groupIntoConversations(messages: ApiMessage[]): Conversation[] {
   const byKey = new Map<string, ApiMessage[]>();
   for (const m of messages) {
+    if (m.channel !== 'instagram') continue;
     const key = `${m.channel}:${m.contactHandle}`;
     if (!byKey.has(key)) byKey.set(key, []);
     byKey.get(key)!.push(m);
@@ -54,37 +56,67 @@ function groupIntoConversations(messages: ApiMessage[]): Conversation[] {
   return conversations.sort((a, b) => new Date(b.lastAt).getTime() - new Date(a.lastAt).getTime());
 }
 
-// JOS-58 Phase 1 messaging foundation: WhatsApp + Instagram conversation log
-// with simple keyword-based automation (see use-me-with-style-cms README /
-// src/lib/messaging.ts). Restyled to match the Figma "AI-assisted Messaging"
-// visual language (approval-queue framing, Phase 1 badges) while keeping the
-// actual conversation-thread UI, since that's the functional core of JOS-58.
+// Instagram-only Phase 1 inbox. WhatsApp remains dormant in the backend so it
+// can be restored later, but it is deliberately absent from this interface.
+// AI-assisted sales replies are a future feature and are not implied here.
 export function Mensagens() {
   const { lang } = useApp();
   const [messages, setMessages] = useState<ApiMessage[] | null>(null);
   const [error, setError] = useState(false);
   const [statusFilter, setStatusFilter] = useState<MessageStatus | ''>('');
+  const [query, setQuery] = useState('');
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [reply, setReply] = useState('');
   const [sending, setSending] = useState(false);
 
+  const [refreshing, setRefreshing] = useState(true);
+
   const load = () => {
+    setRefreshing(true);
     adminListMessages()
-      .then(setMessages)
-      .catch(() => setError(true));
+      .then((rows) => {
+        setMessages(rows);
+        setError(false);
+      })
+      .catch(() => setError(true))
+      .finally(() => setRefreshing(false));
   };
 
-  useEffect(load, []);
+  useEffect(() => {
+    let active = true;
+    adminListMessages()
+      .then((rows) => {
+        if (!active) return;
+        setMessages(rows);
+        setError(false);
+      })
+      .catch(() => {
+        if (active) setError(true);
+      })
+      .finally(() => {
+        if (active) setRefreshing(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const conversations = useMemo(() => (messages ? groupIntoConversations(messages) : []), [messages]);
-  const filtered = statusFilter ? conversations.filter((c) => c.status === statusFilter) : conversations;
+  const filtered = conversations.filter((c) => {
+    if (statusFilter && c.status !== statusFilter) return false;
+    const needle = query.trim().toLocaleLowerCase();
+    if (!needle) return true;
+    return [c.customerName, c.contactHandle, ...c.messages.map((m) => m.body)]
+      .filter(Boolean)
+      .some((value) => String(value).toLocaleLowerCase().includes(needle));
+  });
   const selected = conversations.find((c) => c.key === selectedKey) ?? filtered[0] ?? null;
 
   const handleReply = async () => {
     if (!selected || !reply.trim()) return;
     setSending(true);
     try {
-      await adminSendMessage({ channel: selected.channel, contactHandle: selected.contactHandle, customerName: selected.customerName, body: reply.trim() });
+      await adminSendMessage({ contactHandle: selected.contactHandle, customerName: selected.customerName, body: reply.trim() });
       setReply('');
       load();
     } catch {
@@ -107,15 +139,37 @@ export function Mensagens() {
 
   return (
     <div style={{ paddingBottom: 0, height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <PageHeader eyebrow={t('settingsMessaging', lang)} title={t('aiAssistedMessaging', lang)} subtitle={t('aiAssistedMessagingSubtitle', lang)} />
+      <PageHeader eyebrow={t('settingsMessaging', lang)} title={t('instagramInbox', lang)} subtitle={t('instagramInboxSubtitle', lang)} />
 
       {error && <div style={{ margin: '12px 28px 0', fontSize: 12, color: '#B95545' }}>{t('couldntConnectBackend', lang)}</div>}
 
       <div className="ump-mensagens-shell" style={{ margin: '18px 28px 28px', border: `1px solid ${C.ruleLight}`, borderRadius: 8, overflow: 'hidden', background: C.paper }}>
         <div className="ump-mensagens-list" style={{ borderRight: `1px solid ${C.ruleLight}`, display: 'flex', flexDirection: 'column' }}>
           <div style={{ padding: '16px 16px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontFamily: F.display, fontSize: 16, fontWeight: 800, color: C.ink }}>{t('approvalQueue', lang)}</div>
-            <Badge label={t('requiredBadge', lang)} tone="gold" />
+            <div style={{ fontFamily: F.display, fontSize: 16, fontWeight: 800, color: C.ink }}>{t('conversationInbox', lang)}</div>
+            <Badge label="Instagram" tone="blue" />
+          </div>
+
+          <div style={{ display: 'flex', gap: 7, padding: '0 16px 10px' }}>
+            <label style={{ flex: 1, position: 'relative' }}>
+              <Search size={13} aria-hidden style={{ position: 'absolute', left: 9, top: 9, color: C.inkSoft }} />
+              <input
+                aria-label={t('searchMessages', lang)}
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder={t('searchMessages', lang)}
+                style={{ width: '100%', padding: '7px 9px 7px 29px', fontSize: 11, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.paper }}
+              />
+            </label>
+            <button
+              aria-label={t('refreshMessages', lang)}
+              title={t('refreshMessages', lang)}
+              onClick={load}
+              disabled={refreshing}
+              style={{ width: 32, border: `1px solid ${C.rule}`, borderRadius: 6, color: C.inkSoft, display: 'grid', placeItems: 'center' }}
+            >
+              <RefreshCw size={13} style={{ opacity: refreshing ? 0.45 : 1 }} />
+            </button>
           </div>
 
           <div style={{ display: 'flex', gap: 5, padding: '0 16px 12px', flexWrap: 'wrap' }}>
@@ -141,7 +195,9 @@ export function Mensagens() {
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                   <span style={{ fontSize: 12, fontWeight: 800, color: C.ink }}>{c.customerName || c.contactHandle}</span>
-                  <span style={{ fontSize: 9, fontWeight: 800, color: C.inkSoft, textTransform: 'uppercase' }}>{c.channel}</span>
+                  <time dateTime={c.lastAt} style={{ fontSize: 9, fontWeight: 700, color: C.inkSoft }}>
+                    {new Intl.DateTimeFormat(lang === 'pt' ? 'pt-PT' : 'en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(c.lastAt))}
+                  </time>
                 </div>
                 <div style={{ fontSize: 11, color: C.inkSoft, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 6 }}>
                   {c.messages[c.messages.length - 1].body}
@@ -162,10 +218,13 @@ export function Mensagens() {
                 <div>
                   <div style={{ fontFamily: F.display, fontSize: 16, fontWeight: 800, color: C.ink }}>{selected.customerName || selected.contactHandle}</div>
                   <div style={{ fontSize: 11, color: C.inkSoft }}>
-                    {selected.channel} · {selected.contactHandle}
+                    Instagram · {selected.contactHandle}
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={() => handleStatus('open')} style={{ padding: '7px 14px', fontSize: 11, fontWeight: 800, borderRadius: 6, border: `1px solid ${C.rule}`, color: C.inkSoft }}>
+                    {t('markNeedsReview', lang)}
+                  </button>
                   <button onClick={() => handleStatus('escalated')} style={{ padding: '7px 14px', fontSize: 11, fontWeight: 800, borderRadius: 6, border: '1px solid #E1B3AA', color: '#B95545' }}>
                     {t('escalateAction', lang)}
                   </button>
@@ -193,18 +252,28 @@ export function Mensagens() {
                       {m.automationNote && (
                         <div style={{ fontSize: 10, color: m.direction === 'outbound' ? C.onDarkGold : C.inkSoft, marginTop: 4 }}>{m.automationNote}</div>
                       )}
+                      <time dateTime={m.createdAt} style={{ display: 'block', fontSize: 9, opacity: 0.72, marginTop: 5 }}>
+                        {new Intl.DateTimeFormat(lang === 'pt' ? 'pt-PT' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(m.createdAt))}
+                      </time>
                     </div>
                   </div>
                 ))}
               </div>
 
-              <div style={{ padding: 16, borderTop: `1px solid ${C.ruleLight}`, display: 'flex', gap: 8 }}>
-                <input
+              <div style={{ padding: 16, borderTop: `1px solid ${C.ruleLight}`, display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+                <textarea
                   value={reply}
                   onChange={(e) => setReply(e.target.value)}
                   placeholder={t('writeAReply', lang)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleReply()}
-                  style={{ flex: 1, padding: '10px 12px', fontSize: 13, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.paper }}
+                  rows={2}
+                  maxLength={1000}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleReply();
+                    }
+                  }}
+                  style={{ flex: 1, resize: 'vertical', minHeight: 42, padding: '10px 12px', fontSize: 13, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.paper }}
                 />
                 <button
                   onClick={handleReply}
