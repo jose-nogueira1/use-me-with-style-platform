@@ -1257,6 +1257,23 @@ export async function adminRestoreHomeCollectionsVersion(id: string | number): P
   return data.doc;
 }
 
+/* Admin request (2026-08-04, same follow-up as the collapsible version
+ * panels): "Admin should have a way to delete old hero section, old
+ * categories and old homepage collections [version history entries]."
+ * Payload has no built-in delete for a single global version, so the CMS
+ * exposes a custom DELETE /globals/<slug>/versions/:id endpoint (see
+ * use-me-with-style-cms/src/endpoints/globalVersions.ts) -- these three
+ * just call it. */
+export async function adminDeleteHomeHeroVersion(id: string | number): Promise<void> {
+  await request<void>(`/globals/home-hero/versions/${id}`, { method: 'DELETE' }, { auth: true });
+}
+export async function adminDeleteHomeCategoriesVersion(id: string | number): Promise<void> {
+  await request<void>(`/globals/home-categories/versions/${id}`, { method: 'DELETE' }, { auth: true });
+}
+export async function adminDeleteHomeCollectionsVersion(id: string | number): Promise<void> {
+  await request<void>(`/globals/home-collections/versions/${id}`, { method: 'DELETE' }, { auth: true });
+}
+
 export async function adminListInvoices(): Promise<ApiInvoice[]> {
   const data = await request<{ docs: ApiInvoice[] }>('/invoices?limit=200&sort=-issuedAt&depth=0', {}, { auth: true });
   return data.docs;

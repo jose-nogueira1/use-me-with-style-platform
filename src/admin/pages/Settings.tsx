@@ -13,6 +13,9 @@ import {
   adminRestoreHomeHeroVersion,
   adminRestoreHomeCategoriesVersion,
   adminRestoreHomeCollectionsVersion,
+  adminDeleteHomeHeroVersion,
+  adminDeleteHomeCategoriesVersion,
+  adminDeleteHomeCollectionsVersion,
   adminUpdateHomeHero,
   adminUpdateHomeCategories,
   adminUpdateHomeCollections,
@@ -890,6 +893,8 @@ function VersionHistoryPanel<T>({
   versionsError,
   restoringId,
   onRestore,
+  deletingId,
+  onDelete,
   summarize,
   renderDetail,
 }: {
@@ -898,6 +903,12 @@ function VersionHistoryPanel<T>({
   versionsError: string | null;
   restoringId: string | null;
   onRestore: (version: HomeGlobalVersion<T>) => void;
+  // 2026-08-04 follow-up ("Admin should have a way to delete old hero
+  // section, old categories and old homepage collections"): per-row delete,
+  // gated behind a confirm() same as every other destructive action in this
+  // admin -- see the callers' handleDelete for the actual confirm+call.
+  deletingId: string | null;
+  onDelete: (version: HomeGlobalVersion<T>) => void;
   summarize: (version: T) => string;
   renderDetail: (version: T) => React.ReactNode;
 }) {
@@ -915,6 +926,7 @@ function VersionHistoryPanel<T>({
             const idStr = String(v.id);
             const isExpanded = expandedId === idStr;
             const isRestoring = restoringId === idStr;
+            const isDeleting = deletingId === idStr;
             return (
               <div key={v.id} style={{ borderRadius: 6, background: C.subtleBg, border: `1px solid ${C.ruleLight}`, overflow: 'hidden' }}>
                 <div
@@ -930,11 +942,18 @@ function VersionHistoryPanel<T>({
                     </div>
                     <div style={{ fontSize: 9, color: C.inkSoft }}>{new Date(v.createdAt).toLocaleString()}</div>
                   </div>
-                  <div onClick={(e) => e.stopPropagation()}>
+                  <div onClick={(e) => e.stopPropagation()} style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                     <SmallActionButton
                       label={isRestoring ? '…' : t('restoreAction', lang)}
-                      disabled={isRestoring}
+                      disabled={isRestoring || isDeleting}
                       onClick={() => onRestore(v)}
+                    />
+                    <SmallActionButton
+                      label={isDeleting ? '…' : t('deleteVersionAction', lang)}
+                      disabled={isRestoring || isDeleting}
+                      onClick={() => {
+                        if (window.confirm(t('deleteVersionConfirm', lang))) onDelete(v);
+                      }}
                     />
                   </div>
                 </div>
@@ -1012,6 +1031,7 @@ function HomeHeroSection() {
   const [versions, setVersions] = useState<HomeHeroVersion[]>([]);
   const [versionsError, setVersionsError] = useState<string | null>(null);
   const [restoringId, setRestoringId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // 2026-07-31 fix (hero pointed at "SS26" but sent shoppers to the full
   // catalogue): the button link is now a picker sourced from the real
@@ -1075,12 +1095,45 @@ function HomeHeroSection() {
     }
   };
 
+  // 2026-08-04 follow-up ("Admin should have a way to delete old hero
+  // section... [versions]"): removes just one snapshot, confirm() already
+  // shown by VersionHistoryPanel before this is called.
+  const handleDelete = async (version: HomeHeroVersion) => {
+    setDeletingId(String(version.id));
+    setVersionsError(null);
+    try {
+      await adminDeleteHomeHeroVersion(version.id);
+      setVersions((prev) => prev.filter((v) => v.id !== version.id));
+    } catch {
+      setVersionsError(t('couldntDeleteVersion', lang));
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  // 2026-08-04 follow-up ("I still don't see a preview of the hero
+  // image"): this used to only stage the upload in local `content` state,
+  // requiring a separate click on "Save hero" before it actually persisted
+  // -- easy to miss, and if that second step never happened the image
+  // never made it past this component's own state, so nothing was ever
+  // actually saved (confirmed against real data: heroImage had never once
+  // been set). Now the upload immediately persists, same pattern as the
+  // category tile image upload in ProductSettings.tsx. Saved against
+  // `originalContent` (the last-known-saved doc), not the live `content`
+  // draft, so an in-progress unsaved text edit elsewhere in the form isn't
+  // silently swept into this save -- it stays pending for the normal Save
+  // button. The server response is depth=1 populated, so the preview below
+  // is guaranteed to have a real, resolved image the moment this resolves.
   const handleImageUpload = async (file: File) => {
     setUploading(true);
     setError(null);
     try {
       const media = await adminUploadMedia(file, 'Home hero image');
-      setContent((c) => ({ ...c, heroImage: media }));
+      const base = originalContent ?? content;
+      const updated = await adminUpdateHomeHero({ ...base, heroImage: media.id });
+      setContent((c) => ({ ...c, heroImage: updated.heroImage }));
+      setOriginalContent((o) => ({ ...(o ?? updated), heroImage: updated.heroImage }));
+      loadVersions();
     } catch {
       setError(t('couldntUploadImage', lang));
     } finally {
@@ -1212,6 +1265,8 @@ function HomeHeroSection() {
             versionsError={versionsError}
             restoringId={restoringId}
             onRestore={(v) => void handleRestore(v)}
+            deletingId={deletingId}
+            onDelete={(v) => void handleDelete(v)}
             summarize={(v) => v.heroHeadlinePT?.trim() || v.heroHeadlineEN?.trim() || t('noHeadlinePlaceholder', lang)}
             renderDetail={(v) => <HeroVersionDetail lang={lang} version={v} />}
           />
@@ -1240,6 +1295,7 @@ function HomeCategoriesSection() {
   const [versions, setVersions] = useState<HomeCategoriesVersion[]>([]);
   const [versionsError, setVersionsError] = useState<string | null>(null);
   const [restoringId, setRestoringId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const [categories, setCategories] = useState<ApiCategory[]>([]);
   const categoryLabel = (slug: string) => categories.find((c) => c.slug === slug)?.namePT || slug;
@@ -1293,6 +1349,19 @@ function HomeCategoriesSection() {
       setVersionsError(t('couldntRestoreVersion', lang));
     } finally {
       setRestoringId(null);
+    }
+  };
+
+  const handleDelete = async (version: HomeCategoriesVersion) => {
+    setDeletingId(String(version.id));
+    setVersionsError(null);
+    try {
+      await adminDeleteHomeCategoriesVersion(version.id);
+      setVersions((prev) => prev.filter((v) => v.id !== version.id));
+    } catch {
+      setVersionsError(t('couldntDeleteVersion', lang));
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -1381,6 +1450,8 @@ function HomeCategoriesSection() {
             versionsError={versionsError}
             restoringId={restoringId}
             onRestore={(v) => void handleRestore(v)}
+            deletingId={deletingId}
+            onDelete={(v) => void handleDelete(v)}
             summarize={(v) => {
               const slugs = v.homepageCategorySlugs ?? [];
               return slugs.length ? slugs.map((entry) => categoryLabel(entry.slug)).join(', ') : t('versionEmptyCategories', lang);
@@ -1427,6 +1498,7 @@ function HomeCollectionsSection() {
   const [versions, setVersions] = useState<HomeCollectionsVersion[]>([]);
   const [versionsError, setVersionsError] = useState<string | null>(null);
   const [restoringId, setRestoringId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const [tags, setTags] = useState<ApiMerchTag[]>([]);
 
@@ -1479,6 +1551,19 @@ function HomeCollectionsSection() {
       setVersionsError(t('couldntRestoreVersion', lang));
     } finally {
       setRestoringId(null);
+    }
+  };
+
+  const handleDelete = async (version: HomeCollectionsVersion) => {
+    setDeletingId(String(version.id));
+    setVersionsError(null);
+    try {
+      await adminDeleteHomeCollectionsVersion(version.id);
+      setVersions((prev) => prev.filter((v) => v.id !== version.id));
+    } catch {
+      setVersionsError(t('couldntDeleteVersion', lang));
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -1568,6 +1653,8 @@ function HomeCollectionsSection() {
             versionsError={versionsError}
             restoringId={restoringId}
             onRestore={(v) => void handleRestore(v)}
+            deletingId={deletingId}
+            onDelete={(v) => void handleDelete(v)}
             summarize={(v) => {
               const cols = v.collections ?? [];
               return cols.length ? cols.map((c) => c.titlePT || c.titleEN || c.tagSlug).join(', ') : t('versionEmptyCollections', lang);

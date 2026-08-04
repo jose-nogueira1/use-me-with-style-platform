@@ -720,6 +720,13 @@ export const T: Record<string, Record<Lang, string>> = {
   versionNoImageLabel: { en: 'No image', pt: 'Sem imagem' },
   couldntLoadHomeCategories: { en: "Couldn't load the homepage categories.", pt: 'Não foi possível carregar as categorias da página inicial.' },
   couldntLoadHomeCollections: { en: "Couldn't load the homepage collections.", pt: 'Não foi possível carregar as coleções da página inicial.' },
+  // 2026-08-04 follow-up: "Admin should have a way to delete old hero
+  // section, old categories and old homepage collections [version history
+  // entries]." Per-row delete on VersionHistoryPanel, gated behind a
+  // native confirm() same as every other delete action in this admin.
+  deleteVersionAction: { en: 'Delete', pt: 'Eliminar' },
+  deleteVersionConfirm: { en: 'Delete this saved version? This can\'t be undone.', pt: 'Eliminar esta versão guardada? Esta ação não pode ser revertida.' },
+  couldntDeleteVersion: { en: "Couldn't delete this version.", pt: 'Não foi possível eliminar esta versão.' },
 
   // ---- Invoices page ----
   settingsInvoices: { en: 'Settings / Invoices', pt: 'Definições / Faturas' },
