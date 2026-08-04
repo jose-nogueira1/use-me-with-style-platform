@@ -706,6 +706,20 @@ export const T: Record<string, Record<Lang, string>> = {
   },
   noHeadlinePlaceholder: { en: '(no headline)', pt: '(sem título)' },
   restoreAction: { en: 'Restore', pt: 'Restaurar' },
+  // 2026-08-04 follow-up, after splitting the combined version history into
+  // three independent ones per section ("I don't like the way you show
+  // previous versions... there's no way to distinguish one version from
+  // another... add a collapsible previous version so we can just have a
+  // look at what is inside"): each version row now summarizes its actual
+  // content (not just a shared headline preview) and expands on click to
+  // show the full snapshot, including a hero-image thumbnail.
+  viewDetailsAction: { en: 'View details', pt: 'Ver detalhes' },
+  hideDetailsAction: { en: 'Hide details', pt: 'Ocultar detalhes' },
+  versionEmptyCategories: { en: '(no categories selected -- shows every category)', pt: '(sem categorias selecionadas — mostra todas)' },
+  versionEmptyCollections: { en: '(no collections configured)', pt: '(sem coleções configuradas)' },
+  versionNoImageLabel: { en: 'No image', pt: 'Sem imagem' },
+  couldntLoadHomeCategories: { en: "Couldn't load the homepage categories.", pt: 'Não foi possível carregar as categorias da página inicial.' },
+  couldntLoadHomeCollections: { en: "Couldn't load the homepage collections.", pt: 'Não foi possível carregar as coleções da página inicial.' },
 
   // ---- Invoices page ----
   settingsInvoices: { en: 'Settings / Invoices', pt: 'Definições / Faturas' },

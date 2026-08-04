@@ -6,7 +6,17 @@ import { useProducts } from '../../hooks/useProducts';
 import { ProductCard } from '../components/ProductCard';
 import { ProductPhoto, type ProductTone } from '../../components/ProductPhoto';
 import { InstagramFeed } from '../components/InstagramFeed';
-import { fetchCategories, fetchHomeContent, resolveRef, type ApiCategory, type HomeContent } from '../../lib/api';
+import {
+  fetchCategories,
+  fetchHomeHero,
+  fetchHomeCategories,
+  fetchHomeCollections,
+  resolveRef,
+  type ApiCategory,
+  type HomeHero,
+  type HomeCategories,
+  type HomeCollections,
+} from '../../lib/api';
 import { absoluteMediaUrl } from '../../lib/productAdapters';
 import pictorialWhite from '../../assets/brand/pictorial-white.png';
 
@@ -33,21 +43,39 @@ export function Home() {
   const newArrivals = products.filter((p) => p.isNewArrival).slice(0, 4);
   const featured = products.slice(0, 8);
 
-  // Home hero content (2026-07-25 admin request): previously hardcoded via
+  // Home page content (2026-07-25 admin request): previously hardcoded via
   // i18n.ts translation keys with no admin-editable source. Fetched from
-  // the CMS's home-content global; the i18n keys stay as the fallback
-  // (both the initial loading moment and an unreachable CMS), and also
-  // supply the defaults baked into the global itself, so nothing visibly
-  // changes until the admin actually edits it in Settings.
-  const [hero, setHero] = useState<HomeContent | null>(null);
+  // the CMS -- split 2026-08-04 into three independent globals (hero,
+  // category row, tag-driven collections), each with its own save/version
+  // history in Settings, so fetched as three separate calls here. The i18n
+  // keys stay as the fallback (both the initial loading moment and an
+  // unreachable CMS), and also supply the defaults baked into each global
+  // itself, so nothing visibly changes until the admin actually edits it.
+  const [hero, setHero] = useState<HomeHero | null>(null);
+  const [homeCategories, setHomeCategories] = useState<HomeCategories | null>(null);
+  const [homeCollections, setHomeCollections] = useState<HomeCollections | null>(null);
   useEffect(() => {
     let cancelled = false;
-    fetchHomeContent()
+    fetchHomeHero()
       .then((content) => {
         if (!cancelled) setHero(content);
       })
       .catch(() => {
         /* keep the i18n fallback below */
+      });
+    fetchHomeCategories()
+      .then((content) => {
+        if (!cancelled) setHomeCategories(content);
+      })
+      .catch(() => {
+        /* keep the "show every category" fallback below */
+      });
+    fetchHomeCollections()
+      .then((content) => {
+        if (!cancelled) setHomeCollections(content);
+      })
+      .catch(() => {
+        /* keep the New Arrivals/Featured fallback below */
       });
     return () => {
       cancelled = true;
@@ -77,7 +105,7 @@ export function Home() {
   // tag-driven shelves. Empty -> falls back to exactly the newArrivals/
   // featured sections defined above, unchanged, so nothing visibly changes
   // until an admin actually configures a collection in Settings.
-  const customCollections = (hero?.collections ?? [])
+  const customCollections = (homeCollections?.collections ?? [])
     .filter((c) => c.tagSlug)
     .map((c) => {
       const limit = Math.max(1, Math.min(24, c.itemLimit ?? 8));
@@ -109,8 +137,8 @@ export function Home() {
   // full `categories` list already fetched above; unmatched slugs (a
   // category renamed/deleted since) are silently skipped rather than
   // showing a broken tile. Empty -> every category shows, unchanged.
-  const displayCategories = hero?.homepageCategorySlugs?.length
-    ? (hero.homepageCategorySlugs
+  const displayCategories = homeCategories?.homepageCategorySlugs?.length
+    ? (homeCategories.homepageCategorySlugs
         .map((entry) => categories.find((c) => c.slug === entry.slug))
         .filter((c): c is ApiCategory => c !== undefined))
     : categories;

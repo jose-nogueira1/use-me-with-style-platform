@@ -6,16 +6,24 @@ import {
   adminFetchInstagramSpotlight,
   adminFetchInvoiceSettings,
   adminListCategories,
-  adminListHomeContentVersions,
+  adminListHomeHeroVersions,
+  adminListHomeCategoriesVersions,
+  adminListHomeCollectionsVersions,
   adminListMerchTags,
-  adminRestoreHomeContentVersion,
-  adminUpdateHomeContent,
+  adminRestoreHomeHeroVersion,
+  adminRestoreHomeCategoriesVersion,
+  adminRestoreHomeCollectionsVersion,
+  adminUpdateHomeHero,
+  adminUpdateHomeCategories,
+  adminUpdateHomeCollections,
   adminUpdateInstagramSpotlight,
   adminUpdateInvoiceSettings,
   adminUpdateLegalContent,
   adminUpdateMarketSettings,
   adminUploadMedia,
-  fetchHomeContent,
+  fetchHomeHero,
+  fetchHomeCategories,
+  fetchHomeCollections,
   fetchInstagramFeed,
   fetchLegalContent,
   fetchMarketSettings,
@@ -24,8 +32,13 @@ import {
   type ApiCategory,
   type ApiInstagramPost,
   type ApiMerchTag,
-  type HomeContent,
-  type HomeContentVersion,
+  type HomeHero,
+  type HomeHeroVersion,
+  type HomeCategories,
+  type HomeCategoriesVersion,
+  type HomeCollections,
+  type HomeCollectionsVersion,
+  type HomeGlobalVersion,
   type InvoiceSettings,
   type LegalContent,
   type MarketSettings,
@@ -445,7 +458,13 @@ export function Settings() {
 
       {tab === 'invoicing' && <InvoicingSettingsSection />}
       {tab === 'legal' && <LegalPagesSection />}
-      {tab === 'home' && <HomeHeroSection />}
+      {tab === 'home' && (
+        <>
+          <HomeHeroSection />
+          <HomeCategoriesSection />
+          <HomeCollectionsSection />
+        </>
+      )}
       {tab === 'products' && <ProductTaxonomySettings />}
       {tab === 'instagram' && <InstagramSpotlightSection />}
     </div>
@@ -829,7 +848,19 @@ function LegalPagesSection() {
 // via adminUploadMedia returns one too, and refId() normalizes either back
 // down to a bare id before saving (matching how ProductEditor.tsx submits
 // its own relationship fields).
-const HOME_CONTENT_DEFAULTS: HomeContent = {
+// Home page content used to be one combined global with one combined
+// "Previous versions" panel -- split into three fully independent globals
+// on 2026-08-04 (admin feedback, after living with the combined panel for a
+// few hours: "I don't like the previous versions is a global preview of
+// the whole home page... it should have previous versions of just each
+// individually... creating each thing individually"). Each of the three
+// sections below (Hero / Categories / Collections) is now a fully
+// self-contained component: its own fetch, its own Save button, its own
+// version history with its own restore action -- editing one never touches
+// or snapshots the other two. See the CMS repo's HomeHero.ts /
+// HomeCategories.ts / HomeCollections.ts and
+// src/migrations/20260804_180000_home_content_split.ts.
+const HOME_HERO_DEFAULTS: HomeHero = {
   heroEyebrowPT: '',
   heroEyebrowEN: '',
   heroHeadlinePT: '',
@@ -842,67 +873,143 @@ const HOME_CONTENT_DEFAULTS: HomeContent = {
   heroCtaCategorySlug: null,
   heroCtaTagSlug: null,
   heroImage: null,
-  homepageCategorySlugs: [],
-  collections: [],
 };
+const HOME_CATEGORIES_DEFAULTS: HomeCategories = { homepageCategorySlugs: [] };
+const HOME_COLLECTIONS_DEFAULTS: HomeCollections = { collections: [] };
 
-// Field groups for the three independently-saveable sections of the Home
-// Page global (2026-08-04 follow-up: "I want them to be individual each, so
-// I just can change one and save"). Still one Payload global underneath
-// (home-content) with one combined version history -- only the Save
-// buttons/dirty-tracking are split, per Jay-P's choice between that and a
-// full split into three separate globals with separate histories.
-const HERO_FIELD_KEYS = [
-  'heroEyebrowPT', 'heroEyebrowEN', 'heroHeadlinePT', 'heroHeadlineEN',
-  'heroSubtitlePT', 'heroSubtitleEN', 'heroCtaLabelPT', 'heroCtaLabelEN',
-  'heroCtaType', 'heroCtaCategorySlug', 'heroCtaTagSlug', 'heroImage',
-] as const satisfies readonly (keyof HomeContent)[];
+// Shared version-history panel, generic over which of the three home
+// globals it's showing. 2026-08-04 follow-up ("there's no way to
+// distinguish one version from another... add a collapsible previous
+// version so we can just have a look at what is inside"): each row now
+// shows a real one-line summary of that snapshot's actual content (not a
+// single field shared across all three panels) and expands on click to
+// show the full snapshot via the caller-supplied `renderDetail`.
+function VersionHistoryPanel<T>({
+  lang,
+  versions,
+  versionsError,
+  restoringId,
+  onRestore,
+  summarize,
+  renderDetail,
+}: {
+  lang: Lang;
+  versions: HomeGlobalVersion<T>[];
+  versionsError: string | null;
+  restoringId: string | null;
+  onRestore: (version: HomeGlobalVersion<T>) => void;
+  summarize: (version: T) => string;
+  renderDetail: (version: T) => React.ReactNode;
+}) {
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  return (
+    <div style={{ marginTop: 24, paddingTop: 20, borderTop: `1px solid ${C.ruleLight}` }}>
+      <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 2 }}>{t('previousVersions', lang)}</div>
+      <div style={{ fontSize: 10, color: C.inkSoft, marginBottom: 12 }}>{t('previousVersionsNote', lang)}</div>
+      {versionsError && <div style={{ fontSize: 12, color: '#B95545', marginBottom: 10 }}>{versionsError}</div>}
+      {versions.length === 0 ? (
+        <div style={{ fontSize: 11, color: C.inkSoft }}>{t('noVersionsYet', lang)}</div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {versions.map((v) => {
+            const idStr = String(v.id);
+            const isExpanded = expandedId === idStr;
+            const isRestoring = restoringId === idStr;
+            return (
+              <div key={v.id} style={{ borderRadius: 6, background: C.subtleBg, border: `1px solid ${C.ruleLight}`, overflow: 'hidden' }}>
+                <div
+                  onClick={() => setExpandedId(isExpanded ? null : idStr)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', cursor: 'pointer' }}
+                >
+                  <span style={{ fontSize: 9, color: C.inkSoft, flexShrink: 0, width: 10, textAlign: 'center' }}>
+                    {isExpanded ? '▾' : '▸'}
+                  </span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: C.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {summarize(v.version)}
+                    </div>
+                    <div style={{ fontSize: 9, color: C.inkSoft }}>{new Date(v.createdAt).toLocaleString()}</div>
+                  </div>
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <SmallActionButton
+                      label={isRestoring ? '…' : t('restoreAction', lang)}
+                      disabled={isRestoring}
+                      onClick={() => onRestore(v)}
+                    />
+                  </div>
+                </div>
+                {isExpanded && (
+                  <div style={{ padding: '2px 12px 12px 30px', borderTop: `1px solid ${C.ruleLight}` }}>
+                    <div style={{ paddingTop: 10 }}>{renderDetail(v.version)}</div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
-function pick<T extends object, K extends keyof T>(obj: T, keys: readonly K[]): Pick<T, K> {
-  const result = {} as Pick<T, K>;
-  for (const k of keys) result[k] = obj[k];
-  return result;
+// Expanded detail for one Hero version snapshot -- 2026-08-04 follow-up
+// ("the one page here of photo, the pictures, we should see a preview of
+// the picture as well"): shows both languages' copy plus a real thumbnail
+// of whatever hero image was live at that point, not just the headline.
+function HeroVersionDetail({ lang, version }: { lang: Lang; version: HomeHero }) {
+  const imageDoc = resolveRef(version.heroImage);
+  const imageUrl = absoluteMediaUrl(imageDoc?.url);
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 16 }}>
+      <div>
+        <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 4 }}>{t('portuguese', lang)}</div>
+        <div style={{ fontSize: 10, color: C.inkSoft, marginBottom: 2 }}>{version.heroEyebrowPT || '—'}</div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: C.ink, marginBottom: 2 }}>{version.heroHeadlinePT || '—'}</div>
+        <div style={{ fontSize: 11, color: C.inkSoft, marginBottom: 2, lineHeight: 1.4 }}>{version.heroSubtitlePT || '—'}</div>
+        <div style={{ fontSize: 10, color: C.inkSoft }}>{version.heroCtaLabelPT || '—'}</div>
+      </div>
+      <div>
+        <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 4 }}>{t('english', lang)}</div>
+        <div style={{ fontSize: 10, color: C.inkSoft, marginBottom: 2 }}>{version.heroEyebrowEN || '—'}</div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: C.ink, marginBottom: 2 }}>{version.heroHeadlineEN || '—'}</div>
+        <div style={{ fontSize: 11, color: C.inkSoft, marginBottom: 2, lineHeight: 1.4 }}>{version.heroSubtitleEN || '—'}</div>
+        <div style={{ fontSize: 10, color: C.inkSoft }}>{version.heroCtaLabelEN || '—'}</div>
+      </div>
+      <div>
+        <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 4 }}>{t('heroImageLabel', lang)}</div>
+        {imageUrl ? (
+          <img src={imageUrl} alt="" style={{ width: 64, height: 64, borderRadius: 6, objectFit: 'cover', border: `1px solid ${C.rule}` }} />
+        ) : (
+          <div style={{ fontSize: 10, color: C.inkSoft }}>{t('versionNoImageLabel', lang)}</div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 function HomeHeroSection() {
   const { lang } = useApp();
-  const [content, setContent] = useState<HomeContent>(HOME_CONTENT_DEFAULTS);
+  const [content, setContent] = useState<HomeHero>(HOME_HERO_DEFAULTS);
   // Snapshot of `content` exactly as loaded (or last saved/restored), to
-  // disable each section's Save until something in THAT section actually
-  // changed (2026-07-31 admin report, refined 2026-08-04 into per-section
-  // dirty tracking) -- see admin/lib/useDirty.ts. A freshly-uploaded hero
-  // image (handleImageUpload below) deliberately does NOT update this
-  // snapshot, since that upload alone hasn't been saved to home-content yet
-  // -- it should read as a pending change same as any text edit.
-  const [originalContent, setOriginalContent] = useState<HomeContent | null>(null);
+  // disable Save until something actually changed (2026-07-31 admin
+  // report) -- see admin/lib/useDirty.ts. A freshly-uploaded hero image
+  // (handleImageUpload below) deliberately does NOT update this snapshot,
+  // since that upload alone hasn't been saved yet -- it should read as a
+  // pending change same as any text edit.
+  const [originalContent, setOriginalContent] = useState<HomeHero | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-
-  // Independent saving/error/saved state per section, so saving Categories
-  // doesn't disturb an in-progress, not-yet-saved edit sitting in Hero or
-  // Collections -- each Save call below sends ONLY its own section's fields
-  // layered onto the last-known-saved doc, never the live (possibly dirty)
-  // state of the other two sections.
-  const [savingHero, setSavingHero] = useState(false);
-  const [errorHero, setErrorHero] = useState<string | null>(null);
-  const [savedHero, setSavedHero] = useState(false);
-  const [savingCategories, setSavingCategories] = useState(false);
-  const [errorCategories, setErrorCategories] = useState<string | null>(null);
-  const [savedCategories, setSavedCategories] = useState(false);
-  const [savingCollections, setSavingCollections] = useState(false);
-  const [errorCollections, setErrorCollections] = useState<string | null>(null);
-  const [savedCollections, setSavedCollections] = useState(false);
-
-  const heroDirty = useDirty(pick(content, HERO_FIELD_KEYS), originalContent ? pick(originalContent, HERO_FIELD_KEYS) : null);
-  const categoriesDirty = useDirty(content.homepageCategorySlugs ?? [], originalContent ? originalContent.homepageCategorySlugs ?? [] : null);
-  const collectionsDirty = useDirty(content.collections ?? [], originalContent ? originalContent.collections ?? [] : null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const isDirty = useDirty(content, originalContent);
 
   // Version history (2026-07-25 follow-up, "save old homepage creations, in
-  // case I want to re-activate them later"): Payload auto-snapshots the
-  // PREVIOUS doc on every save (versions.max: 20 on the home-content global,
-  // no drafts/publish workflow). Loaded alongside the current content and
-  // refreshed after every save/restore, since both create a new snapshot.
-  const [versions, setVersions] = useState<HomeContentVersion[]>([]);
+  // case I want to re-activate them later"; split into an independent
+  // history per section 2026-08-04). Payload auto-snapshots the PREVIOUS
+  // doc on every save (versions.max: 20 on this global). Loaded alongside
+  // the current content and refreshed after every save/restore.
+  const [versions, setVersions] = useState<HomeHeroVersion[]>([]);
   const [versionsError, setVersionsError] = useState<string | null>(null);
   const [restoringId, setRestoringId] = useState<string | null>(null);
 
@@ -913,21 +1020,19 @@ function HomeHeroSection() {
   const [categories, setCategories] = useState<ApiCategory[]>([]);
   const [tags, setTags] = useState<ApiMerchTag[]>([]);
 
-  const [loadError, setLoadError] = useState<string | null>(null);
-
   const loadVersions = () => {
-    adminListHomeContentVersions()
+    adminListHomeHeroVersions()
       .then(setVersions)
       .catch(() => setVersionsError(t('couldntLoadPreviousVersions', lang)));
   };
 
   useEffect(() => {
-    fetchHomeContent()
+    fetchHomeHero()
       .then((c) => {
         setContent(c);
         setOriginalContent(c);
       })
-      .catch(() => setLoadError(t('couldntLoadHomeContent', lang)))
+      .catch(() => setError(t('couldntLoadHomeContent', lang)))
       .finally(() => setLoading(false));
     loadVersions();
     Promise.all([adminListCategories(), adminListMerchTags()]).then(([cats, tagDocs]) => {
@@ -937,78 +1042,31 @@ function HomeHeroSection() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang]);
 
-  // Each of the three handlers below sends the last-known-saved doc
-  // (`originalContent`) with only its own section's fields overlaid from
-  // the live `content` state -- so clicking "Save categories" can never
-  // accidentally persist an unfinished, still-dirty edit sitting in Hero or
-  // Collections. After a successful save, only that section's slice of
-  // `content`/`originalContent` is reconciled with the server response;
-  // the other two sections' local (possibly still-dirty) state is left
-  // untouched.
-  const handleSaveHero = async () => {
-    setSavingHero(true);
-    setErrorHero(null);
-    setSavedHero(false);
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    setSaved(false);
     try {
-      const base = originalContent ?? content;
-      const payload = { ...base, ...pick(content, HERO_FIELD_KEYS), heroImage: refId(content.heroImage) || null };
-      const updated = await adminUpdateHomeContent(payload);
-      setContent((c) => ({ ...c, ...pick(updated, HERO_FIELD_KEYS) }));
-      setOriginalContent((o) => ({ ...(o ?? updated), ...pick(updated, HERO_FIELD_KEYS) }));
-      setSavedHero(true);
+      const updated = await adminUpdateHomeHero({ ...content, heroImage: refId(content.heroImage) || null });
+      setContent(updated);
+      setOriginalContent(updated);
+      setSaved(true);
       loadVersions();
     } catch {
-      setErrorHero(t('couldntSaveLoggedIn', lang));
+      setError(t('couldntSaveLoggedIn', lang));
     } finally {
-      setSavingHero(false);
+      setSaving(false);
     }
   };
 
-  const handleSaveCategories = async () => {
-    setSavingCategories(true);
-    setErrorCategories(null);
-    setSavedCategories(false);
-    try {
-      const base = originalContent ?? content;
-      const payload = { ...base, homepageCategorySlugs: content.homepageCategorySlugs ?? [] };
-      const updated = await adminUpdateHomeContent(payload);
-      setContent((c) => ({ ...c, homepageCategorySlugs: updated.homepageCategorySlugs }));
-      setOriginalContent((o) => ({ ...(o ?? updated), homepageCategorySlugs: updated.homepageCategorySlugs }));
-      setSavedCategories(true);
-      loadVersions();
-    } catch {
-      setErrorCategories(t('couldntSaveLoggedIn', lang));
-    } finally {
-      setSavingCategories(false);
-    }
-  };
-
-  const handleSaveCollections = async () => {
-    setSavingCollections(true);
-    setErrorCollections(null);
-    setSavedCollections(false);
-    try {
-      const base = originalContent ?? content;
-      const payload = { ...base, collections: content.collections ?? [] };
-      const updated = await adminUpdateHomeContent(payload);
-      setContent((c) => ({ ...c, collections: updated.collections }));
-      setOriginalContent((o) => ({ ...(o ?? updated), collections: updated.collections }));
-      setSavedCollections(true);
-      loadVersions();
-    } catch {
-      setErrorCollections(t('couldntSaveLoggedIn', lang));
-    } finally {
-      setSavingCollections(false);
-    }
-  };
-
-  const handleRestore = async (version: HomeContentVersion) => {
+  const handleRestore = async (version: HomeHeroVersion) => {
     setRestoringId(String(version.id));
     setVersionsError(null);
     try {
-      const restored = await adminRestoreHomeContentVersion(version.id);
+      const restored = await adminRestoreHomeHeroVersion(version.id);
       setContent(restored);
       setOriginalContent(restored);
+      setSaved(false);
       loadVersions();
     } catch {
       setVersionsError(t('couldntRestoreVersion', lang));
@@ -1019,12 +1077,12 @@ function HomeHeroSection() {
 
   const handleImageUpload = async (file: File) => {
     setUploading(true);
-    setErrorHero(null);
+    setError(null);
     try {
       const media = await adminUploadMedia(file, 'Home hero image');
       setContent((c) => ({ ...c, heroImage: media }));
     } catch {
-      setErrorHero(t('couldntUploadImage', lang));
+      setError(t('couldntUploadImage', lang));
     } finally {
       setUploading(false);
     }
@@ -1040,25 +1098,24 @@ function HomeHeroSection() {
           {t('homeHeroNote', lang)}
         </div>
         <button
-          onClick={() => void handleSaveHero()}
-          disabled={loading || savingHero || !heroDirty}
+          onClick={() => void handleSave()}
+          disabled={loading || saving || !isDirty}
           style={{
             padding: '9px 18px',
-            background: loading || savingHero || !heroDirty ? C.disabledBg : C.black,
-            color: loading || savingHero || !heroDirty ? C.disabledFg : C.onDarkGold,
+            background: loading || saving || !isDirty ? C.disabledBg : C.black,
+            color: loading || saving || !isDirty ? C.disabledFg : C.onDarkGold,
             fontSize: 11,
             fontWeight: 800,
             borderRadius: 6,
             flexShrink: 0,
-            cursor: loading || savingHero || !heroDirty ? 'default' : 'pointer',
+            cursor: loading || saving || !isDirty ? 'default' : 'pointer',
           }}
         >
-          {savingHero ? '…' : t('saveHomePage', lang)}
+          {saving ? '…' : t('saveHomePage', lang)}
         </button>
       </div>
-      {loadError && <div style={{ fontSize: 12, color: '#B95545', marginBottom: 12 }}>{loadError}</div>}
-      {errorHero && <div style={{ fontSize: 12, color: '#B95545', marginBottom: 12 }}>{errorHero}</div>}
-      {savedHero && <div style={{ fontSize: 12, color: '#3F754D', marginBottom: 12 }}>{t('savedNotice', lang)}</div>}
+      {error && <div style={{ fontSize: 12, color: '#B95545', marginBottom: 12 }}>{error}</div>}
+      {saved && <div style={{ fontSize: 12, color: '#3F754D', marginBottom: 12 }}>{t('savedNotice', lang)}</div>}
 
       {loading ? (
         <div style={{ fontSize: 12, color: C.inkSoft }}>{t('loadingEllipsis', lang)}</div>
@@ -1086,7 +1143,7 @@ function HomeHeroSection() {
               <SettingsSelect
                 label={t('buttonLinkTypeLabel', lang)}
                 value={content.heroCtaType ?? 'all'}
-                onChange={(v) => setContent((c) => ({ ...c, heroCtaType: v as HomeContent['heroCtaType'] }))}
+                onChange={(v) => setContent((c) => ({ ...c, heroCtaType: v as HomeHero['heroCtaType'] }))}
                 options={[
                   { value: 'all', label: t('buttonLinkTypeAll', lang) },
                   { value: 'category', label: t('buttonLinkTypeCategory', lang) },
@@ -1149,187 +1206,387 @@ function HomeHeroSection() {
             </div>
           </div>
 
-          {/* Homepage curation (2026-08-04, "admin should have total
-              control here" over which categories and merch-tag shelves
-              appear on the homepage). Both lists are optional/empty by
-              default -- Home.tsx falls back to showing every category and
-              the old fixed New Arrivals/Featured sections until an admin
-              fills these in. */}
-          <div style={{ marginTop: 24, paddingTop: 20, borderTop: `1px solid ${C.ruleLight}` }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 2 }}>
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 800, color: C.ink }}>{t('homepageCategoriesLabel', lang)}</div>
-                <div style={{ fontSize: 10, color: C.inkSoft, marginTop: 2 }}>{t('homepageCategoriesNote', lang)}</div>
-              </div>
-              <button
-                onClick={() => void handleSaveCategories()}
-                disabled={savingCategories || !categoriesDirty}
-                style={{
-                  padding: '7px 14px',
-                  background: savingCategories || !categoriesDirty ? C.disabledBg : C.black,
-                  color: savingCategories || !categoriesDirty ? C.disabledFg : C.onDarkGold,
-                  fontSize: 10,
-                  fontWeight: 800,
-                  borderRadius: 6,
-                  flexShrink: 0,
-                  cursor: savingCategories || !categoriesDirty ? 'default' : 'pointer',
-                }}
-              >
-                {savingCategories ? '…' : t('saveCategoriesAction', lang)}
-              </button>
-            </div>
-            {errorCategories && <div style={{ fontSize: 12, color: '#B95545', marginTop: 8 }}>{errorCategories}</div>}
-            {savedCategories && <div style={{ fontSize: 12, color: '#3F754D', marginTop: 8 }}>{t('savedNotice', lang)}</div>}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 10, marginBottom: 10 }}>
-              {(content.homepageCategorySlugs ?? []).map((entry, index) => {
-                const label = categories.find((c) => c.slug === entry.slug)?.namePT || entry.slug;
-                const list = content.homepageCategorySlugs ?? [];
-                return (
-                  <div key={`${entry.slug}-${index}`} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 6, background: C.subtleBg, border: `1px solid ${C.ruleLight}` }}>
-                    <div style={{ flex: 1, fontSize: 12, color: C.ink }}>{label}</div>
-                    <SmallActionButton
-                      label="↑"
-                      disabled={index === 0}
-                      onClick={() => {
-                        const next = [...list];
-                        [next[index - 1], next[index]] = [next[index], next[index - 1]];
-                        setContent((c) => ({ ...c, homepageCategorySlugs: next }));
-                      }}
+          <VersionHistoryPanel
+            lang={lang}
+            versions={versions}
+            versionsError={versionsError}
+            restoringId={restoringId}
+            onRestore={(v) => void handleRestore(v)}
+            summarize={(v) => v.heroHeadlinePT?.trim() || v.heroHeadlineEN?.trim() || t('noHeadlinePlaceholder', lang)}
+            renderDetail={(v) => <HeroVersionDetail lang={lang} version={v} />}
+          />
+        </>
+      )}
+    </div>
+  );
+}
+
+// Which categories appear in the homepage category row, and in what order
+// -- CMS global `home-categories` (2026-08-04, "admin should have total
+// control here"). Optional/empty by default: Home.tsx falls back to
+// showing every category until an admin fills this in. Split into its own
+// component with its own save/version-history the same day (see
+// HomeHeroSection's header comment for the full reasoning).
+function HomeCategoriesSection() {
+  const { lang } = useApp();
+  const [content, setContent] = useState<HomeCategories>(HOME_CATEGORIES_DEFAULTS);
+  const [originalContent, setOriginalContent] = useState<HomeCategories | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const isDirty = useDirty(content, originalContent);
+
+  const [versions, setVersions] = useState<HomeCategoriesVersion[]>([]);
+  const [versionsError, setVersionsError] = useState<string | null>(null);
+  const [restoringId, setRestoringId] = useState<string | null>(null);
+
+  const [categories, setCategories] = useState<ApiCategory[]>([]);
+  const categoryLabel = (slug: string) => categories.find((c) => c.slug === slug)?.namePT || slug;
+
+  const loadVersions = () => {
+    adminListHomeCategoriesVersions()
+      .then(setVersions)
+      .catch(() => setVersionsError(t('couldntLoadPreviousVersions', lang)));
+  };
+
+  useEffect(() => {
+    fetchHomeCategories()
+      .then((c) => {
+        setContent(c);
+        setOriginalContent(c);
+      })
+      .catch(() => setError(t('couldntLoadHomeCategories', lang)))
+      .finally(() => setLoading(false));
+    loadVersions();
+    adminListCategories().then(setCategories);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    setSaved(false);
+    try {
+      const updated = await adminUpdateHomeCategories({ homepageCategorySlugs: content.homepageCategorySlugs ?? [] });
+      setContent(updated);
+      setOriginalContent(updated);
+      setSaved(true);
+      loadVersions();
+    } catch {
+      setError(t('couldntSaveLoggedIn', lang));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleRestore = async (version: HomeCategoriesVersion) => {
+    setRestoringId(String(version.id));
+    setVersionsError(null);
+    try {
+      const restored = await adminRestoreHomeCategoriesVersion(version.id);
+      setContent(restored);
+      setOriginalContent(restored);
+      setSaved(false);
+      loadVersions();
+    } catch {
+      setVersionsError(t('couldntRestoreVersion', lang));
+    } finally {
+      setRestoringId(null);
+    }
+  };
+
+  return (
+    <div style={{ padding: '20px 28px 32px', borderTop: `1px solid ${C.ruleLight}` }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 2 }}>
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 800, color: C.ink }}>{t('homepageCategoriesLabel', lang)}</div>
+          <div style={{ fontSize: 10, color: C.inkSoft, marginTop: 2, maxWidth: 560 }}>{t('homepageCategoriesNote', lang)}</div>
+        </div>
+        <button
+          onClick={() => void handleSave()}
+          disabled={loading || saving || !isDirty}
+          style={{
+            padding: '9px 18px',
+            background: loading || saving || !isDirty ? C.disabledBg : C.black,
+            color: loading || saving || !isDirty ? C.disabledFg : C.onDarkGold,
+            fontSize: 11,
+            fontWeight: 800,
+            borderRadius: 6,
+            flexShrink: 0,
+            cursor: loading || saving || !isDirty ? 'default' : 'pointer',
+          }}
+        >
+          {saving ? '…' : t('saveCategoriesAction', lang)}
+        </button>
+      </div>
+      {error && <div style={{ fontSize: 12, color: '#B95545', marginTop: 10 }}>{error}</div>}
+      {saved && <div style={{ fontSize: 12, color: '#3F754D', marginTop: 10 }}>{t('savedNotice', lang)}</div>}
+
+      {loading ? (
+        <div style={{ fontSize: 12, color: C.inkSoft, marginTop: 10 }}>{t('loadingEllipsis', lang)}</div>
+      ) : (
+        <>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 10, marginBottom: 10 }}>
+            {(content.homepageCategorySlugs ?? []).map((entry, index) => {
+              const label = categoryLabel(entry.slug);
+              const list = content.homepageCategorySlugs ?? [];
+              return (
+                <div key={`${entry.slug}-${index}`} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 6, background: C.subtleBg, border: `1px solid ${C.ruleLight}` }}>
+                  <div style={{ flex: 1, fontSize: 12, color: C.ink }}>{label}</div>
+                  <SmallActionButton
+                    label="↑"
+                    disabled={index === 0}
+                    onClick={() => {
+                      const next = [...list];
+                      [next[index - 1], next[index]] = [next[index], next[index - 1]];
+                      setContent((c) => ({ ...c, homepageCategorySlugs: next }));
+                    }}
+                  />
+                  <SmallActionButton
+                    label="↓"
+                    disabled={index === list.length - 1}
+                    onClick={() => {
+                      const next = [...list];
+                      [next[index + 1], next[index]] = [next[index], next[index + 1]];
+                      setContent((c) => ({ ...c, homepageCategorySlugs: next }));
+                    }}
+                  />
+                  <SmallActionButton
+                    label={t('removeAction', lang)}
+                    onClick={() => setContent((c) => ({ ...c, homepageCategorySlugs: list.filter((_, i) => i !== index) }))}
+                  />
+                </div>
+              );
+            })}
+          </div>
+          <SettingsSelect
+            label={t('addCategoryAction', lang)}
+            value=""
+            onChange={(slug) => {
+              if (!slug) return;
+              setContent((c) => ({ ...c, homepageCategorySlugs: [...(c.homepageCategorySlugs ?? []), { slug }] }));
+            }}
+            options={[
+              { value: '', label: t('chooseEllipsis', lang) },
+              ...categories
+                .filter((cat) => cat.slug && !(content.homepageCategorySlugs ?? []).some((entry) => entry.slug === cat.slug))
+                .map((cat) => ({ value: cat.slug as string, label: cat.namePT })),
+            ]}
+          />
+
+          <VersionHistoryPanel
+            lang={lang}
+            versions={versions}
+            versionsError={versionsError}
+            restoringId={restoringId}
+            onRestore={(v) => void handleRestore(v)}
+            summarize={(v) => {
+              const slugs = v.homepageCategorySlugs ?? [];
+              return slugs.length ? slugs.map((entry) => categoryLabel(entry.slug)).join(', ') : t('versionEmptyCategories', lang);
+            }}
+            renderDetail={(v) => {
+              const slugs = v.homepageCategorySlugs ?? [];
+              return slugs.length === 0 ? (
+                <div style={{ fontSize: 11, color: C.inkSoft }}>{t('versionEmptyCategories', lang)}</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {slugs.map((entry, i) => (
+                    <div key={entry.id ?? i} style={{ fontSize: 11, color: C.ink }}>
+                      {i + 1}. {categoryLabel(entry.slug)}
+                    </div>
+                  ))}
+                </div>
+              );
+            }}
+          />
+        </>
+      )}
+    </div>
+  );
+}
+
+// Tag-driven homepage product shelves -- CMS global `home-collections`
+// (2026-08-04 follow-up: "think about me having a new collection, lets say
+// summer ss26, I should be able to feature it with the tag SS26, like we
+// have featured and new arrivals now"). Optional/empty by default: Home.tsx
+// falls back to the previous fixed New Arrivals/Featured sections until an
+// admin configures at least one shelf. Split into its own component with
+// its own save/version-history the same day (see HomeHeroSection's header
+// comment for the full reasoning).
+function HomeCollectionsSection() {
+  const { lang } = useApp();
+  const [content, setContent] = useState<HomeCollections>(HOME_COLLECTIONS_DEFAULTS);
+  const [originalContent, setOriginalContent] = useState<HomeCollections | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const isDirty = useDirty(content, originalContent);
+
+  const [versions, setVersions] = useState<HomeCollectionsVersion[]>([]);
+  const [versionsError, setVersionsError] = useState<string | null>(null);
+  const [restoringId, setRestoringId] = useState<string | null>(null);
+
+  const [tags, setTags] = useState<ApiMerchTag[]>([]);
+
+  const loadVersions = () => {
+    adminListHomeCollectionsVersions()
+      .then(setVersions)
+      .catch(() => setVersionsError(t('couldntLoadPreviousVersions', lang)));
+  };
+
+  useEffect(() => {
+    fetchHomeCollections()
+      .then((c) => {
+        setContent(c);
+        setOriginalContent(c);
+      })
+      .catch(() => setError(t('couldntLoadHomeCollections', lang)))
+      .finally(() => setLoading(false));
+    loadVersions();
+    adminListMerchTags().then(setTags);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    setSaved(false);
+    try {
+      const updated = await adminUpdateHomeCollections({ collections: content.collections ?? [] });
+      setContent(updated);
+      setOriginalContent(updated);
+      setSaved(true);
+      loadVersions();
+    } catch {
+      setError(t('couldntSaveLoggedIn', lang));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleRestore = async (version: HomeCollectionsVersion) => {
+    setRestoringId(String(version.id));
+    setVersionsError(null);
+    try {
+      const restored = await adminRestoreHomeCollectionsVersion(version.id);
+      setContent(restored);
+      setOriginalContent(restored);
+      setSaved(false);
+      loadVersions();
+    } catch {
+      setVersionsError(t('couldntRestoreVersion', lang));
+    } finally {
+      setRestoringId(null);
+    }
+  };
+
+  return (
+    <div style={{ padding: '20px 28px 32px', borderTop: `1px solid ${C.ruleLight}` }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 2 }}>
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 800, color: C.ink }}>{t('homepageCollectionsLabel', lang)}</div>
+          <div style={{ fontSize: 10, color: C.inkSoft, marginTop: 2, maxWidth: 560 }}>{t('homepageCollectionsNote', lang)}</div>
+        </div>
+        <button
+          onClick={() => void handleSave()}
+          disabled={loading || saving || !isDirty}
+          style={{
+            padding: '9px 18px',
+            background: loading || saving || !isDirty ? C.disabledBg : C.black,
+            color: loading || saving || !isDirty ? C.disabledFg : C.onDarkGold,
+            fontSize: 11,
+            fontWeight: 800,
+            borderRadius: 6,
+            flexShrink: 0,
+            cursor: loading || saving || !isDirty ? 'default' : 'pointer',
+          }}
+        >
+          {saving ? '…' : t('saveCollectionsAction', lang)}
+        </button>
+      </div>
+      {error && <div style={{ fontSize: 12, color: '#B95545', marginTop: 10 }}>{error}</div>}
+      {saved && <div style={{ fontSize: 12, color: '#3F754D', marginTop: 10 }}>{t('savedNotice', lang)}</div>}
+
+      {loading ? (
+        <div style={{ fontSize: 12, color: C.inkSoft, marginTop: 10 }}>{t('loadingEllipsis', lang)}</div>
+      ) : (
+        <>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 10, marginBottom: 10 }}>
+            {(content.collections ?? []).map((row, index) => {
+              const list = content.collections ?? [];
+              const updateRow = (patch: Partial<(typeof list)[number]>) => {
+                const next = [...list];
+                next[index] = { ...next[index], ...patch };
+                setContent((c) => ({ ...c, collections: next }));
+              };
+              return (
+                <div key={index} style={{ padding: '10px 12px', borderRadius: 6, background: C.subtleBg, border: `1px solid ${C.ruleLight}` }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>
+                    <SettingsSelect
+                      label={t('collectionTagLabel', lang)}
+                      value={row.tagSlug ?? ''}
+                      onChange={(v) => updateRow({ tagSlug: v })}
+                      options={[
+                        { value: '', label: t('chooseEllipsis', lang) },
+                        ...tags.filter((tag) => tag.slug).map((tag) => ({ value: tag.slug as string, label: tag.labelPT })),
+                      ]}
                     />
-                    <SmallActionButton
-                      label="↓"
-                      disabled={index === list.length - 1}
-                      onClick={() => {
-                        const next = [...list];
-                        [next[index + 1], next[index]] = [next[index], next[index + 1]];
-                        setContent((c) => ({ ...c, homepageCategorySlugs: next }));
-                      }}
+                    <SettingsField label={t('collectionTitlePTLabel', lang)} value={row.titlePT ?? ''} onChange={(v) => updateRow({ titlePT: v })} />
+                    <SettingsField label={t('collectionTitleENLabel', lang)} value={row.titleEN ?? ''} onChange={(v) => updateRow({ titleEN: v })} />
+                    <SettingsField
+                      label={t('collectionItemLimitLabel', lang)}
+                      type="number"
+                      value={String(row.itemLimit ?? 8)}
+                      onChange={(v) => updateRow({ itemLimit: Number(v) || 8 })}
                     />
+                  </div>
+                  <div style={{ marginTop: 8 }}>
                     <SmallActionButton
                       label={t('removeAction', lang)}
-                      onClick={() => setContent((c) => ({ ...c, homepageCategorySlugs: list.filter((_, i) => i !== index) }))}
+                      onClick={() => setContent((c) => ({ ...c, collections: list.filter((_, i) => i !== index) }))}
                     />
                   </div>
-                );
-              })}
-            </div>
-            <SettingsSelect
-              label={t('addCategoryAction', lang)}
-              value=""
-              onChange={(slug) => {
-                if (!slug) return;
-                setContent((c) => ({ ...c, homepageCategorySlugs: [...(c.homepageCategorySlugs ?? []), { slug }] }));
-              }}
-              options={[
-                { value: '', label: t('chooseEllipsis', lang) },
-                ...categories
-                  .filter((cat) => cat.slug && !(content.homepageCategorySlugs ?? []).some((entry) => entry.slug === cat.slug))
-                  .map((cat) => ({ value: cat.slug as string, label: cat.namePT })),
-              ]}
-            />
+                </div>
+              );
+            })}
           </div>
+          <SmallActionButton
+            label={t('addCollectionAction', lang)}
+            onClick={() =>
+              setContent((c) => ({
+                ...c,
+                collections: [...(c.collections ?? []), { tagSlug: '', titlePT: '', titleEN: '', itemLimit: 8 }],
+              }))
+            }
+          />
 
-          <div style={{ marginTop: 24, paddingTop: 20, borderTop: `1px solid ${C.ruleLight}` }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 2 }}>
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 800, color: C.ink }}>{t('homepageCollectionsLabel', lang)}</div>
-                <div style={{ fontSize: 10, color: C.inkSoft, marginTop: 2 }}>{t('homepageCollectionsNote', lang)}</div>
-              </div>
-              <button
-                onClick={() => void handleSaveCollections()}
-                disabled={savingCollections || !collectionsDirty}
-                style={{
-                  padding: '7px 14px',
-                  background: savingCollections || !collectionsDirty ? C.disabledBg : C.black,
-                  color: savingCollections || !collectionsDirty ? C.disabledFg : C.onDarkGold,
-                  fontSize: 10,
-                  fontWeight: 800,
-                  borderRadius: 6,
-                  flexShrink: 0,
-                  cursor: savingCollections || !collectionsDirty ? 'default' : 'pointer',
-                }}
-              >
-                {savingCollections ? '…' : t('saveCollectionsAction', lang)}
-              </button>
-            </div>
-            {errorCollections && <div style={{ fontSize: 12, color: '#B95545', marginTop: 8 }}>{errorCollections}</div>}
-            {savedCollections && <div style={{ fontSize: 12, color: '#3F754D', marginTop: 8 }}>{t('savedNotice', lang)}</div>}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 10, marginBottom: 10 }}>
-              {(content.collections ?? []).map((row, index) => {
-                const list = content.collections ?? [];
-                const updateRow = (patch: Partial<(typeof list)[number]>) => {
-                  const next = [...list];
-                  next[index] = { ...next[index], ...patch };
-                  setContent((c) => ({ ...c, collections: next }));
-                };
-                return (
-                  <div key={index} style={{ padding: '10px 12px', borderRadius: 6, background: C.subtleBg, border: `1px solid ${C.ruleLight}` }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>
-                      <SettingsSelect
-                        label={t('collectionTagLabel', lang)}
-                        value={row.tagSlug ?? ''}
-                        onChange={(v) => updateRow({ tagSlug: v })}
-                        options={[
-                          { value: '', label: t('chooseEllipsis', lang) },
-                          ...tags.filter((tag) => tag.slug).map((tag) => ({ value: tag.slug as string, label: tag.labelPT })),
-                        ]}
-                      />
-                      <SettingsField label={t('collectionTitlePTLabel', lang)} value={row.titlePT ?? ''} onChange={(v) => updateRow({ titlePT: v })} />
-                      <SettingsField label={t('collectionTitleENLabel', lang)} value={row.titleEN ?? ''} onChange={(v) => updateRow({ titleEN: v })} />
-                      <SettingsField
-                        label={t('collectionItemLimitLabel', lang)}
-                        type="number"
-                        value={String(row.itemLimit ?? 8)}
-                        onChange={(v) => updateRow({ itemLimit: Number(v) || 8 })}
-                      />
+          <VersionHistoryPanel
+            lang={lang}
+            versions={versions}
+            versionsError={versionsError}
+            restoringId={restoringId}
+            onRestore={(v) => void handleRestore(v)}
+            summarize={(v) => {
+              const cols = v.collections ?? [];
+              return cols.length ? cols.map((c) => c.titlePT || c.titleEN || c.tagSlug).join(', ') : t('versionEmptyCollections', lang);
+            }}
+            renderDetail={(v) => {
+              const cols = v.collections ?? [];
+              return cols.length === 0 ? (
+                <div style={{ fontSize: 11, color: C.inkSoft }}>{t('versionEmptyCollections', lang)}</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {cols.map((row, i) => (
+                    <div key={row.id ?? i} style={{ fontSize: 11, color: C.ink }}>
+                      {i + 1}. {row.titlePT || row.titleEN} <span style={{ color: C.inkSoft }}>({row.tagSlug}, max {row.itemLimit ?? 8})</span>
                     </div>
-                    <div style={{ marginTop: 8 }}>
-                      <SmallActionButton
-                        label={t('removeAction', lang)}
-                        onClick={() => setContent((c) => ({ ...c, collections: list.filter((_, i) => i !== index) }))}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <SmallActionButton
-              label={t('addCollectionAction', lang)}
-              onClick={() =>
-                setContent((c) => ({
-                  ...c,
-                  collections: [...(c.collections ?? []), { tagSlug: '', titlePT: '', titleEN: '', itemLimit: 8 }],
-                }))
-              }
-            />
-          </div>
-
-          <div style={{ marginTop: 24, paddingTop: 20, borderTop: `1px solid ${C.ruleLight}` }}>
-            <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 2 }}>{t('previousVersions', lang)}</div>
-            <div style={{ fontSize: 10, color: C.inkSoft, marginBottom: 12 }}>
-              {t('previousVersionsNote', lang)}
-            </div>
-            {versionsError && <div style={{ fontSize: 12, color: '#B95545', marginBottom: 10 }}>{versionsError}</div>}
-            {versions.length === 0 ? (
-              <div style={{ fontSize: 11, color: C.inkSoft }}>{t('noVersionsYet', lang)}</div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {versions.map((v) => {
-                  const preview = v.version.heroHeadlinePT?.trim() || v.version.heroHeadlineEN?.trim() || t('noHeadlinePlaceholder', lang);
-                  const isRestoring = restoringId === String(v.id);
-                  return (
-                    <div key={v.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 6, background: C.subtleBg, border: `1px solid ${C.ruleLight}` }}>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: C.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{preview}</div>
-                        <div style={{ fontSize: 9, color: C.inkSoft }}>{new Date(v.createdAt).toLocaleString()}</div>
-                      </div>
-                      <SmallActionButton label={isRestoring ? '…' : t('restoreAction', lang)} disabled={isRestoring} onClick={() => void handleRestore(v)} />
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+                  ))}
+                </div>
+              );
+            }}
+          />
         </>
       )}
     </div>

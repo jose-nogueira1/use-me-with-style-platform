@@ -463,7 +463,12 @@ export type LegalContent = {
  * via i18n.ts translation keys with no admin-editable source. Same
  * bilingual PT/EN pattern as LegalContent above. `heroImage`, when set,
  * replaces the decorative placeholder graphic. */
-export type HomeContent = {
+// Home page content used to be one combined global (`home-content`) --
+// split into three independent globals on 2026-08-04 (admin feedback: "I
+// don't like the previous versions is a global preview of the whole home
+// page... it should have previous versions of just each individually").
+// Each now has its own fetch/save/version-history functions further down.
+export type HomeHero = {
   heroEyebrowPT?: string;
   heroEyebrowEN?: string;
   heroHeadlinePT?: string;
@@ -481,26 +486,36 @@ export type HomeContent = {
   heroCtaCategorySlug?: string | null;
   heroCtaTagSlug?: string | null;
   heroImage?: string | number | ApiMedia | null;
-  // Homepage curation (2026-08-04, "admin should have total control here"
-  // over which categories and merch-tag shelves appear on the homepage).
-  // Both empty by default -- Home.tsx falls back to the previous behaviour
-  // (every category shown; hardcoded New Arrivals/Featured sections) until
-  // an admin actually fills these in from Settings.
+};
+
+// Homepage curation (2026-08-04, "admin should have total control here"
+// over which categories and merch-tag shelves appear on the homepage).
+// Both optional/empty by default -- Home.tsx falls back to the previous
+// behaviour (every category shown; hardcoded New Arrivals/Featured
+// sections) until an admin actually fills these in from Settings.
+export type HomeCategories = {
   homepageCategorySlugs?: { id?: string; slug: string }[];
+};
+
+export type HomeCollections = {
   collections?: { id?: string; tagSlug: string; titlePT: string; titleEN: string; itemLimit?: number | null }[];
 };
 
-/** One auto-saved snapshot of home-content (2026-07-25 follow-up: "save old
- * homepage creations, in case I want to re-activate them later"). Payload's
- * built-in global versioning (versions.max on the global, no drafts/publish
- * workflow) snapshots the PREVIOUS doc on every save -- `version` is the
- * full HomeContent shape as it existed at that point in time. */
-export type HomeContentVersion = {
+/** One auto-saved snapshot of a home-page global (2026-07-25 follow-up:
+ * "save old homepage creations, in case I want to re-activate them
+ * later"). Payload's built-in global versioning (versions.max on the
+ * global, no drafts/publish workflow) snapshots the PREVIOUS doc on every
+ * save -- `version` is the full shape as it existed at that point in time.
+ * Generic over which of the three home globals it belongs to. */
+export type HomeGlobalVersion<T> = {
   id: string | number;
-  version: HomeContent;
+  version: T;
   createdAt: string;
   updatedAt: string;
 };
+export type HomeHeroVersion = HomeGlobalVersion<HomeHero>;
+export type HomeCategoriesVersion = HomeGlobalVersion<HomeCategories>;
+export type HomeCollectionsVersion = HomeGlobalVersion<HomeCollections>;
 
 export type ApiCustomer = {
   id: string;
@@ -670,8 +685,14 @@ export async function fetchLegalContent(): Promise<LegalContent> {
 
 // depth=1 so heroImage resolves to a populated media doc (url/sizes)
 // instead of just an id, same reason fetchProducts uses depth for swatches.
-export async function fetchHomeContent(): Promise<HomeContent> {
-  return request<HomeContent>('/globals/home-content?depth=1');
+export async function fetchHomeHero(): Promise<HomeHero> {
+  return request<HomeHero>('/globals/home-hero?depth=1');
+}
+export async function fetchHomeCategories(): Promise<HomeCategories> {
+  return request<HomeCategories>('/globals/home-categories');
+}
+export async function fetchHomeCollections(): Promise<HomeCollections> {
+  return request<HomeCollections>('/globals/home-collections');
 }
 
 export type ApiInstagramPost = {
@@ -1139,9 +1160,23 @@ export async function adminUpdateLegalContent(input: Partial<LegalContent>): Pro
   );
 }
 
-export async function adminUpdateHomeContent(input: Partial<HomeContent>): Promise<HomeContent> {
-  return request<HomeContent>(
-    '/globals/home-content?depth=1',
+export async function adminUpdateHomeHero(input: Partial<HomeHero>): Promise<HomeHero> {
+  return request<HomeHero>(
+    '/globals/home-hero?depth=1',
+    { method: 'POST', body: JSON.stringify(input) },
+    { auth: true },
+  );
+}
+export async function adminUpdateHomeCategories(input: Partial<HomeCategories>): Promise<HomeCategories> {
+  return request<HomeCategories>(
+    '/globals/home-categories',
+    { method: 'POST', body: JSON.stringify(input) },
+    { auth: true },
+  );
+}
+export async function adminUpdateHomeCollections(input: Partial<HomeCollections>): Promise<HomeCollections> {
+  return request<HomeCollections>(
+    '/globals/home-collections',
     { method: 'POST', body: JSON.stringify(input) },
     { auth: true },
   );
@@ -1164,25 +1199,58 @@ export async function adminUpdateInstagramSpotlight(input: InstagramSpotlight): 
   );
 }
 
-/** Past saves of the home hero (2026-07-25 follow-up), newest first --
- * powers the "Previous versions" panel in Settings.tsx's HomeHeroSection.
- * Payload auto-snapshots the PREVIOUS doc on every save (versions.max: 20
- * on the global), so this list is capped at the last 20 saves. */
-export async function adminListHomeContentVersions(): Promise<HomeContentVersion[]> {
-  const data = await request<{ docs: HomeContentVersion[] }>(
-    '/globals/home-content/versions?limit=20&sort=-createdAt&depth=1',
+/** Past saves of each home-page global (2026-07-25 follow-up, "save old
+ * homepage creations, in case I want to re-activate them later"; split
+ * into three independent histories 2026-08-04). Payload auto-snapshots the
+ * PREVIOUS doc on every save (versions.max: 20 on each global), so each
+ * list is capped at the last 20 saves of THAT section only. */
+export async function adminListHomeHeroVersions(): Promise<HomeHeroVersion[]> {
+  const data = await request<{ docs: HomeHeroVersion[] }>(
+    '/globals/home-hero/versions?limit=20&sort=-createdAt&depth=1',
+    {},
+    { auth: true },
+  );
+  return data.docs;
+}
+export async function adminListHomeCategoriesVersions(): Promise<HomeCategoriesVersion[]> {
+  const data = await request<{ docs: HomeCategoriesVersion[] }>(
+    '/globals/home-categories/versions?limit=20&sort=-createdAt',
+    {},
+    { auth: true },
+  );
+  return data.docs;
+}
+export async function adminListHomeCollectionsVersions(): Promise<HomeCollectionsVersion[]> {
+  const data = await request<{ docs: HomeCollectionsVersion[] }>(
+    '/globals/home-collections/versions?limit=20&sort=-createdAt',
     {},
     { auth: true },
   );
   return data.docs;
 }
 
-/** Restores a past version as the current home hero content. Returns the
- * restored (now-current) doc so the caller can update its form state
+/** Restores a past version as the current doc for that section. Returns
+ * the restored (now-current) doc so the caller can update its form state
  * without a second fetch. */
-export async function adminRestoreHomeContentVersion(id: string | number): Promise<HomeContent> {
-  const data = await request<{ doc: HomeContent }>(
-    `/globals/home-content/versions/${id}?depth=1`,
+export async function adminRestoreHomeHeroVersion(id: string | number): Promise<HomeHero> {
+  const data = await request<{ doc: HomeHero }>(
+    `/globals/home-hero/versions/${id}?depth=1`,
+    { method: 'POST' },
+    { auth: true },
+  );
+  return data.doc;
+}
+export async function adminRestoreHomeCategoriesVersion(id: string | number): Promise<HomeCategories> {
+  const data = await request<{ doc: HomeCategories }>(
+    `/globals/home-categories/versions/${id}`,
+    { method: 'POST' },
+    { auth: true },
+  );
+  return data.doc;
+}
+export async function adminRestoreHomeCollectionsVersion(id: string | number): Promise<HomeCollections> {
+  const data = await request<{ doc: HomeCollections }>(
+    `/globals/home-collections/versions/${id}`,
     { method: 'POST' },
     { auth: true },
   );
