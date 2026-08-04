@@ -66,6 +66,33 @@ export function portugalDeliveryRegion(postalCode: unknown): 'mainland' | 'madei
   return 'mainland';
 }
 
+export type TaxRatesConfig = {
+  AO: number;
+  PT: { mainland: number; madeira: number; azores: number };
+};
+
+/** VAT included-in-price breakdown (2026-08-04). Angola is a flat rate
+ * regardless of settlement currency -- this is about the customer's
+ * market/jurisdiction, not which gateway happens to process the charge.
+ * Portugal depends on the postal code's region, same
+ * mainland/Madeira/Azores classification checkoutShippingCost above uses
+ * for shipping, falling back to mainland's rate before a valid postal code
+ * is entered -- matches the CMS's own fallback (see resolveVatRate's
+ * comment in the CMS's internalInvoice.ts) so checkout and the eventual
+ * invoice never disagree. Backs the net amount out of the final total
+ * (rather than summing per-line) -- the same approach
+ * calculateIncludedVatInvoice uses, so the two always match exactly. */
+export function vatIncludedAmount(
+  market: 'AO' | 'PT',
+  total: number,
+  taxRates: TaxRatesConfig,
+  postalCode?: string,
+): { rate: number; amount: number } {
+  const rate = market === 'AO' ? taxRates.AO : taxRates.PT[portugalDeliveryRegion(postalCode) ?? 'mainland'];
+  const net = rate > 0 ? total / (1 + rate / 100) : total;
+  return { rate, amount: Math.max(0, total - net) };
+}
+
 export function checkoutShippingCost(
   market: 'AO' | 'PT',
   deliveryMethod: string,

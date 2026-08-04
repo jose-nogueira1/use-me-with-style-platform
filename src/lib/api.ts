@@ -298,6 +298,13 @@ export type OrderItemInput = {
 export type CreateOrderInput = {
   market: 'AO' | 'PT';
   customerName: string;
+  /** First/last name collected separately at checkout (2026-08-04) --
+   * customerName above is still the two joined together, which is what
+   * every existing consumer (invoices, admin, emails) reads. These two are
+   * additional, optional snapshot fields for future use (e.g. a shipping
+   * label API that wants them split) -- nothing currently reads them back. */
+  customerFirstName?: string;
+  customerLastName?: string;
   customerPhone: string;
   customerEmail: string;
   address: string;
@@ -397,6 +404,12 @@ export type MarketSettings = {
   angolaMunicipalityPrices: Record<string, number>;
   angolaFreeShippingThreshold: number;
   portugalPaymentsEnabled: boolean;
+  /** Shown at checkout while portugalPaymentsEnabled is off, PT/EN pair --
+   * same pattern as angolaBankTransferInstructionsPT/EN above (2026-08-04
+   * addition: PT checkout now offers a manual WhatsApp-coordination method
+   * instead of hard-blocking with an error). */
+  portugalManualCheckoutInstructionsPT?: string;
+  portugalManualCheckoutInstructionsEN?: string;
   portugalPaymentMethods: string[];
   portugalDeliveryMethods: string[];
   portugalStandardShippingPrice: number;
@@ -623,6 +636,21 @@ export async function fetchMerchTags(): Promise<ApiMerchTag[]> {
 
 export async function fetchMarketSettings(): Promise<MarketSettings> {
   return request<MarketSettings>('/globals/market-settings');
+}
+
+/** Public VAT rates (2026-08-04) -- Angola is flat, Portugal has one rate
+ * per region (mainland/Madeira/Azores). Backed by a small dedicated
+ * endpoint rather than reading the (auth-only) Invoice Settings global
+ * directly -- that global also holds bank IBAN, issuer tax ID, etc., which
+ * the public storefront has no business reading. Same rates the invoice PDF
+ * uses (see the CMS's calculateIncludedVatInvoice), so the checkout display
+ * and the eventual invoice always agree. */
+export type TaxRates = {
+  AO: number;
+  PT: { mainland: number; madeira: number; azores: number };
+};
+export async function fetchTaxRates(): Promise<TaxRates> {
+  return request<TaxRates>('/tax-rates');
 }
 
 export async function fetchLegalContent(): Promise<LegalContent> {

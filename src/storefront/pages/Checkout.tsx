@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
+import { X } from 'lucide-react';
 import { C, F, t, pickBilingual, formatKz, type Lang } from '../../theme';
 import { useApp } from '../../state/AppContext';
 import { useProducts } from '../../hooks/useProducts';
@@ -8,16 +9,28 @@ import {
   createAppyPayOrder,
   createStripeCheckoutSession,
   fetchMarketSettings,
+  fetchTaxRates,
   validateCoupon,
   type CreateOrderInput,
   type MarketSettings,
+  type TaxRates,
 } from '../../lib/api';
 import { isAppyPayWidgetConfigured } from '../../config/env';
 import { AppyPayWidget } from '../components/AppyPayWidget';
 import { getMetaOrderContext } from '../../lib/analyticsConsent';
 import { PaypalButton } from '../components/PaypalButton';
 import { localizeCouponError } from '../couponError';
-import { checkoutShippingCost, LUANDA_MUNICIPALITIES, normalizeAngolaShipping, normalizePortugalShipping } from '../shipping';
+import { checkoutShippingCost, LUANDA_MUNICIPALITIES, normalizeAngolaShipping, normalizePortugalShipping, vatIncludedAmount } from '../shipping';
+
+// VAT rates (2026-08-04): same fallback defaults as the CMS's /tax-rates
+// endpoint (see taxRates.ts), used only until that endpoint's own response
+// arrives -- so the very first render already shows a correct-by-default
+// figure instead of hiding the VAT line until a network round trip
+// completes.
+const DEFAULT_TAX_RATES: TaxRates = {
+  AO: 14,
+  PT: { mainland: 23, madeira: 22, azores: 16 },
+};
 
 // Angola delivery is local courier only and payment is Multicaixa Express
 // through AppyPay. Portugal retains its separate online-payment methods.
@@ -40,6 +53,10 @@ const DEFAULT_MARKET_SETTINGS: MarketSettings = {
   },
   angolaFreeShippingThreshold: 80000,
   portugalPaymentsEnabled: false,
+  portugalManualCheckoutInstructionsPT:
+    'Vamos entrar em contacto por WhatsApp para combinar o pagamento assim que a encomenda for confirmada.',
+  portugalManualCheckoutInstructionsEN:
+    "We'll reach out on WhatsApp to arrange payment once the order is confirmed.",
   portugalPaymentMethods: ['paypal', 'stripe'],
   portugalDeliveryMethods: ['ctt', 'courier_pt'],
   portugalStandardShippingPrice: 4.9,
@@ -67,6 +84,7 @@ const PAYMENT_LABEL_KEYS: Record<string, string> = {
   stripe: 'paymentStripe',
   mbway: 'paymentMbway',
   multicaixa_express: 'paymentMulticaixaExpress',
+  manual_whatsapp: 'paymentManualWhatsapp',
 };
 
 const DELIVERY_LABEL_KEYS: Record<string, string> = {
@@ -383,6 +401,7 @@ export function Checkout() {
   const navigate = useNavigate();
 
   const [settings, setSettings] = useState<MarketSettings>(DEFAULT_MARKET_SETTINGS);
+  const [taxRates, setTaxRates] = useState<TaxRates>(DEFAULT_TAX_RATES);
   const [submitting, setSubmitting] = useState(false);
   const [appyPayOrder, setAppyPayOrder] = useState<{
     orderNumber: string;
@@ -408,7 +427,8 @@ export function Checkout() {
   }, [error]);
 
   const [form, setForm] = useState({
-    name: '',
+    firstName: '',
+    lastName: '',
     phoneCountryIso2: market === 'AO' ? 'AO' : 'PT',
     phone: '',
     email: '',
@@ -437,7 +457,10 @@ export function Checkout() {
     ? settings.angolaDeliveryMethods
     : isHeavyPortugalParcel ? ['courier_pt'] : settings.portugalDeliveryMethods;
   const portugalCheckoutDeferred = market === 'PT' && !settings.portugalPaymentsEnabled;
-  const paymentOptions = market === 'AO' ? ['multicaixa_express'] : portugalCheckoutDeferred ? [] : settings.portugalPaymentMethods;
+  // While deferred, 'manual_whatsapp' is the only PT payment option offered
+  // (2026-08-04) -- checkout still creates a real pending order instead of
+  // hard-blocking, same pattern as Angola's bank-transfer fallback below.
+  const paymentOptions = market === 'AO' ? ['multicaixa_express'] : portugalCheckoutDeferred ? ['manual_whatsapp'] : settings.portugalPaymentMethods;
   // Deployed widget credentials are the authoritative readiness signal. The
   // CMS toggle remains backwards-compatible, but a stale `false` must not
   // force a configured production checkout back to the manual fallback.
@@ -450,6 +473,12 @@ export function Checkout() {
     fetchMarketSettings()
       .then(setSettings)
       .catch(() => setSettings(DEFAULT_MARKET_SETTINGS));
+  }, []);
+
+  useEffect(() => {
+    fetchTaxRates()
+      .then(setTaxRates)
+      .catch(() => setTaxRates(DEFAULT_TAX_RATES));
   }, []);
 
   // Stripe redirects back here (cancel_url) if the buyer backs out of
@@ -576,6 +605,10 @@ export function Checkout() {
   const total = merchandiseTotalAfterDiscount + shippingCost;
   const fmt = (n: number) => (market === 'PT' || usesEurSettlement ? `€${n.toFixed(2)}` : `${formatKz(n, lang)} Kz`);
 
+  // VAT included-in-price breakdown (2026-08-04) -- see vatIncludedAmount's
+  // own comment in shipping.ts for how the rate/region are chosen.
+  const { rate: vatRate, amount: vatAmount } = vatIncludedAmount(market, total, taxRates, form.postalCode);
+
   // Re-check (never silently drop) an already-applied coupon whenever the
   // payment or delivery method changes. Re-runs handleApplyCoupon's same
   // validateCoupon() call against the settlement context for the render
@@ -648,11 +681,19 @@ export function Checkout() {
   const phoneDialCode = ALL_COUNTRY_CODES.find((c) => c.iso2 === form.phoneCountryIso2)?.code ?? '';
   const fullPhone = `${phoneDialCode} ${form.phone}`.trim();
 
+  // Joined once here so both buildOrderInput branches below and anything
+  // else in this file that wants a display name (there's currently nothing
+  // else) always agree -- see the firstName/lastName split note on the i18n
+  // keys above for why the two are collected separately but sent combined.
+  const customerName = `${form.firstName} ${form.lastName}`.trim();
+
   const buildOrderInput = (): CreateOrderInput => {
     if (usesEurSettlement) {
       return {
         market,
-        customerName: form.name,
+        customerName,
+        customerFirstName: form.firstName,
+        customerLastName: form.lastName,
         customerPhone: fullPhone,
         customerEmail: form.email,
         address: form.address,
@@ -680,7 +721,9 @@ export function Checkout() {
 
     return {
       market,
-      customerName: form.name,
+      customerName,
+      customerFirstName: form.firstName,
+      customerLastName: form.lastName,
       customerPhone: fullPhone,
       customerEmail: form.email,
       address: form.address,
@@ -750,7 +793,7 @@ export function Checkout() {
   };
 
   const validateRequiredFields = (): boolean => {
-    if (!form.name || !form.phone || !form.email || !form.address || !form.city) {
+    if (!form.firstName || !form.lastName || !form.phone || !form.email || !form.address || !form.addressLine2 || !form.city) {
       setError(t('fillRequiredFields', lang));
       return false;
     }
@@ -769,10 +812,6 @@ export function Checkout() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (portugalCheckoutDeferred) {
-      setError(t('portugalPaymentsDeferredBody', lang));
-      return;
-    }
     // PayPal has its own button/flow (see buildOrderInputForPaypal below) --
     // guards against an implicit form submit (e.g. pressing Enter in a
     // field) bypassing it, since no submit button is rendered in that case.
@@ -860,7 +899,8 @@ export function Checkout() {
           without reaching for extra state/refs. */}
       <form id="checkout-form" onSubmit={handleSubmit} style={{ padding: '0 20px', minWidth: 0 }}>
         <Section title={t('contact', lang)}>
-          <Field label={t('name', lang)} value={form.name} onChange={(v) => setForm({ ...form, name: v })} required />
+          <Field label={t('firstName', lang)} value={form.firstName} onChange={(v) => setForm({ ...form, firstName: v })} required />
+          <Field label={t('lastName', lang)} value={form.lastName} onChange={(v) => setForm({ ...form, lastName: v })} required />
           <PhoneField
             label={t('phoneWhatsapp', lang)}
             lang={lang}
@@ -874,14 +914,13 @@ export function Checkout() {
         </Section>
 
         <Section title={t('address', lang)}>
-          <Field label={t('address', lang)} value={form.address} onChange={(v) => setForm({ ...form, address: v })} required />
-          {market === 'PT' && (
-            <Field
-              label={t('addressLine2Optional', lang)}
-              value={form.addressLine2}
-              onChange={(v) => setForm({ ...form, addressLine2: v })}
-            />
-          )}
+          <Field label={t('streetName', lang)} value={form.address} onChange={(v) => setForm({ ...form, address: v })} required />
+          <Field
+            label={t('houseNumberOther', lang)}
+            value={form.addressLine2}
+            onChange={(v) => setForm({ ...form, addressLine2: v })}
+            required
+          />
           {market === 'PT' && (
             <Field
               label={t('postalCode', lang)}
@@ -955,18 +994,17 @@ export function Checkout() {
         </Section>
 
         <Section title={t('payment', lang)}>
-          {portugalCheckoutDeferred && (
-            <div role="status" style={{ padding: 12, background: C.subtleBg, border: `1px solid ${C.ruleLight}`, borderRadius: 6, fontSize: 12, color: C.ink, lineHeight: 1.5 }}>
-              <strong>{t('portugalPaymentsDeferredTitle', lang)}</strong><br />
-              {t('portugalPaymentsDeferredBody', lang)}
-            </div>
-          )}
           {paymentOptions.map((opt) => (
             <RadioRow key={opt} name="payment" value={opt} checked={paymentMethod === opt} onSelect={() => handleSelectPaymentMethod(opt)} label={PAYMENT_LABEL_KEYS[opt] ? t(PAYMENT_LABEL_KEYS[opt], lang) : opt} />
           ))}
           {paymentMethod === 'multicaixa_express' && !appyPayLive && (
             <div style={{ marginTop: 8, padding: 12, background: C.subtleBg, borderRadius: 6, fontSize: 12, color: C.inkSoft, lineHeight: 1.5 }}>
               {pickBilingual(settings.angolaBankTransferInstructionsPT, settings.angolaBankTransferInstructionsEN, lang)}
+            </div>
+          )}
+          {paymentMethod === 'manual_whatsapp' && (
+            <div role="status" style={{ marginTop: 8, padding: 12, background: C.subtleBg, borderRadius: 6, fontSize: 12, color: C.inkSoft, lineHeight: 1.5 }}>
+              {pickBilingual(settings.portugalManualCheckoutInstructionsPT, settings.portugalManualCheckoutInstructionsEN, lang)}
             </div>
           )}
         </Section>
@@ -1018,6 +1056,9 @@ export function Checkout() {
           <Row testId="checkout-shipping" label={t('shipping', lang)} value={shippingCost === 0 ? t('free', lang) : fmt(shippingCost)} />
           <div style={{ borderTop: `1px solid ${C.rule}`, marginTop: 8, paddingTop: 8 }}>
             <Row testId="checkout-total" label={t('total', lang)} value={fmt(total)} bold />
+            <div data-testid="checkout-vat-included" style={{ fontSize: 10, color: C.inkSoft, marginTop: 4, textAlign: 'right' }}>
+              {t('vatIncludedLabel', lang).replace('{rate}', String(vatRate)).replace('{amount}', fmt(vatAmount))}
+            </div>
           </div>
         </div>
 
@@ -1026,25 +1067,47 @@ export function Checkout() {
         )}
 
         {appyPayOrder && (
-          <div style={{ marginTop: 20, padding: 16, border: `1px solid ${C.rule}`, borderRadius: 8 }}>
-            <AppyPayWidget
-              amount={total}
-              description={`Use Me With Style ${appyPayOrder.orderNumber}`}
-              merchantTransactionId={appyPayOrder.merchantTransactionId}
-              phoneNumber={fullPhone}
-              lang={lang}
-            />
-            <button
-              type="button"
-              onClick={() => navigate(`/encomenda-confirmada/${appyPayOrder.orderNumber}`)}
-              style={{ marginTop: 16, width: '100%', padding: 12 }}
-            >
-              Ver estado da encomenda
-            </button>
+          // Popup instead of the previous inline box (2026-08-04, Jay-P
+          // request after a checkout attempt "didn't work as expected"):
+          // the widget used to render at the bottom of the LEFT form
+          // column, while "Pay now" lives in the right summary column --
+          // easy to miss entirely if the buyer's eyes stayed on the button
+          // they just clicked. Same dialog/scrim/close-button pattern as
+          // ProductDetail's size-guide modal (the one other modal in this
+          // app), just wider to fit the widget's iframe.
+          <div style={{ position: 'fixed', inset: 0, background: C.scrim, zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+            <div role="dialog" aria-modal="true" aria-labelledby="appypay-modal-title" style={{ background: C.paper, borderRadius: 10, padding: 20, width: '100%', maxWidth: 480, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 50px rgba(0,0,0,0.28)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
+                <div id="appypay-modal-title" style={{ fontFamily: F.display, fontSize: 18, fontWeight: 800, color: C.ink }}>
+                  {t('paymentMulticaixaExpress', lang)}
+                </div>
+                <button
+                  type="button"
+                  aria-label={lang === 'pt' ? 'Fechar' : 'Close'}
+                  onClick={() => navigate(`/encomenda-confirmada/${appyPayOrder.orderNumber}`)}
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              <AppyPayWidget
+                amount={total}
+                description={`Use Me With Style ${appyPayOrder.orderNumber}`}
+                merchantTransactionId={appyPayOrder.merchantTransactionId}
+                phoneNumber={fullPhone}
+                lang={lang}
+              />
+              <button
+                type="button"
+                onClick={() => navigate(`/encomenda-confirmada/${appyPayOrder.orderNumber}`)}
+                style={{ marginTop: 16, width: '100%', padding: 12 }}
+              >
+                Ver estado da encomenda
+              </button>
+            </div>
           </div>
         )}
 
-        {portugalCheckoutDeferred ? null : appyPayOrder ? null : paymentMethod === 'paypal' ? (
+        {appyPayOrder ? null : paymentMethod === 'paypal' ? (
           <PaypalButton
             buildOrderInput={buildOrderInputForPaypal}
             onSuccess={handlePaypalSuccess}

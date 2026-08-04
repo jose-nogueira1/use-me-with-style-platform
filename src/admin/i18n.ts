@@ -312,6 +312,7 @@ export const T: Record<string, Record<Lang, string>> = {
   paymentMethodStripe: { en: 'Card (Stripe)', pt: 'Cartão (Stripe)' },
   paymentMethodMbway: { en: 'MB WAY', pt: 'MB WAY' },
   paymentMethodMulticaixaExpress: { en: 'Multicaixa Express (AppyPay)', pt: 'Multicaixa Express (AppyPay)' },
+  paymentMethodManualWhatsapp: { en: 'Manual coordination (WhatsApp)', pt: 'Coordenação manual (WhatsApp)' },
   deliveryMethodCtt: { en: 'CTT Standard (untracked)', pt: 'CTT Standard (sem rastreio)' },
   deliveryMethodCourierPt: { en: 'CTT Registered (tracked)', pt: 'CTT Registado (com rastreio)' },
   deliveryMethodCourierAo: { en: 'Local courier', pt: 'Estafeta local' },
@@ -539,6 +540,11 @@ export const T: Record<string, Record<Lang, string>> = {
   bankTransferInstructionsPlaceholder: {
     en: 'Multicaixa Express manual instructions (shown until AppyPay integration is live)',
     pt: 'Instruções manuais Multicaixa Express (mostradas até a integração AppyPay estar ativa)',
+  },
+  manualCheckoutInstructionsLabel: { en: 'Manual WhatsApp instructions', pt: 'Instruções manuais WhatsApp' },
+  manualCheckoutInstructionsPlaceholder: {
+    en: 'Manual WhatsApp coordination instructions (shown until Portugal payments are enabled)',
+    pt: 'Instruções de coordenação manual via WhatsApp (mostradas até os pagamentos em Portugal estarem ativos)',
   },
   deliveryLabel: { en: 'Delivery', pt: 'Entrega' },
   portugalShippingPrices: { en: 'Shipping prices', pt: 'Preços de envio' },

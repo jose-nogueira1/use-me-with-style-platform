@@ -47,6 +47,8 @@ const DEFAULTS: MarketSettings = {
   angolaMunicipalityPrices: DEFAULT_ANGOLA_MUNICIPALITY_PRICES,
   angolaFreeShippingThreshold: 80000,
   portugalPaymentsEnabled: false,
+  portugalManualCheckoutInstructionsPT: '',
+  portugalManualCheckoutInstructionsEN: '',
   portugalPaymentMethods: ['paypal', 'stripe'],
   portugalDeliveryMethods: ['ctt', 'courier_pt'],
   portugalStandardShippingPrice: 4.9,
@@ -267,6 +269,27 @@ export function Settings() {
             <ConfigRow
               label={t('portugalPaymentsEnabledLabel', lang)}
               value={<input type="checkbox" checked={settings.portugalPaymentsEnabled} onChange={(e) => setSettings((s) => ({ ...s, portugalPaymentsEnabled: e.target.checked }))} />}
+            />
+            <ConfigRow
+              label={t('manualCheckoutInstructionsLabel', lang)}
+              value={
+                <div>
+                  <textarea
+                    value={settings.portugalManualCheckoutInstructionsPT ?? ''}
+                    onChange={(e) => setSettings((s) => ({ ...s, portugalManualCheckoutInstructionsPT: e.target.value }))}
+                    rows={2}
+                    placeholder={`${t('manualCheckoutInstructionsPlaceholder', lang)} — ${t('portuguese', lang)}`}
+                    style={{ width: '100%', padding: 8, fontSize: 11, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, fontFamily: 'inherit', marginBottom: 8 }}
+                  />
+                  <textarea
+                    value={settings.portugalManualCheckoutInstructionsEN ?? ''}
+                    onChange={(e) => setSettings((s) => ({ ...s, portugalManualCheckoutInstructionsEN: e.target.value }))}
+                    rows={2}
+                    placeholder={`${t('manualCheckoutInstructionsPlaceholder', lang)} — ${t('english', lang)}`}
+                    style={{ width: '100%', padding: 8, fontSize: 11, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, fontFamily: 'inherit' }}
+                  />
+                </div>
+              }
             />
             <ConfigRow
               label={t('paymentLabel', lang)}

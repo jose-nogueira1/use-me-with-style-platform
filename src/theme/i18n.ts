@@ -154,10 +154,22 @@ export const T: Record<string, Record<Lang, string>> = {
   // Checkout
   contact: { pt: 'Contacto', en: 'Contact' },
   name: { pt: 'Nome', en: 'Name' },
+  // Split into two inputs (2026-08-04, Jay-P request) so the customer types
+  // first/last name separately instead of one free-text box -- customerName
+  // sent to the CMS is still the two joined together (see Checkout.tsx's
+  // buildOrderInput), so nothing downstream (invoices, admin, emails) had to
+  // change to read a single name field.
+  firstName: { pt: 'Nome próprio', en: 'First name' },
+  lastName: { pt: 'Apelido', en: 'Last name' },
   phoneWhatsapp: { pt: 'Telefone / WhatsApp', en: 'Phone / WhatsApp' },
   email: { pt: 'Email', en: 'Email' },
   address: { pt: 'Morada', en: 'Address' },
-  addressLine2Optional: { pt: 'Andar / Porta (opcional)', en: 'Floor / Door (optional)' },
+  // Address split into two required lines (2026-08-04, Jay-P request):
+  // street name, then house number/other -- replaces the old single
+  // free-text `address` field and the PT-only optional "Floor/Door" line.
+  // Both lines are now collected for Angola too.
+  streetName: { pt: 'Nome da rua', en: 'Street name' },
+  houseNumberOther: { pt: 'Número da porta / outro', en: 'House number / other' },
   postalCode: { pt: 'Código Postal', en: 'Postal Code' },
   city: { pt: 'Cidade', en: 'City' },
   municipality: { pt: 'Município', en: 'Municipality' },
@@ -215,6 +227,10 @@ export const T: Record<string, Record<Lang, string>> = {
   paymentStripe: { pt: 'Cartão (Stripe)', en: 'Card (Stripe)' },
   paymentMbway: { pt: 'MB WAY', en: 'MB WAY' },
   paymentMulticaixaExpress: { pt: 'AppyPay — Multicaixa Express ou Referência', en: 'AppyPay — Multicaixa Express or Reference' },
+  // Portugal's checkout fallback while payments are deferred (2026-08-04) --
+  // replaces the old hard-blocking error with a single manual method,
+  // mirrored on Angola's existing bank-transfer fallback.
+  paymentManualWhatsapp: { pt: 'Coordenação manual via WhatsApp', en: 'Manual coordination via WhatsApp' },
   paymentBankTransfer: { pt: 'Transferência bancária', en: 'Bank transfer' },
   localCourierDelivery: { pt: 'Entrega por estafeta local', en: 'Local courier delivery' },
   stripeRedirecting: { pt: 'A redirecionar para o pagamento seguro…', en: 'Redirecting to secure payment…' },
@@ -303,6 +319,11 @@ export const T: Record<string, Record<Lang, string>> = {
     en: 'This payment method settles in euros (EUR), since Stripe/PayPal don’t support Kwanza. The total below reflects the exact amount you’ll be charged.',
   },
   discount: { pt: 'Desconto', en: 'Discount' },
+  // VAT-included note under the checkout total (2026-08-04) -- the price
+  // never changes, this just discloses how much of it is VAT. Same
+  // calculation the invoice PDF uses (back out the net amount from the
+  // final total), so this always agrees with the eventual invoice.
+  vatIncludedLabel: { pt: 'IVA ({rate}%) incluído: {amount}', en: 'VAT ({rate}%) included: {amount}' },
 
   // Confirmation and lookup
   orderConfirmed: { pt: 'Encomenda confirmada', en: 'Order confirmed' },

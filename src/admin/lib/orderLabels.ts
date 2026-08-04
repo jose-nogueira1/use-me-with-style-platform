@@ -11,6 +11,7 @@ export const PAYMENT_METHOD_KEY: Record<string, string> = {
   stripe: 'paymentMethodStripe',
   mbway: 'paymentMethodMbway',
   multicaixa_express: 'paymentMethodMulticaixaExpress',
+  manual_whatsapp: 'paymentMethodManualWhatsapp',
 };
 export const DELIVERY_METHOD_KEY: Record<string, string> = {
   ctt: 'deliveryMethodCtt',
