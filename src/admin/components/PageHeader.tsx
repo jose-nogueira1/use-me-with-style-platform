@@ -472,7 +472,7 @@ function NotificationRow({
 // Surfaces the three things an admin actually needs to act on: orders stuck
 // in payment review, products running low on stock (same threshold as the
 // Products list's "Low stock" filter -- see productIsLowStock), and
-// WhatsApp/Instagram messages awaiting a reply. Fetched on mount (not only
+// Instagram messages awaiting a reply. Fetched on mount (not only
 // on open) so the badge count is visible without having to click first.
 //
 // Seen/clicked/cleared state (2026-07-25 request, extended same day):

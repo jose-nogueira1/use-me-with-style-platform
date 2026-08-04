@@ -536,19 +536,28 @@ export const T: Record<string, Record<Lang, string>> = {
   noOrdersYet: { en: 'No orders yet.', pt: 'Ainda não existem encomendas.' },
 
   // ---- Mensagens ----
+  conversationInbox: { en: 'Conversations', pt: 'Conversas' },
+  instagramInbox: { en: 'Instagram inbox', pt: 'Caixa de entrada do Instagram' },
+  instagramInboxSubtitle: {
+    en: 'Review incoming Instagram DMs, reply to customers, and keep each conversation organised.',
+    pt: 'Reveja mensagens do Instagram, responda aos clientes e mantenha cada conversa organizada.',
+  },
+  searchMessages: { en: 'Search conversations', pt: 'Pesquisar conversas' },
+  refreshMessages: { en: 'Refresh messages', pt: 'Atualizar mensagens' },
   approvalQueue: { en: 'Approval queue', pt: 'Fila de aprovação' },
   requiredBadge: { en: 'Required', pt: 'Obrigatório' },
   filterAllShort: { en: 'All', pt: 'Todos' },
   noConversations: { en: 'No conversations.', pt: 'Não existem conversas.' },
   selectAConversation: { en: 'Select a conversation.', pt: 'Selecione uma conversa.' },
   escalateAction: { en: 'Escalate', pt: 'Encaminhar' },
+  markNeedsReview: { en: 'Needs review', pt: 'Requer revisão' },
   markResolved: { en: 'Mark resolved', pt: 'Marcar como resolvido' },
   writeAReply: { en: 'Write a reply…', pt: 'Escreva uma resposta…' },
   sendAction: { en: 'Send', pt: 'Enviar' },
   aiAssistedMessaging: { en: 'AI-assisted messaging', pt: 'Mensagens assistidas por IA' },
   aiAssistedMessagingSubtitle: {
-    en: 'Draft, review, approve, and send contextual replies for WhatsApp and Instagram.',
-    pt: 'Crie, reveja, aprove e envie respostas contextuais para WhatsApp e Instagram.',
+    en: 'Future AI-assisted replies for Instagram conversations.',
+    pt: 'Futuras respostas assistidas por IA para conversas do Instagram.',
   },
   settingsMessaging: { en: 'Settings / Messaging', pt: 'Definições / Mensagens' },
 
@@ -662,8 +671,8 @@ export const T: Record<string, Record<Lang, string>> = {
   whatsappLabel: { en: 'Official support', pt: 'Apoio oficial' },
   instagramLabel: { en: 'Instagram', pt: 'Instagram' },
   instagramNote: {
-    en: 'Same rule-based classification via Instagram DM; escalates to you when unmatched.',
-    pt: 'A mesma classificação por regras nas mensagens do Instagram; casos sem correspondência são encaminhados.',
+    en: 'Active inbox for incoming Instagram DMs, manual replies, escalation, and resolution.',
+    pt: 'Caixa ativa para mensagens do Instagram, respostas manuais, encaminhamento e resolução.',
   },
   deferredLabel: { en: 'Deferred', pt: 'Adiado' },
   deferredMessagingNote: {
