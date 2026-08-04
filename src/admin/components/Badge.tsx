@@ -62,3 +62,21 @@ export function statusBadgeProps(status: string, lang: Lang): { label: string; t
       return { label: status, tone: 'neutral' };
   }
 }
+
+// A newly-created online-payment order is not operationally "New" yet: it
+// is holding stock while the gateway is pending. Keep the stored workflow
+// status unchanged, but name that transient state honestly everywhere an
+// order itself (rather than a status filter/history entry) is displayed.
+// eslint-disable-next-line react-refresh/only-export-components
+export function orderStatusBadgeProps(
+  order: { status: string; paymentStatus?: string; paymentMethod?: string },
+  lang: Lang,
+): { label: string; tone: BadgeTone } {
+  const onlinePending =
+    order.status === 'new' &&
+    order.paymentStatus === 'pending' &&
+    ['multicaixa_express', 'stripe', 'paypal'].includes(order.paymentMethod ?? '');
+  return onlinePending
+    ? { label: t('statusAwaitingPayment', lang), tone: 'gold' }
+    : statusBadgeProps(order.status, lang);
+}

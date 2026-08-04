@@ -4,7 +4,7 @@ import { C } from '../../theme';
 import { useApp } from '../../state/AppContext';
 import { adminCountOrders, adminListOrders, type ApiOrder } from '../../lib/api';
 import { PageHeader } from '../components/PageHeader';
-import { Badge, statusBadgeProps } from '../components/Badge';
+import { Badge, orderStatusBadgeProps, statusBadgeProps } from '../components/Badge';
 import { deliveryMethodLabel, paymentMethodLabel } from '../lib/orderLabels';
 import { downloadOrdersCsv } from '../lib/ordersCsv';
 import { t } from '../i18n';
@@ -327,7 +327,7 @@ export function Orders() {
                       o.market,
                       paymentMethodLabel(o.paymentMethod, lang),
                       deliveryMethodLabel(o.deliveryMethod, lang),
-                      <Badge key="b" {...statusBadgeProps(o.status, lang)} />,
+                      <Badge key="b" {...orderStatusBadgeProps(o, lang)} />,
                       `${o.total.toLocaleString('en-US')} ${o.currency}`,
                     ]}
                   />

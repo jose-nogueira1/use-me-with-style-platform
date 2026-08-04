@@ -58,6 +58,9 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
            visible against both light and dark subtle-bg tones. */
         @keyframes ump-pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
         .ump-skeleton { display: inline-block; border-radius: 4px; background: currentColor; opacity: 0.16; animation: ump-pulse 1.4s ease-in-out infinite; }
+        @keyframes appypay-payment-spin { to { transform: rotate(360deg); } }
+        .appypay-payment-spinner { animation: appypay-payment-spin 0.8s linear infinite; }
+        @media (prefers-reduced-motion: reduce) { .appypay-payment-spinner { animation-duration: 1.8s; } }
 
         button { cursor: pointer; border: none; background: none; font-family: inherit; }
         a { color: inherit; }

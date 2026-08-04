@@ -88,6 +88,7 @@ export const T: Record<string, Record<Lang, string>> = {
 
   // ---- Order/message status labels (Badge.statusBadgeProps, Mensagens) ----
   statusNew: { en: 'New', pt: 'Nova' },
+  statusAwaitingPayment: { en: 'Awaiting payment', pt: 'A aguardar pagamento' },
   statusPaymentReview: { en: 'Payment Review', pt: 'Revisão de pagamento' },
   statusProcessing: { en: 'Processing', pt: 'Em processamento' },
   statusShipped: { en: 'Shipped', pt: 'Enviada' },

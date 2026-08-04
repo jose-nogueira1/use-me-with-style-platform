@@ -9,6 +9,8 @@ type AppyPayWidgetProps = {
   merchantTransactionId: string;
   phoneNumber: string;
   lang: 'pt' | 'en';
+  attempt: number;
+  onStateChange: (state: 'loading' | 'ready' | 'failed') => void;
 };
 
 /**
@@ -22,15 +24,23 @@ export function AppyPayWidget({
   merchantTransactionId,
   phoneNumber,
   lang,
+  attempt,
+  onStateChange,
 }: AppyPayWidgetProps) {
   const [loadFailed, setLoadFailed] = useState(false);
   const frameRef = useRef<HTMLIFrameElement>(null);
+  const stateChangeRef = useRef(onStateChange);
+
+  useEffect(() => {
+    stateChangeRef.current = onStateChange;
+  }, [onStateChange]);
 
   useEffect(() => {
     const frameDocument = frameRef.current?.contentDocument;
     if (!frameDocument) return;
 
     setLoadFailed(false);
+    stateChangeRef.current('loading');
     frameDocument.open();
     frameDocument.write('<!doctype html><html><head></head><body></body></html>');
     frameDocument.close();
@@ -47,6 +57,14 @@ export function AppyPayWidget({
       ? 'A carregar Multicaixa Express e Referência…'
       : 'Loading Multicaixa Express and Reference…';
     frameDocument.body.appendChild(container);
+
+    const style = frameDocument.createElement('style');
+    style.textContent = `
+      html, body { margin: 0; min-height: 100%; background: #fff; color: #171714; }
+      body { padding: 0; overflow-x: hidden; font-family: Arial, sans-serif; }
+      #${CONTAINER_ID} { min-height: 420px; }
+    `;
+    frameDocument.head.appendChild(style);
 
     const script = frameDocument.createElement('script');
     script.id = SCRIPT_ID;
@@ -76,16 +94,36 @@ export function AppyPayWidget({
       script.dataset.paymentMethods = publicEnv.appyPayPaymentMethods;
     }
     script.dataset.lang = lang === 'en' ? 'en' : 'pt-PT';
-    script.onerror = () => setLoadFailed(true);
+    const markFailed = () => {
+      setLoadFailed(true);
+      stateChangeRef.current('failed');
+    };
+    script.onerror = markFailed;
     frameDocument.head.appendChild(script);
 
+    const observer = new MutationObserver(() => {
+      const hasInteractiveContent = Boolean(
+        container.querySelector('button, input, form, iframe, select, [role="button"], [class]'),
+      );
+      if (hasInteractiveContent) stateChangeRef.current('ready');
+    });
+    observer.observe(container, { childList: true, subtree: true, attributes: true });
+    const timeout = window.setTimeout(() => {
+      const hasInteractiveContent = Boolean(
+        container.querySelector('button, input, form, iframe, select, [role="button"], [class]'),
+      );
+      if (!hasInteractiveContent) markFailed();
+    }, 12_000);
+
     return () => {
+      window.clearTimeout(timeout);
+      observer.disconnect();
       script.remove();
     };
-  }, [amount, description, merchantTransactionId, phoneNumber, lang]);
+  }, [amount, attempt, description, merchantTransactionId, phoneNumber, lang]);
 
   if (loadFailed) {
-    return <p role="alert">{lang === 'pt' ? 'Não foi possível carregar o pagamento AppyPay. Tente novamente.' : 'AppyPay could not be loaded. Please try again.'}</p>;
+    return null;
   }
 
   // AppyPay injects unscoped styles for body, headings, links, and buttons.
@@ -104,7 +142,7 @@ export function AppyPayWidget({
     <iframe
       ref={frameRef}
       title={lang === 'pt' ? 'Pagamento AppyPay' : 'AppyPay payment'}
-      style={{ display: 'block', width: '100%', height: 'min(720px, 85vh)', border: 0 }}
+      style={{ display: 'block', width: '100%', height: 'clamp(420px, 58vh, 560px)', border: 0, background: '#fff' }}
     />
   );
 }

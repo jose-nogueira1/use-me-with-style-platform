@@ -4,7 +4,7 @@ import { C, F } from '../../theme';
 import { useApp } from '../../state/AppContext';
 import { adminListOrders, adminListProducts, type ApiOrder, type ApiProduct } from '../../lib/api';
 import { PageHeader } from '../components/PageHeader';
-import { Badge, statusBadgeProps } from '../components/Badge';
+import { Badge, orderStatusBadgeProps } from '../components/Badge';
 import { t, type Lang } from '../i18n';
 import { deliveryMethodLabel, paymentMethodLabel } from '../lib/orderLabels';
 import { downloadOrdersCsv } from '../lib/ordersCsv';
@@ -292,7 +292,7 @@ export function Dashboard() {
         <div style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 18, minWidth: 0 }}>
           <div style={{ fontFamily: F.display, fontSize: 19, fontWeight: 800, color: C.ink, marginBottom: 14 }}>{t('recentOrders', lang)}</div>
           {recentOrders.map((o, i) => {
-            const b = statusBadgeProps(o.status, lang);
+            const b = orderStatusBadgeProps(o, lang);
             return (
               <Link
                 key={o.id}

@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { X } from 'lucide-react';
 import { C, F, t, pickBilingual, formatKz, type Lang } from '../../theme';
 import { useApp } from '../../state/AppContext';
 import { useProducts } from '../../hooks/useProducts';
 import {
   createOrder,
   createAppyPayOrder,
+  cancelAppyPayOrder,
   createStripeCheckoutSession,
   fetchMarketSettings,
   fetchTaxRates,
@@ -16,7 +16,7 @@ import {
   type TaxRates,
 } from '../../lib/api';
 import { isAppyPayWidgetConfigured } from '../../config/env';
-import { AppyPayWidget } from '../components/AppyPayWidget';
+import { AppyPayPaymentModal } from '../components/AppyPayPaymentModal';
 import { getMetaOrderContext } from '../../lib/analyticsConsent';
 import { PaypalButton } from '../components/PaypalButton';
 import { localizeCouponError } from '../couponError';
@@ -403,7 +403,13 @@ export function Checkout() {
   const [appyPayOrder, setAppyPayOrder] = useState<{
     orderNumber: string;
     merchantTransactionId: string;
+    cancellationToken: string;
+    reservationExpiresAt: string;
   } | null>(null);
+  const [appyPayPhase, setAppyPayPhase] = useState<'loading' | 'ready' | 'releasing' | 'error'>('loading');
+  const [appyPayAttempt, setAppyPayAttempt] = useState(0);
+  const [appyPayCancellationConfirmed, setAppyPayCancellationConfirmed] = useState(false);
+  const appyPayFailureHandledRef = useRef<string | null>(null);
   const [error, setError] = useState<string | null>(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get('stripe') === 'cancelled' ? t('paymentCancelled', lang) : null;
@@ -768,6 +774,64 @@ export function Checkout() {
     };
   };
 
+  const releaseAppyPayAttempt = async (mode: 'close' | 'failed' | 'expired') => {
+    const order = appyPayOrder;
+    if (!order || appyPayPhase === 'releasing') return;
+    if (appyPayCancellationConfirmed) {
+      if (mode === 'close') setAppyPayOrder(null);
+      return;
+    }
+
+    setAppyPayPhase('releasing');
+    try {
+      await cancelAppyPayOrder(order);
+      setAppyPayCancellationConfirmed(true);
+      if (mode === 'close') {
+        setAppyPayOrder(null);
+        setError(lang === 'pt'
+          ? 'Pagamento cancelado. A reserva foi libertada e o artigo voltou ao stock.'
+          : 'Payment cancelled. The reservation was released and the item is back in stock.');
+      } else {
+        setAppyPayPhase('error');
+      }
+    } catch (err) {
+      console.error('AppyPay cancellation failed', err);
+      setAppyPayCancellationConfirmed(false);
+      setAppyPayPhase('error');
+    }
+  };
+
+  const handleAppyPayWidgetState = (state: 'loading' | 'ready' | 'failed') => {
+    if (!appyPayOrder || appyPayPhase === 'releasing' || appyPayPhase === 'error') return;
+    if (state === 'ready') {
+      setAppyPayPhase('ready');
+      return;
+    }
+    if (state === 'loading') {
+      setAppyPayPhase('loading');
+      return;
+    }
+    if (appyPayFailureHandledRef.current === appyPayOrder.merchantTransactionId) return;
+    appyPayFailureHandledRef.current = appyPayOrder.merchantTransactionId;
+    void releaseAppyPayAttempt('failed');
+  };
+
+  const retryAppyPay = async () => {
+    if (!appyPayCancellationConfirmed || appyPayPhase === 'releasing') return;
+    setAppyPayPhase('loading');
+    setAppyPayCancellationConfirmed(false);
+    try {
+      const order = await createAppyPayOrder(buildOrderInput());
+      appyPayFailureHandledRef.current = null;
+      setAppyPayAttempt((value) => value + 1);
+      setAppyPayOrder(order);
+    } catch (err) {
+      console.error('AppyPay retry failed', err);
+      setAppyPayCancellationConfirmed(true);
+      setAppyPayPhase('error');
+    }
+  };
+
   const handleApplyCoupon = async () => {
     const code = couponInput.trim();
     if (!code) return;
@@ -857,6 +921,10 @@ export function Checkout() {
           throw new Error('AppyPay widget credentials are missing');
         }
         const order = await createAppyPayOrder(buildOrderInput());
+        appyPayFailureHandledRef.current = null;
+        setAppyPayCancellationConfirmed(false);
+        setAppyPayPhase('loading');
+        setAppyPayAttempt((value) => value + 1);
         setAppyPayOrder(order);
         return;
       }
@@ -1090,44 +1158,22 @@ export function Checkout() {
         )}
 
         {appyPayOrder && (
-          // Popup instead of the previous inline box (2026-08-04, Jay-P
-          // request after a checkout attempt "didn't work as expected"):
-          // the widget used to render at the bottom of the LEFT form
-          // column, while "Pay now" lives in the right summary column --
-          // easy to miss entirely if the buyer's eyes stayed on the button
-          // they just clicked. Same dialog/scrim/close-button pattern as
-          // ProductDetail's size-guide modal (the one other modal in this
-          // app), just wider to fit the widget's iframe.
-          <div style={{ position: 'fixed', inset: 0, background: C.scrim, zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-            <div role="dialog" aria-modal="true" aria-labelledby="appypay-modal-title" style={{ background: C.paper, borderRadius: 10, padding: 20, width: '100%', maxWidth: 480, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 50px rgba(0,0,0,0.28)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
-                <div id="appypay-modal-title" style={{ fontFamily: F.display, fontSize: 18, fontWeight: 800, color: C.ink }}>
-                  {t('paymentMulticaixaExpress', lang)}
-                </div>
-                <button
-                  type="button"
-                  aria-label={lang === 'pt' ? 'Fechar' : 'Close'}
-                  onClick={() => navigate(`/encomenda-confirmada/${appyPayOrder.orderNumber}`)}
-                >
-                  <X size={18} />
-                </button>
-              </div>
-              <AppyPayWidget
-                amount={total}
-                description={`Use Me With Style ${appyPayOrder.orderNumber}`}
-                merchantTransactionId={appyPayOrder.merchantTransactionId}
-                phoneNumber={fullPhone}
-                lang={lang}
-              />
-              <button
-                type="button"
-                onClick={() => navigate(`/encomenda-confirmada/${appyPayOrder.orderNumber}`)}
-                style={{ marginTop: 16, width: '100%', padding: 12 }}
-              >
-                Ver estado da encomenda
-              </button>
-            </div>
-          </div>
+          <AppyPayPaymentModal
+            key={appyPayOrder.merchantTransactionId}
+            order={appyPayOrder}
+            amount={total}
+            formattedAmount={fmt(total)}
+            phoneNumber={fullPhone}
+            lang={lang}
+            phase={appyPayPhase}
+            attempt={appyPayAttempt}
+            cancellationConfirmed={appyPayCancellationConfirmed}
+            onWidgetStateChange={handleAppyPayWidgetState}
+            onCancel={() => void releaseAppyPayAttempt('close')}
+            onRetry={() => void retryAppyPay()}
+            onViewStatus={() => navigate(`/encomenda-confirmada/${appyPayOrder.orderNumber}`)}
+            onExpired={() => void releaseAppyPayAttempt('expired')}
+          />
         )}
 
         {appyPayOrder ? null : paymentMethod === 'paypal' ? (
