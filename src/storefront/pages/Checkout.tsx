@@ -38,9 +38,9 @@ const DEFAULT_MARKET_SETTINGS: MarketSettings = {
   // single English-only string, so Angola's Portuguese-default shoppers saw
   // English bank-transfer instructions whenever the CMS field was blank.
   angolaBankTransferInstructionsPT:
-    'As instruções de pagamento Multicaixa Express são enviadas por WhatsApp assim que a encomenda for confirmada.',
+    'A nossa equipa enviará por email quaisquer instruções adicionais necessárias após a confirmação da encomenda.',
   angolaBankTransferInstructionsEN:
-    'Multicaixa Express payment instructions are sent by WhatsApp once the order is confirmed.',
+    'Our team will email any additional instructions required after the order is confirmed.',
   angolaPaymentMethods: ['multicaixa_express'],
   angolaDeliveryMethods: ['courier_ao'],
   angolaMunicipalityPrices: {
@@ -51,9 +51,9 @@ const DEFAULT_MARKET_SETTINGS: MarketSettings = {
   angolaFreeShippingThreshold: 80000,
   portugalPaymentsEnabled: false,
   portugalManualCheckoutInstructionsPT:
-    'Vamos entrar em contacto por WhatsApp para combinar o pagamento assim que a encomenda for confirmada.',
+    'Enviaremos por email as instruções para concluir o pagamento assim que a encomenda for confirmada.',
   portugalManualCheckoutInstructionsEN:
-    "We'll reach out on WhatsApp to arrange payment once the order is confirmed.",
+    "We'll email the instructions needed to complete payment once the order is confirmed.",
   portugalPaymentMethods: ['paypal', 'stripe'],
   portugalDeliveryMethods: ['ctt', 'courier_pt'],
   portugalStandardShippingPrice: 4.9,

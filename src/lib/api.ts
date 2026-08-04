@@ -817,7 +817,7 @@ export async function lookupOrder(orderNumber: string, email: string): Promise<P
 }
 
 /** Help page "send us an email" form (JOS-64 follow-up). */
-export async function submitContactMessage(input: { name: string; email: string; message: string }): Promise<void> {
+export async function submitContactMessage(input: { name: string; email: string; phone?: string; orderNumber?: string; message: string }): Promise<void> {
   await request<{ ok: true }>('/contact', {
     method: 'POST',
     body: JSON.stringify(input),

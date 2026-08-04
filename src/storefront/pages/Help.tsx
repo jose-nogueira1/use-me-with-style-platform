@@ -1,13 +1,14 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ChevronDown, Mail, Search } from 'lucide-react';
 import { C, F, t, pickBilingual } from '../../theme';
 import { useApp } from '../../state/AppContext';
 import { fetchMarketSettings, submitContactMessage, type MarketSettings } from '../../lib/api';
 
 // Minimal Phase 1 placeholder -- the Figma inventory names "Help" as a
 // bottom-nav destination but doesn't design its content in the high-fidelity
-// screens fetched so far. Points customers to WhatsApp, matching the
-// messaging automation already live (see JOS-58).
+// screens fetched so far. Email is the official support channel; telephone
+// details are collected only so the team can escalate outbound when needed.
 //
 // Business hours, shipping & delivery, and returns & exchanges policy (JOS-64,
 // added 2026-07-23/24): pulled from MarketSettings rather than hardcoded, all
@@ -103,6 +104,8 @@ export function Help() {
 
   const [contactName, setContactName] = useState('');
   const [contactEmail, setContactEmail] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
+  const [contactOrder, setContactOrder] = useState('');
   const [contactMessage, setContactMessage] = useState('');
   const [sendState, setSendState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
 
@@ -110,10 +113,18 @@ export function Help() {
     e.preventDefault();
     setSendState('sending');
     try {
-      await submitContactMessage({ name: contactName.trim(), email: contactEmail.trim(), message: contactMessage.trim() });
+      await submitContactMessage({
+        name: contactName.trim(),
+        email: contactEmail.trim(),
+        phone: contactPhone.trim(),
+        orderNumber: contactOrder.trim(),
+        message: contactMessage.trim(),
+      });
       setSendState('sent');
       setContactName('');
       setContactEmail('');
+      setContactPhone('');
+      setContactOrder('');
       setContactMessage('');
     } catch (err) {
       console.error('Contact form submit failed', err);
@@ -158,26 +169,30 @@ export function Help() {
       <div style={{ fontSize: 13, color: C.inkSoft, lineHeight: 1.6, marginBottom: 20 }}>
         {t('helpBody', lang)}
       </div>
-      <a
-        href="https://wa.me/244933617878"
-        style={{
-          display: 'inline-block',
-          padding: '12px 24px',
-          background: C.ctaBg,
-          border: `1px solid ${C.ctaBorder}`,
-          color: C.onDarkGold,
-          fontSize: 11,
-          fontWeight: 800,
-          letterSpacing: 1.5,
-          textTransform: 'uppercase',
-          borderRadius: 8,
-          textDecoration: 'none',
-        }}
-      >
-        {t('chatOnWhatsapp', lang)}
-      </a>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 12, textAlign: 'left' }}>
+        <Link to="/conta" style={{ padding: 16, border: `1px solid ${C.rule}`, borderRadius: 8, background: C.paper, color: C.ink, textDecoration: 'none' }}>
+          <Search size={18} color={C.goldDeep} />
+          <div style={{ marginTop: 10, fontFamily: F.display, fontWeight: 800 }}>{t('orderHelpHeading', lang)}</div>
+          <div style={{ marginTop: 5, fontSize: 11.5, lineHeight: 1.55, color: C.inkSoft }}>{t('orderHelpBody', lang)}</div>
+        </Link>
+        <a href="mailto:support@usemewithstyle.shop?subject=Order%20support%20%E2%80%94%20%5Border%20number%5D" style={{ padding: 16, border: `1px solid ${C.rule}`, borderRadius: 8, background: C.paper, color: C.ink, textDecoration: 'none' }}>
+          <Mail size={18} color={C.goldDeep} />
+          <div style={{ marginTop: 10, fontFamily: F.display, fontWeight: 800 }}>{t('supportEmailAction', lang)}</div>
+          <div style={{ marginTop: 5, fontSize: 11.5, lineHeight: 1.55, color: C.inkSoft }}>support@usemewithstyle.shop</div>
+        </a>
+      </div>
+      <div style={{ marginTop: 12, padding: 14, background: C.subtleBg, borderRadius: 8, fontSize: 11.5, color: C.inkSoft, lineHeight: 1.6 }}>
+        {t('supportEmailGuidance', lang)}
+      </div>
 
       <div style={{ marginTop: 20 }}>
+        <AccordionSection
+          heading={t('paymentHelpHeading', lang)}
+          text={t('paymentHelpBody', lang)}
+          loading={false}
+          open={openSections.has('payment')}
+          onToggle={() => toggleSection('payment')}
+        />
         <AccordionSection
           heading={t('businessHoursHeading', lang)}
           text={hoursText}
@@ -227,6 +242,20 @@ export function Help() {
             placeholder={t('contactEmailPlaceholder', lang)}
             type="email"
             required
+            style={inputStyle}
+          />
+          <input
+            value={contactPhone}
+            onChange={(e) => setContactPhone(e.target.value)}
+            placeholder={t('contactPhonePlaceholder', lang)}
+            type="tel"
+            required
+            style={inputStyle}
+          />
+          <input
+            value={contactOrder}
+            onChange={(e) => setContactOrder(e.target.value)}
+            placeholder={t('contactOrderPlaceholder', lang)}
             style={inputStyle}
           />
           <textarea

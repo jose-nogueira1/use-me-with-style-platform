@@ -161,7 +161,7 @@ export const T: Record<string, Record<Lang, string>> = {
   // change to read a single name field.
   firstName: { pt: 'Nome próprio', en: 'First name' },
   lastName: { pt: 'Apelido', en: 'Last name' },
-  phoneWhatsapp: { pt: 'Telefone / WhatsApp', en: 'Phone / WhatsApp' },
+  phoneWhatsapp: { pt: 'Telefone', en: 'Phone number' },
   email: { pt: 'Email', en: 'Email' },
   address: { pt: 'Morada', en: 'Address' },
   // Address split into two required lines (2026-08-04, Jay-P request):
@@ -230,7 +230,7 @@ export const T: Record<string, Record<Lang, string>> = {
   // Portugal's checkout fallback while payments are deferred (2026-08-04) --
   // replaces the old hard-blocking error with a single manual method,
   // mirrored on Angola's existing bank-transfer fallback.
-  paymentManualWhatsapp: { pt: 'Coordenação manual via WhatsApp', en: 'Manual coordination via WhatsApp' },
+  paymentManualWhatsapp: { pt: 'Coordenação manual por email', en: 'Manual coordination by email' },
   paymentBankTransfer: { pt: 'Transferência bancária', en: 'Bank transfer' },
   localCourierDelivery: { pt: 'Entrega por estafeta local', en: 'Local courier delivery' },
   stripeRedirecting: { pt: 'A redirecionar para o pagamento seguro…', en: 'Redirecting to secure payment…' },
@@ -330,8 +330,8 @@ export const T: Record<string, Record<Lang, string>> = {
   thankYou: { pt: 'Obrigada pela sua compra.', en: 'Thank you for your purchase.' },
   orderNumber: { pt: 'Número da encomenda', en: 'Order number' },
   confirmationSentNote: {
-    pt: 'Enviámos os detalhes por email e WhatsApp. Pode consultar o estado da sua encomenda a qualquer momento abaixo.',
-    en: "We've sent the details by email and WhatsApp. You can check your order's status any time below.",
+    pt: 'Enviámos os detalhes por email. Pode consultar o estado da sua encomenda a qualquer momento abaixo.',
+    en: "We've sent the details by email. You can check your order's status any time below.",
   },
   orderStatus: { pt: 'Estado da encomenda', en: 'Order status' },
   statusReceived: { pt: 'Encomenda recebida', en: 'Order received' },
@@ -351,15 +351,26 @@ export const T: Record<string, Record<Lang, string>> = {
   // Help
   needAHand: { pt: 'Precisa de ajuda?', en: 'Need a hand?' },
   helpBody: {
-    pt: 'Escreva-nos no WhatsApp e responderemos em breve, ou consulte uma encomenda existente abaixo.',
-    en: "Message us on WhatsApp and we'll get back to you shortly, or track an existing order below.",
+    pt: 'Encontre respostas rápidas, consulte a sua encomenda ou contacte a nossa equipa por email.',
+    en: 'Find quick answers, look up your order, or contact our team by email.',
   },
-  chatOnWhatsapp: { pt: 'Conversar no WhatsApp', en: 'Chat on WhatsApp' },
+  supportEmailAction: { pt: 'Enviar email ao apoio', en: 'Email customer support' },
+  supportEmailGuidance: {
+    pt: 'Inclua o número da encomenda e um número de telefone onde possamos contactá-lo. Se for necessário, a nossa equipa entrará em contacto por telefone ou WhatsApp.',
+    en: 'Include your order number and a telephone number where we can reach you. If necessary, our team will contact you by telephone or WhatsApp.',
+  },
+  orderHelpHeading: { pt: 'Apoio à encomenda', en: 'Order support' },
+  orderHelpBody: { pt: 'Consulte primeiro o estado e os detalhes da sua encomenda.', en: 'Check your order status and details first.' },
+  paymentHelpHeading: { pt: 'Pagamentos', en: 'Payments' },
+  paymentHelpBody: {
+    pt: 'Uma encomenda só é confirmada depois de o pagamento ser verificado. Se o pagamento falhar ou ficar pendente, envie um email com o número da encomenda.',
+    en: 'An order is only confirmed after payment is verified. If payment fails or remains pending, email us with your order number.',
+  },
   returnsPolicyHeading: { pt: 'Política de trocas e devoluções', en: 'Returns & exchanges policy' },
   returnsPolicyLoading: { pt: 'A carregar política…', en: 'Loading policy…' },
   returnsPolicyUnavailable: {
-    pt: 'A política de trocas e devoluções está a ser atualizada. Contacte-nos no WhatsApp para qualquer pedido.',
-    en: "Our returns & exchanges policy is being updated. Message us on WhatsApp for any request.",
+    pt: 'A política de trocas e devoluções está a ser atualizada. Envie qualquer pedido para support@usemewithstyle.shop.',
+    en: 'Our returns & exchanges policy is being updated. Email any request to support@usemewithstyle.shop.',
   },
   businessHoursHeading: { pt: 'Horário de atendimento', en: 'Business hours' },
   shippingHeading: { pt: 'Entregas e envios', en: 'Shipping & delivery' },
@@ -368,17 +379,19 @@ export const T: Record<string, Record<Lang, string>> = {
   dataDeletionNav: { pt: 'Eliminação de Dados', en: 'Data Deletion' },
   legalPageLoading: { pt: 'A carregar…', en: 'Loading…' },
   legalPagePending: {
-    pt: 'Este conteúdo está a ser preparado. Contacte-nos no WhatsApp para qualquer questão.',
-    en: 'This content is being prepared. Message us on WhatsApp for any questions.',
+    pt: 'Este conteúdo está a ser preparado. Contacte support@usemewithstyle.shop para qualquer questão.',
+    en: 'This content is being prepared. Email support@usemewithstyle.shop with any questions.',
   },
   complaintsBookLabel: { pt: 'Livro de Reclamações', en: 'Complaints Book' },
-  emailUsHeading: { pt: 'Enviar-nos um email', en: 'Send us an email' },
+  emailUsHeading: { pt: 'Contactar o apoio por email', en: 'Contact support by email' },
   emailUsBody: {
-    pt: 'Prefere email? Escreva-nos abaixo e respondemos assim que possível.',
-    en: "Prefer email? Write to us below and we'll get back to you as soon as we can.",
+    pt: 'O email é o nosso canal oficial de apoio. Inclua o número da encomenda e um telefone de contacto; se necessário, entraremos em contacto diretamente.',
+    en: 'Email is our official support channel. Include your order number and a contact telephone number; if necessary, we will contact you directly.',
   },
   contactNamePlaceholder: { pt: 'Nome', en: 'Name' },
   contactEmailPlaceholder: { pt: 'O seu email', en: 'Your email' },
+  contactPhonePlaceholder: { pt: 'Telefone de contacto', en: 'Contact telephone number' },
+  contactOrderPlaceholder: { pt: 'Número da encomenda (se aplicável)', en: 'Order number (if applicable)' },
   contactMessagePlaceholder: { pt: 'A sua mensagem', en: 'Your message' },
   sendMessage: { pt: 'Enviar mensagem', en: 'Send message' },
   contactMessageSent: {
@@ -386,8 +399,8 @@ export const T: Record<string, Record<Lang, string>> = {
     en: "Message sent! We'll get back to you as soon as we can.",
   },
   contactMessageFailed: {
-    pt: 'Não foi possível enviar a mensagem agora. Tente novamente ou use o WhatsApp.',
-    en: 'Could not send your message right now. Please try again or use WhatsApp.',
+    pt: 'Não foi possível enviar a mensagem agora. Tente novamente ou envie diretamente para support@usemewithstyle.shop.',
+    en: 'Could not send your message right now. Please try again or email support@usemewithstyle.shop directly.',
   },
 
   // Footer
