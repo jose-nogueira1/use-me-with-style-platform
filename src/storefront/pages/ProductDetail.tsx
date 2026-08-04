@@ -317,8 +317,8 @@ export function ProductDetail() {
               <div style={{ fontSize: 13, color: C.inkSoft, lineHeight: 1.6 }}>
                 {product.fitNote ||
                   (lang === 'pt'
-                    ? 'Guia de tamanhos em breve. Fale connosco pelo WhatsApp para conselhos de tamanho.'
-                    : 'Size chart coming soon. Message us on WhatsApp for sizing advice.')}
+                    ? 'Guia de tamanhos em breve. Envie um email para support@usemewithstyle.shop para aconselhamento.'
+                    : 'Size chart coming soon. Email support@usemewithstyle.shop for sizing advice.')}
               </div>
             )}
           </div>

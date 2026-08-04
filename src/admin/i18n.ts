@@ -72,7 +72,7 @@ export const T: Record<string, Record<Lang, string>> = {
   savingEllipsis: { en: 'Saving…', pt: 'A guardar…' },
   backLink: { en: 'Back', pt: 'Voltar' },
   nameField: { en: 'Name', pt: 'Nome' },
-  phoneWhatsappField: { en: 'Phone / WhatsApp', pt: 'Telefone / WhatsApp' },
+  phoneWhatsappField: { en: 'Telephone', pt: 'Telefone' },
   phoneField: { en: 'Phone', pt: 'Telefone' },
   emailField: { en: 'Email', pt: 'Email' },
   addressField: { en: 'Address', pt: 'Morada' },
@@ -244,10 +244,10 @@ export const T: Record<string, Record<Lang, string>> = {
   angolaPayments: { en: 'Angola payments', pt: 'Pagamentos em Angola' },
   angolaPaymentsDetail: { en: 'Appy Pay team response pending.', pt: 'A aguardar resposta da equipa AppyPay.' },
   openBadge: { en: 'Open', pt: 'Aberto' },
-  messagingAutomation: { en: 'Messaging automation', pt: 'Automação de mensagens' },
+  messagingAutomation: { en: 'Customer support', pt: 'Apoio ao cliente' },
   messagingAutomationDetail: {
-    en: 'Keyword-based auto-replies for order/payment/delivery FAQs; sensitive topics always escalate to you.',
-    pt: 'Respostas automáticas por palavras-chave para encomendas, pagamentos e entregas; assuntos sensíveis são sempre encaminhados.',
+    en: 'Email is the official support channel. Telephone or WhatsApp contact is initiated by staff only when necessary.',
+    pt: 'O email é o canal oficial de apoio. O contacto por telefone ou WhatsApp só é iniciado pela equipa quando necessário.',
   },
   // Was "needs payment review" (2026-07-31 follow-up fix) -- this item now
   // also covers brand-new orders (status 'new'), which aren't literally "in
@@ -659,7 +659,7 @@ export const T: Record<string, Record<Lang, string>> = {
   portugalPaymentsEnabledLabel: { en: 'Enable Portugal checkout payments', pt: 'Ativar pagamentos no checkout de Portugal' },
   messagingCardTitle: { en: 'Messaging', pt: 'Mensagens' },
   phase1Badge: { en: 'Phase 1', pt: 'Fase 1' },
-  whatsappLabel: { en: 'WhatsApp', pt: 'WhatsApp' },
+  whatsappLabel: { en: 'Official support', pt: 'Apoio oficial' },
   instagramLabel: { en: 'Instagram', pt: 'Instagram' },
   instagramNote: {
     en: 'Same rule-based classification via Instagram DM; escalates to you when unmatched.',
@@ -677,7 +677,7 @@ export const T: Record<string, Record<Lang, string>> = {
   },
   orderFieldsCard: { en: 'Order Fields', pt: 'Campos da encomenda' },
   requiredCardBadge: { en: 'Required', pt: 'Obrigatório' },
-  orderFieldsCustomer: { en: 'Name, phone/WhatsApp, email, notes.', pt: 'Nome, telefone/WhatsApp, email e notas.' },
+  orderFieldsCustomer: { en: 'Name, telephone, email, notes.', pt: 'Nome, telefone, email e notas.' },
   orderFieldsAddress: { en: 'Address, city, country.', pt: 'Morada, cidade e país.' },
   orderFieldsMethods: { en: 'Payment method and delivery method.', pt: 'Método de pagamento e método de entrega.' },
   orderFieldsLookup: { en: 'Confirmation and lookup without full accounts.', pt: 'Confirmação e consulta sem contas completas.' },
@@ -994,8 +994,8 @@ export const T: Record<string, Record<Lang, string>> = {
     en: 'Admin: orders, products, customers, market settings',
   },
   roadmapPhase1Item5: {
-    pt: 'Mensagens (WhatsApp + Instagram): automação por palavras-chave para dúvidas comuns, escalonamento humano para temas sensíveis',
-    en: 'Messaging (WhatsApp + Instagram): keyword automation for common questions and human escalation for sensitive topics',
+    pt: 'Apoio: email como canal oficial; Instagram monitorizado; contacto telefónico iniciado pela equipa quando necessário',
+    en: 'Support: email as the official channel; Instagram monitored; telephone contact initiated by staff when needed',
   },
   roadmapPhase2Item1: { pt: 'Contas de cliente completas', en: 'Full customer accounts' },
   roadmapPhase2Item2: { pt: 'Marketing / campanhas / calendário de conteúdo', en: 'Marketing / campaigns / content calendar' },

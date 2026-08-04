@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { MessageCircle, FileText, Mail } from 'lucide-react';
+import { FileText, Mail } from 'lucide-react';
 import { C, t, type Lang } from '../../theme';
 import { useApp, type Market } from '../../state/AppContext';
 import { BrandLogo } from '../../components/BrandLogo';
@@ -46,27 +46,7 @@ export function Footer() {
             <BrandLogo tone={themeMode === 'dark' ? 'white' : 'black'} height={40} />
           </div>
           <div style={{ fontSize: 12, color: C.inkSoft, lineHeight: 1.6, maxWidth: 260 }}>{t('footerAbout', lang)}</div>
-          <a
-            href="https://wa.me/244933617878"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 7,
-              marginTop: 16,
-              padding: '9px 14px',
-              borderRadius: 8,
-              background: C.paper,
-              border: `1px solid ${C.fieldBorder}`,
-              color: C.ink,
-              fontSize: 11,
-              fontWeight: 800,
-              textDecoration: 'none',
-            }}
-          >
-            <MessageCircle size={14} color={C.goldDeep} />
-            {t('chatOnWhatsapp', lang)}
-          </a>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 14 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 16 }}>
             <ContactLink href="mailto:support@usemewithstyle.shop" label={lang === 'pt' ? 'Apoio' : 'Support'} email="support@usemewithstyle.shop" />
             <ContactLink href="mailto:legal@usemewithstyle.shop" label={lang === 'pt' ? 'Legal e privacidade' : 'Legal and privacy'} email="legal@usemewithstyle.shop" />
           </div>
