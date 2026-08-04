@@ -846,22 +846,56 @@ const HOME_CONTENT_DEFAULTS: HomeContent = {
   collections: [],
 };
 
+// Field groups for the three independently-saveable sections of the Home
+// Page global (2026-08-04 follow-up: "I want them to be individual each, so
+// I just can change one and save"). Still one Payload global underneath
+// (home-content) with one combined version history -- only the Save
+// buttons/dirty-tracking are split, per Jay-P's choice between that and a
+// full split into three separate globals with separate histories.
+const HERO_FIELD_KEYS = [
+  'heroEyebrowPT', 'heroEyebrowEN', 'heroHeadlinePT', 'heroHeadlineEN',
+  'heroSubtitlePT', 'heroSubtitleEN', 'heroCtaLabelPT', 'heroCtaLabelEN',
+  'heroCtaType', 'heroCtaCategorySlug', 'heroCtaTagSlug', 'heroImage',
+] as const satisfies readonly (keyof HomeContent)[];
+
+function pick<T extends object, K extends keyof T>(obj: T, keys: readonly K[]): Pick<T, K> {
+  const result = {} as Pick<T, K>;
+  for (const k of keys) result[k] = obj[k];
+  return result;
+}
+
 function HomeHeroSection() {
   const { lang } = useApp();
   const [content, setContent] = useState<HomeContent>(HOME_CONTENT_DEFAULTS);
   // Snapshot of `content` exactly as loaded (or last saved/restored), to
-  // disable Save until something actually changed (2026-07-31 admin
-  // report) -- see admin/lib/useDirty.ts. A freshly-uploaded hero image
-  // (handleImageUpload below) deliberately does NOT update this snapshot,
-  // since that upload alone hasn't been saved to home-content yet -- it
-  // should read as a pending change same as any text edit.
+  // disable each section's Save until something in THAT section actually
+  // changed (2026-07-31 admin report, refined 2026-08-04 into per-section
+  // dirty tracking) -- see admin/lib/useDirty.ts. A freshly-uploaded hero
+  // image (handleImageUpload below) deliberately does NOT update this
+  // snapshot, since that upload alone hasn't been saved to home-content yet
+  // -- it should read as a pending change same as any text edit.
   const [originalContent, setOriginalContent] = useState<HomeContent | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
-  const isDirty = useDirty(content, originalContent);
+
+  // Independent saving/error/saved state per section, so saving Categories
+  // doesn't disturb an in-progress, not-yet-saved edit sitting in Hero or
+  // Collections -- each Save call below sends ONLY its own section's fields
+  // layered onto the last-known-saved doc, never the live (possibly dirty)
+  // state of the other two sections.
+  const [savingHero, setSavingHero] = useState(false);
+  const [errorHero, setErrorHero] = useState<string | null>(null);
+  const [savedHero, setSavedHero] = useState(false);
+  const [savingCategories, setSavingCategories] = useState(false);
+  const [errorCategories, setErrorCategories] = useState<string | null>(null);
+  const [savedCategories, setSavedCategories] = useState(false);
+  const [savingCollections, setSavingCollections] = useState(false);
+  const [errorCollections, setErrorCollections] = useState<string | null>(null);
+  const [savedCollections, setSavedCollections] = useState(false);
+
+  const heroDirty = useDirty(pick(content, HERO_FIELD_KEYS), originalContent ? pick(originalContent, HERO_FIELD_KEYS) : null);
+  const categoriesDirty = useDirty(content.homepageCategorySlugs ?? [], originalContent ? originalContent.homepageCategorySlugs ?? [] : null);
+  const collectionsDirty = useDirty(content.collections ?? [], originalContent ? originalContent.collections ?? [] : null);
 
   // Version history (2026-07-25 follow-up, "save old homepage creations, in
   // case I want to re-activate them later"): Payload auto-snapshots the
@@ -879,6 +913,8 @@ function HomeHeroSection() {
   const [categories, setCategories] = useState<ApiCategory[]>([]);
   const [tags, setTags] = useState<ApiMerchTag[]>([]);
 
+  const [loadError, setLoadError] = useState<string | null>(null);
+
   const loadVersions = () => {
     adminListHomeContentVersions()
       .then(setVersions)
@@ -891,7 +927,7 @@ function HomeHeroSection() {
         setContent(c);
         setOriginalContent(c);
       })
-      .catch(() => setError(t('couldntLoadHomeContent', lang)))
+      .catch(() => setLoadError(t('couldntLoadHomeContent', lang)))
       .finally(() => setLoading(false));
     loadVersions();
     Promise.all([adminListCategories(), adminListMerchTags()]).then(([cats, tagDocs]) => {
@@ -901,32 +937,78 @@ function HomeHeroSection() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang]);
 
-  const handleSave = async () => {
-    setSaving(true);
-    setError(null);
-    setSaved(false);
+  // Each of the three handlers below sends the last-known-saved doc
+  // (`originalContent`) with only its own section's fields overlaid from
+  // the live `content` state -- so clicking "Save categories" can never
+  // accidentally persist an unfinished, still-dirty edit sitting in Hero or
+  // Collections. After a successful save, only that section's slice of
+  // `content`/`originalContent` is reconciled with the server response;
+  // the other two sections' local (possibly still-dirty) state is left
+  // untouched.
+  const handleSaveHero = async () => {
+    setSavingHero(true);
+    setErrorHero(null);
+    setSavedHero(false);
     try {
-      const updated = await adminUpdateHomeContent({ ...content, heroImage: refId(content.heroImage) || null });
-      setContent(updated);
-      setOriginalContent(updated);
-      setSaved(true);
+      const base = originalContent ?? content;
+      const payload = { ...base, ...pick(content, HERO_FIELD_KEYS), heroImage: refId(content.heroImage) || null };
+      const updated = await adminUpdateHomeContent(payload);
+      setContent((c) => ({ ...c, ...pick(updated, HERO_FIELD_KEYS) }));
+      setOriginalContent((o) => ({ ...(o ?? updated), ...pick(updated, HERO_FIELD_KEYS) }));
+      setSavedHero(true);
       loadVersions();
     } catch {
-      setError(t('couldntSaveLoggedIn', lang));
+      setErrorHero(t('couldntSaveLoggedIn', lang));
     } finally {
-      setSaving(false);
+      setSavingHero(false);
+    }
+  };
+
+  const handleSaveCategories = async () => {
+    setSavingCategories(true);
+    setErrorCategories(null);
+    setSavedCategories(false);
+    try {
+      const base = originalContent ?? content;
+      const payload = { ...base, homepageCategorySlugs: content.homepageCategorySlugs ?? [] };
+      const updated = await adminUpdateHomeContent(payload);
+      setContent((c) => ({ ...c, homepageCategorySlugs: updated.homepageCategorySlugs }));
+      setOriginalContent((o) => ({ ...(o ?? updated), homepageCategorySlugs: updated.homepageCategorySlugs }));
+      setSavedCategories(true);
+      loadVersions();
+    } catch {
+      setErrorCategories(t('couldntSaveLoggedIn', lang));
+    } finally {
+      setSavingCategories(false);
+    }
+  };
+
+  const handleSaveCollections = async () => {
+    setSavingCollections(true);
+    setErrorCollections(null);
+    setSavedCollections(false);
+    try {
+      const base = originalContent ?? content;
+      const payload = { ...base, collections: content.collections ?? [] };
+      const updated = await adminUpdateHomeContent(payload);
+      setContent((c) => ({ ...c, collections: updated.collections }));
+      setOriginalContent((o) => ({ ...(o ?? updated), collections: updated.collections }));
+      setSavedCollections(true);
+      loadVersions();
+    } catch {
+      setErrorCollections(t('couldntSaveLoggedIn', lang));
+    } finally {
+      setSavingCollections(false);
     }
   };
 
   const handleRestore = async (version: HomeContentVersion) => {
     setRestoringId(String(version.id));
     setVersionsError(null);
-    setSaved(false);
     try {
       const restored = await adminRestoreHomeContentVersion(version.id);
       setContent(restored);
       setOriginalContent(restored);
-      setSaved(true);
       loadVersions();
     } catch {
       setVersionsError(t('couldntRestoreVersion', lang));
@@ -937,12 +1019,12 @@ function HomeHeroSection() {
 
   const handleImageUpload = async (file: File) => {
     setUploading(true);
-    setError(null);
+    setErrorHero(null);
     try {
       const media = await adminUploadMedia(file, 'Home hero image');
       setContent((c) => ({ ...c, heroImage: media }));
     } catch {
-      setError(t('couldntUploadImage', lang));
+      setErrorHero(t('couldntUploadImage', lang));
     } finally {
       setUploading(false);
     }
@@ -958,24 +1040,25 @@ function HomeHeroSection() {
           {t('homeHeroNote', lang)}
         </div>
         <button
-          onClick={() => void handleSave()}
-          disabled={loading || saving || !isDirty}
+          onClick={() => void handleSaveHero()}
+          disabled={loading || savingHero || !heroDirty}
           style={{
             padding: '9px 18px',
-            background: loading || saving || !isDirty ? C.disabledBg : C.black,
-            color: loading || saving || !isDirty ? C.disabledFg : C.onDarkGold,
+            background: loading || savingHero || !heroDirty ? C.disabledBg : C.black,
+            color: loading || savingHero || !heroDirty ? C.disabledFg : C.onDarkGold,
             fontSize: 11,
             fontWeight: 800,
             borderRadius: 6,
             flexShrink: 0,
-            cursor: loading || saving || !isDirty ? 'default' : 'pointer',
+            cursor: loading || savingHero || !heroDirty ? 'default' : 'pointer',
           }}
         >
-          {saving ? '…' : t('saveHomePage', lang)}
+          {savingHero ? '…' : t('saveHomePage', lang)}
         </button>
       </div>
-      {error && <div style={{ fontSize: 12, color: '#B95545', marginBottom: 12 }}>{error}</div>}
-      {saved && <div style={{ fontSize: 12, color: '#3F754D', marginBottom: 12 }}>{t('savedNotice', lang)}</div>}
+      {loadError && <div style={{ fontSize: 12, color: '#B95545', marginBottom: 12 }}>{loadError}</div>}
+      {errorHero && <div style={{ fontSize: 12, color: '#B95545', marginBottom: 12 }}>{errorHero}</div>}
+      {savedHero && <div style={{ fontSize: 12, color: '#3F754D', marginBottom: 12 }}>{t('savedNotice', lang)}</div>}
 
       {loading ? (
         <div style={{ fontSize: 12, color: C.inkSoft }}>{t('loadingEllipsis', lang)}</div>
@@ -1073,9 +1156,31 @@ function HomeHeroSection() {
               the old fixed New Arrivals/Featured sections until an admin
               fills these in. */}
           <div style={{ marginTop: 24, paddingTop: 20, borderTop: `1px solid ${C.ruleLight}` }}>
-            <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 2 }}>{t('homepageCategoriesLabel', lang)}</div>
-            <div style={{ fontSize: 10, color: C.inkSoft, marginBottom: 10 }}>{t('homepageCategoriesNote', lang)}</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 2 }}>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 800, color: C.ink }}>{t('homepageCategoriesLabel', lang)}</div>
+                <div style={{ fontSize: 10, color: C.inkSoft, marginTop: 2 }}>{t('homepageCategoriesNote', lang)}</div>
+              </div>
+              <button
+                onClick={() => void handleSaveCategories()}
+                disabled={savingCategories || !categoriesDirty}
+                style={{
+                  padding: '7px 14px',
+                  background: savingCategories || !categoriesDirty ? C.disabledBg : C.black,
+                  color: savingCategories || !categoriesDirty ? C.disabledFg : C.onDarkGold,
+                  fontSize: 10,
+                  fontWeight: 800,
+                  borderRadius: 6,
+                  flexShrink: 0,
+                  cursor: savingCategories || !categoriesDirty ? 'default' : 'pointer',
+                }}
+              >
+                {savingCategories ? '…' : t('saveCategoriesAction', lang)}
+              </button>
+            </div>
+            {errorCategories && <div style={{ fontSize: 12, color: '#B95545', marginTop: 8 }}>{errorCategories}</div>}
+            {savedCategories && <div style={{ fontSize: 12, color: '#3F754D', marginTop: 8 }}>{t('savedNotice', lang)}</div>}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 10, marginBottom: 10 }}>
               {(content.homepageCategorySlugs ?? []).map((entry, index) => {
                 const label = categories.find((c) => c.slug === entry.slug)?.namePT || entry.slug;
                 const list = content.homepageCategorySlugs ?? [];
@@ -1125,9 +1230,31 @@ function HomeHeroSection() {
           </div>
 
           <div style={{ marginTop: 24, paddingTop: 20, borderTop: `1px solid ${C.ruleLight}` }}>
-            <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 2 }}>{t('homepageCollectionsLabel', lang)}</div>
-            <div style={{ fontSize: 10, color: C.inkSoft, marginBottom: 10 }}>{t('homepageCollectionsNote', lang)}</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 10 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 2 }}>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 800, color: C.ink }}>{t('homepageCollectionsLabel', lang)}</div>
+                <div style={{ fontSize: 10, color: C.inkSoft, marginTop: 2 }}>{t('homepageCollectionsNote', lang)}</div>
+              </div>
+              <button
+                onClick={() => void handleSaveCollections()}
+                disabled={savingCollections || !collectionsDirty}
+                style={{
+                  padding: '7px 14px',
+                  background: savingCollections || !collectionsDirty ? C.disabledBg : C.black,
+                  color: savingCollections || !collectionsDirty ? C.disabledFg : C.onDarkGold,
+                  fontSize: 10,
+                  fontWeight: 800,
+                  borderRadius: 6,
+                  flexShrink: 0,
+                  cursor: savingCollections || !collectionsDirty ? 'default' : 'pointer',
+                }}
+              >
+                {savingCollections ? '…' : t('saveCollectionsAction', lang)}
+              </button>
+            </div>
+            {errorCollections && <div style={{ fontSize: 12, color: '#B95545', marginTop: 8 }}>{errorCollections}</div>}
+            {savedCollections && <div style={{ fontSize: 12, color: '#3F754D', marginTop: 8 }}>{t('savedNotice', lang)}</div>}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 10, marginBottom: 10 }}>
               {(content.collections ?? []).map((row, index) => {
                 const list = content.collections ?? [];
                 const updateRow = (patch: Partial<(typeof list)[number]>) => {

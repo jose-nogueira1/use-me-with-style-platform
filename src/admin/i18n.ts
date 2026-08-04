@@ -645,7 +645,14 @@ export const T: Record<string, Record<Lang, string>> = {
     en: 'Shown at the top of the storefront home page. Leave an English field blank to fall back to the Portuguese one.',
     pt: 'Mostrado no topo da página inicial da loja. Deixe um campo em Inglês vazio para usar o texto em Português.',
   },
-  saveHomePage: { en: 'Save home page', pt: 'Guardar página inicial' },
+  // 2026-08-04 follow-up: Hero/Categories/Collections were one combined
+  // save (editing any one of them dirtied and saved all three together) --
+  // split into three independent Save buttons, one per section, each only
+  // sending that section's own fields. "Previous versions" stays a single
+  // combined list (still one Payload global underneath), per Jay-P's choice.
+  saveHomePage: { en: 'Save hero', pt: 'Guardar destaque' },
+  saveCategoriesAction: { en: 'Save categories', pt: 'Guardar categorias' },
+  saveCollectionsAction: { en: 'Save collections', pt: 'Guardar coleções' },
   couldntLoadHomeContent: { en: "Couldn't load the home page content.", pt: 'Não foi possível carregar o conteúdo da página inicial.' },
   couldntRestoreVersion: { en: "Couldn't restore that version.", pt: 'Não foi possível restaurar essa versão.' },
   couldntLoadPreviousVersions: { en: "Couldn't load previous versions.", pt: 'Não foi possível carregar as versões anteriores.' },
