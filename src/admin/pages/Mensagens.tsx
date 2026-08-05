@@ -9,6 +9,7 @@ import {
   adminMarkInstagramConversationRead,
   adminSendMessage,
   adminUpdateConversationStatus,
+  adminUpdateAiDraft,
   adminUpdateMessageNote,
   type ApiMessage,
   type ConversationStatus,
@@ -149,6 +150,7 @@ export function Mensagens() {
   const selected = conversations.find((conversation) => conversation.key === selectedKey) ?? filtered[0] ?? null;
   const selectedProfile = selected ? profiles[selected.contactHandle] : null;
   const draft = selected ? drafts[selected.key] ?? '' : '';
+  const aiSuggestion = selected ? [...selected.messages].reverse().find((message) => message.direction === 'inbound' && message.aiDraftStatus === 'draft_ready' && message.aiDraft) : undefined;
   const unreadTotal = conversations.reduce((total, conversation) => total + conversation.unreadCount, 0);
 
   useEffect(() => {
@@ -199,6 +201,31 @@ export function Mensagens() {
       setQuickRepliesOpen(false);
     } catch { setError(true); }
     finally { setSending(false); }
+  };
+
+  const handleAiAction = async (action: 'approve' | 'dismiss' | 'regenerate') => {
+    if (!selected || !aiSuggestion) return;
+    try {
+      if (action === 'approve') {
+        const sent = await adminSendMessage({ contactHandle: selected.contactHandle, customerName: selected.customerName, body: aiSuggestion.aiDraft || '' });
+        const updated = await adminUpdateAiDraft(aiSuggestion.id, { aiDraftStatus: 'approved' });
+        setMessages((current) => current ? [sent, ...current.map((message) => message.id === updated.id ? updated : message)] : [sent, updated]);
+      } else {
+        const updated = await adminUpdateAiDraft(aiSuggestion.id, action === 'dismiss'
+          ? { aiDraftStatus: 'dismissed' }
+          : { aiDraftStatus: 'queued', aiProcessingStatus: 'queued', aiAvailableAt: new Date().toISOString() });
+        setMessages((current) => current?.map((message) => message.id === updated.id ? updated : message) ?? [updated]);
+      }
+    } catch { setError(true); }
+  };
+
+  const toggleBotPause = async () => {
+    if (!selected) return;
+    const latest = selected.messages[selected.messages.length - 1];
+    try {
+      const updated = await adminUpdateAiDraft(latest.id, { aiBotPaused: !latest.aiBotPaused });
+      setMessages((current) => current?.map((message) => message.id === updated.id ? updated : message) ?? [updated]);
+    } catch { setError(true); }
   };
 
   const saveNote = async () => {
@@ -275,7 +302,7 @@ export function Mensagens() {
         <main style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 520 }}>
           {!selected && <div style={{ padding: 28, fontSize: 13, color: C.inkSoft }}>{t('selectAConversation', lang)}</div>}
           {selected && <>
-            <ConversationHeader conversation={selected} profile={selectedProfile} lang={lang} contextOpen={contextOpen} setContextOpen={setContextOpen} updateWorkflow={updateWorkflow} />
+            <ConversationHeader conversation={selected} profile={selectedProfile} lang={lang} contextOpen={contextOpen} setContextOpen={setContextOpen} updateWorkflow={updateWorkflow} toggleBotPause={toggleBotPause} />
             <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
               <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
                 <div style={{ flex: 1, overflowY: 'auto', padding: '18px 20px', display: 'flex', flexDirection: 'column' }}>
@@ -288,6 +315,7 @@ export function Mensagens() {
                     return <MessageBubble key={message.id} message={message} repliedTo={repliedTo} lang={lang} groupStart={groupStart} groupEnd={groupEnd} highlighted={highlightedMessageId === message.id} onFocusOriginal={repliedTo ? () => focusOriginal(repliedTo.id) : undefined} />;
                   })}
                 </div>
+                {aiSuggestion && <AiSuggestion lang={lang} message={aiSuggestion} onAction={handleAiAction} />}
                 <Composer lang={lang} draft={draft} setDraft={(value) => setDrafts((current) => ({ ...current, [selected.key]: value }))} sending={sending} send={handleReply} quickRepliesOpen={quickRepliesOpen} setQuickRepliesOpen={setQuickRepliesOpen} />
               </div>
               {contextOpen && <CustomerContext conversation={selected} profile={selectedProfile} lang={lang} noteDraft={noteDrafts[selected.key] ?? selected.messages[0]?.internalNote ?? ''} setNoteDraft={(value) => setNoteDrafts((current) => ({ ...current, [selected.key]: value }))} saveNote={saveNote} savingNote={savingNote} />}
@@ -299,8 +327,9 @@ export function Mensagens() {
   );
 }
 
-function ConversationHeader({ conversation, profile, lang, contextOpen, setContextOpen, updateWorkflow }: { conversation: Conversation; profile?: InstagramProfile | null; lang: 'en' | 'pt'; contextOpen: boolean; setContextOpen: (open: boolean) => void; updateWorkflow: (status: ConversationStatus) => void }) {
+function ConversationHeader({ conversation, profile, lang, contextOpen, setContextOpen, updateWorkflow, toggleBotPause }: { conversation: Conversation; profile?: InstagramProfile | null; lang: 'en' | 'pt'; contextOpen: boolean; setContextOpen: (open: boolean) => void; updateWorkflow: (status: ConversationStatus) => void; toggleBotPause: () => void }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const botPaused = conversation.messages[conversation.messages.length - 1]?.aiBotPaused;
   return <header style={{ padding: '12px 16px', borderBottom: `1px solid ${C.ruleLight}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 14 }}>
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
       <ProfileAvatar profile={profile} fallback={conversation.customerName || conversation.contactHandle} size={40} />
@@ -314,6 +343,7 @@ function ConversationHeader({ conversation, profile, lang, contextOpen, setConte
       <button onClick={() => void updateWorkflow('priority')} style={{ ...headerAction(conversation.workflow === 'priority'), color: conversation.workflow === 'priority' ? C.onDarkGold : '#B95545' }}>{lang === 'pt' ? 'Prioridade' : 'Priority'}</button>
       <button onClick={() => void updateWorkflow('done')} style={headerAction(conversation.workflow === 'done')}>{lang === 'pt' ? 'Concluir' : 'Done'}</button>
       <button aria-expanded={contextOpen} onClick={() => setContextOpen(!contextOpen)} style={{ ...headerAction(contextOpen), display: 'inline-flex', alignItems: 'center', gap: 4 }}><UserRound size={12} /> {lang === 'pt' ? 'Contexto' : 'Context'}</button>
+      <button onClick={toggleBotPause} style={{ ...headerAction(Boolean(botPaused)), fontSize: 10 }}>{botPaused ? (lang === 'pt' ? 'Bot pausado' : 'Bot paused') : (lang === 'pt' ? 'Pausar bot' : 'Pause bot')}</button>
       <a href="https://www.instagram.com/direct/inbox/" target="_blank" rel="noreferrer" aria-label={lang === 'pt' ? 'Abrir conversa no Instagram' : 'Open conversation in Instagram'} style={{ ...headerAction(false), display: 'grid', placeItems: 'center', width: 34, padding: 0 }}><ExternalLink size={13} /></a>
       <div style={{ position: 'relative' }}>
         <button aria-label={lang === 'pt' ? 'Mais ações' : 'More actions'} aria-expanded={menuOpen} onClick={() => setMenuOpen(!menuOpen)} style={{ ...headerAction(menuOpen), width: 34, padding: 0 }}><MoreHorizontal size={14} /></button>
@@ -325,6 +355,23 @@ function ConversationHeader({ conversation, profile, lang, contextOpen, setConte
       </div>
     </div>
   </header>;
+}
+
+function AiSuggestion({ lang, message, onAction }: { lang: 'en' | 'pt'; message: ApiMessage; onAction: (action: 'approve' | 'dismiss' | 'regenerate') => void }) {
+  const confidence = typeof message.aiDraftConfidence === 'number' ? `${Math.round(message.aiDraftConfidence * 100)}%` : null;
+  return <section aria-label={lang === 'pt' ? 'Sugestão do assistente' : 'Assistant suggestion'} style={{ margin: '0 16px 8px', padding: 12, border: `1px solid ${C.gold}`, borderRadius: 9, background: '#FBF8F1' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center', marginBottom: 6 }}>
+      <strong style={{ fontSize: 11, color: C.ink }}>{lang === 'pt' ? 'Sugestão do assistente' : 'Assistant suggestion'}</strong>
+      <span style={{ fontSize: 9, color: C.inkSoft }}>{confidence ? `${lang === 'pt' ? 'Confiança' : 'Confidence'} ${confidence}` : ''}</span>
+    </div>
+    <div style={{ padding: 9, borderRadius: 7, background: C.paper, border: `1px solid ${C.ruleLight}`, fontSize: 12, lineHeight: 1.45, whiteSpace: 'pre-wrap' }}>{message.aiDraft}</div>
+    {message.aiDraftReason && <div style={{ marginTop: 6, fontSize: 9, color: C.inkSoft }}>{message.aiDraftReason}</div>}
+    <div style={{ display: 'flex', gap: 6, marginTop: 9, flexWrap: 'wrap' }}>
+      <button onClick={() => onAction('approve')} style={{ ...headerAction(true), padding: '6px 10px', fontSize: 10 }}>{lang === 'pt' ? 'Aprovar e enviar' : 'Approve and send'}</button>
+      <button onClick={() => onAction('regenerate')} style={{ ...headerAction(false), padding: '6px 10px', fontSize: 10 }}>{lang === 'pt' ? 'Regenerar' : 'Regenerate'}</button>
+      <button onClick={() => onAction('dismiss')} style={{ ...headerAction(false), padding: '6px 10px', fontSize: 10, color: '#B95545' }}>{lang === 'pt' ? 'Dispensar' : 'Dismiss'}</button>
+    </div>
+  </section>;
 }
 
 function Composer({ lang, draft, setDraft, sending, send, quickRepliesOpen, setQuickRepliesOpen }: { lang: 'en' | 'pt'; draft: string; setDraft: (value: string) => void; sending: boolean; send: () => void; quickRepliesOpen: boolean; setQuickRepliesOpen: (open: boolean) => void }) {

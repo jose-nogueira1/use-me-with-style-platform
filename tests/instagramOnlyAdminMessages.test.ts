@@ -68,3 +68,15 @@ test('the conversation action menu exposes working secondary actions', () => {
   assert.match(inboxSource, /Mark as needs reply/);
   assert.match(inboxSource, /Open in Instagram/);
 });
+
+test('approval-mode AI drafts stay human-controlled in the Instagram inbox', () => {
+  assert.match(apiSource, /adminUpdateAiDraft/);
+  assert.match(inboxSource, /aiDraftStatus === 'draft_ready'/);
+  assert.match(inboxSource, /Assistant suggestion/);
+  assert.match(inboxSource, /Approve and send/);
+  assert.match(inboxSource, /Regenerate/);
+  assert.match(inboxSource, /aiProcessingStatus: 'queued'/);
+  assert.match(inboxSource, /aiAvailableAt: new Date\(\)\.toISOString\(\)/);
+  assert.match(inboxSource, /Dismiss/);
+  assert.match(inboxSource, /Pause bot/);
+});

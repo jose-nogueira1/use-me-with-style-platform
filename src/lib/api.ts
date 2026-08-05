@@ -627,6 +627,13 @@ export type ApiMessage = {
   relatedOrder?: string | Pick<ApiOrder, 'id' | 'orderNumber' | 'market' | 'status' | 'paymentStatus' | 'createdAt'>;
   relatedCustomer?: string | Pick<ApiCustomer, 'id' | 'name' | 'email' | 'phone' | 'market'>;
   sentByAutomation: boolean;
+  aiProcessingStatus?: 'queued' | 'processing' | 'draft_ready' | 'failed' | 'cancelled';
+  aiDraftStatus?: 'queued' | 'draft_ready' | 'approved' | 'dismissed' | 'failed';
+  aiDraft?: string;
+  aiDraftConfidence?: number;
+  aiDraftSourceRecordIds?: string[];
+  aiDraftReason?: string;
+  aiBotPaused?: boolean;
   createdAt: string;
 };
 
@@ -731,6 +738,7 @@ export type ApiInstagramPost = {
   // 'large' for the one post the admin picked to highlight (CMS's
   // instagram-spotlight global), 'regular' for every other post.
   size: 'regular' | 'large';
+  products?: Array<{ slug: string; name: string }>;
 };
 
 /** Instagram feed highlight (2026-08-02, simplified same day from an
@@ -960,6 +968,18 @@ export async function adminUpdateMessageNote(id: string, internalNote: string): 
     { auth: true },
   );
   return data.doc;
+}
+
+export async function adminUpdateAiDraft(id: string, data: {
+  aiProcessingStatus?: ApiMessage['aiProcessingStatus'];
+  aiDraftStatus?: ApiMessage['aiDraftStatus'];
+  aiAvailableAt?: string;
+  aiDraft?: string;
+  aiDraftReason?: string;
+  aiBotPaused?: boolean;
+}): Promise<ApiMessage> {
+  const response = await request<{ doc: ApiMessage }>(`/messages/${id}`, { method: 'PATCH', body: JSON.stringify(data) }, { auth: true });
+  return response.doc;
 }
 
 export async function adminGetInstagramProfile(contactHandle: string): Promise<InstagramProfile> {

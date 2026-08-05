@@ -343,6 +343,24 @@ export function InstagramFeed() {
                   {selectedPost.caption}
                 </p>
               )}
+              {(selectedPost.products?.length ?? 0) > 0 && (
+                <div style={{ marginTop: 16 }}>
+                  <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.5, color: C.inkSoft, textTransform: 'uppercase' }}>
+                    {lang === 'pt' ? 'Comprar este look' : 'Shop this look'}
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+                    {selectedPost.products?.map((product) => (
+                      <a
+                        key={product.slug}
+                        href={`/products/${encodeURIComponent(product.slug)}`}
+                        style={{ padding: '8px 10px', border: `1px solid ${C.fieldBorder}`, borderRadius: 7, color: C.ink, fontSize: 12, fontWeight: 700, textDecoration: 'none' }}
+                      >
+                        {product.name || product.slug}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
               <a
                 href={selectedPost.permalink}
                 target="_blank"
