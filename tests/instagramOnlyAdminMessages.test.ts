@@ -24,3 +24,14 @@ test('outbound echoes composed in Instagram are labelled in the admin conversati
   assert.match(inboxSource, /Sent from Instagram/);
   assert.match(inboxSource, /Enviada pelo Instagram/);
 });
+
+test('inline replies quote and navigate to their original message without pretending the API can compose them', () => {
+  assert.match(inboxSource, /Replying to your message/);
+  assert.match(inboxSource, /Replying to customer/);
+  assert.match(inboxSource, /Original message unavailable/);
+  assert.match(inboxSource, /scrollIntoView\(\{ behavior: 'smooth', block: 'center' \}\)/);
+  assert.match(inboxSource, /highlightedMessageId === m\.id/);
+  assert.match(inboxSource, /instagramContextType === 'inline_reply'/);
+  assert.match(inboxSource, /Need a native inline reply/);
+  assert.match(inboxSource, /https:\/\/www\.instagram\.com\/direct\/inbox\//);
+});

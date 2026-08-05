@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { BadgeCheck, ExternalLink, RefreshCw, Search, StickyNote } from 'lucide-react';
+import { BadgeCheck, ExternalLink, MessageSquareReply, RefreshCw, Search, StickyNote } from 'lucide-react';
 import { C, F } from '../../theme';
 import { useApp } from '../../state/AppContext';
 import {
@@ -91,6 +91,7 @@ export function Mensagens() {
   const [query, setQuery] = useState('');
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [reply, setReply] = useState('');
+  const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [profiles, setProfiles] = useState<Record<string, InstagramProfile | null>>({});
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
@@ -202,6 +203,12 @@ export function Mensagens() {
     } finally {
       setSending(false);
     }
+  };
+
+  const focusOriginalMessage = (messageId: string) => {
+    document.getElementById(`instagram-message-${messageId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setHighlightedMessageId(messageId);
+    window.setTimeout(() => setHighlightedMessageId((current) => current === messageId ? null : current), 1_800);
   };
 
   const handleStatus = async (status: MessageStatus) => {
@@ -378,8 +385,23 @@ export function Mensagens() {
               </div>
 
               <div style={{ flex: 1, overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {selected.messages.map((m) => (
-                  <div key={m.id} style={{ display: 'flex', justifyContent: m.direction === 'outbound' ? 'flex-end' : 'flex-start' }}>
+                {selected.messages.map((m) => {
+                  const repliedTo = m.replyToExternalId
+                    ? selected.messages.find((candidate) => candidate.externalId === m.replyToExternalId)
+                    : undefined;
+                  return (
+                  <div
+                    id={`instagram-message-${m.id}`}
+                    key={m.id}
+                    style={{
+                      display: 'flex',
+                      justifyContent: m.direction === 'outbound' ? 'flex-end' : 'flex-start',
+                      borderRadius: 12,
+                      outline: highlightedMessageId === m.id ? `2px solid ${C.gold}` : '2px solid transparent',
+                      outlineOffset: 3,
+                      transition: 'outline-color 180ms ease',
+                    }}
+                  >
                     <div
                       style={{
                         maxWidth: 420,
@@ -391,6 +413,14 @@ export function Mensagens() {
                         fontSize: 13,
                       }}
                     >
+                      {m.instagramContextType === 'inline_reply' && (
+                        <InlineReplyQuote
+                          message={m}
+                          repliedTo={repliedTo}
+                          lang={lang}
+                          onFocusOriginal={repliedTo ? () => focusOriginalMessage(repliedTo.id) : undefined}
+                        />
+                      )}
                       <InstagramContextCard message={m} lang={lang} />
                       <div>{m.body}</div>
                       {m.automationNote && (
@@ -401,10 +431,12 @@ export function Mensagens() {
                       </time>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
 
-              <div style={{ padding: 16, borderTop: `1px solid ${C.ruleLight}`, display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+              <div style={{ padding: 16, borderTop: `1px solid ${C.ruleLight}` }}>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
                 <textarea
                   value={reply}
                   onChange={(e) => setReply(e.target.value)}
@@ -426,6 +458,14 @@ export function Mensagens() {
                 >
                   {sending ? '…' : t('sendAction', lang)}
                 </button>
+                </div>
+                <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: C.inkSoft }}>
+                  <MessageSquareReply size={11} />
+                  <span>{lang === 'pt' ? 'Precisas de uma resposta inline?' : 'Need a native inline reply?'}</span>
+                  <a href="https://www.instagram.com/direct/inbox/" target="_blank" rel="noreferrer" style={{ color: C.ink, fontWeight: 800, textDecoration: 'underline', textUnderlineOffset: 2 }}>
+                    {lang === 'pt' ? 'Abrir o Instagram' : 'Open Instagram'}
+                  </a>
+                </div>
               </div>
             </>
           )}
@@ -455,7 +495,7 @@ function ProfileAvatar({ profile, fallback, size }: { profile?: InstagramProfile
 
 function InstagramContextCard({ message, lang }: { message: ApiMessage; lang: 'pt' | 'en' }) {
   const [previewAttempt, setPreviewAttempt] = useState<'image' | 'video' | 'failed'>('image');
-  if (!message.instagramContextType) return null;
+  if (!message.instagramContextType || message.instagramContextType === 'inline_reply') return null;
   const labels = {
     story_reply: lang === 'pt' ? 'Resposta ao teu story' : 'Reply to your story',
     shared_post: lang === 'pt' ? 'Publicação partilhada' : 'Shared Instagram post',
@@ -513,6 +553,59 @@ function InstagramContextCard({ message, lang }: { message: ApiMessage; lang: 'p
       </div>
     </div>
   );
+}
+
+function InlineReplyQuote({
+  message,
+  repliedTo,
+  lang,
+  onFocusOriginal,
+}: {
+  message: ApiMessage;
+  repliedTo?: ApiMessage;
+  lang: 'pt' | 'en';
+  onFocusOriginal?: () => void;
+}) {
+  const label = message.direction === 'inbound'
+    ? (lang === 'pt' ? 'Em resposta à tua mensagem' : 'Replying to your message')
+    : (lang === 'pt' ? 'Em resposta ao cliente' : 'Replying to customer');
+  const quote = repliedTo?.body || message.replyToText || (lang === 'pt' ? 'Mensagem original indisponível' : 'Original message unavailable');
+  const previewUrl = repliedTo?.instagramContextUrl;
+  const isVideo = ['reel', 'ig_reel', 'video', 'story_video'].includes(repliedTo?.instagramContextMediaType ?? '')
+    || /\.(mp4|mov|webm)(?:\?|$)/i.test(previewUrl ?? '');
+
+  const content = (
+    <>
+      {previewUrl && !isVideo && <img src={previewUrl} alt="" referrerPolicy="no-referrer" style={{ width: 38, height: 38, borderRadius: 4, objectFit: 'cover', flex: '0 0 auto' }} />}
+      <div style={{ minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 9, fontWeight: 800, opacity: 0.76, marginBottom: 3 }}>
+          <MessageSquareReply size={10} /> {label}
+        </div>
+        <div style={{ fontSize: 11, lineHeight: 1.35, opacity: 0.88, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {isVideo ? (lang === 'pt' ? 'Vídeo · ' : 'Video · ') : ''}{quote}
+        </div>
+      </div>
+    </>
+  );
+
+  const style = {
+    width: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    padding: '7px 8px',
+    marginBottom: 8,
+    border: 0,
+    borderLeft: `3px solid ${C.gold}`,
+    borderRadius: 5,
+    background: message.direction === 'outbound' ? 'rgba(255,255,255,0.1)' : 'rgba(183,146,75,0.1)',
+    color: 'inherit',
+    textAlign: 'left' as const,
+  };
+
+  return onFocusOriginal
+    ? <button type="button" onClick={onFocusOriginal} title={lang === 'pt' ? 'Ir para a mensagem original' : 'Go to original message'} style={{ ...style, cursor: 'pointer' }}>{content}</button>
+    : <div style={style}>{content}</div>;
 }
 
 function FilterPill({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
