@@ -447,7 +447,7 @@ function ProfileAvatar({ profile, fallback, size }: { profile?: InstagramProfile
 }
 
 function InstagramContextCard({ message, lang }: { message: ApiMessage; lang: 'pt' | 'en' }) {
-  const [previewFailed, setPreviewFailed] = useState(false);
+  const [previewAttempt, setPreviewAttempt] = useState<'image' | 'video' | 'failed'>('image');
   if (!message.instagramContextType) return null;
   const labels = {
     story_reply: lang === 'pt' ? 'Resposta ao teu story' : 'Reply to your story',
@@ -457,29 +457,31 @@ function InstagramContextCard({ message, lang }: { message: ApiMessage; lang: 'p
     unsupported_media: lang === 'pt' ? 'Conteúdo disponível no Instagram' : 'Content available on Instagram',
   };
   const label = labels[message.instagramContextType];
-  const isVideo = ['reel', 'ig_reel', 'video', 'story_video'].includes(message.instagramContextMediaType ?? '')
+  const isKnownVideo = ['reel', 'ig_reel', 'video', 'story_video'].includes(message.instagramContextMediaType ?? '')
     || /\.(mp4|mov|webm)(?:\?|$)/i.test(message.instagramContextUrl ?? '');
-  const hasPreview = Boolean(message.instagramContextUrl) && !previewFailed;
+  const showVideo = isKnownVideo || previewAttempt === 'video';
+  const hasPreview = Boolean(message.instagramContextUrl) && previewAttempt !== 'failed';
+  const handlePreviewError = () => setPreviewAttempt(showVideo ? 'failed' : 'video');
   const needsFallback = message.instagramContextType === 'unsupported_media'
     || (!hasPreview && ['story_reply', 'shared_post', 'media'].includes(message.instagramContextType));
 
   return (
     <div style={{ marginBottom: 8, borderRadius: 7, overflow: 'hidden', border: '1px solid rgba(183,146,75,0.35)', background: message.direction === 'outbound' ? 'rgba(255,255,255,0.08)' : '#fff' }}>
-      {hasPreview && !isVideo && (
+      {hasPreview && !showVideo && (
         <img
           src={message.instagramContextUrl}
           alt={label}
           referrerPolicy="no-referrer"
-          onError={() => setPreviewFailed(true)}
+          onError={handlePreviewError}
           style={{ display: 'block', width: '100%', maxHeight: 220, objectFit: 'cover', background: C.subtleBg }}
         />
       )}
-      {hasPreview && isVideo && (
+      {hasPreview && showVideo && (
         <video
           src={message.instagramContextUrl}
           controls
           preload="metadata"
-          onError={() => setPreviewFailed(true)}
+          onError={handlePreviewError}
           style={{ display: 'block', width: '100%', maxHeight: 240, background: '#000' }}
         />
       )}
