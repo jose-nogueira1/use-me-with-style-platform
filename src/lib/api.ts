@@ -642,6 +642,8 @@ export type InstagramProfile = {
   name?: string;
   username?: string;
   profile_pic?: string;
+  /** Compatibility with the business-profile Graph API response shape. */
+  profile_picture_url?: string;
   is_verified_user?: boolean;
 };
 
@@ -985,7 +987,7 @@ export async function adminUpdateAiDraft(id: string, data: {
 export async function adminGetInstagramProfile(contactHandle: string): Promise<InstagramProfile> {
   return request<InstagramProfile>(
     `/instagram-profile?contactHandle=${encodeURIComponent(contactHandle)}`,
-    {},
+    { cache: 'no-store' },
     { auth: true },
   );
 }

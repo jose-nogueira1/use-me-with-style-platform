@@ -458,7 +458,10 @@ function InlineReplyQuote({ message, repliedTo, lang, onFocusOriginal }: { messa
 }
 
 function ProfileAvatar({ profile, fallback, size }: { profile?: InstagramProfile | null; fallback: string; size: number }) {
-  if (profile?.profile_pic) return <img src={profile.profile_pic} alt="" referrerPolicy="no-referrer" style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flex: '0 0 auto', border: `1px solid ${C.ruleLight}` }} />;
+  const [imageFailed, setImageFailed] = useState(false);
+  const source = profile?.profile_pic || profile?.profile_picture_url;
+  useEffect(() => setImageFailed(false), [source]);
+  if (source && !imageFailed) return <img src={source} alt="" referrerPolicy="no-referrer" onError={() => setImageFailed(true)} style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flex: '0 0 auto', border: `1px solid ${C.ruleLight}` }} />;
   return <div aria-hidden style={{ width: size, height: size, borderRadius: '50%', flex: '0 0 auto', display: 'grid', placeItems: 'center', background: C.black, color: C.onDarkGold, fontSize: Math.max(11, size * 0.32), fontWeight: 850 }}>{fallback.slice(0, 1).toUpperCase()}</div>;
 }
 
