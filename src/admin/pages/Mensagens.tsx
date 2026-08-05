@@ -32,8 +32,23 @@ type Conversation = {
 };
 
 function groupIntoConversations(messages: ApiMessage[]): Conversation[] {
+  // Older webhook handling stored Meta's outbound echoes as inbound messages
+  // under the business account's own ID. Keep the source records intact, but
+  // hide an echo when it matches an outbound admin message sent moments
+  // earlier. New echoes are rejected by the CMS before persistence.
+  const outbound = messages.filter((message) => message.channel === 'instagram' && message.direction === 'outbound');
+  const visibleMessages = messages.filter((message) => {
+    if (message.channel !== 'instagram' || message.direction !== 'inbound' || !message.externalId) return true;
+    const receivedAt = new Date(message.createdAt).getTime();
+    return !outbound.some((sent) => (
+      sent.contactHandle !== message.contactHandle
+      && sent.body === message.body
+      && Math.abs(new Date(sent.createdAt).getTime() - receivedAt) <= 2 * 60 * 1000
+    ));
+  });
+
   const byKey = new Map<string, ApiMessage[]>();
-  for (const m of messages) {
+  for (const m of visibleMessages) {
     if (m.channel !== 'instagram') continue;
     const key = `${m.channel}:${m.contactHandle}`;
     if (!byKey.has(key)) byKey.set(key, []);
@@ -101,6 +116,33 @@ export function Mensagens() {
     };
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    const refreshInBackground = () => {
+      adminListMessages()
+        .then((rows) => {
+          if (!active) return;
+          setMessages(rows);
+          setError(false);
+        })
+        .catch(() => {
+          if (active) setError(true);
+        });
+    };
+    const intervalId = window.setInterval(refreshInBackground, 5_000);
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') refreshInBackground();
+    };
+    window.addEventListener('focus', refreshInBackground);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+    return () => {
+      active = false;
+      window.clearInterval(intervalId);
+      window.removeEventListener('focus', refreshInBackground);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+    };
+  }, []);
+
   const conversations = useMemo(() => (messages ? groupIntoConversations(messages) : []), [messages]);
   const filtered = conversations.filter((c) => {
     if (statusFilter && c.status !== statusFilter) return false;
@@ -116,9 +158,11 @@ export function Mensagens() {
     if (!selected || !reply.trim()) return;
     setSending(true);
     try {
-      await adminSendMessage({ contactHandle: selected.contactHandle, customerName: selected.customerName, body: reply.trim() });
+      const sentMessage = await adminSendMessage({ contactHandle: selected.contactHandle, customerName: selected.customerName, body: reply.trim() });
+      setMessages((current) => current
+        ? [sentMessage, ...current.filter((message) => message.id !== sentMessage.id)]
+        : [sentMessage]);
       setReply('');
-      load();
     } catch {
       setError(true);
     } finally {
