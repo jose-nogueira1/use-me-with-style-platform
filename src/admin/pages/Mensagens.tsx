@@ -130,8 +130,11 @@ export function Mensagens() {
   };
 
   useEffect(() => {
-    void load();
-    void adminGetAiAssistantStatus().then(setAiStatus).catch(() => setAiStatus(null));
+    const initialLoad = window.setTimeout(() => {
+      void load();
+      void adminGetAiAssistantStatus().then(setAiStatus).catch(() => setAiStatus(null));
+    }, 0);
+    return () => window.clearTimeout(initialLoad);
   }, []);
   useEffect(() => {
     const refresh = () => { if (document.visibilityState === 'visible') void load(false); };
@@ -381,7 +384,7 @@ function AiSuggestion({ lang, message, status, editing, onAction }: { lang: 'en'
   const market = message.aiFacts?.market === 'AO' ? 'Angola' : message.aiFacts?.market === 'PT' ? 'Portugal' : null;
   const mode = status?.mode === 'approval' ? (lang === 'pt' ? 'Aprovação manual' : 'Manual approval')
     : status?.mode === 'shadow' ? 'Shadow'
-    : status?.mode === 'automatic' ? (lang === 'pt' ? 'Automático' : 'Automatic')
+    : status?.mode === 'hybrid' ? (lang === 'pt' ? 'Híbrido' : 'Hybrid')
     : (lang === 'pt' ? 'Desligado' : 'Off');
   return <section aria-label={lang === 'pt' ? 'Sugestão do assistente' : 'Assistant suggestion'} style={{ margin: '0 16px 8px', padding: 12, border: `1px solid ${C.gold}`, borderRadius: 9, background: '#FBF8F1' }}>
     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center', marginBottom: 6 }}>
@@ -404,6 +407,7 @@ function AiSuggestion({ lang, message, status, editing, onAction }: { lang: 'en'
         {message.aiFacts?.policy?.text && <div><strong>{lang === 'pt' ? 'Política usada' : 'Policy used'}:</strong> {message.aiFacts.policy.text}</div>}
         {message.aiFacts?.coupon && <div><strong>Coupon:</strong> {message.aiFacts.coupon.code || '—'} · {message.aiFacts.coupon.valid ? (lang === 'pt' ? 'válido' : 'valid') : (lang === 'pt' ? 'inválido' : 'invalid')}{message.aiFacts.coupon.detail ? ` · ${message.aiFacts.coupon.detail}` : ''}</div>}
         <div style={{ marginTop: 5 }}><strong>{lang === 'pt' ? 'Resultado' : 'Outcome'}:</strong> {message.aiOutcome || '—'}</div>
+        <div><strong>{lang === 'pt' ? 'Decisão de automação' : 'Automation decision'}:</strong> {message.aiAutomationDecision || '—'}</div>
         <div><strong>{lang === 'pt' ? 'Modelo' : 'Model'}:</strong> {message.aiModel || '—'}</div>
         <div><strong>Tokens:</strong> {message.aiTotalTokens ?? '—'} · <strong>{lang === 'pt' ? 'Custo estimado' : 'Estimated cost'}:</strong> {message.aiEstimatedCostUsd != null ? `$${message.aiEstimatedCostUsd.toFixed(6)}` : '—'}</div>
         {status && <div><strong>{lang === 'pt' ? 'Gasto mensal' : 'Monthly spend'}:</strong> ${status.monthSpendUsd.toFixed(4)}{status.monthlyBudgetUsd != null ? ` / $${status.monthlyBudgetUsd.toFixed(2)}` : ''}</div>}
@@ -472,6 +476,7 @@ function MessageBubble({ message, repliedTo, lang, groupStart, groupEnd, highlig
       {message.instagramContextType === 'inline_reply' && <InlineReplyQuote message={message} repliedTo={repliedTo} lang={lang} onFocusOriginal={onFocusOriginal} />}
       <InstagramContextCard message={message} lang={lang} />
       <div>{message.body}</div>
+      {message.automationNote === 'ai-auto-reply' && <div style={{ marginTop: 4, fontSize: 9, color: C.onDarkGold }}>{lang === 'pt' ? 'Enviada automaticamente pela IA' : 'Sent automatically by AI'}</div>}
       {message.automationNote === 'instagram-app -- synced outbound echo' && <div style={{ marginTop: 4, fontSize: 9, color: C.onDarkGold }}>{lang === 'pt' ? 'Enviada pelo Instagram' : 'Sent from Instagram'}</div>}
       {groupEnd && <div style={{ marginTop: 5, display: 'flex', justifyContent: 'flex-end', gap: 5, fontSize: 8.5, opacity: 0.68 }}><time dateTime={message.createdAt}>{new Intl.DateTimeFormat(lang === 'pt' ? 'pt-PT' : 'en-GB', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' }).format(new Date(message.createdAt))}</time>{outbound && <span>· {message.instagramSeenAt ? (lang === 'pt' ? 'Vista' : 'Seen') : (lang === 'pt' ? 'Enviada' : 'Sent')}</span>}</div>}
     </div>
@@ -502,10 +507,9 @@ function InlineReplyQuote({ message, repliedTo, lang, onFocusOriginal }: { messa
 }
 
 function ProfileAvatar({ profile, fallback, size }: { profile?: InstagramProfile | null; fallback: string; size: number }) {
-  const [imageFailed, setImageFailed] = useState(false);
+  const [failedSource, setFailedSource] = useState<string | null>(null);
   const source = profile?.profile_pic || profile?.profile_picture_url;
-  useEffect(() => setImageFailed(false), [source]);
-  if (source && !imageFailed) return <img src={source} alt="" referrerPolicy="no-referrer" onError={() => setImageFailed(true)} style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flex: '0 0 auto', border: `1px solid ${C.ruleLight}` }} />;
+  if (source && failedSource !== source) return <img src={source} alt="" referrerPolicy="no-referrer" onError={() => setFailedSource(source)} style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flex: '0 0 auto', border: `1px solid ${C.ruleLight}` }} />;
   return <div aria-hidden style={{ width: size, height: size, borderRadius: '50%', flex: '0 0 auto', display: 'grid', placeItems: 'center', background: C.black, color: C.onDarkGold, fontSize: Math.max(11, size * 0.32), fontWeight: 850 }}>{fallback.slice(0, 1).toUpperCase()}</div>;
 }
 

@@ -652,6 +652,7 @@ export type ApiMessage = {
   aiEstimatedCostUsd?: number;
   aiRequiresHuman?: boolean;
   aiOutcome?: string;
+  aiAutomationDecision?: string;
   aiBotPaused?: boolean;
   createdAt: string;
 };
@@ -1006,17 +1007,46 @@ export async function adminUpdateAiDraft(id: string, data: {
 }
 
 export type AiAssistantStatus = {
-  mode: 'off' | 'shadow' | 'approval' | 'automatic';
+  mode: 'off' | 'shadow' | 'approval' | 'hybrid';
   enabled: boolean;
   extractionModel: string;
   draftingModel: string;
   monthlyBudgetUsd: number | null;
   monthSpendUsd: number;
   automaticSending: boolean;
+  settings: AiMessagingSettings;
+};
+
+export type AiAutoReplyIntent = 'greeting' | 'product_availability' | 'product_price' | 'product_sizing' | 'delivery' | 'payment' | 'coupon' | 'return_policy';
+
+export type AiMessagingSettings = {
+  assistantEnabled: boolean;
+  emergencyStop: boolean;
+  operatingMode: 'approval' | 'hybrid';
+  autoReplyIntents: AiAutoReplyIntent[];
+  autoReplyMarketClarification: boolean;
+  autoReplyProductClarification: boolean;
+  confidenceThreshold: number;
+  replyDelaySeconds: number;
+  maxAutoRepliesPerConversation: number;
+  maxAutoRepliesPerHour: number;
+  monthlyBudgetUsd: number;
 };
 
 export async function adminGetAiAssistantStatus(): Promise<AiAssistantStatus> {
   return request<AiAssistantStatus>('/ai/status', { cache: 'no-store' }, { auth: true });
+}
+
+export async function adminFetchAiMessagingSettings(): Promise<AiMessagingSettings> {
+  return request<AiMessagingSettings>('/globals/ai-messaging-settings', { cache: 'no-store' }, { auth: true });
+}
+
+export async function adminUpdateAiMessagingSettings(input: AiMessagingSettings): Promise<AiMessagingSettings> {
+  return request<AiMessagingSettings>(
+    '/globals/ai-messaging-settings',
+    { method: 'POST', body: JSON.stringify(input) },
+    { auth: true },
+  );
 }
 
 export async function adminGetInstagramProfile(contactHandle: string): Promise<InstagramProfile> {

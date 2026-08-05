@@ -4,6 +4,7 @@ import { test } from 'node:test';
 
 const apiSource = readFileSync(new URL('../src/lib/api.ts', import.meta.url), 'utf8');
 const inboxSource = readFileSync(new URL('../src/admin/pages/Mensagens.tsx', import.meta.url), 'utf8');
+const settingsSource = readFileSync(new URL('../src/admin/pages/Settings.tsx', import.meta.url), 'utf8');
 
 test('the storefront admin fetches only Instagram messages', () => {
   assert.match(apiSource, /where\[channel\]\[equals\]=instagram/);
@@ -88,4 +89,18 @@ test('AI suggestions can be edited and expose verified facts, model, cost and op
   assert.match(inboxSource, /aiEstimatedCostUsd/);
   assert.match(inboxSource, /Manual approval/);
   assert.match(apiSource, /adminGetAiAssistantStatus/);
+});
+
+test('AI messaging settings expose guarded approval and hybrid controls without enabling hybrid by default', () => {
+  assert.match(apiSource, /adminFetchAiMessagingSettings/);
+  assert.match(apiSource, /adminUpdateAiMessagingSettings/);
+  assert.match(settingsSource, /operatingMode: 'approval'/);
+  assert.match(settingsSource, /Emergency stop/);
+  assert.match(settingsSource, /Minimum confidence/);
+  assert.match(settingsSource, /Automatic replies per conversation \/ 24h/);
+  assert.match(settingsSource, /autoReplyMarketClarification/);
+  assert.match(settingsSource, /autoReplyProductClarification/);
+  assert.match(settingsSource, /hybridConfirmed/);
+  assert.match(inboxSource, /aiAutomationDecision/);
+  assert.match(inboxSource, /Sent automatically by AI/);
 });

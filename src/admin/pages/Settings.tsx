@@ -4,6 +4,8 @@ import { C, F } from '../../theme';
 import { useApp } from '../../state/AppContext';
 import {
   adminFetchInstagramSpotlight,
+  adminFetchAiMessagingSettings,
+  adminGetAiAssistantStatus,
   adminFetchInvoiceSettings,
   adminListCategories,
   adminListHomeHeroVersions,
@@ -20,6 +22,7 @@ import {
   adminUpdateHomeCategories,
   adminUpdateHomeCollections,
   adminUpdateInstagramSpotlight,
+  adminUpdateAiMessagingSettings,
   adminUpdateInvoiceSettings,
   adminUpdateLegalContent,
   adminUpdateMarketSettings,
@@ -35,6 +38,9 @@ import {
   type ApiCategory,
   type ApiInstagramPost,
   type ApiMerchTag,
+  type AiAssistantStatus,
+  type AiAutoReplyIntent,
+  type AiMessagingSettings,
   type HomeHero,
   type HomeHeroVersion,
   type HomeCategories,
@@ -107,6 +113,7 @@ const TABS = [
   // this project actually uses day-to-day (every other global gets its
   // own hand-built section here, same as Legal/Home above).
   { key: 'instagram', labelKey: 'tabInstagram' },
+  { key: 'ai', labelKey: 'tabAiMessaging' },
 ] as const;
 type SettingsTab = (typeof TABS)[number]['key'];
 
@@ -118,6 +125,7 @@ const TAB_META: Record<SettingsTab, { titleKey: string; subtitleKey: string }> =
   home: { titleKey: 'tabHomeTitle', subtitleKey: 'tabHomeSubtitle' },
   products: { titleKey: 'tabProductsTitle', subtitleKey: 'tabProductsSubtitle' },
   instagram: { titleKey: 'tabInstagramTitle', subtitleKey: 'tabInstagramSubtitle' },
+  ai: { titleKey: 'tabAiMessagingTitle', subtitleKey: 'tabAiMessagingSubtitle' },
 };
 
 function isSettingsTab(value: string | null): value is SettingsTab {
@@ -472,8 +480,168 @@ export function Settings() {
       )}
       {tab === 'products' && <ProductTaxonomySettings />}
       {tab === 'instagram' && <InstagramSpotlightSection />}
+      {tab === 'ai' && <AiMessagingSettingsSection />}
     </div>
   );
+}
+
+const DEFAULT_AI_MESSAGING_SETTINGS: AiMessagingSettings = {
+  assistantEnabled: true,
+  emergencyStop: false,
+  operatingMode: 'approval',
+  autoReplyIntents: ['greeting', 'product_availability', 'product_price', 'product_sizing', 'delivery', 'payment', 'coupon', 'return_policy'],
+  autoReplyMarketClarification: true,
+  autoReplyProductClarification: true,
+  confidenceThreshold: 0.92,
+  replyDelaySeconds: 15,
+  maxAutoRepliesPerConversation: 6,
+  maxAutoRepliesPerHour: 40,
+  monthlyBudgetUsd: 25,
+};
+
+const AI_INTENT_LABELS: Record<AiAutoReplyIntent, { en: string; pt: string }> = {
+  greeting: { en: 'Greetings and acknowledgements', pt: 'Saudações e agradecimentos' },
+  product_availability: { en: 'Product availability and links', pt: 'Disponibilidade e links de produtos' },
+  product_price: { en: 'Product prices and links', pt: 'Preços e links de produtos' },
+  product_sizing: { en: 'Product sizing', pt: 'Tamanhos de produtos' },
+  delivery: { en: 'Delivery information', pt: 'Informações de entrega' },
+  payment: { en: 'Payment methods', pt: 'Métodos de pagamento' },
+  coupon: { en: 'Coupon validation', pt: 'Validação de cupões' },
+  return_policy: { en: 'Returns policy', pt: 'Política de devoluções' },
+};
+
+function AiMessagingSettingsSection() {
+  const { lang } = useApp();
+  const [settings, setSettings] = useState<AiMessagingSettings>(DEFAULT_AI_MESSAGING_SETTINGS);
+  const [original, setOriginal] = useState<AiMessagingSettings | null>(null);
+  const [status, setStatus] = useState<AiAssistantStatus | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [hybridConfirmed, setHybridConfirmed] = useState(false);
+  const dirty = useDirty(settings, original);
+  const activatingHybrid = settings.operatingMode === 'hybrid' && original?.operatingMode !== 'hybrid';
+
+  useEffect(() => {
+    Promise.all([adminFetchAiMessagingSettings(), adminGetAiAssistantStatus()])
+      .then(([value, currentStatus]) => {
+        setSettings(value);
+        setOriginal(value);
+        setStatus(currentStatus);
+      })
+      .catch(() => setError(lang === 'pt' ? 'Não foi possível carregar as definições do bot.' : "Couldn't load the bot settings."))
+      .finally(() => setLoading(false));
+  }, [lang]);
+
+  const save = async () => {
+    if (activatingHybrid && !hybridConfirmed) return;
+    setSaving(true);
+    setSaved(false);
+    setError(null);
+    try {
+      const updated = await adminUpdateAiMessagingSettings(settings);
+      setSettings(updated);
+      setOriginal(updated);
+      setHybridConfirmed(false);
+      setSaved(true);
+      setStatus(await adminGetAiAssistantStatus());
+    } catch {
+      setError(lang === 'pt' ? 'Não foi possível guardar as definições do bot.' : "Couldn't save the bot settings.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const toggleIntent = (intent: AiAutoReplyIntent) => setSettings((current) => ({
+    ...current,
+    autoReplyIntents: current.autoReplyIntents.includes(intent)
+      ? current.autoReplyIntents.filter((value) => value !== intent)
+      : [...current.autoReplyIntents, intent],
+  }));
+
+  if (loading) return <div style={{ padding: '24px 28px', color: C.inkSoft, fontSize: 12 }}>{t('loadingEllipsis', lang)}</div>;
+
+  const modeLabel = status?.mode === 'hybrid'
+    ? (lang === 'pt' ? 'Híbrido ativo' : 'Hybrid active')
+    : status?.mode === 'approval'
+      ? (lang === 'pt' ? 'Aprovação manual' : 'Manual approval')
+      : status?.mode === 'shadow' ? 'Shadow' : (lang === 'pt' ? 'Desligado' : 'Off');
+  const saveDisabled = saving || !dirty || (activatingHybrid && !hybridConfirmed);
+
+  return <div style={{ padding: '20px 28px 0' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 14, alignItems: 'center', marginBottom: 14, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <Badge label={modeLabel} tone={status?.mode === 'hybrid' ? 'green' : status?.mode === 'approval' ? 'gold' : 'neutral'} />
+        <Badge label={status?.enabled ? (lang === 'pt' ? 'API configurada' : 'API configured') : (lang === 'pt' ? 'API indisponível' : 'API unavailable')} tone={status?.enabled ? 'green' : 'neutral'} />
+        {status && <span style={{ fontSize: 10, color: C.inkSoft, alignSelf: 'center' }}>${status.monthSpendUsd.toFixed(4)} / ${settings.monthlyBudgetUsd.toFixed(2)} USD</span>}
+      </div>
+      <button type="button" onClick={save} disabled={saveDisabled} style={{ padding: '9px 18px', borderRadius: 6, background: saveDisabled ? C.disabledBg : C.black, color: saveDisabled ? C.disabledFg : C.onDarkGold, fontSize: 11, fontWeight: 850 }}>
+        {saving ? '…' : lang === 'pt' ? 'Guardar definições do bot' : 'Save bot settings'}
+      </button>
+    </div>
+    {error && <div style={{ marginBottom: 12, color: '#B95545', fontSize: 12 }}>{error}</div>}
+    {saved && <div style={{ marginBottom: 12, color: '#3F754D', fontSize: 12 }}>{t('savedNotice', lang)}</div>}
+
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 16 }} className="ump-admin-orders-grid">
+      <Card title={lang === 'pt' ? 'Modo de funcionamento' : 'Operating mode'} badge={settings.operatingMode === 'hybrid' ? 'Hybrid' : 'Approval'} tone={settings.operatingMode === 'hybrid' ? 'green' : 'gold'}>
+        <label style={{ display: 'flex', gap: 9, alignItems: 'flex-start', padding: '10px 0', borderBottom: `1px solid ${C.ruleLight}`, fontSize: 11 }}>
+          <input type="checkbox" checked={settings.assistantEnabled} onChange={(event) => setSettings((current) => ({ ...current, assistantEnabled: event.target.checked }))} />
+          <span><strong>{lang === 'pt' ? 'Gerar sugestões de IA' : 'Generate AI suggestions'}</strong><br /><span style={{ color: C.inkSoft }}>{lang === 'pt' ? 'Mantém a assistência ativa mesmo em aprovação manual.' : 'Keeps assistance active even in manual approval mode.'}</span></span>
+        </label>
+        <label style={{ display: 'flex', gap: 9, alignItems: 'flex-start', padding: '10px 0', color: '#B95545', fontSize: 11 }}>
+          <input type="checkbox" checked={settings.emergencyStop} onChange={(event) => setSettings((current) => ({ ...current, emergencyStop: event.target.checked }))} />
+          <span><strong>{lang === 'pt' ? 'Paragem de emergência' : 'Emergency stop'}</strong><br /><span>{lang === 'pt' ? 'Interrompe imediatamente novos rascunhos e respostas automáticas.' : 'Immediately stops new drafts and automatic replies.'}</span></span>
+        </label>
+        <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>
+          {(['approval', 'hybrid'] as const).map((mode) => <label key={mode} style={{ display: 'flex', gap: 9, padding: 11, border: `1px solid ${settings.operatingMode === mode ? C.goldDeep : C.ruleLight}`, borderRadius: 7, background: settings.operatingMode === mode ? '#FBF8F1' : C.paper, fontSize: 11 }}>
+            <input type="radio" name="ai-operating-mode" checked={settings.operatingMode === mode} onChange={() => setSettings((current) => ({ ...current, operatingMode: mode }))} />
+            <span><strong>{mode === 'approval' ? (lang === 'pt' ? 'Aprovação' : 'Approval') : (lang === 'pt' ? 'Híbrido' : 'Hybrid')}</strong><br /><span style={{ color: C.inkSoft }}>{mode === 'approval' ? (lang === 'pt' ? 'Todos os rascunhos precisam de aprovação.' : 'Every draft needs approval.') : (lang === 'pt' ? 'Só respostas verificadas e de baixo risco podem ser enviadas automaticamente.' : 'Only verified, low-risk replies may send automatically.')}</span></span>
+          </label>)}
+        </div>
+        {activatingHybrid && <label style={{ display: 'flex', gap: 8, marginTop: 12, padding: 10, borderRadius: 7, background: '#FFF4E5', color: C.ink, fontSize: 10 }}>
+          <input type="checkbox" checked={hybridConfirmed} onChange={(event) => setHybridConfirmed(event.target.checked)} />
+          <span>{lang === 'pt' ? 'Confirmo que revi as categorias, limites e confiança antes de ativar respostas automáticas.' : 'I confirm that I reviewed the categories, limits and confidence before enabling automatic replies.'}</span>
+        </label>}
+      </Card>
+
+      <Card title={lang === 'pt' ? 'Respostas permitidas' : 'Allowed replies'} badge={`${settings.autoReplyIntents.length + (settings.autoReplyMarketClarification ? 1 : 0) + (settings.autoReplyProductClarification ? 1 : 0)}`} tone="blue">
+        <label style={{ display: 'flex', gap: 8, paddingBottom: 10, marginBottom: 8, borderBottom: `1px solid ${C.ruleLight}`, fontSize: 11 }}>
+          <input type="checkbox" checked={settings.autoReplyMarketClarification} onChange={(event) => setSettings((current) => ({ ...current, autoReplyMarketClarification: event.target.checked }))} />
+          <span>{lang === 'pt' ? 'Perguntar automaticamente: Angola ou Portugal?' : 'Automatically ask: Angola or Portugal?'}</span>
+        </label>
+        <label style={{ display: 'flex', gap: 8, paddingBottom: 10, marginBottom: 8, borderBottom: `1px solid ${C.ruleLight}`, fontSize: 11 }}>
+          <input type="checkbox" checked={settings.autoReplyProductClarification} onChange={(event) => setSettings((current) => ({ ...current, autoReplyProductClarification: event.target.checked }))} />
+          <span>{lang === 'pt' ? 'Pedir automaticamente o nome, link ou captura do produto' : 'Automatically ask for the product name, link or screenshot'}</span>
+        </label>
+        <div style={{ display: 'grid', gap: 8 }}>
+          {(Object.keys(AI_INTENT_LABELS) as AiAutoReplyIntent[]).map((intent) => <label key={intent} style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 11 }}>
+            <input type="checkbox" checked={settings.autoReplyIntents.includes(intent)} onChange={() => toggleIntent(intent)} />
+            {AI_INTENT_LABELS[intent][lang]}
+          </label>)}
+        </div>
+        <div style={{ marginTop: 12, padding: 9, borderRadius: 7, background: C.subtleBg, color: C.inkSoft, fontSize: 10, lineHeight: 1.45 }}>
+          {lang === 'pt' ? 'Reclamações, estado de encomendas, reembolsos, disputas, ambiguidades e respostas escritas livremente pelo modelo exigem sempre uma pessoa.' : 'Complaints, order status, refunds, disputes, ambiguity and freely model-written replies always require a person.'}
+        </div>
+      </Card>
+
+      <Card title={lang === 'pt' ? 'Confiança e tempo' : 'Confidence and timing'} badge={`${Math.round(settings.confidenceThreshold * 100)}%`} tone="neutral">
+        <NumberSetting label={lang === 'pt' ? 'Confiança mínima (%)' : 'Minimum confidence (%)'} value={Math.round(settings.confidenceThreshold * 100)} step={1} onChange={(value) => setSettings((current) => ({ ...current, confidenceThreshold: Math.min(1, Math.max(0.75, value / 100)) }))} />
+        <div style={{ height: 10 }} />
+        <NumberSetting label={lang === 'pt' ? 'Espera antes de processar (segundos)' : 'Wait before processing (seconds)'} value={settings.replyDelaySeconds} step={1} onChange={(value) => setSettings((current) => ({ ...current, replyDelaySeconds: Math.min(120, Math.max(5, Math.round(value))) }))} />
+        <div style={{ marginTop: 12, fontSize: 10, color: C.inkSoft, lineHeight: 1.45 }}>{lang === 'pt' ? 'A espera agrupa mensagens consecutivas. Abaixo da confiança mínima, o bot cria um rascunho para aprovação.' : 'The delay groups consecutive messages. Below the confidence threshold, the bot creates a draft for approval.'}</div>
+      </Card>
+
+      <Card title={lang === 'pt' ? 'Limites e orçamento' : 'Limits and budget'} badge="$" tone="neutral">
+        <div style={{ display: 'grid', gap: 10 }}>
+          <NumberSetting label={lang === 'pt' ? 'Respostas automáticas por conversa / 24h' : 'Automatic replies per conversation / 24h'} value={settings.maxAutoRepliesPerConversation} step={1} onChange={(value) => setSettings((current) => ({ ...current, maxAutoRepliesPerConversation: Math.min(20, Math.max(1, Math.round(value))) }))} />
+          <NumberSetting label={lang === 'pt' ? 'Respostas automáticas totais / hora' : 'Total automatic replies / hour'} value={settings.maxAutoRepliesPerHour} step={1} onChange={(value) => setSettings((current) => ({ ...current, maxAutoRepliesPerHour: Math.min(200, Math.max(1, Math.round(value))) }))} />
+          <NumberSetting label={lang === 'pt' ? 'Orçamento mensal (USD)' : 'Monthly budget (USD)'} value={settings.monthlyBudgetUsd} step={1} onChange={(value) => setSettings((current) => ({ ...current, monthlyBudgetUsd: Math.min(10_000, Math.max(0, value)) }))} />
+        </div>
+        <div style={{ marginTop: 12, fontSize: 10, color: C.inkSoft, lineHeight: 1.45 }}>{lang === 'pt' ? 'Ao atingir um limite, a conversa fica para aprovação humana. O orçamento é uma proteção da aplicação e não substitui os limites da conta OpenAI.' : 'When a limit is reached, the conversation stays for human approval. This application guardrail does not replace the OpenAI account limits.'}</div>
+      </Card>
+    </div>
+  </div>;
 }
 
 function TabPill({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {

@@ -574,6 +574,7 @@ export const T: Record<string, Record<Lang, string>> = {
   tabLegal: { en: 'Legal pages', pt: 'Páginas legais' },
   tabHome: { en: 'Home page', pt: 'Página inicial' },
   tabProducts: { en: 'Products', pt: 'Produtos' },
+  tabAiMessaging: { en: 'AI messaging bot', pt: 'Bot de mensagens IA' },
   tabMarketsTitle: { en: 'Launch configuration', pt: 'Configuração de lançamento' },
   tabMarketsSubtitle: {
     en: 'Safe placeholders until payment, fulfilment, and client media inputs are final.',
@@ -603,6 +604,11 @@ export const T: Record<string, Record<Lang, string>> = {
   tabProductsSubtitle: {
     en: "Categories, merchandising tags, colours, and size guides. Products pick from these lists; entries in use can't be deleted until reassigned.",
     pt: 'Categorias, etiquetas comerciais, cores e guias de tamanhos. Os produtos escolhem destas listas; entradas em uso não podem ser eliminadas até serem reatribuídas.',
+  },
+  tabAiMessagingTitle: { en: 'AI messaging bot', pt: 'Bot de mensagens IA' },
+  tabAiMessagingSubtitle: {
+    en: 'Choose approval or guarded hybrid replies, permitted categories, confidence and safety limits.',
+    pt: 'Escolha aprovação ou respostas híbridas protegidas, categorias permitidas, confiança e limites de segurança.',
   },
   // ---- Instagram feed highlight (2026-08-02, simplified same day: "just
   // show the most recent 12 posts and allow me to choose the highlighted
