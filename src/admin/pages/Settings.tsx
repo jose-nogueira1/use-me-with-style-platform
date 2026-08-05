@@ -584,7 +584,11 @@ function AiMessagingSettingsSection() {
     {saved && <div style={{ marginBottom: 12, color: '#3F754D', fontSize: 12 }}>{t('savedNotice', lang)}</div>}
 
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 16 }} className="ump-admin-orders-grid">
-      <Card title={lang === 'pt' ? 'Modo de funcionamento' : 'Operating mode'} badge={settings.operatingMode === 'hybrid' ? 'Hybrid' : 'Approval'} tone={settings.operatingMode === 'hybrid' ? 'green' : 'gold'}>
+      <Card
+        title={lang === 'pt' ? 'Modo de funcionamento' : 'Operating mode'}
+        badge={settings.operatingMode === 'hybrid' ? (lang === 'pt' ? 'Híbrido' : 'Hybrid') : (lang === 'pt' ? 'Aprovação' : 'Approval')}
+        tone={settings.operatingMode === 'hybrid' ? 'green' : 'gold'}
+      >
         <label style={{ display: 'flex', gap: 9, alignItems: 'flex-start', padding: '10px 0', borderBottom: `1px solid ${C.ruleLight}`, fontSize: 11 }}>
           <input type="checkbox" checked={settings.assistantEnabled} onChange={(event) => setSettings((current) => ({ ...current, assistantEnabled: event.target.checked }))} />
           <span><strong>{lang === 'pt' ? 'Gerar sugestões de IA' : 'Generate AI suggestions'}</strong><br /><span style={{ color: C.inkSoft }}>{lang === 'pt' ? 'Mantém a assistência ativa mesmo em aprovação manual.' : 'Keeps assistance active even in manual approval mode.'}</span></span>
