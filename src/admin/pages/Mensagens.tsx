@@ -1,8 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
-import { RefreshCw, Search } from 'lucide-react';
+import { BadgeCheck, ExternalLink, RefreshCw, Search, StickyNote } from 'lucide-react';
 import { C, F } from '../../theme';
 import { useApp } from '../../state/AppContext';
-import { adminListMessages, adminSendMessage, adminUpdateMessageStatus, type ApiMessage, type MessageStatus } from '../../lib/api';
+import {
+  adminGetInstagramProfile,
+  adminListMessages,
+  adminSendMessage,
+  adminUpdateMessageNote,
+  adminUpdateMessageStatus,
+  type ApiMessage,
+  type InstagramProfile,
+  type MessageStatus,
+} from '../../lib/api';
 import { PageHeader } from '../components/PageHeader';
 import { Badge, type BadgeTone } from '../components/Badge';
 import { t } from '../i18n';
@@ -83,6 +92,9 @@ export function Mensagens() {
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [reply, setReply] = useState('');
   const [sending, setSending] = useState(false);
+  const [profiles, setProfiles] = useState<Record<string, InstagramProfile | null>>({});
+  const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
+  const [savingNote, setSavingNote] = useState(false);
 
   const [refreshing, setRefreshing] = useState(true);
 
@@ -153,6 +165,28 @@ export function Mensagens() {
       .some((value) => String(value).toLocaleLowerCase().includes(needle));
   });
   const selected = conversations.find((c) => c.key === selectedKey) ?? filtered[0] ?? null;
+  const selectedProfile = selected ? profiles[selected.contactHandle] : null;
+  const selectedNoteDraft = selected
+    ? (noteDrafts[selected.key] ?? selected.messages[0]?.internalNote ?? '')
+    : '';
+
+  useEffect(() => {
+    const missingHandles = conversations
+      .map((conversation) => conversation.contactHandle)
+      .filter((handle, index, handles) => handles.indexOf(handle) === index && !(handle in profiles));
+    if (missingHandles.length === 0) return;
+    let active = true;
+    Promise.all(missingHandles.map(async (handle) => {
+      try {
+        return [handle, await adminGetInstagramProfile(handle)] as const;
+      } catch {
+        return [handle, null] as const;
+      }
+    })).then((entries) => {
+      if (active) setProfiles((current) => ({ ...current, ...Object.fromEntries(entries) }));
+    });
+    return () => { active = false; };
+  }, [conversations, profiles]);
 
   const handleReply = async () => {
     if (!selected || !reply.trim()) return;
@@ -178,6 +212,23 @@ export function Mensagens() {
       load();
     } catch {
       setError(true);
+    }
+  };
+
+  const handleNoteSave = async () => {
+    if (!selected) return;
+    const noteMessage = selected.messages[0];
+    setSavingNote(true);
+    try {
+      const savedNote = selectedNoteDraft.trim();
+      const updated = await adminUpdateMessageNote(noteMessage.id, savedNote);
+      setMessages((current) => current?.map((message) => message.id === updated.id ? updated : message) ?? [updated]);
+      setNoteDrafts((current) => ({ ...current, [selected.key]: savedNote }));
+      setError(false);
+    } catch {
+      setError(true);
+    } finally {
+      setSavingNote(false);
     }
   };
 
@@ -225,6 +276,9 @@ export function Mensagens() {
 
           <div style={{ flex: 1, overflowY: 'auto' }}>
             {filtered.map((c) => (
+              (() => {
+                const profile = profiles[c.contactHandle];
+                return (
               <button
                 key={c.key}
                 onClick={() => setSelectedKey(c.key)}
@@ -237,17 +291,27 @@ export function Mensagens() {
                   background: (selected?.key ?? filtered[0]?.key) === c.key ? C.subtleBg : 'transparent',
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <span style={{ fontSize: 12, fontWeight: 800, color: C.ink }}>{c.customerName || c.contactHandle}</span>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                  <ProfileAvatar profile={profile} fallback={c.customerName || c.contactHandle} size={34} />
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, gap: 8 }}>
+                  <span style={{ fontSize: 12, fontWeight: 800, color: C.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {profile?.name || c.customerName || profile?.username || c.contactHandle}
+                  </span>
                   <time dateTime={c.lastAt} style={{ fontSize: 9, fontWeight: 700, color: C.inkSoft }}>
                     {new Intl.DateTimeFormat(lang === 'pt' ? 'pt-PT' : 'en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(c.lastAt))}
                   </time>
                 </div>
+                {profile?.username && <div style={{ fontSize: 10, color: C.inkSoft, marginBottom: 4 }}>@{profile.username}</div>}
                 <div style={{ fontSize: 11, color: C.inkSoft, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 6 }}>
                   {c.messages[c.messages.length - 1].body}
                 </div>
                 <Badge label={t(STATUS_LABEL_KEY[c.status], lang)} tone={STATUS_TONE[c.status]} />
+                  </div>
+                </div>
               </button>
+                );
+              })()
             ))}
             {messages && filtered.length === 0 && <div style={{ padding: 16, fontSize: 12, color: C.inkSoft }}>{t('noConversations', lang)}</div>}
           </div>
@@ -258,14 +322,30 @@ export function Mensagens() {
 
           {selected && (
             <>
-              <div style={{ padding: '16px 20px', borderBottom: `1px solid ${C.ruleLight}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <div style={{ fontFamily: F.display, fontSize: 16, fontWeight: 800, color: C.ink }}>{selected.customerName || selected.contactHandle}</div>
+              <div style={{ padding: '16px 20px', borderBottom: `1px solid ${C.ruleLight}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 18 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                  <ProfileAvatar profile={selectedProfile} fallback={selected.customerName || selected.contactHandle} size={44} />
+                  <div style={{ minWidth: 0 }}>
+                  <div style={{ fontFamily: F.display, fontSize: 16, fontWeight: 800, color: C.ink, display: 'flex', alignItems: 'center', gap: 5 }}>
+                    {selectedProfile?.name || selected.customerName || selectedProfile?.username || selected.contactHandle}
+                    {selectedProfile?.is_verified_user && <BadgeCheck size={15} fill="#3B82F6" color="#fff" aria-label="Verified Instagram account" />}
+                  </div>
                   <div style={{ fontSize: 11, color: C.inkSoft }}>
-                    Instagram · {selected.contactHandle}
+                    {selectedProfile?.username ? `@${selectedProfile.username}` : `Instagram · ${selected.contactHandle}`}
+                  </div>
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
+                  {selectedProfile?.username && (
+                    <a
+                      href={`https://www.instagram.com/${encodeURIComponent(selectedProfile.username)}/`}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ padding: '7px 11px', fontSize: 11, fontWeight: 800, borderRadius: 6, border: `1px solid ${C.rule}`, color: C.ink, display: 'inline-flex', alignItems: 'center', gap: 5 }}
+                    >
+                      <ExternalLink size={12} /> Instagram
+                    </a>
+                  )}
                   <button onClick={() => handleStatus('open')} style={{ padding: '7px 14px', fontSize: 11, fontWeight: 800, borderRadius: 6, border: `1px solid ${C.rule}`, color: C.inkSoft }}>
                     {t('markNeedsReview', lang)}
                   </button>
@@ -274,6 +354,25 @@ export function Mensagens() {
                   </button>
                   <button onClick={() => handleStatus('resolved')} style={{ padding: '7px 14px', fontSize: 11, fontWeight: 800, borderRadius: 6, border: '1px solid #BFD3B6', color: '#3F754D' }}>
                     {t('markResolved', lang)}
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ margin: '12px 20px 0', padding: 12, border: `1px solid ${C.ruleLight}`, borderRadius: 8, background: '#FFFDF6' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 800, color: C.ink, marginBottom: 7 }}>
+                  <StickyNote size={13} /> {lang === 'pt' ? 'Nota interna' : 'Internal note'}
+                  <span style={{ fontWeight: 500, color: C.inkSoft }}>{lang === 'pt' ? '— nunca enviada ao Instagram' : '— never sent to Instagram'}</span>
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input
+                    value={selectedNoteDraft}
+                    onChange={(event) => setNoteDrafts((current) => ({ ...current, [selected.key]: event.target.value }))}
+                    placeholder={lang === 'pt' ? 'Ex.: aguarda confirmação de stock' : 'E.g. waiting for stock confirmation'}
+                    maxLength={500}
+                    style={{ flex: 1, padding: '8px 10px', fontSize: 12, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.paper }}
+                  />
+                  <button onClick={handleNoteSave} disabled={savingNote} style={{ padding: '8px 13px', borderRadius: 6, background: C.black, color: C.onDarkGold, fontSize: 10, fontWeight: 800 }}>
+                    {savingNote ? '…' : lang === 'pt' ? 'Guardar' : 'Save'}
                   </button>
                 </div>
               </div>
@@ -292,6 +391,7 @@ export function Mensagens() {
                         fontSize: 13,
                       }}
                     >
+                      <InstagramContextCard message={m} lang={lang} />
                       <div>{m.body}</div>
                       {m.automationNote && (
                         <div style={{ fontSize: 10, color: m.direction === 'outbound' ? C.onDarkGold : C.inkSoft, marginTop: 4 }}>{m.automationNote}</div>
@@ -330,6 +430,47 @@ export function Mensagens() {
             </>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function ProfileAvatar({ profile, fallback, size }: { profile?: InstagramProfile | null; fallback: string; size: number }) {
+  if (profile?.profile_pic) {
+    return <img src={profile.profile_pic} alt="" referrerPolicy="no-referrer" style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flex: '0 0 auto', border: `1px solid ${C.ruleLight}` }} />;
+  }
+  return (
+    <div style={{ width: size, height: size, borderRadius: '50%', flex: '0 0 auto', display: 'grid', placeItems: 'center', background: C.black, color: C.onDarkGold, fontSize: Math.max(11, size * 0.32), fontWeight: 800 }}>
+      {fallback.slice(0, 1).toUpperCase()}
+    </div>
+  );
+}
+
+function InstagramContextCard({ message, lang }: { message: ApiMessage; lang: 'pt' | 'en' }) {
+  if (!message.instagramContextType) return null;
+  const labels = {
+    story_reply: lang === 'pt' ? 'Resposta ao teu story' : 'Reply to your story',
+    shared_post: lang === 'pt' ? 'Publicação partilhada' : 'Shared Instagram post',
+    inline_reply: lang === 'pt' ? 'Em resposta a' : 'Replying to',
+    unsupported_media: lang === 'pt' ? 'Conteúdo disponível no Instagram' : 'Content available on Instagram',
+  };
+  const label = labels[message.instagramContextType];
+  const isVideo = ['reel', 'ig_reel'].includes(message.instagramContextMediaType ?? '');
+
+  return (
+    <div style={{ marginBottom: 8, borderRadius: 7, overflow: 'hidden', border: '1px solid rgba(183,146,75,0.35)', background: message.direction === 'outbound' ? 'rgba(255,255,255,0.08)' : '#fff' }}>
+      {message.instagramContextUrl && !isVideo && (
+        <img src={message.instagramContextUrl} alt="" referrerPolicy="no-referrer" style={{ display: 'block', width: '100%', maxHeight: 190, objectFit: 'cover' }} />
+      )}
+      {message.instagramContextUrl && isVideo && (
+        <video src={message.instagramContextUrl} controls preload="metadata" style={{ display: 'block', width: '100%', maxHeight: 220, background: '#000' }} />
+      )}
+      <div style={{ padding: '8px 10px', fontSize: 10, fontWeight: 800 }}>
+        {label}
+        {message.replyToText && <div style={{ marginTop: 4, fontSize: 11, fontWeight: 500, opacity: 0.78, borderLeft: `2px solid ${C.gold}`, paddingLeft: 7 }}>{message.replyToText}</div>}
+        {message.instagramContextType === 'unsupported_media' && (
+          <div style={{ marginTop: 4, fontWeight: 500, opacity: 0.72 }}>{lang === 'pt' ? 'Abre a conversa no Instagram para ver.' : 'Open the conversation on Instagram to view it.'}</div>
+        )}
       </div>
     </div>
   );
