@@ -610,12 +610,27 @@ export type ApiMessage = {
   contactHandle: string;
   customerName?: string;
   body: string;
+  instagramContextType?: 'story_reply' | 'shared_post' | 'inline_reply' | 'unsupported_media';
+  instagramContextUrl?: string;
+  instagramContextMediaType?: string;
+  replyToExternalId?: string;
+  replyToText?: string;
+  internalNote?: string;
+  externalId?: string;
   status: MessageStatus;
   automationNote?: string;
   relatedOrder?: string;
   relatedCustomer?: string;
   sentByAutomation: boolean;
   createdAt: string;
+};
+
+export type InstagramProfile = {
+  id: string;
+  name?: string;
+  username?: string;
+  profile_pic?: string;
+  is_verified_user?: boolean;
 };
 
 // ---------------------------------------------------------------------------
@@ -915,6 +930,23 @@ export async function adminUpdateMessageStatus(id: string, status: MessageStatus
     { auth: true },
   );
   return data.doc;
+}
+
+export async function adminUpdateMessageNote(id: string, internalNote: string): Promise<ApiMessage> {
+  const data = await request<{ doc: ApiMessage }>(
+    `/messages/${id}`,
+    { method: 'PATCH', body: JSON.stringify({ internalNote }) },
+    { auth: true },
+  );
+  return data.doc;
+}
+
+export async function adminGetInstagramProfile(contactHandle: string): Promise<InstagramProfile> {
+  return request<InstagramProfile>(
+    `/instagram-profile?contactHandle=${encodeURIComponent(contactHandle)}`,
+    {},
+    { auth: true },
+  );
 }
 
 /** Admin-composed Instagram reply. `sentByAutomation` is left false so the
