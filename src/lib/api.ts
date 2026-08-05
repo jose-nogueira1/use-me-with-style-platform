@@ -602,6 +602,7 @@ export type MessageChannel = 'instagram';
 // Dormant channel for future reactivation:
 // export type MessageChannel = 'instagram' | 'whatsapp';
 export type MessageStatus = 'open' | 'auto_handled' | 'escalated' | 'resolved';
+export type ConversationStatus = 'needs_reply' | 'waiting' | 'priority' | 'done';
 
 export type ApiMessage = {
   id: string;
@@ -616,12 +617,15 @@ export type ApiMessage = {
   instagramContextMediaType?: string;
   replyToExternalId?: string;
   replyToText?: string;
+  adminReadAt?: string;
+  instagramSeenAt?: string;
+  conversationStatus?: ConversationStatus;
   internalNote?: string;
   externalId?: string;
   status: MessageStatus;
   automationNote?: string;
-  relatedOrder?: string;
-  relatedCustomer?: string;
+  relatedOrder?: string | Pick<ApiOrder, 'id' | 'orderNumber' | 'market' | 'status' | 'paymentStatus' | 'createdAt'>;
+  relatedCustomer?: string | Pick<ApiCustomer, 'id' | 'name' | 'email' | 'phone' | 'market'>;
   sentByAutomation: boolean;
   createdAt: string;
 };
@@ -917,11 +921,27 @@ export async function adminGetCustomer(id: string): Promise<ApiCustomer> {
  * CMS, but are intentionally excluded from this active storefront-admin UI. */
 export async function adminListMessages(): Promise<ApiMessage[]> {
   const data = await request<{ docs: ApiMessage[] }>(
-    '/messages?where[channel][equals]=instagram&limit=300&sort=-createdAt&depth=0',
+    '/messages?where[channel][equals]=instagram&limit=300&sort=-createdAt&depth=1',
     {},
     { auth: true },
   );
   return data.docs;
+}
+
+export async function adminMarkInstagramConversationRead(contactHandle: string): Promise<{ readAt: string; updatedIds: string[]; instagramSynced: boolean }> {
+  return request('/instagram-conversations/read', {
+    method: 'POST',
+    body: JSON.stringify({ contactHandle }),
+  }, { auth: true });
+}
+
+export async function adminUpdateConversationStatus(id: string, conversationStatus: ConversationStatus): Promise<ApiMessage> {
+  const data = await request<{ doc: ApiMessage }>(
+    `/messages/${id}`,
+    { method: 'PATCH', body: JSON.stringify({ conversationStatus }) },
+    { auth: true },
+  );
+  return data.doc;
 }
 
 export async function adminUpdateMessageStatus(id: string, status: MessageStatus): Promise<ApiMessage> {
@@ -962,7 +982,7 @@ export async function adminSendMessage(input: {
     '/messages',
     {
       method: 'POST',
-      body: JSON.stringify({ ...input, channel: 'instagram', direction: 'outbound', status: 'resolved', sentByAutomation: false }),
+      body: JSON.stringify({ ...input, channel: 'instagram', direction: 'outbound', status: 'open', conversationStatus: 'waiting', sentByAutomation: false }),
     },
     { auth: true },
   );

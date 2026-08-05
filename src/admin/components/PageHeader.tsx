@@ -540,14 +540,22 @@ export function NotificationsButton() {
             urgent,
           });
         }
-        for (const m of messages.filter((m) => m.status === 'open' || m.status === 'escalated').slice(0, 20)) {
+        const latestByInstagramUser = new Map<string, typeof messages[number]>();
+        for (const message of [...messages].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())) {
+          latestByInstagramUser.set(message.contactHandle, message);
+        }
+        for (const m of [...latestByInstagramUser.values()].filter((message) =>
+          (message.direction === 'inbound' && !message.adminReadAt)
+          || message.conversationStatus === 'needs_reply'
+          || message.conversationStatus === 'priority',
+        ).slice(0, 20)) {
           next.push({
-            key: `message-${m.id}`,
+            key: `message-${m.contactHandle}`,
             icon: <MessageCircle size={13} />,
             title: t('notifSentAMessage', lang, { name: m.customerName || m.contactHandle }),
-            subtitle: m.status === 'escalated' ? t('msgEscalated', lang) : t('msgNeedsReview', lang),
+            subtitle: m.conversationStatus === 'priority' ? t('msgEscalated', lang) : t('msgNeedsReview', lang),
             path: '/admin/mensagens',
-            urgent: m.status === 'escalated',
+            urgent: m.conversationStatus === 'priority',
           });
         }
         // Prune against the full live set (before filtering out cleared

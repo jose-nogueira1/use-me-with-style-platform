@@ -1,628 +1,427 @@
 import { useEffect, useMemo, useState } from 'react';
-import { BadgeCheck, ExternalLink, MessageSquareReply, RefreshCw, Search, StickyNote } from 'lucide-react';
+import { BadgeCheck, ChevronDown, ExternalLink, MessageSquareReply, MoreHorizontal, RefreshCw, Search, Send, StickyNote, UserRound } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { C, F } from '../../theme';
 import { useApp } from '../../state/AppContext';
 import {
   adminGetInstagramProfile,
   adminListMessages,
+  adminMarkInstagramConversationRead,
   adminSendMessage,
+  adminUpdateConversationStatus,
   adminUpdateMessageNote,
-  adminUpdateMessageStatus,
   type ApiMessage,
+  type ConversationStatus,
   type InstagramProfile,
-  type MessageStatus,
 } from '../../lib/api';
 import { PageHeader } from '../components/PageHeader';
-import { Badge, type BadgeTone } from '../components/Badge';
 import { t } from '../i18n';
 
-const STATUS_LABEL_KEY: Record<MessageStatus, string> = {
-  open: 'msgNeedsReview',
-  auto_handled: 'msgAutoHandled',
-  escalated: 'msgEscalated',
-  resolved: 'msgResolved',
-};
-
-const STATUS_TONE: Record<MessageStatus, BadgeTone> = {
-  open: 'gold',
-  auto_handled: 'green',
-  escalated: 'red',
-  resolved: 'neutral',
-};
+type InboxFilter = 'inbox' | 'unread' | ConversationStatus;
 
 type Conversation = {
   key: string;
-  channel: ApiMessage['channel'];
   contactHandle: string;
   customerName?: string;
   messages: ApiMessage[];
   lastAt: string;
-  status: MessageStatus;
+  unreadCount: number;
+  workflow: ConversationStatus;
 };
 
-function groupIntoConversations(messages: ApiMessage[]): Conversation[] {
-  // Older webhook handling stored Meta's outbound echoes as inbound messages
-  // under the business account's own ID. Keep the source records intact, but
-  // hide an echo when it matches an outbound admin message sent moments
-  // earlier. New echoes are rejected by the CMS before persistence.
-  const outbound = messages.filter((message) => message.channel === 'instagram' && message.direction === 'outbound');
-  const visibleMessages = messages.filter((message) => {
-    if (message.channel !== 'instagram' || message.direction !== 'inbound' || !message.externalId) return true;
-    const receivedAt = new Date(message.createdAt).getTime();
-    return !outbound.some((sent) => (
-      sent.contactHandle !== message.contactHandle
-      && sent.body === message.body
-      && Math.abs(new Date(sent.createdAt).getTime() - receivedAt) <= 2 * 60 * 1000
-    ));
-  });
+const FILTERS: InboxFilter[] = ['inbox', 'unread', 'needs_reply', 'waiting', 'priority', 'done'];
+const QUICK_REPLIES = {
+  en: [
+    'Thanks for your message. We’ll check this and get back to you shortly.',
+    'Could you please send us your order number?',
+    'Please confirm which market you are shopping in: Angola or Portugal.',
+  ],
+  pt: [
+    'Obrigada pela mensagem. Vamos verificar e responder em breve.',
+    'Pode enviar-nos o número da sua encomenda, por favor?',
+    'Confirma em que mercado pretende comprar: Angola ou Portugal?',
+  ],
+};
 
-  const byKey = new Map<string, ApiMessage[]>();
-  for (const m of visibleMessages) {
-    if (m.channel !== 'instagram') continue;
-    const key = `${m.channel}:${m.contactHandle}`;
-    if (!byKey.has(key)) byKey.set(key, []);
-    byKey.get(key)!.push(m);
-  }
-  const conversations: Conversation[] = [];
-  for (const [key, msgs] of byKey) {
-    const sorted = [...msgs].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-    const last = sorted[sorted.length - 1];
-    conversations.push({
-      key,
-      channel: last.channel,
-      contactHandle: last.contactHandle,
-      customerName: sorted.find((m) => m.customerName)?.customerName,
-      messages: sorted,
-      lastAt: last.createdAt,
-      status: last.status,
-    });
-  }
-  return conversations.sort((a, b) => new Date(b.lastAt).getTime() - new Date(a.lastAt).getTime());
+const WORKFLOW_LABELS: Record<ConversationStatus, { en: string; pt: string }> = {
+  needs_reply: { en: 'Needs reply', pt: 'Precisa de resposta' },
+  waiting: { en: 'Waiting', pt: 'A aguardar' },
+  priority: { en: 'Priority', pt: 'Prioridade' },
+  done: { en: 'Done', pt: 'Concluída' },
+};
+
+function inferredWorkflow(last: ApiMessage): ConversationStatus {
+  if (last.conversationStatus) return last.conversationStatus;
+  if (last.status === 'escalated') return 'priority';
+  if (last.status === 'resolved') return 'done';
+  return last.direction === 'outbound' ? 'waiting' : 'needs_reply';
 }
 
-// Instagram-only Phase 1 inbox. WhatsApp remains dormant in the backend so it
-// can be restored later, but it is deliberately absent from this interface.
-// AI-assisted sales replies are a future feature and are not implied here.
+function groupIntoConversations(messages: ApiMessage[]): Conversation[] {
+  const outbound = messages.filter((message) => message.channel === 'instagram' && message.direction === 'outbound');
+  const visible = messages.filter((message) => {
+    if (message.channel !== 'instagram' || message.direction !== 'inbound' || !message.externalId) return true;
+    const receivedAt = new Date(message.createdAt).getTime();
+    return !outbound.some((sent) => sent.contactHandle !== message.contactHandle
+      && sent.body === message.body
+      && Math.abs(new Date(sent.createdAt).getTime() - receivedAt) <= 2 * 60 * 1000);
+  });
+  const grouped = new Map<string, ApiMessage[]>();
+  for (const message of visible) {
+    const key = `instagram:${message.contactHandle}`;
+    grouped.set(key, [...(grouped.get(key) ?? []), message]);
+  }
+  return [...grouped.entries()].map(([key, rows]) => {
+    const sorted = rows.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    const last = sorted[sorted.length - 1];
+    return {
+      key,
+      contactHandle: last.contactHandle,
+      customerName: sorted.find((message) => message.customerName)?.customerName,
+      messages: sorted,
+      lastAt: last.createdAt,
+      unreadCount: sorted.filter((message) => message.direction === 'inbound' && !message.adminReadAt).length,
+      workflow: inferredWorkflow(last),
+    };
+  }).sort((a, b) => {
+    const attention = (conversation: Conversation) => conversation.workflow === 'priority' ? 3 : conversation.unreadCount > 0 ? 2 : conversation.workflow === 'needs_reply' ? 1 : 0;
+    return attention(b) - attention(a) || new Date(b.lastAt).getTime() - new Date(a.lastAt).getTime();
+  });
+}
+
+function relativeTime(value: string, lang: 'en' | 'pt') {
+  const seconds = Math.max(0, Math.round((Date.now() - new Date(value).getTime()) / 1000));
+  const formatter = new Intl.RelativeTimeFormat(lang === 'pt' ? 'pt-PT' : 'en', { numeric: 'auto' });
+  if (seconds < 60) return formatter.format(-seconds, 'second');
+  if (seconds < 3600) return formatter.format(-Math.round(seconds / 60), 'minute');
+  if (seconds < 86400) return formatter.format(-Math.round(seconds / 3600), 'hour');
+  if (seconds < 604800) return formatter.format(-Math.round(seconds / 86400), 'day');
+  return new Intl.DateTimeFormat(lang === 'pt' ? 'pt-PT' : 'en-GB', { day: '2-digit', month: 'short' }).format(new Date(value));
+}
+
 export function Mensagens() {
   const { lang } = useApp();
   const [messages, setMessages] = useState<ApiMessage[] | null>(null);
-  const [error, setError] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<MessageStatus | ''>('');
-  const [query, setQuery] = useState('');
-  const [selectedKey, setSelectedKey] = useState<string | null>(null);
-  const [reply, setReply] = useState('');
-  const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
-  const [sending, setSending] = useState(false);
   const [profiles, setProfiles] = useState<Record<string, InstagramProfile | null>>({});
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const [filter, setFilter] = useState<InboxFilter>('inbox');
+  const [query, setQuery] = useState('');
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
+  const [contextOpen, setContextOpen] = useState(false);
+  const [quickRepliesOpen, setQuickRepliesOpen] = useState(false);
+  const [sending, setSending] = useState(false);
   const [savingNote, setSavingNote] = useState(false);
-
   const [refreshing, setRefreshing] = useState(true);
+  const [error, setError] = useState(false);
+  const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
 
-  const load = () => {
-    setRefreshing(true);
-    adminListMessages()
-      .then((rows) => {
-        setMessages(rows);
-        setError(false);
-      })
-      .catch(() => setError(true))
-      .finally(() => setRefreshing(false));
+  const load = (foreground = true) => {
+    if (foreground) setRefreshing(true);
+    return adminListMessages().then((rows) => {
+      setMessages(rows);
+      setError(false);
+    }).catch(() => setError(true)).finally(() => foreground && setRefreshing(false));
   };
 
+  useEffect(() => { void load(); }, []);
   useEffect(() => {
-    let active = true;
-    adminListMessages()
-      .then((rows) => {
-        if (!active) return;
-        setMessages(rows);
-        setError(false);
-      })
-      .catch(() => {
-        if (active) setError(true);
-      })
-      .finally(() => {
-        if (active) setRefreshing(false);
-      });
+    const refresh = () => { if (document.visibilityState === 'visible') void load(false); };
+    const interval = window.setInterval(refresh, 5_000);
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
     return () => {
-      active = false;
+      window.clearInterval(interval);
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', refresh);
     };
   }, []);
 
-  useEffect(() => {
-    let active = true;
-    const refreshInBackground = () => {
-      adminListMessages()
-        .then((rows) => {
-          if (!active) return;
-          setMessages(rows);
-          setError(false);
-        })
-        .catch(() => {
-          if (active) setError(true);
-        });
-    };
-    const intervalId = window.setInterval(refreshInBackground, 5_000);
-    const refreshWhenVisible = () => {
-      if (document.visibilityState === 'visible') refreshInBackground();
-    };
-    window.addEventListener('focus', refreshInBackground);
-    document.addEventListener('visibilitychange', refreshWhenVisible);
-    return () => {
-      active = false;
-      window.clearInterval(intervalId);
-      window.removeEventListener('focus', refreshInBackground);
-      document.removeEventListener('visibilitychange', refreshWhenVisible);
-    };
-  }, []);
-
-  const conversations = useMemo(() => (messages ? groupIntoConversations(messages) : []), [messages]);
-  const filtered = conversations.filter((c) => {
-    if (statusFilter && c.status !== statusFilter) return false;
+  const conversations = useMemo(() => messages ? groupIntoConversations(messages) : [], [messages]);
+  const filtered = conversations.filter((conversation) => {
+    if (filter === 'inbox' && conversation.workflow === 'done') return false;
+    if (filter === 'unread' && conversation.unreadCount === 0) return false;
+    if (!['inbox', 'unread'].includes(filter) && conversation.workflow !== filter) return false;
     const needle = query.trim().toLocaleLowerCase();
-    if (!needle) return true;
-    return [c.customerName, c.contactHandle, ...c.messages.map((m) => m.body)]
-      .filter(Boolean)
-      .some((value) => String(value).toLocaleLowerCase().includes(needle));
+    return !needle || [conversation.customerName, profiles[conversation.contactHandle]?.username, profiles[conversation.contactHandle]?.name, ...conversation.messages.map((message) => message.body)]
+      .filter(Boolean).some((value) => String(value).toLocaleLowerCase().includes(needle));
   });
-  const selected = conversations.find((c) => c.key === selectedKey) ?? filtered[0] ?? null;
+  const selected = conversations.find((conversation) => conversation.key === selectedKey) ?? filtered[0] ?? null;
   const selectedProfile = selected ? profiles[selected.contactHandle] : null;
-  const selectedNoteDraft = selected
-    ? (noteDrafts[selected.key] ?? selected.messages[0]?.internalNote ?? '')
-    : '';
+  const draft = selected ? drafts[selected.key] ?? '' : '';
+  const unreadTotal = conversations.reduce((total, conversation) => total + conversation.unreadCount, 0);
 
   useEffect(() => {
-    const missingHandles = conversations
-      .map((conversation) => conversation.contactHandle)
+    const missing = conversations.map((conversation) => conversation.contactHandle)
       .filter((handle, index, handles) => handles.indexOf(handle) === index && !(handle in profiles));
-    if (missingHandles.length === 0) return;
+    if (!missing.length) return;
     let active = true;
-    Promise.all(missingHandles.map(async (handle) => {
-      try {
-        return [handle, await adminGetInstagramProfile(handle)] as const;
-      } catch {
-        return [handle, null] as const;
-      }
-    })).then((entries) => {
-      if (active) setProfiles((current) => ({ ...current, ...Object.fromEntries(entries) }));
-    });
+    Promise.all(missing.map(async (handle) => {
+      try { return [handle, await adminGetInstagramProfile(handle)] as const; }
+      catch { return [handle, null] as const; }
+    })).then((entries) => active && setProfiles((current) => ({ ...current, ...Object.fromEntries(entries) })));
     return () => { active = false; };
   }, [conversations, profiles]);
 
-  const handleReply = async () => {
-    if (!selected || !reply.trim()) return;
-    setSending(true);
+  useEffect(() => {
+    if (!selected?.unreadCount) return;
+    let active = true;
+    adminMarkInstagramConversationRead(selected.contactHandle).then(({ readAt, updatedIds }) => {
+      if (!active) return;
+      const updated = new Set(updatedIds);
+      setMessages((current) => current?.map((message) => updated.has(message.id) ? { ...message, adminReadAt: readAt } : message) ?? null);
+    }).catch(() => setError(true));
+    return () => { active = false; };
+  }, [selected?.key, selected?.unreadCount, selected?.contactHandle]);
+
+  const updateWorkflow = async (workflow: ConversationStatus) => {
+    if (!selected) return;
+    const last = selected.messages[selected.messages.length - 1];
     try {
-      const sentMessage = await adminSendMessage({ contactHandle: selected.contactHandle, customerName: selected.customerName, body: reply.trim() });
-      setMessages((current) => current
-        ? [sentMessage, ...current.filter((message) => message.id !== sentMessage.id)]
-        : [sentMessage]);
-      setReply('');
-    } catch {
-      setError(true);
-    } finally {
-      setSending(false);
-    }
+      const updated = await adminUpdateConversationStatus(last.id, workflow);
+      setMessages((current) => current?.map((message) => message.id === updated.id ? updated : message) ?? [updated]);
+    } catch { setError(true); }
   };
 
-  const focusOriginalMessage = (messageId: string) => {
+  const handleReply = async () => {
+    if (!selected || !draft.trim()) return;
+    setSending(true);
+    try {
+      const relatedOrder = selected.messages.map((message) => message.relatedOrder).find(Boolean);
+      const sent = await adminSendMessage({
+        contactHandle: selected.contactHandle,
+        customerName: selected.customerName,
+        body: draft.trim(),
+        relatedOrder: typeof relatedOrder === 'object' ? relatedOrder.id : relatedOrder,
+      });
+      setMessages((current) => current ? [sent, ...current.filter((message) => message.id !== sent.id)] : [sent]);
+      setDrafts((current) => ({ ...current, [selected.key]: '' }));
+      setQuickRepliesOpen(false);
+    } catch { setError(true); }
+    finally { setSending(false); }
+  };
+
+  const saveNote = async () => {
+    if (!selected) return;
+    const first = selected.messages[0];
+    const value = noteDrafts[selected.key] ?? first.internalNote ?? '';
+    setSavingNote(true);
+    try {
+      const updated = await adminUpdateMessageNote(first.id, value.trim());
+      setMessages((current) => current?.map((message) => message.id === updated.id ? updated : message) ?? [updated]);
+    } catch { setError(true); }
+    finally { setSavingNote(false); }
+  };
+
+  const focusOriginal = (messageId: string) => {
     document.getElementById(`instagram-message-${messageId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     setHighlightedMessageId(messageId);
     window.setTimeout(() => setHighlightedMessageId((current) => current === messageId ? null : current), 1_800);
   };
 
-  const handleStatus = async (status: MessageStatus) => {
-    if (!selected) return;
-    const lastMsg = selected.messages[selected.messages.length - 1];
-    try {
-      await adminUpdateMessageStatus(lastMsg.id, status);
-      load();
-    } catch {
-      setError(true);
-    }
-  };
-
-  const handleNoteSave = async () => {
-    if (!selected) return;
-    const noteMessage = selected.messages[0];
-    setSavingNote(true);
-    try {
-      const savedNote = selectedNoteDraft.trim();
-      const updated = await adminUpdateMessageNote(noteMessage.id, savedNote);
-      setMessages((current) => current?.map((message) => message.id === updated.id ? updated : message) ?? [updated]);
-      setNoteDrafts((current) => ({ ...current, [selected.key]: savedNote }));
-      setError(false);
-    } catch {
-      setError(true);
-    } finally {
-      setSavingNote(false);
-    }
-  };
-
   return (
-    <div style={{ paddingBottom: 0, height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', paddingBottom: 0 }}>
       <PageHeader eyebrow={t('settingsMessaging', lang)} title={t('instagramInbox', lang)} subtitle={t('instagramInboxSubtitle', lang)} />
+      {error && <div role="alert" style={{ margin: '10px 28px 0', fontSize: 12, color: '#B95545' }}>{t('couldntConnectBackend', lang)}</div>}
+      <div aria-live="polite" className="ump-sr-only">{unreadTotal} {lang === 'pt' ? 'mensagens não lidas' : 'unread messages'}</div>
 
-      {error && <div style={{ margin: '12px 28px 0', fontSize: 12, color: '#B95545' }}>{t('couldntConnectBackend', lang)}</div>}
-
-      <div className="ump-mensagens-shell" style={{ margin: '18px 28px 28px', border: `1px solid ${C.ruleLight}`, borderRadius: 8, overflow: 'hidden', background: C.paper }}>
-        <div className="ump-mensagens-list" style={{ borderRight: `1px solid ${C.ruleLight}`, display: 'flex', flexDirection: 'column' }}>
-          <div style={{ padding: '16px 16px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontFamily: F.display, fontSize: 16, fontWeight: 800, color: C.ink }}>{t('conversationInbox', lang)}</div>
-            <Badge label="Instagram" tone="blue" />
+      <div className="ump-mensagens-shell" style={{ margin: '16px 28px 28px', border: `1px solid ${C.ruleLight}`, borderRadius: 10, overflow: 'hidden', background: C.paper, minHeight: 580 }}>
+        <aside className="ump-mensagens-list" aria-label={lang === 'pt' ? 'Lista de conversas' : 'Conversation list'} style={{ borderRight: `1px solid ${C.ruleLight}`, display: 'flex', flexDirection: 'column', minWidth: 300 }}>
+          <div style={{ padding: '15px 15px 9px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ fontFamily: F.display, fontSize: 17, fontWeight: 800, color: C.ink }}>{t('conversationInbox', lang)}</div>
+            {unreadTotal > 0 && <span style={{ minWidth: 22, height: 22, padding: '0 6px', borderRadius: 11, display: 'grid', placeItems: 'center', background: C.black, color: C.onDarkGold, fontSize: 10, fontWeight: 900 }}>{unreadTotal}</span>}
           </div>
-
-          <div style={{ display: 'flex', gap: 7, padding: '0 16px 10px' }}>
+          <div style={{ display: 'flex', gap: 7, padding: '0 15px 10px' }}>
             <label style={{ flex: 1, position: 'relative' }}>
               <Search size={13} aria-hidden style={{ position: 'absolute', left: 9, top: 9, color: C.inkSoft }} />
-              <input
-                aria-label={t('searchMessages', lang)}
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder={t('searchMessages', lang)}
-                style={{ width: '100%', padding: '7px 9px 7px 29px', fontSize: 11, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.paper }}
-              />
+              <input aria-label={t('searchMessages', lang)} value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t('searchMessages', lang)} style={{ width: '100%', padding: '7px 9px 7px 29px', fontSize: 11, border: `1px solid ${C.rule}`, borderRadius: 7, background: C.paper }} />
             </label>
-            <button
-              aria-label={t('refreshMessages', lang)}
-              title={t('refreshMessages', lang)}
-              onClick={load}
-              disabled={refreshing}
-              style={{ width: 32, border: `1px solid ${C.rule}`, borderRadius: 6, color: C.inkSoft, display: 'grid', placeItems: 'center' }}
-            >
-              <RefreshCw size={13} style={{ opacity: refreshing ? 0.45 : 1 }} />
-            </button>
+            <button aria-label={t('refreshMessages', lang)} onClick={() => void load()} disabled={refreshing} style={{ width: 34, minHeight: 34, border: `1px solid ${C.rule}`, borderRadius: 7, color: C.inkSoft, display: 'grid', placeItems: 'center' }}><RefreshCw size={13} style={{ opacity: refreshing ? 0.4 : 1 }} /></button>
           </div>
-
-          <div style={{ display: 'flex', gap: 5, padding: '0 16px 12px', flexWrap: 'wrap' }}>
-            <FilterPill label={t('filterAllShort', lang)} active={!statusFilter} onClick={() => setStatusFilter('')} />
-            {(Object.keys(STATUS_LABEL_KEY) as MessageStatus[]).map((s) => (
-              <FilterPill key={s} label={t(STATUS_LABEL_KEY[s], lang)} active={statusFilter === s} onClick={() => setStatusFilter(s)} />
-            ))}
+          <div style={{ display: 'flex', gap: 5, padding: '0 15px 12px', overflowX: 'auto' }}>
+            {FILTERS.map((item) => <FilterPill key={item} label={filterLabel(item, lang)} active={filter === item} onClick={() => setFilter(item)} />)}
           </div>
-
           <div style={{ flex: 1, overflowY: 'auto' }}>
-            {filtered.map((c) => (
-              (() => {
-                const profile = profiles[c.contactHandle];
-                return (
-              <button
-                key={c.key}
-                onClick={() => setSelectedKey(c.key)}
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  textAlign: 'left',
-                  padding: '12px 16px',
-                  borderBottom: `1px solid ${C.ruleLight}`,
-                  background: (selected?.key ?? filtered[0]?.key) === c.key ? C.subtleBg : 'transparent',
-                }}
-              >
-                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                  <ProfileAvatar profile={profile} fallback={c.customerName || c.contactHandle} size={34} />
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, gap: 8 }}>
-                  <span style={{ fontSize: 12, fontWeight: 800, color: C.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {profile?.name || c.customerName || profile?.username || c.contactHandle}
-                  </span>
-                  <time dateTime={c.lastAt} style={{ fontSize: 9, fontWeight: 700, color: C.inkSoft }}>
-                    {new Intl.DateTimeFormat(lang === 'pt' ? 'pt-PT' : 'en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(c.lastAt))}
-                  </time>
-                </div>
-                {profile?.username && <div style={{ fontSize: 10, color: C.inkSoft, marginBottom: 4 }}>@{profile.username}</div>}
-                <div style={{ fontSize: 11, color: C.inkSoft, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 6 }}>
-                  {c.messages[c.messages.length - 1].body}
-                </div>
-                <Badge label={t(STATUS_LABEL_KEY[c.status], lang)} tone={STATUS_TONE[c.status]} />
-                  </div>
-                </div>
-              </button>
-                );
-              })()
-            ))}
-            {messages && filtered.length === 0 && <div style={{ padding: 16, fontSize: 12, color: C.inkSoft }}>{t('noConversations', lang)}</div>}
-          </div>
-        </div>
-
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 420 }}>
-          {!selected && <div style={{ padding: 28, fontSize: 13, color: C.inkSoft }}>{t('selectAConversation', lang)}</div>}
-
-          {selected && (
-            <>
-              <div style={{ padding: '16px 20px', borderBottom: `1px solid ${C.ruleLight}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 18 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-                  <ProfileAvatar profile={selectedProfile} fallback={selected.customerName || selected.contactHandle} size={44} />
-                  <div style={{ minWidth: 0 }}>
-                  <div style={{ fontFamily: F.display, fontSize: 16, fontWeight: 800, color: C.ink, display: 'flex', alignItems: 'center', gap: 5 }}>
-                    {selectedProfile?.name || selected.customerName || selectedProfile?.username || selected.contactHandle}
-                    {selectedProfile?.is_verified_user && <BadgeCheck size={15} fill="#3B82F6" color="#fff" aria-label="Verified Instagram account" />}
-                  </div>
-                  <div style={{ fontSize: 11, color: C.inkSoft }}>
-                    {selectedProfile?.username ? `@${selectedProfile.username}` : `Instagram · ${selected.contactHandle}`}
-                  </div>
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  {selectedProfile?.username && (
-                    <a
-                      href={`https://www.instagram.com/${encodeURIComponent(selectedProfile.username)}/`}
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{ padding: '7px 11px', fontSize: 11, fontWeight: 800, borderRadius: 6, border: `1px solid ${C.rule}`, color: C.ink, display: 'inline-flex', alignItems: 'center', gap: 5 }}
-                    >
-                      <ExternalLink size={12} /> Instagram
-                    </a>
-                  )}
-                  <button onClick={() => handleStatus('open')} style={{ padding: '7px 14px', fontSize: 11, fontWeight: 800, borderRadius: 6, border: `1px solid ${C.rule}`, color: C.inkSoft }}>
-                    {t('markNeedsReview', lang)}
-                  </button>
-                  <button onClick={() => handleStatus('escalated')} style={{ padding: '7px 14px', fontSize: 11, fontWeight: 800, borderRadius: 6, border: '1px solid #E1B3AA', color: '#B95545' }}>
-                    {t('escalateAction', lang)}
-                  </button>
-                  <button onClick={() => handleStatus('resolved')} style={{ padding: '7px 14px', fontSize: 11, fontWeight: 800, borderRadius: 6, border: '1px solid #BFD3B6', color: '#3F754D' }}>
-                    {t('markResolved', lang)}
-                  </button>
-                </div>
-              </div>
-
-              <div style={{ margin: '12px 20px 0', padding: 12, border: `1px solid ${C.ruleLight}`, borderRadius: 8, background: '#FFFDF6' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 800, color: C.ink, marginBottom: 7 }}>
-                  <StickyNote size={13} /> {lang === 'pt' ? 'Nota interna' : 'Internal note'}
-                  <span style={{ fontWeight: 500, color: C.inkSoft }}>{lang === 'pt' ? '— nunca enviada ao Instagram' : '— never sent to Instagram'}</span>
-                </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <input
-                    value={selectedNoteDraft}
-                    onChange={(event) => setNoteDrafts((current) => ({ ...current, [selected.key]: event.target.value }))}
-                    placeholder={lang === 'pt' ? 'Ex.: aguarda confirmação de stock' : 'E.g. waiting for stock confirmation'}
-                    maxLength={500}
-                    style={{ flex: 1, padding: '8px 10px', fontSize: 12, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.paper }}
-                  />
-                  <button onClick={handleNoteSave} disabled={savingNote} style={{ padding: '8px 13px', borderRadius: 6, background: C.black, color: C.onDarkGold, fontSize: 10, fontWeight: 800 }}>
-                    {savingNote ? '…' : lang === 'pt' ? 'Guardar' : 'Save'}
-                  </button>
-                </div>
-              </div>
-
-              <div style={{ flex: 1, overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {selected.messages.map((m) => {
-                  const repliedTo = m.replyToExternalId
-                    ? selected.messages.find((candidate) => candidate.externalId === m.replyToExternalId)
-                    : undefined;
-                  return (
-                  <div
-                    id={`instagram-message-${m.id}`}
-                    key={m.id}
-                    style={{
-                      display: 'flex',
-                      justifyContent: m.direction === 'outbound' ? 'flex-end' : 'flex-start',
-                      borderRadius: 12,
-                      outline: highlightedMessageId === m.id ? `2px solid ${C.gold}` : '2px solid transparent',
-                      outlineOffset: 3,
-                      transition: 'outline-color 180ms ease',
-                    }}
-                  >
-                    <div
-                      style={{
-                        maxWidth: 420,
-                        padding: '10px 14px',
-                        borderRadius: 10,
-                        background: m.direction === 'outbound' ? C.black : C.subtleBg,
-                        color: m.direction === 'outbound' ? C.onDark : C.ink,
-                        border: m.direction === 'inbound' ? `1px solid ${C.ruleLight}` : 'none',
-                        fontSize: 13,
-                      }}
-                    >
-                      {m.instagramContextType === 'inline_reply' && (
-                        <InlineReplyQuote
-                          message={m}
-                          repliedTo={repliedTo}
-                          lang={lang}
-                          onFocusOriginal={repliedTo ? () => focusOriginalMessage(repliedTo.id) : undefined}
-                        />
-                      )}
-                      <InstagramContextCard message={m} lang={lang} />
-                      <div>{m.body}</div>
-                      {m.automationNote && (
-                        <div style={{ fontSize: 10, color: m.direction === 'outbound' ? C.onDarkGold : C.inkSoft, marginTop: 4 }}>{messageSourceLabel(m, lang)}</div>
-                      )}
-                      <time dateTime={m.createdAt} style={{ display: 'block', fontSize: 9, opacity: 0.72, marginTop: 5 }}>
-                        {new Intl.DateTimeFormat(lang === 'pt' ? 'pt-PT' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(m.createdAt))}
-                      </time>
+            {filtered.map((conversation) => {
+              const profile = profiles[conversation.contactHandle];
+              const latest = conversation.messages[conversation.messages.length - 1];
+              const unread = conversation.unreadCount > 0;
+              return (
+                <button key={conversation.key} onClick={() => setSelectedKey(conversation.key)} aria-current={selected?.key === conversation.key ? 'true' : undefined} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '12px 14px', minHeight: 76, borderBottom: `1px solid ${C.ruleLight}`, borderLeft: selected?.key === conversation.key ? `3px solid ${C.gold}` : '3px solid transparent', background: selected?.key === conversation.key ? '#FBF8F1' : 'transparent' }}>
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                    <div style={{ position: 'relative' }}>
+                      <ProfileAvatar profile={profile} fallback={conversation.customerName || conversation.contactHandle} size={38} />
+                      {unread && <span aria-label={lang === 'pt' ? 'Não lida' : 'Unread'} style={{ position: 'absolute', right: -1, top: -1, width: 10, height: 10, borderRadius: '50%', background: C.goldDeep, border: `2px solid ${C.paper}` }} />}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 3 }}>
+                        <strong style={{ fontSize: 12, fontWeight: unread ? 900 : 700, color: C.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{profile?.name || conversation.customerName || profile?.username || conversation.contactHandle}</strong>
+                        <time dateTime={conversation.lastAt} title={new Date(conversation.lastAt).toLocaleString()} style={{ fontSize: 9, fontWeight: unread ? 900 : 600, color: unread ? C.goldDeep : C.inkSoft, flexShrink: 0 }}>{relativeTime(conversation.lastAt, lang)}</time>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ flex: 1, minWidth: 0, fontSize: 11, fontWeight: unread ? 750 : 500, color: unread ? C.ink : C.inkSoft, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{latest.direction === 'outbound' ? (lang === 'pt' ? 'Tu: ' : 'You: ') : ''}{latest.body}</span>
+                        {unread && conversation.unreadCount > 1 && <span style={{ minWidth: 18, height: 18, padding: '0 5px', borderRadius: 9, background: C.goldDeep, color: '#fff', fontSize: 9, fontWeight: 900, display: 'grid', placeItems: 'center' }}>{conversation.unreadCount}</span>}
+                      </div>
+                      <WorkflowMark status={conversation.workflow} lang={lang} />
                     </div>
                   </div>
-                  );
-                })}
-              </div>
-
-              <div style={{ padding: 16, borderTop: `1px solid ${C.ruleLight}` }}>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
-                <textarea
-                  value={reply}
-                  onChange={(e) => setReply(e.target.value)}
-                  placeholder={t('writeAReply', lang)}
-                  rows={2}
-                  maxLength={1000}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleReply();
-                    }
-                  }}
-                  style={{ flex: 1, resize: 'vertical', minHeight: 42, padding: '10px 12px', fontSize: 13, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.paper }}
-                />
-                <button
-                  onClick={handleReply}
-                  disabled={sending || !reply.trim()}
-                  style={{ padding: '10px 20px', background: C.black, color: C.onDarkGold, fontSize: 11, fontWeight: 800, borderRadius: 6 }}
-                >
-                  {sending ? '…' : t('sendAction', lang)}
                 </button>
+              );
+            })}
+            {messages && filtered.length === 0 && <div style={{ padding: 18, fontSize: 12, color: C.inkSoft }}>{t('noConversations', lang)}</div>}
+          </div>
+        </aside>
+
+        <main style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 520 }}>
+          {!selected && <div style={{ padding: 28, fontSize: 13, color: C.inkSoft }}>{t('selectAConversation', lang)}</div>}
+          {selected && <>
+            <ConversationHeader conversation={selected} profile={selectedProfile} lang={lang} contextOpen={contextOpen} setContextOpen={setContextOpen} updateWorkflow={updateWorkflow} />
+            <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+              <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+                <div style={{ flex: 1, overflowY: 'auto', padding: '18px 20px', display: 'flex', flexDirection: 'column' }}>
+                  {selected.messages.map((message, index) => {
+                    const previous = selected.messages[index - 1];
+                    const next = selected.messages[index + 1];
+                    const groupStart = !previous || previous.direction !== message.direction || new Date(message.createdAt).getTime() - new Date(previous.createdAt).getTime() > 5 * 60 * 1000;
+                    const groupEnd = !next || next.direction !== message.direction || new Date(next.createdAt).getTime() - new Date(message.createdAt).getTime() > 5 * 60 * 1000;
+                    const repliedTo = message.replyToExternalId ? selected.messages.find((candidate) => candidate.externalId === message.replyToExternalId) : undefined;
+                    return <MessageBubble key={message.id} message={message} repliedTo={repliedTo} lang={lang} groupStart={groupStart} groupEnd={groupEnd} highlighted={highlightedMessageId === message.id} onFocusOriginal={repliedTo ? () => focusOriginal(repliedTo.id) : undefined} />;
+                  })}
                 </div>
-                <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: C.inkSoft }}>
-                  <MessageSquareReply size={11} />
-                  <span>{lang === 'pt' ? 'Precisas de uma resposta inline?' : 'Need a native inline reply?'}</span>
-                  <a href="https://www.instagram.com/direct/inbox/" target="_blank" rel="noreferrer" style={{ color: C.ink, fontWeight: 800, textDecoration: 'underline', textUnderlineOffset: 2 }}>
-                    {lang === 'pt' ? 'Abrir o Instagram' : 'Open Instagram'}
-                  </a>
-                </div>
+                <Composer lang={lang} draft={draft} setDraft={(value) => setDrafts((current) => ({ ...current, [selected.key]: value }))} sending={sending} send={handleReply} quickRepliesOpen={quickRepliesOpen} setQuickRepliesOpen={setQuickRepliesOpen} />
               </div>
-            </>
-          )}
-        </div>
+              {contextOpen && <CustomerContext conversation={selected} profile={selectedProfile} lang={lang} noteDraft={noteDrafts[selected.key] ?? selected.messages[0]?.internalNote ?? ''} setNoteDraft={(value) => setNoteDrafts((current) => ({ ...current, [selected.key]: value }))} saveNote={saveNote} savingNote={savingNote} />}
+            </div>
+          </>}
+        </main>
       </div>
     </div>
   );
 }
 
-function messageSourceLabel(message: ApiMessage, lang: 'pt' | 'en') {
-  if (message.automationNote === 'instagram-app -- synced outbound echo') {
-    return lang === 'pt' ? 'Enviada pelo Instagram' : 'Sent from Instagram';
-  }
-  return message.automationNote;
+function ConversationHeader({ conversation, profile, lang, contextOpen, setContextOpen, updateWorkflow }: { conversation: Conversation; profile?: InstagramProfile | null; lang: 'en' | 'pt'; contextOpen: boolean; setContextOpen: (open: boolean) => void; updateWorkflow: (status: ConversationStatus) => void }) {
+  return <header style={{ padding: '12px 16px', borderBottom: `1px solid ${C.ruleLight}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 14 }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+      <ProfileAvatar profile={profile} fallback={conversation.customerName || conversation.contactHandle} size={40} />
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontFamily: F.display, fontSize: 16, fontWeight: 850, color: C.ink, display: 'flex', alignItems: 'center', gap: 5 }}>{profile?.name || conversation.customerName || profile?.username || conversation.contactHandle}{profile?.is_verified_user && <BadgeCheck size={14} fill="#3B82F6" color="#fff" aria-label="Verified" />}</div>
+        <div style={{ fontSize: 10, color: C.inkSoft }}>{profile?.username ? `@${profile.username}` : 'Instagram'}</div>
+      </div>
+    </div>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+      <button onClick={() => void updateWorkflow('needs_reply')} style={headerAction(conversation.workflow === 'needs_reply')}>{lang === 'pt' ? 'Precisa de resposta' : 'Needs reply'}</button>
+      <button onClick={() => void updateWorkflow('priority')} style={{ ...headerAction(conversation.workflow === 'priority'), color: conversation.workflow === 'priority' ? C.onDarkGold : '#B95545' }}>{lang === 'pt' ? 'Prioridade' : 'Priority'}</button>
+      <button onClick={() => void updateWorkflow('done')} style={headerAction(conversation.workflow === 'done')}>{lang === 'pt' ? 'Concluir' : 'Done'}</button>
+      <button aria-expanded={contextOpen} onClick={() => setContextOpen(!contextOpen)} style={{ ...headerAction(contextOpen), display: 'inline-flex', alignItems: 'center', gap: 4 }}><UserRound size={12} /> {lang === 'pt' ? 'Contexto' : 'Context'}</button>
+      <a href="https://www.instagram.com/direct/inbox/" target="_blank" rel="noreferrer" aria-label={lang === 'pt' ? 'Abrir conversa no Instagram' : 'Open conversation in Instagram'} style={{ ...headerAction(false), display: 'grid', placeItems: 'center', width: 34, padding: 0 }}><ExternalLink size={13} /></a>
+      <button aria-label={lang === 'pt' ? 'Mais ações' : 'More actions'} style={{ ...headerAction(false), width: 34, padding: 0 }}><MoreHorizontal size={14} /></button>
+    </div>
+  </header>;
 }
 
-function ProfileAvatar({ profile, fallback, size }: { profile?: InstagramProfile | null; fallback: string; size: number }) {
-  if (profile?.profile_pic) {
-    return <img src={profile.profile_pic} alt="" referrerPolicy="no-referrer" style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flex: '0 0 auto', border: `1px solid ${C.ruleLight}` }} />;
-  }
-  return (
-    <div style={{ width: size, height: size, borderRadius: '50%', flex: '0 0 auto', display: 'grid', placeItems: 'center', background: C.black, color: C.onDarkGold, fontSize: Math.max(11, size * 0.32), fontWeight: 800 }}>
-      {fallback.slice(0, 1).toUpperCase()}
+function Composer({ lang, draft, setDraft, sending, send, quickRepliesOpen, setQuickRepliesOpen }: { lang: 'en' | 'pt'; draft: string; setDraft: (value: string) => void; sending: boolean; send: () => void; quickRepliesOpen: boolean; setQuickRepliesOpen: (open: boolean) => void }) {
+  return <div style={{ position: 'relative', padding: '12px 16px', borderTop: `1px solid ${C.ruleLight}`, background: C.paper }}>
+    {quickRepliesOpen && <div style={{ position: 'absolute', left: 16, bottom: 'calc(100% - 4px)', width: 360, maxWidth: 'calc(100% - 32px)', padding: 6, border: `1px solid ${C.rule}`, borderRadius: 8, background: C.paper, boxShadow: '0 10px 30px rgba(0,0,0,0.12)', zIndex: 5 }}>
+      {QUICK_REPLIES[lang].map((reply) => <button key={reply} onClick={() => { setDraft(reply); setQuickRepliesOpen(false); }} style={{ width: '100%', padding: '9px 10px', textAlign: 'left', borderRadius: 6, fontSize: 11, color: C.ink }}>{reply}</button>)}
+    </div>}
+    <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+      <button onClick={() => setQuickRepliesOpen(!quickRepliesOpen)} aria-expanded={quickRepliesOpen} style={{ minWidth: 38, height: 38, border: `1px solid ${C.rule}`, borderRadius: 7, display: 'grid', placeItems: 'center', color: C.inkSoft }} title={lang === 'pt' ? 'Respostas guardadas' : 'Saved replies'}><ChevronDown size={14} /></button>
+      <textarea value={draft} onChange={(event) => setDraft(event.target.value)} placeholder={t('writeAReply', lang)} rows={2} maxLength={1000} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); send(); } }} style={{ flex: 1, resize: 'none', minHeight: 44, maxHeight: 130, padding: '10px 11px', fontSize: 13, lineHeight: 1.45, border: `1px solid ${C.rule}`, borderRadius: 7, background: C.paper }} />
+      <button onClick={send} disabled={sending || !draft.trim()} aria-label={t('sendAction', lang)} style={{ width: 44, height: 44, display: 'grid', placeItems: 'center', background: C.black, color: C.onDarkGold, borderRadius: 7 }}><Send size={15} /></button>
     </div>
-  );
+    <div style={{ minHeight: 16, marginTop: 5, display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: 9, color: C.inkSoft }}>
+      <span>{lang === 'pt' ? 'Enter para enviar · Shift+Enter para nova linha' : 'Enter to send · Shift+Enter for a new line'}</span>
+      <span>{draft.length >= 850 ? `${draft.length}/1000` : ''}</span>
+    </div>
+  </div>;
+}
+
+function CustomerContext({ conversation, profile, lang, noteDraft, setNoteDraft, saveNote, savingNote }: { conversation: Conversation; profile?: InstagramProfile | null; lang: 'en' | 'pt'; noteDraft: string; setNoteDraft: (value: string) => void; saveNote: () => void; savingNote: boolean }) {
+  const order = conversation.messages.map((message) => message.relatedOrder).find((value) => typeof value === 'object');
+  const customer = conversation.messages.map((message) => message.relatedCustomer).find((value) => typeof value === 'object');
+  return <aside className="ump-mensagens-context" aria-label={lang === 'pt' ? 'Contexto do cliente' : 'Customer context'} style={{ width: 270, flex: '0 0 270px', padding: 14, borderLeft: `1px solid ${C.ruleLight}`, background: '#FCFAF5', overflowY: 'auto' }}>
+    <h3 style={{ margin: '0 0 12px', fontFamily: F.display, fontSize: 15, color: C.ink }}>{lang === 'pt' ? 'Contexto do cliente' : 'Customer context'}</h3>
+    <ContextSection title={lang === 'pt' ? 'Instagram' : 'Instagram'}>
+      <div>{profile?.name || conversation.customerName || '—'}</div>
+      <div style={{ color: C.inkSoft }}>{profile?.username ? `@${profile.username}` : conversation.contactHandle}</div>
+      {profile?.username && <a href={`https://www.instagram.com/${encodeURIComponent(profile.username)}/`} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', gap: 4, marginTop: 7, color: C.ink, fontWeight: 800 }}><ExternalLink size={11} /> {lang === 'pt' ? 'Abrir perfil' : 'Open profile'}</a>}
+    </ContextSection>
+    <ContextSection title={lang === 'pt' ? 'Mercado' : 'Market'}>
+      <strong>{typeof order === 'object' ? (order.market === 'AO' ? 'Angola' : 'Portugal') : (lang === 'pt' ? 'Ainda não estabelecido' : 'Not established yet')}</strong>
+      <div style={{ marginTop: 4, color: C.inkSoft }}>{typeof order === 'object' ? (lang === 'pt' ? 'Confirmado pela encomenda associada.' : 'Confirmed by the linked order.') : (lang === 'pt' ? 'Não inferimos pelo perfil ou idioma.' : 'Never inferred from profile or language.')}</div>
+    </ContextSection>
+    <ContextSection title={lang === 'pt' ? 'Encomenda associada' : 'Linked order'}>
+      {typeof order === 'object' ? <Link to={`/admin/encomendas/${order.id}`} style={{ color: C.ink, fontWeight: 850, textDecoration: 'underline' }}>#{order.orderNumber} · {order.status}</Link> : <span style={{ color: C.inkSoft }}>{lang === 'pt' ? 'Nenhuma encomenda associada.' : 'No linked order.'}</span>}
+    </ContextSection>
+    {typeof customer === 'object' && <ContextSection title={lang === 'pt' ? 'Contacto' : 'Contact'}><div>{customer.email}</div>{customer.phone && <div>{customer.phone}</div>}</ContextSection>}
+    <ContextSection title={lang === 'pt' ? 'Nota interna' : 'Internal note'}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 7, color: C.inkSoft }}><StickyNote size={12} /> {lang === 'pt' ? 'Nunca enviada ao Instagram' : 'Never sent to Instagram'}</div>
+      <textarea value={noteDraft} onChange={(event) => setNoteDraft(event.target.value)} rows={4} maxLength={500} placeholder={lang === 'pt' ? 'Ex.: aguarda confirmação de stock' : 'E.g. waiting for stock confirmation'} style={{ width: '100%', padding: 8, resize: 'vertical', border: `1px solid ${C.rule}`, borderRadius: 6, fontSize: 11, background: C.paper }} />
+      <button onClick={saveNote} disabled={savingNote} style={{ marginTop: 7, padding: '7px 10px', borderRadius: 6, background: C.black, color: C.onDarkGold, fontSize: 10, fontWeight: 850 }}>{savingNote ? '…' : lang === 'pt' ? 'Guardar nota' : 'Save note'}</button>
+    </ContextSection>
+  </aside>;
+}
+
+function ContextSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return <section style={{ padding: '11px 0', borderTop: `1px solid ${C.ruleLight}`, fontSize: 11, lineHeight: 1.45 }}><div style={{ marginBottom: 6, fontSize: 9, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.08em', color: C.goldDeep }}>{title}</div>{children}</section>;
+}
+
+function MessageBubble({ message, repliedTo, lang, groupStart, groupEnd, highlighted, onFocusOriginal }: { message: ApiMessage; repliedTo?: ApiMessage; lang: 'en' | 'pt'; groupStart: boolean; groupEnd: boolean; highlighted: boolean; onFocusOriginal?: () => void }) {
+  const outbound = message.direction === 'outbound';
+  return <div id={`instagram-message-${message.id}`} style={{ display: 'flex', justifyContent: outbound ? 'flex-end' : 'flex-start', marginTop: groupStart ? 10 : 3, borderRadius: 12, outline: highlighted ? `2px solid ${C.gold}` : '2px solid transparent', outlineOffset: 3, transition: 'outline-color 180ms ease' }}>
+    <div style={{ maxWidth: 430, padding: '9px 12px', borderRadius: outbound ? '12px 12px 3px 12px' : '12px 12px 12px 3px', background: outbound ? C.black : '#F4F0E8', color: outbound ? C.onDark : C.ink, border: outbound ? 'none' : `1px solid ${C.ruleLight}`, fontSize: 13, lineHeight: 1.4 }}>
+      {message.instagramContextType === 'inline_reply' && <InlineReplyQuote message={message} repliedTo={repliedTo} lang={lang} onFocusOriginal={onFocusOriginal} />}
+      <InstagramContextCard message={message} lang={lang} />
+      <div>{message.body}</div>
+      {message.automationNote === 'instagram-app -- synced outbound echo' && <div style={{ marginTop: 4, fontSize: 9, color: C.onDarkGold }}>{lang === 'pt' ? 'Enviada pelo Instagram' : 'Sent from Instagram'}</div>}
+      {groupEnd && <div style={{ marginTop: 5, display: 'flex', justifyContent: 'flex-end', gap: 5, fontSize: 8.5, opacity: 0.68 }}><time dateTime={message.createdAt}>{new Intl.DateTimeFormat(lang === 'pt' ? 'pt-PT' : 'en-GB', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' }).format(new Date(message.createdAt))}</time>{outbound && <span>· {message.instagramSeenAt ? (lang === 'pt' ? 'Vista' : 'Seen') : (lang === 'pt' ? 'Enviada' : 'Sent')}</span>}</div>}
+    </div>
+  </div>;
 }
 
 function InstagramContextCard({ message, lang }: { message: ApiMessage; lang: 'pt' | 'en' }) {
-  const [previewAttempt, setPreviewAttempt] = useState<'image' | 'video' | 'failed'>('image');
+  const [attempt, setAttempt] = useState<'image' | 'video' | 'failed'>('image');
   if (!message.instagramContextType || message.instagramContextType === 'inline_reply') return null;
-  const labels = {
-    story_reply: lang === 'pt' ? 'Resposta ao teu story' : 'Reply to your story',
-    shared_post: lang === 'pt' ? 'Publicação partilhada' : 'Shared Instagram post',
-    media: lang === 'pt' ? 'Conteúdo enviado' : 'Sent media',
-    inline_reply: lang === 'pt' ? 'Em resposta a' : 'Replying to',
-    unsupported_media: lang === 'pt' ? 'Conteúdo disponível no Instagram' : 'Content available on Instagram',
-  };
-  const label = labels[message.instagramContextType];
-  const isKnownVideo = ['reel', 'ig_reel', 'video', 'story_video'].includes(message.instagramContextMediaType ?? '')
-    || /\.(mp4|mov|webm)(?:\?|$)/i.test(message.instagramContextUrl ?? '');
-  const showVideo = isKnownVideo || previewAttempt === 'video';
-  const hasPreview = Boolean(message.instagramContextUrl) && previewAttempt !== 'failed';
-  const handlePreviewError = () => setPreviewAttempt(showVideo ? 'failed' : 'video');
-  const needsFallback = message.instagramContextType === 'unsupported_media'
-    || (!hasPreview && ['story_reply', 'shared_post', 'media'].includes(message.instagramContextType));
-
-  return (
-    <div style={{ marginBottom: 8, borderRadius: 7, overflow: 'hidden', border: '1px solid rgba(183,146,75,0.35)', background: message.direction === 'outbound' ? 'rgba(255,255,255,0.08)' : '#fff' }}>
-      {hasPreview && !showVideo && (
-        <img
-          src={message.instagramContextUrl}
-          alt={label}
-          referrerPolicy="no-referrer"
-          onError={handlePreviewError}
-          style={{ display: 'block', width: '100%', maxHeight: 220, objectFit: 'cover', background: C.subtleBg }}
-        />
-      )}
-      {hasPreview && showVideo && (
-        <video
-          src={message.instagramContextUrl}
-          controls
-          preload="metadata"
-          onError={handlePreviewError}
-          style={{ display: 'block', width: '100%', maxHeight: 240, background: '#000' }}
-        />
-      )}
-      <div style={{ padding: '8px 10px', fontSize: 10, fontWeight: 800 }}>
-        {label}
-        {message.replyToText && <div style={{ marginTop: 4, fontSize: 11, fontWeight: 500, opacity: 0.78, borderLeft: `2px solid ${C.gold}`, paddingLeft: 7 }}>{message.replyToText}</div>}
-        {needsFallback && (
-          <div style={{ marginTop: 4, fontWeight: 500, opacity: 0.72 }}>
-            {lang === 'pt' ? 'A pré-visualização não está disponível. Abre a conversa no Instagram para ver.' : 'Preview unavailable. Open the conversation on Instagram to view it.'}
-          </div>
-        )}
-        {message.instagramContextPermalink && (
-          <a
-            href={message.instagramContextPermalink}
-            target="_blank"
-            rel="noreferrer"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 7, color: 'inherit', textDecoration: 'underline', textUnderlineOffset: 2 }}
-          >
-            <ExternalLink size={11} /> {lang === 'pt' ? 'Abrir publicação no Instagram' : 'Open post on Instagram'}
-          </a>
-        )}
-      </div>
-    </div>
-  );
+  const labels = { story_reply: lang === 'pt' ? 'Resposta ao teu story' : 'Reply to your story', shared_post: lang === 'pt' ? 'Publicação partilhada' : 'Shared Instagram post', media: lang === 'pt' ? 'Conteúdo enviado' : 'Sent media', unsupported_media: lang === 'pt' ? 'Conteúdo no Instagram' : 'Content on Instagram' } as const;
+  const label = labels[message.instagramContextType as keyof typeof labels];
+  const video = ['reel', 'ig_reel', 'video', 'story_video'].includes(message.instagramContextMediaType ?? '') || /\.(mp4|mov|webm)(?:\?|$)/i.test(message.instagramContextUrl ?? '') || attempt === 'video';
+  const hasPreview = Boolean(message.instagramContextUrl) && attempt !== 'failed';
+  const error = () => setAttempt(video ? 'failed' : 'video');
+  return <div style={{ width: 250, maxWidth: '100%', marginBottom: 7, overflow: 'hidden', borderRadius: 7, border: '1px solid rgba(183,146,75,0.32)', background: message.direction === 'outbound' ? 'rgba(255,255,255,0.08)' : '#fff' }}>
+    {hasPreview && !video && <img src={message.instagramContextUrl} alt={label} referrerPolicy="no-referrer" onError={error} style={{ width: '100%', maxHeight: 190, display: 'block', objectFit: 'cover' }} />}
+    {hasPreview && video && <video src={message.instagramContextUrl} controls preload="metadata" onError={error} style={{ width: '100%', maxHeight: 200, display: 'block', background: '#000' }} />}
+    <div style={{ padding: '7px 9px', fontSize: 9.5, fontWeight: 850 }}>{label}{!hasPreview && <div style={{ marginTop: 3, fontWeight: 500, opacity: 0.72 }}>{lang === 'pt' ? 'Pré-visualização indisponível.' : 'Preview unavailable.'}</div>}{message.instagramContextPermalink && <a href={message.instagramContextPermalink} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', gap: 4, marginTop: 5, color: 'inherit', textDecoration: 'underline' }}><ExternalLink size={10} /> Instagram</a>}</div>
+  </div>;
 }
 
-function InlineReplyQuote({
-  message,
-  repliedTo,
-  lang,
-  onFocusOriginal,
-}: {
-  message: ApiMessage;
-  repliedTo?: ApiMessage;
-  lang: 'pt' | 'en';
-  onFocusOriginal?: () => void;
-}) {
-  const label = message.direction === 'inbound'
-    ? (lang === 'pt' ? 'Em resposta à tua mensagem' : 'Replying to your message')
-    : (lang === 'pt' ? 'Em resposta ao cliente' : 'Replying to customer');
+function InlineReplyQuote({ message, repliedTo, lang, onFocusOriginal }: { message: ApiMessage; repliedTo?: ApiMessage; lang: 'pt' | 'en'; onFocusOriginal?: () => void }) {
+  const label = message.direction === 'inbound' ? (lang === 'pt' ? 'Em resposta à tua mensagem' : 'Replying to your message') : (lang === 'pt' ? 'Em resposta ao cliente' : 'Replying to customer');
   const quote = repliedTo?.body || message.replyToText || (lang === 'pt' ? 'Mensagem original indisponível' : 'Original message unavailable');
-  const previewUrl = repliedTo?.instagramContextUrl;
-  const isVideo = ['reel', 'ig_reel', 'video', 'story_video'].includes(repliedTo?.instagramContextMediaType ?? '')
-    || /\.(mp4|mov|webm)(?:\?|$)/i.test(previewUrl ?? '');
+  const content = <><MessageSquareReply size={10} /><span style={{ minWidth: 0 }}><strong style={{ display: 'block', fontSize: 9 }}>{label}</strong><span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 10.5, opacity: 0.82 }}>{quote}</span></span></>;
+  const style = { width: '100%', display: 'flex', alignItems: 'center', gap: 7, padding: '6px 7px', marginBottom: 7, border: 0, borderLeft: `3px solid ${C.gold}`, borderRadius: 5, background: message.direction === 'outbound' ? 'rgba(255,255,255,0.1)' : 'rgba(183,146,75,0.1)', color: 'inherit', textAlign: 'left' as const };
+  return onFocusOriginal ? <button type="button" onClick={onFocusOriginal} style={{ ...style, cursor: 'pointer' }}>{content}</button> : <div style={style}>{content}</div>;
+}
 
-  const content = (
-    <>
-      {previewUrl && !isVideo && <img src={previewUrl} alt="" referrerPolicy="no-referrer" style={{ width: 38, height: 38, borderRadius: 4, objectFit: 'cover', flex: '0 0 auto' }} />}
-      <div style={{ minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 9, fontWeight: 800, opacity: 0.76, marginBottom: 3 }}>
-          <MessageSquareReply size={10} /> {label}
-        </div>
-        <div style={{ fontSize: 11, lineHeight: 1.35, opacity: 0.88, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {isVideo ? (lang === 'pt' ? 'Vídeo · ' : 'Video · ') : ''}{quote}
-        </div>
-      </div>
-    </>
-  );
+function ProfileAvatar({ profile, fallback, size }: { profile?: InstagramProfile | null; fallback: string; size: number }) {
+  if (profile?.profile_pic) return <img src={profile.profile_pic} alt="" referrerPolicy="no-referrer" style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flex: '0 0 auto', border: `1px solid ${C.ruleLight}` }} />;
+  return <div aria-hidden style={{ width: size, height: size, borderRadius: '50%', flex: '0 0 auto', display: 'grid', placeItems: 'center', background: C.black, color: C.onDarkGold, fontSize: Math.max(11, size * 0.32), fontWeight: 850 }}>{fallback.slice(0, 1).toUpperCase()}</div>;
+}
 
-  const style = {
-    width: '100%',
-    display: 'flex',
-    alignItems: 'center',
-    gap: 8,
-    padding: '7px 8px',
-    marginBottom: 8,
-    border: 0,
-    borderLeft: `3px solid ${C.gold}`,
-    borderRadius: 5,
-    background: message.direction === 'outbound' ? 'rgba(255,255,255,0.1)' : 'rgba(183,146,75,0.1)',
-    color: 'inherit',
-    textAlign: 'left' as const,
-  };
-
-  return onFocusOriginal
-    ? <button type="button" onClick={onFocusOriginal} title={lang === 'pt' ? 'Ir para a mensagem original' : 'Go to original message'} style={{ ...style, cursor: 'pointer' }}>{content}</button>
-    : <div style={style}>{content}</div>;
+function WorkflowMark({ status, lang }: { status: ConversationStatus; lang: 'en' | 'pt' }) {
+  const color = status === 'priority' ? '#B95545' : status === 'needs_reply' ? C.goldDeep : status === 'waiting' ? '#55708D' : C.inkSoft;
+  return <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 5, fontSize: 8.5, fontWeight: 800, color }}><span style={{ width: 5, height: 5, borderRadius: '50%', background: color }} />{WORKFLOW_LABELS[status][lang]}</div>;
 }
 
 function FilterPill({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        padding: '6px 11px',
-        fontSize: 10,
-        fontWeight: 800,
-        borderRadius: 6,
-        border: `1px solid ${active ? C.black : C.rule}`,
-        background: active ? C.black : 'transparent',
-        color: active ? C.onDarkGold : C.inkSoft,
-      }}
-    >
-      {label}
-    </button>
-  );
+  return <button onClick={onClick} aria-pressed={active} style={{ whiteSpace: 'nowrap', minHeight: 30, padding: '5px 10px', fontSize: 9.5, fontWeight: 850, borderRadius: 15, border: `1px solid ${active ? C.black : C.rule}`, background: active ? C.black : 'transparent', color: active ? C.onDarkGold : C.inkSoft }}>{label}</button>;
+}
+
+function filterLabel(filter: InboxFilter, lang: 'en' | 'pt') {
+  if (filter === 'inbox') return lang === 'pt' ? 'Caixa de entrada' : 'Inbox';
+  if (filter === 'unread') return lang === 'pt' ? 'Não lidas' : 'Unread';
+  return WORKFLOW_LABELS[filter][lang];
+}
+
+function headerAction(active: boolean): React.CSSProperties {
+  return { minHeight: 34, padding: '0 10px', borderRadius: 7, border: `1px solid ${active ? C.black : C.rule}`, background: active ? C.black : C.paper, color: active ? C.onDarkGold : C.ink, fontSize: 9.5, fontWeight: 850 };
 }
