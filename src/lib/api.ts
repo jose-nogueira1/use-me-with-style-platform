@@ -610,8 +610,9 @@ export type ApiMessage = {
   contactHandle: string;
   customerName?: string;
   body: string;
-  instagramContextType?: 'story_reply' | 'shared_post' | 'inline_reply' | 'unsupported_media';
+  instagramContextType?: 'story_reply' | 'shared_post' | 'media' | 'inline_reply' | 'unsupported_media';
   instagramContextUrl?: string;
+  instagramContextPermalink?: string;
   instagramContextMediaType?: string;
   replyToExternalId?: string;
   replyToText?: string;

@@ -447,29 +447,59 @@ function ProfileAvatar({ profile, fallback, size }: { profile?: InstagramProfile
 }
 
 function InstagramContextCard({ message, lang }: { message: ApiMessage; lang: 'pt' | 'en' }) {
+  const [previewFailed, setPreviewFailed] = useState(false);
   if (!message.instagramContextType) return null;
   const labels = {
     story_reply: lang === 'pt' ? 'Resposta ao teu story' : 'Reply to your story',
     shared_post: lang === 'pt' ? 'Publicação partilhada' : 'Shared Instagram post',
+    media: lang === 'pt' ? 'Conteúdo enviado' : 'Sent media',
     inline_reply: lang === 'pt' ? 'Em resposta a' : 'Replying to',
     unsupported_media: lang === 'pt' ? 'Conteúdo disponível no Instagram' : 'Content available on Instagram',
   };
   const label = labels[message.instagramContextType];
-  const isVideo = ['reel', 'ig_reel'].includes(message.instagramContextMediaType ?? '');
+  const isVideo = ['reel', 'ig_reel', 'video', 'story_video'].includes(message.instagramContextMediaType ?? '')
+    || /\.(mp4|mov|webm)(?:\?|$)/i.test(message.instagramContextUrl ?? '');
+  const hasPreview = Boolean(message.instagramContextUrl) && !previewFailed;
+  const needsFallback = message.instagramContextType === 'unsupported_media'
+    || (!hasPreview && ['story_reply', 'shared_post', 'media'].includes(message.instagramContextType));
 
   return (
     <div style={{ marginBottom: 8, borderRadius: 7, overflow: 'hidden', border: '1px solid rgba(183,146,75,0.35)', background: message.direction === 'outbound' ? 'rgba(255,255,255,0.08)' : '#fff' }}>
-      {message.instagramContextUrl && !isVideo && (
-        <img src={message.instagramContextUrl} alt="" referrerPolicy="no-referrer" style={{ display: 'block', width: '100%', maxHeight: 190, objectFit: 'cover' }} />
+      {hasPreview && !isVideo && (
+        <img
+          src={message.instagramContextUrl}
+          alt={label}
+          referrerPolicy="no-referrer"
+          onError={() => setPreviewFailed(true)}
+          style={{ display: 'block', width: '100%', maxHeight: 220, objectFit: 'cover', background: C.subtleBg }}
+        />
       )}
-      {message.instagramContextUrl && isVideo && (
-        <video src={message.instagramContextUrl} controls preload="metadata" style={{ display: 'block', width: '100%', maxHeight: 220, background: '#000' }} />
+      {hasPreview && isVideo && (
+        <video
+          src={message.instagramContextUrl}
+          controls
+          preload="metadata"
+          onError={() => setPreviewFailed(true)}
+          style={{ display: 'block', width: '100%', maxHeight: 240, background: '#000' }}
+        />
       )}
       <div style={{ padding: '8px 10px', fontSize: 10, fontWeight: 800 }}>
         {label}
         {message.replyToText && <div style={{ marginTop: 4, fontSize: 11, fontWeight: 500, opacity: 0.78, borderLeft: `2px solid ${C.gold}`, paddingLeft: 7 }}>{message.replyToText}</div>}
-        {message.instagramContextType === 'unsupported_media' && (
-          <div style={{ marginTop: 4, fontWeight: 500, opacity: 0.72 }}>{lang === 'pt' ? 'Abre a conversa no Instagram para ver.' : 'Open the conversation on Instagram to view it.'}</div>
+        {needsFallback && (
+          <div style={{ marginTop: 4, fontWeight: 500, opacity: 0.72 }}>
+            {lang === 'pt' ? 'A pré-visualização não está disponível. Abre a conversa no Instagram para ver.' : 'Preview unavailable. Open the conversation on Instagram to view it.'}
+          </div>
+        )}
+        {message.instagramContextPermalink && (
+          <a
+            href={message.instagramContextPermalink}
+            target="_blank"
+            rel="noreferrer"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 7, color: 'inherit', textDecoration: 'underline', textUnderlineOffset: 2 }}
+          >
+            <ExternalLink size={11} /> {lang === 'pt' ? 'Abrir publicação no Instagram' : 'Open post on Instagram'}
+          </a>
         )}
       </div>
     </div>
