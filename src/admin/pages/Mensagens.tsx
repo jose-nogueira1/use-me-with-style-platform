@@ -5,6 +5,7 @@ import { C, F } from '../../theme';
 import { useApp } from '../../state/AppContext';
 import {
   adminGetInstagramProfile,
+  adminGetAiAssistantStatus,
   adminListMessages,
   adminMarkInstagramConversationRead,
   adminSendMessage,
@@ -14,6 +15,7 @@ import {
   type ApiMessage,
   type ConversationStatus,
   type InstagramProfile,
+  type AiAssistantStatus,
 } from '../../lib/api';
 import { PageHeader } from '../components/PageHeader';
 import { t } from '../i18n';
@@ -116,6 +118,8 @@ export function Mensagens() {
   const [refreshing, setRefreshing] = useState(true);
   const [error, setError] = useState(false);
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
+  const [editingSuggestionId, setEditingSuggestionId] = useState<string | null>(null);
+  const [aiStatus, setAiStatus] = useState<AiAssistantStatus | null>(null);
 
   const load = (foreground = true) => {
     if (foreground) setRefreshing(true);
@@ -125,7 +129,10 @@ export function Mensagens() {
     }).catch(() => setError(true)).finally(() => foreground && setRefreshing(false));
   };
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => {
+    void load();
+    void adminGetAiAssistantStatus().then(setAiStatus).catch(() => setAiStatus(null));
+  }, []);
   useEffect(() => {
     const refresh = () => { if (document.visibilityState === 'visible') void load(false); };
     const interval = window.setInterval(refresh, 5_000);
@@ -199,21 +206,32 @@ export function Mensagens() {
       setMessages((current) => current ? [sent, ...current.filter((message) => message.id !== sent.id)] : [sent]);
       setDrafts((current) => ({ ...current, [selected.key]: '' }));
       setQuickRepliesOpen(false);
+      if (editingSuggestionId) {
+        const updated = await adminUpdateAiDraft(editingSuggestionId, { aiDraftStatus: 'approved', aiOutcome: 'human_edited_sent' });
+        setMessages((current) => current?.map((message) => message.id === updated.id ? updated : message) ?? [updated]);
+        setEditingSuggestionId(null);
+      } else if (aiSuggestion) {
+        const updated = await adminUpdateAiDraft(aiSuggestion.id, { aiDraftStatus: 'dismissed', aiOutcome: 'human_override_sent' });
+        setMessages((current) => current?.map((message) => message.id === updated.id ? updated : message) ?? [updated]);
+      }
     } catch { setError(true); }
     finally { setSending(false); }
   };
 
-  const handleAiAction = async (action: 'approve' | 'dismiss' | 'regenerate') => {
+  const handleAiAction = async (action: 'approve' | 'edit' | 'dismiss' | 'regenerate') => {
     if (!selected || !aiSuggestion) return;
     try {
-      if (action === 'approve') {
+      if (action === 'edit') {
+        setDrafts((current) => ({ ...current, [selected.key]: aiSuggestion.aiDraft || '' }));
+        setEditingSuggestionId(aiSuggestion.id);
+      } else if (action === 'approve') {
         const sent = await adminSendMessage({ contactHandle: selected.contactHandle, customerName: selected.customerName, body: aiSuggestion.aiDraft || '' });
-        const updated = await adminUpdateAiDraft(aiSuggestion.id, { aiDraftStatus: 'approved' });
+        const updated = await adminUpdateAiDraft(aiSuggestion.id, { aiDraftStatus: 'approved', aiOutcome: 'approved_unchanged_sent' });
         setMessages((current) => current ? [sent, ...current.map((message) => message.id === updated.id ? updated : message)] : [sent, updated]);
       } else {
         const updated = await adminUpdateAiDraft(aiSuggestion.id, action === 'dismiss'
           ? { aiDraftStatus: 'dismissed' }
-          : { aiDraftStatus: 'queued', aiProcessingStatus: 'queued', aiAvailableAt: new Date().toISOString() });
+          : { aiDraftStatus: 'queued', aiProcessingStatus: 'queued', aiAttempts: 0, aiAvailableAt: new Date().toISOString() });
         setMessages((current) => current?.map((message) => message.id === updated.id ? updated : message) ?? [updated]);
       }
     } catch { setError(true); }
@@ -315,7 +333,7 @@ export function Mensagens() {
                     return <MessageBubble key={message.id} message={message} repliedTo={repliedTo} lang={lang} groupStart={groupStart} groupEnd={groupEnd} highlighted={highlightedMessageId === message.id} onFocusOriginal={repliedTo ? () => focusOriginal(repliedTo.id) : undefined} />;
                   })}
                 </div>
-                {aiSuggestion && <AiSuggestion lang={lang} message={aiSuggestion} onAction={handleAiAction} />}
+                {aiSuggestion && <AiSuggestion lang={lang} message={aiSuggestion} status={aiStatus} editing={editingSuggestionId === aiSuggestion.id} onAction={handleAiAction} />}
                 <Composer lang={lang} draft={draft} setDraft={(value) => setDrafts((current) => ({ ...current, [selected.key]: value }))} sending={sending} send={handleReply} quickRepliesOpen={quickRepliesOpen} setQuickRepliesOpen={setQuickRepliesOpen} />
               </div>
               {contextOpen && <CustomerContext conversation={selected} profile={selectedProfile} lang={lang} noteDraft={noteDrafts[selected.key] ?? selected.messages[0]?.internalNote ?? ''} setNoteDraft={(value) => setNoteDrafts((current) => ({ ...current, [selected.key]: value }))} saveNote={saveNote} savingNote={savingNote} />}
@@ -357,17 +375,43 @@ function ConversationHeader({ conversation, profile, lang, contextOpen, setConte
   </header>;
 }
 
-function AiSuggestion({ lang, message, onAction }: { lang: 'en' | 'pt'; message: ApiMessage; onAction: (action: 'approve' | 'dismiss' | 'regenerate') => void }) {
+function AiSuggestion({ lang, message, status, editing, onAction }: { lang: 'en' | 'pt'; message: ApiMessage; status: AiAssistantStatus | null; editing: boolean; onAction: (action: 'approve' | 'edit' | 'dismiss' | 'regenerate') => void }) {
   const confidence = typeof message.aiDraftConfidence === 'number' ? `${Math.round(message.aiDraftConfidence * 100)}%` : null;
+  const product = message.aiFacts?.product;
+  const market = message.aiFacts?.market === 'AO' ? 'Angola' : message.aiFacts?.market === 'PT' ? 'Portugal' : null;
+  const mode = status?.mode === 'approval' ? (lang === 'pt' ? 'Aprovação manual' : 'Manual approval')
+    : status?.mode === 'shadow' ? 'Shadow'
+    : status?.mode === 'automatic' ? (lang === 'pt' ? 'Automático' : 'Automatic')
+    : (lang === 'pt' ? 'Desligado' : 'Off');
   return <section aria-label={lang === 'pt' ? 'Sugestão do assistente' : 'Assistant suggestion'} style={{ margin: '0 16px 8px', padding: 12, border: `1px solid ${C.gold}`, borderRadius: 9, background: '#FBF8F1' }}>
     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center', marginBottom: 6 }}>
       <strong style={{ fontSize: 11, color: C.ink }}>{lang === 'pt' ? 'Sugestão do assistente' : 'Assistant suggestion'}</strong>
-      <span style={{ fontSize: 9, color: C.inkSoft }}>{confidence ? `${lang === 'pt' ? 'Confiança' : 'Confidence'} ${confidence}` : ''}</span>
+      <span style={{ fontSize: 9, color: C.inkSoft }}>{mode}{confidence ? ` · ${lang === 'pt' ? 'Confiança' : 'Confidence'} ${confidence}` : ''}</span>
     </div>
     <div style={{ padding: 9, borderRadius: 7, background: C.paper, border: `1px solid ${C.ruleLight}`, fontSize: 12, lineHeight: 1.45, whiteSpace: 'pre-wrap' }}>{message.aiDraft}</div>
     {message.aiDraftReason && <div style={{ marginTop: 6, fontSize: 9, color: C.inkSoft }}>{message.aiDraftReason}</div>}
+    <details style={{ marginTop: 8, fontSize: 10, color: C.inkSoft }}>
+      <summary style={{ cursor: 'pointer', fontWeight: 850, color: C.ink }}>{lang === 'pt' ? 'Ver factos e auditoria' : 'View facts and audit'}</summary>
+      <div style={{ marginTop: 7, padding: 9, borderRadius: 7, border: `1px solid ${C.ruleLight}`, background: C.paper, lineHeight: 1.55 }}>
+        <div><strong>{lang === 'pt' ? 'Intenção' : 'Intent'}:</strong> {message.aiIntent || message.aiFacts?.intent || '—'}</div>
+        <div><strong>{lang === 'pt' ? 'Mercado' : 'Market'}:</strong> {market || '—'}</div>
+        {product && <>
+          <div><strong>{lang === 'pt' ? 'Produto' : 'Product'}:</strong> {product.name || product.sourceRecordId || '—'}</div>
+          <div><strong>{lang === 'pt' ? 'Disponível' : 'Available'}:</strong> {product.availableInMarket ? (lang === 'pt' ? 'Sim' : 'Yes') : (lang === 'pt' ? 'Não' : 'No')}</div>
+          {product.price != null && <div><strong>{lang === 'pt' ? 'Preço' : 'Price'}:</strong> {product.price} {product.currency}</div>}
+          {!!product.matchedVariants?.length && <div><strong>{lang === 'pt' ? 'Variantes verificadas' : 'Verified variants'}:</strong> {product.matchedVariants.map((variant) => `${variant.size || '—'}${variant.colour ? ` / ${variant.colour}` : ''}: ${variant.stock ?? 0}`).join(', ')}</div>}
+        </>}
+        {message.aiFacts?.policy?.text && <div><strong>{lang === 'pt' ? 'Política usada' : 'Policy used'}:</strong> {message.aiFacts.policy.text}</div>}
+        {message.aiFacts?.coupon && <div><strong>Coupon:</strong> {message.aiFacts.coupon.code || '—'} · {message.aiFacts.coupon.valid ? (lang === 'pt' ? 'válido' : 'valid') : (lang === 'pt' ? 'inválido' : 'invalid')}{message.aiFacts.coupon.detail ? ` · ${message.aiFacts.coupon.detail}` : ''}</div>}
+        <div style={{ marginTop: 5 }}><strong>{lang === 'pt' ? 'Resultado' : 'Outcome'}:</strong> {message.aiOutcome || '—'}</div>
+        <div><strong>{lang === 'pt' ? 'Modelo' : 'Model'}:</strong> {message.aiModel || '—'}</div>
+        <div><strong>Tokens:</strong> {message.aiTotalTokens ?? '—'} · <strong>{lang === 'pt' ? 'Custo estimado' : 'Estimated cost'}:</strong> {message.aiEstimatedCostUsd != null ? `$${message.aiEstimatedCostUsd.toFixed(6)}` : '—'}</div>
+        {status && <div><strong>{lang === 'pt' ? 'Gasto mensal' : 'Monthly spend'}:</strong> ${status.monthSpendUsd.toFixed(4)}{status.monthlyBudgetUsd != null ? ` / $${status.monthlyBudgetUsd.toFixed(2)}` : ''}</div>}
+      </div>
+    </details>
     <div style={{ display: 'flex', gap: 6, marginTop: 9, flexWrap: 'wrap' }}>
       <button onClick={() => onAction('approve')} style={{ ...headerAction(true), padding: '6px 10px', fontSize: 10 }}>{lang === 'pt' ? 'Aprovar e enviar' : 'Approve and send'}</button>
+      <button onClick={() => onAction('edit')} style={{ ...headerAction(editing), padding: '6px 10px', fontSize: 10 }}>{editing ? (lang === 'pt' ? 'A editar no campo abaixo' : 'Editing below') : (lang === 'pt' ? 'Editar sugestão' : 'Edit suggestion')}</button>
       <button onClick={() => onAction('regenerate')} style={{ ...headerAction(false), padding: '6px 10px', fontSize: 10 }}>{lang === 'pt' ? 'Regenerar' : 'Regenerate'}</button>
       <button onClick={() => onAction('dismiss')} style={{ ...headerAction(false), padding: '6px 10px', fontSize: 10, color: '#B95545' }}>{lang === 'pt' ? 'Dispensar' : 'Dismiss'}</button>
     </div>

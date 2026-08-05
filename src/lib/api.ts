@@ -633,6 +633,25 @@ export type ApiMessage = {
   aiDraftConfidence?: number;
   aiDraftSourceRecordIds?: string[];
   aiDraftReason?: string;
+  aiMarket?: 'angola' | 'portugal';
+  aiIntent?: string;
+  aiLanguage?: string;
+  aiFacts?: {
+    market?: 'AO' | 'PT' | null;
+    intent?: string;
+    product?: { sourceRecordId?: string; name?: string; price?: number | null; currency?: string; onSale?: boolean; availableInMarket?: boolean; matchedVariants?: Array<{ size?: string | null; colour?: string | null; stock?: number; available?: boolean }>; productUrl?: string | null } | null;
+    alternatives?: Array<{ sourceRecordId?: string; name?: string; availableInMarket?: boolean; productUrl?: string | null }>;
+    policy?: { kind?: string; text?: string } | null;
+    coupon?: { code?: string; valid?: boolean; detail?: string | null } | null;
+  };
+  aiModel?: string;
+  aiRequestId?: string;
+  aiInputTokens?: number;
+  aiOutputTokens?: number;
+  aiTotalTokens?: number;
+  aiEstimatedCostUsd?: number;
+  aiRequiresHuman?: boolean;
+  aiOutcome?: string;
   aiBotPaused?: boolean;
   createdAt: string;
 };
@@ -978,10 +997,26 @@ export async function adminUpdateAiDraft(id: string, data: {
   aiAvailableAt?: string;
   aiDraft?: string;
   aiDraftReason?: string;
+  aiAttempts?: number;
+  aiOutcome?: string;
   aiBotPaused?: boolean;
 }): Promise<ApiMessage> {
   const response = await request<{ doc: ApiMessage }>(`/messages/${id}`, { method: 'PATCH', body: JSON.stringify(data) }, { auth: true });
   return response.doc;
+}
+
+export type AiAssistantStatus = {
+  mode: 'off' | 'shadow' | 'approval' | 'automatic';
+  enabled: boolean;
+  extractionModel: string;
+  draftingModel: string;
+  monthlyBudgetUsd: number | null;
+  monthSpendUsd: number;
+  automaticSending: boolean;
+};
+
+export async function adminGetAiAssistantStatus(): Promise<AiAssistantStatus> {
+  return request<AiAssistantStatus>('/ai/status', { cache: 'no-store' }, { auth: true });
 }
 
 export async function adminGetInstagramProfile(contactHandle: string): Promise<InstagramProfile> {
