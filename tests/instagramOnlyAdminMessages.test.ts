@@ -10,3 +10,11 @@ test('the storefront admin fetches only Instagram messages', () => {
   assert.doesNotMatch(inboxSource, /channel:\s*selected\.channel/);
   assert.match(inboxSource, /Instagram-only Phase 1 inbox/);
 });
+
+test('the Instagram inbox renders rich media with an expiry-safe fallback and post link', () => {
+  assert.match(inboxSource, /instagramContextPermalink/);
+  assert.match(inboxSource, /onError=\{\(\) => setPreviewFailed\(true\)\}/);
+  assert.match(inboxSource, /Preview unavailable/);
+  assert.match(inboxSource, /Open post on Instagram/);
+  assert.match(inboxSource, /'image', 'photo', 'video'|story_video/);
+});
