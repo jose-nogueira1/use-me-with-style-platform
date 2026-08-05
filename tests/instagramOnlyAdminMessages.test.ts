@@ -80,3 +80,12 @@ test('approval-mode AI drafts stay human-controlled in the Instagram inbox', () 
   assert.match(inboxSource, /Dismiss/);
   assert.match(inboxSource, /Pause bot/);
 });
+
+test('AI suggestions can be edited and expose verified facts, model, cost and operating mode', () => {
+  assert.match(inboxSource, /Edit suggestion/);
+  assert.match(inboxSource, /human_edited_sent/);
+  assert.match(inboxSource, /View facts and audit/);
+  assert.match(inboxSource, /aiEstimatedCostUsd/);
+  assert.match(inboxSource, /Manual approval/);
+  assert.match(apiSource, /adminGetAiAssistantStatus/);
+});
