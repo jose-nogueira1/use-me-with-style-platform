@@ -571,11 +571,12 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
           .ump-admin-fields-grid { grid-template-columns: minmax(0, 1fr) !important; }
         }
 
-        .ump-mensagens-shell { display: flex; height: 100vh; }
+        .ump-mensagens-shell { display: flex; height: calc(100vh - 190px); }
         .ump-mensagens-list { width: 320px; flex-shrink: 0; }
         @media (max-width: 860px) {
           .ump-mensagens-shell { flex-direction: column; height: auto; }
           .ump-mensagens-list { width: 100%; max-height: 40vh; }
+          .ump-mensagens-context { width: 100% !important; flex-basis: auto !important; border-left: 0 !important; border-top: 1px solid ${C.ruleLight}; }
         }
 
         /* Packing slip (2026-08-01, OrderDetail.tsx) -- .ump-packing-slip
