@@ -18,3 +18,9 @@ test('the Instagram inbox renders rich media with an expiry-safe fallback and po
   assert.match(inboxSource, /Open post on Instagram/);
   assert.match(inboxSource, /'image', 'photo', 'video'|story_video/);
 });
+
+test('outbound echoes composed in Instagram are labelled in the admin conversation', () => {
+  assert.match(inboxSource, /instagram-app -- synced outbound echo/);
+  assert.match(inboxSource, /Sent from Instagram/);
+  assert.match(inboxSource, /Enviada pelo Instagram/);
+});

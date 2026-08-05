@@ -394,7 +394,7 @@ export function Mensagens() {
                       <InstagramContextCard message={m} lang={lang} />
                       <div>{m.body}</div>
                       {m.automationNote && (
-                        <div style={{ fontSize: 10, color: m.direction === 'outbound' ? C.onDarkGold : C.inkSoft, marginTop: 4 }}>{m.automationNote}</div>
+                        <div style={{ fontSize: 10, color: m.direction === 'outbound' ? C.onDarkGold : C.inkSoft, marginTop: 4 }}>{messageSourceLabel(m, lang)}</div>
                       )}
                       <time dateTime={m.createdAt} style={{ display: 'block', fontSize: 9, opacity: 0.72, marginTop: 5 }}>
                         {new Intl.DateTimeFormat(lang === 'pt' ? 'pt-PT' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(m.createdAt))}
@@ -433,6 +433,13 @@ export function Mensagens() {
       </div>
     </div>
   );
+}
+
+function messageSourceLabel(message: ApiMessage, lang: 'pt' | 'en') {
+  if (message.automationNote === 'instagram-app -- synced outbound echo') {
+    return lang === 'pt' ? 'Enviada pelo Instagram' : 'Sent from Instagram';
+  }
+  return message.automationNote;
 }
 
 function ProfileAvatar({ profile, fallback, size }: { profile?: InstagramProfile | null; fallback: string; size: number }) {
