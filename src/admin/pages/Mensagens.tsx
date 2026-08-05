@@ -17,7 +17,7 @@ import {
 import { PageHeader } from '../components/PageHeader';
 import { t } from '../i18n';
 
-type InboxFilter = 'inbox' | 'unread' | ConversationStatus;
+type InboxFilter = 'all' | 'inbox' | 'unread' | ConversationStatus;
 
 type Conversation = {
   key: string;
@@ -29,7 +29,7 @@ type Conversation = {
   workflow: ConversationStatus;
 };
 
-const FILTERS: InboxFilter[] = ['inbox', 'unread', 'needs_reply', 'waiting', 'priority', 'done'];
+const FILTERS: InboxFilter[] = ['all', 'inbox', 'unread', 'needs_reply', 'waiting', 'priority', 'done'];
 const QUICK_REPLIES = {
   en: [
     'Thanks for your message. We’ll check this and get back to you shortly.',
@@ -104,7 +104,7 @@ export function Mensagens() {
   const [messages, setMessages] = useState<ApiMessage[] | null>(null);
   const [profiles, setProfiles] = useState<Record<string, InstagramProfile | null>>({});
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
-  const [filter, setFilter] = useState<InboxFilter>('inbox');
+  const [filter, setFilter] = useState<InboxFilter>('all');
   const [query, setQuery] = useState('');
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
@@ -141,7 +141,7 @@ export function Mensagens() {
   const filtered = conversations.filter((conversation) => {
     if (filter === 'inbox' && conversation.workflow === 'done') return false;
     if (filter === 'unread' && conversation.unreadCount === 0) return false;
-    if (!['inbox', 'unread'].includes(filter) && conversation.workflow !== filter) return false;
+    if (!['all', 'inbox', 'unread'].includes(filter) && conversation.workflow !== filter) return false;
     const needle = query.trim().toLocaleLowerCase();
     return !needle || [conversation.customerName, profiles[conversation.contactHandle]?.username, profiles[conversation.contactHandle]?.name, ...conversation.messages.map((message) => message.body)]
       .filter(Boolean).some((value) => String(value).toLocaleLowerCase().includes(needle));
@@ -300,6 +300,7 @@ export function Mensagens() {
 }
 
 function ConversationHeader({ conversation, profile, lang, contextOpen, setContextOpen, updateWorkflow }: { conversation: Conversation; profile?: InstagramProfile | null; lang: 'en' | 'pt'; contextOpen: boolean; setContextOpen: (open: boolean) => void; updateWorkflow: (status: ConversationStatus) => void }) {
+  const [menuOpen, setMenuOpen] = useState(false);
   return <header style={{ padding: '12px 16px', borderBottom: `1px solid ${C.ruleLight}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 14 }}>
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
       <ProfileAvatar profile={profile} fallback={conversation.customerName || conversation.contactHandle} size={40} />
@@ -314,7 +315,14 @@ function ConversationHeader({ conversation, profile, lang, contextOpen, setConte
       <button onClick={() => void updateWorkflow('done')} style={headerAction(conversation.workflow === 'done')}>{lang === 'pt' ? 'Concluir' : 'Done'}</button>
       <button aria-expanded={contextOpen} onClick={() => setContextOpen(!contextOpen)} style={{ ...headerAction(contextOpen), display: 'inline-flex', alignItems: 'center', gap: 4 }}><UserRound size={12} /> {lang === 'pt' ? 'Contexto' : 'Context'}</button>
       <a href="https://www.instagram.com/direct/inbox/" target="_blank" rel="noreferrer" aria-label={lang === 'pt' ? 'Abrir conversa no Instagram' : 'Open conversation in Instagram'} style={{ ...headerAction(false), display: 'grid', placeItems: 'center', width: 34, padding: 0 }}><ExternalLink size={13} /></a>
-      <button aria-label={lang === 'pt' ? 'Mais ações' : 'More actions'} style={{ ...headerAction(false), width: 34, padding: 0 }}><MoreHorizontal size={14} /></button>
+      <div style={{ position: 'relative' }}>
+        <button aria-label={lang === 'pt' ? 'Mais ações' : 'More actions'} aria-expanded={menuOpen} onClick={() => setMenuOpen(!menuOpen)} style={{ ...headerAction(menuOpen), width: 34, padding: 0 }}><MoreHorizontal size={14} /></button>
+        {menuOpen && <div role="menu" style={{ position: 'absolute', right: 0, top: 39, zIndex: 8, width: 190, padding: 5, border: `1px solid ${C.rule}`, borderRadius: 8, background: C.paper, boxShadow: '0 10px 28px rgba(0,0,0,0.14)' }}>
+          <button role="menuitem" onClick={() => { setContextOpen(!contextOpen); setMenuOpen(false); }} style={menuItemStyle()}>{contextOpen ? (lang === 'pt' ? 'Fechar contexto' : 'Hide customer context') : (lang === 'pt' ? 'Ver contexto do cliente' : 'View customer context')}</button>
+          <button role="menuitem" onClick={() => { void updateWorkflow('needs_reply'); setMenuOpen(false); }} style={menuItemStyle()}>{lang === 'pt' ? 'Marcar como precisa de resposta' : 'Mark as needs reply'}</button>
+          <a role="menuitem" href="https://www.instagram.com/direct/inbox/" target="_blank" rel="noreferrer" onClick={() => setMenuOpen(false)} style={{ ...menuItemStyle(), display: 'block', textDecoration: 'none' }}>{lang === 'pt' ? 'Abrir no Instagram' : 'Open in Instagram'}</a>
+        </div>}
+      </div>
     </div>
   </header>;
 }
@@ -337,8 +345,8 @@ function Composer({ lang, draft, setDraft, sending, send, quickRepliesOpen, setQ
 }
 
 function CustomerContext({ conversation, profile, lang, noteDraft, setNoteDraft, saveNote, savingNote }: { conversation: Conversation; profile?: InstagramProfile | null; lang: 'en' | 'pt'; noteDraft: string; setNoteDraft: (value: string) => void; saveNote: () => void; savingNote: boolean }) {
-  const order = conversation.messages.map((message) => message.relatedOrder).find((value) => typeof value === 'object');
-  const customer = conversation.messages.map((message) => message.relatedCustomer).find((value) => typeof value === 'object');
+  const order = conversation.messages.map((message) => message.relatedOrder).find((value) => Boolean(value) && typeof value === 'object');
+  const customer = conversation.messages.map((message) => message.relatedCustomer).find((value) => Boolean(value) && typeof value === 'object');
   return <aside className="ump-mensagens-context" aria-label={lang === 'pt' ? 'Contexto do cliente' : 'Customer context'} style={{ width: 270, flex: '0 0 270px', padding: 14, borderLeft: `1px solid ${C.ruleLight}`, background: '#FCFAF5', overflowY: 'auto' }}>
     <h3 style={{ margin: '0 0 12px', fontFamily: F.display, fontSize: 15, color: C.ink }}>{lang === 'pt' ? 'Contexto do cliente' : 'Customer context'}</h3>
     <ContextSection title={lang === 'pt' ? 'Instagram' : 'Instagram'}>
@@ -417,9 +425,14 @@ function FilterPill({ label, active, onClick }: { label: string; active: boolean
 }
 
 function filterLabel(filter: InboxFilter, lang: 'en' | 'pt') {
+  if (filter === 'all') return lang === 'pt' ? 'Todas' : 'All conversations';
   if (filter === 'inbox') return lang === 'pt' ? 'Caixa de entrada' : 'Inbox';
   if (filter === 'unread') return lang === 'pt' ? 'Não lidas' : 'Unread';
   return WORKFLOW_LABELS[filter][lang];
+}
+
+function menuItemStyle(): React.CSSProperties {
+  return { width: '100%', minHeight: 36, padding: '8px 9px', borderRadius: 6, color: C.ink, fontSize: 10.5, fontWeight: 750, textAlign: 'left', background: 'transparent' };
 }
 
 function headerAction(active: boolean): React.CSSProperties {

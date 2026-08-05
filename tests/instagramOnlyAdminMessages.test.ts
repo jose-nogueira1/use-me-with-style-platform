@@ -43,12 +43,15 @@ test('the inbox separates unread state from workflow and keeps drafts per conver
   assert.match(inboxSource, /priority/);
   assert.match(inboxSource, /done/);
   assert.match(inboxSource, /drafts\[selected\.key\]/);
+  assert.match(inboxSource, /useState<InboxFilter>\('all'\)/);
+  assert.match(inboxSource, /All conversations/);
 });
 
 test('customer context never guesses market from profile or language', () => {
   assert.match(inboxSource, /Not established yet/);
   assert.match(inboxSource, /Never inferred from profile or language/);
   assert.match(inboxSource, /Confirmed by the linked order/);
+  assert.match(inboxSource, /Boolean\(value\) && typeof value === 'object'/);
 });
 
 test('message groups hide internal automation text and show customer seen receipts', () => {
@@ -56,4 +59,12 @@ test('message groups hide internal automation text and show customer seen receip
   assert.match(inboxSource, /instagramSeenAt/);
   assert.match(inboxSource, /Seen/);
   assert.match(inboxSource, /groupEnd/);
+});
+
+test('the conversation action menu exposes working secondary actions', () => {
+  assert.match(inboxSource, /aria-expanded=\{menuOpen\}/);
+  assert.match(inboxSource, /role="menu"/);
+  assert.match(inboxSource, /View customer context/);
+  assert.match(inboxSource, /Mark as needs reply/);
+  assert.match(inboxSource, /Open in Instagram/);
 });
