@@ -447,8 +447,8 @@ export const T: Record<string, Record<Lang, string>> = {
   crumbEditProduct: { en: 'Products / {name}', pt: 'Produtos / {name}' },
   createCatalogueItem: { en: 'Create catalogue item', pt: 'Criar produto' },
   enterEverythingSubtitle: {
-    en: 'Enter everything needed to sell a piece before final photography arrives.',
-    pt: 'Introduza toda a informação necessária para vender a peça antes da fotografia final chegar.',
+    en: 'Enter everything needed to sell this product before final photography arrives.',
+    pt: 'Introduza toda a informação necessária para vender este produto antes da fotografia final chegar.',
   },
   publishProduct: { en: 'Publish product', pt: 'Publicar produto' },
   couldntLoadTaxonomies: {

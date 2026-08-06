@@ -6,6 +6,7 @@ import { useApp } from '../state/AppContext';
 import { Footer } from './components/Footer';
 import { BrandLogo } from '../components/BrandLogo';
 import { AnalyticsConsentManager } from './components/AnalyticsConsent';
+import { fetchCategories, type ApiCategory } from '../lib/api';
 
 // Matches the real Figma design (node 72:2, "Phase 1 Storefront -- High
 // Fidelity"): plain header (logo center, hamburger/back left). Market,
@@ -28,6 +29,13 @@ export function StorefrontLayout() {
   const isCart = location.pathname === '/carrinho';
   const isRoot = ROOT_PATHS.includes(location.pathname);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [categories, setCategories] = useState<ApiCategory[]>([]);
+  useEffect(() => { fetchCategories().then(setCategories).catch(() => undefined); }, []);
+  const navItems = [
+    { to: '/catalogo?cat=new', label: t('newArrivalsNav', lang) },
+    ...categories.slice(0, 6).map((category) => ({ to: `/catalogo?cat=${encodeURIComponent(category.slug || '')}`, label: (lang === 'en' ? category.nameEN : category.namePT) || category.namePT })),
+    { to: '/conta', label: t('orderLookupNav', lang) },
+  ];
 
   // Each market has its own public hostname, so canonical metadata must be
   // derived from the live origin rather than the apex-domain env value. Keep
@@ -132,7 +140,7 @@ export function StorefrontLayout() {
           </Link>
 
           <nav className="ump-desktop-nav" style={{ gap: 18, alignItems: 'center' }}>
-            {DESKTOP_NAV_ITEMS.map((item) => (
+            {navItems.map((item) => (
               <Link
                 key={item.to}
                 to={item.to}
@@ -143,7 +151,7 @@ export function StorefrontLayout() {
                   textDecoration: 'none',
                 }}
               >
-                {t(item.labelKey, lang)}
+                {item.label}
               </Link>
             ))}
           </nav>
@@ -186,7 +194,7 @@ export function StorefrontLayout() {
             className="ump-mobile-menu ump-slide-up"
             style={{ borderTop: `1px solid ${isHome ? 'rgba(255,255,255,0.12)' : C.ruleLight}`, padding: '4px 16px 12px' }}
           >
-            {DESKTOP_NAV_ITEMS.map((item) => (
+            {navItems.map((item) => (
               <Link
                 key={item.to}
                 to={item.to}
@@ -201,7 +209,7 @@ export function StorefrontLayout() {
                   borderBottom: `1px solid ${isHome ? 'rgba(255,255,255,0.08)' : C.ruleLight}`,
                 }}
               >
-                {t(item.labelKey, lang)}
+                {item.label}
               </Link>
             ))}
           </nav>
@@ -221,14 +229,6 @@ export function StorefrontLayout() {
     </div>
   );
 }
-
-const DESKTOP_NAV_ITEMS = [
-  { to: '/catalogo?cat=new', labelKey: 'newArrivalsNav' },
-  { to: '/catalogo?cat=vestidos', labelKey: 'dresses' },
-  { to: '/catalogo?cat=tops', labelKey: 'tops' },
-  { to: '/catalogo?cat=conjuntos', labelKey: 'sets' },
-  { to: '/conta', labelKey: 'orderLookupNav' },
-];
 
 // Language-only control (PT/EN). Market used to share this dropdown, but
 // Angola and Portugal are now separate storefronts (ao./pt. subdomains) --

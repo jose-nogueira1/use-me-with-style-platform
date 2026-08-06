@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { C, F } from '../../theme';
 import { useApp } from '../../state/AppContext';
-import { adminListProducts, productIsLowStock, resolveProductImage, type ApiProduct } from '../../lib/api';
+import { adminListProducts, productIsLowStock, resolveProductImage, resolveRef, type ApiProduct } from '../../lib/api';
 import { PageHeader } from '../components/PageHeader';
 import { t } from '../i18n';
 
@@ -110,13 +110,25 @@ export function Products() {
   );
 }
 
-function aggregateSizes(p: { variants: { size: string; stockAO: number; stockPT: number }[] }) {
+function aggregateSizes(p: ApiProduct) {
+  if (p.productType === 'bundle') {
+    const componentStock = (market: 'AO' | 'PT') => {
+      const stocks = (p.bundleComponents ?? []).map((component) => {
+        const product = resolveRef(component.product);
+        const variant = product?.variants?.find((row) => String(row.id) === String(component.variantId));
+        return Math.floor(Number(market === 'AO' ? variant?.stockAO ?? 0 : variant?.stockPT ?? 0) / Math.max(1, Number(component.qty)));
+      });
+      return stocks.length > 0 ? Math.min(...stocks) : 0;
+    };
+    return [{ size: 'Kit', stockAO: componentStock('AO'), stockPT: componentStock('PT') }];
+  }
   const bySize = new Map<string, { size: string; stockAO: number; stockPT: number }>();
   for (const v of p.variants ?? []) {
-    const entry = bySize.get(v.size) ?? { size: v.size, stockAO: 0, stockPT: 0 };
+    const label = v.size?.trim() || 'Único';
+    const entry = bySize.get(label) ?? { size: label, stockAO: 0, stockPT: 0 };
     entry.stockAO += v.stockAO;
     entry.stockPT += v.stockPT;
-    bySize.set(v.size, entry);
+    bySize.set(label, entry);
   }
   return [...bySize.values()];
 }

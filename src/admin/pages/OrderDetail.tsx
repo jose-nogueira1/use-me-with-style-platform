@@ -411,8 +411,9 @@ export function OrderDetail() {
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 14, fontWeight: 800, color: C.ink }}>{item.productName}</div>
                 <div style={{ fontSize: 11, color: C.inkSoft, marginTop: 2 }}>
-                  {t('sizeWithValue', lang, { size: item.size })}
-                  {item.color ? `, ${item.color}` : ''}
+                  {item.productType === 'bundle'
+                    ? (lang === 'pt' ? 'Kit de produtos' : 'Product kit')
+                    : [item.optionLabel && item.optionValue ? `${item.optionLabel}: ${item.optionValue}` : item.size ? t('sizeWithValue', lang, { size: item.size }) : '', item.color].filter(Boolean).join(', ')}
                 </div>
               </div>
               <div style={{ fontSize: 12, fontWeight: 800, color: C.ink }}>{t('qtyWithValue', lang, { n: item.qty })}</div>
@@ -564,7 +565,7 @@ function PackingSlip({ order, lang }: { order: ApiOrder; lang: Lang }) {
           {order.items.map((item, i) => (
             <tr key={i}>
               <td style={{ padding: '6px 0', borderBottom: '1px solid #ddd' }}>{item.productName}</td>
-              <td style={{ padding: '6px 0', borderBottom: '1px solid #ddd' }}>{t('sizeWithValue', lang, { size: item.size })}{item.color ? `, ${item.color}` : ''}</td>
+              <td style={{ padding: '6px 0', borderBottom: '1px solid #ddd' }}>{item.productType === 'bundle' ? (lang === 'pt' ? 'Kit' : 'Bundle') : [item.optionValue || item.size, item.color].filter(Boolean).join(', ') || '—'}</td>
               <td style={{ padding: '6px 0', borderBottom: '1px solid #ddd', textAlign: 'right' }}>{item.qty}</td>
             </tr>
           ))}

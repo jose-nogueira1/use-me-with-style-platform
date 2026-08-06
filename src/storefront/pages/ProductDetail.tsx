@@ -63,13 +63,18 @@ export function ProductDetail() {
   const activeColor = color ?? (product.colors.some((candidate) => candidate.id === requestedColor) ? requestedColor : product.colors[0]?.id);
   // Variant-level stock (2026-07-25): availability is per colour+size, so
   // switching colour changes which sizes are in stock.
-  const stockFor = (colorId: string | undefined, sizeName: string) =>
-    product.variants.find((v) => v.color === colorId && v.size === sizeName)?.stock ?? 0;
+  const stockFor = (colorId: string | null | undefined, optionValue: string | null | undefined) =>
+    product.variants.find((v) => v.color === colorId && v.optionValue === optionValue)?.stock ?? 0;
   const defaultSize = product.sizes.find((candidate) => stockFor(activeColor, candidate) > 0) ?? product.sizes[Math.floor(product.sizes.length / 2)];
   const activeSize = size ?? defaultSize;
   const activeColorLabel = product.colors.find((c) => c.id === activeColor)?.name ?? activeColor;
   const colorHasStock = (colorId: string) => product.variants.some((v) => v.color === colorId && v.stock > 0);
-  const stockForSize = activeColor ? stockFor(activeColor, activeSize) : product.stock[activeSize] ?? 0;
+  const activeVariant = product.productType === 'bundle'
+    ? product.variants[0]
+    : product.variants.find((variant) =>
+        (variant.color ?? '') === (activeColor ?? '') && (variant.optionValue ?? '') === (activeSize ?? ''),
+      ) ?? product.variants[0];
+  const stockForSize = activeVariant?.stock ?? 0;
   const isLowStock = stockForSize > 0 && stockForSize <= 3;
   const isOutOfStock = stockForSize === 0;
   const isFav = favorites.has(product.id);
@@ -78,14 +83,22 @@ export function ProductDetail() {
   // Already-in-cart quantity for this exact colour+size, so a repeated
   // click at the stock cap can be told apart from one that actually added
   // something (2026-07-31 stock cap fix).
-  const qtyInCart = cart.find((i) => i.id === product.id && i.size === activeSize && i.color === activeColor)?.qty ?? 0;
+  const qtyInCart = cart.find((i) => i.id === product.id && (i.variantId ? i.variantId === activeVariant?.id : i.size === activeSize && i.color === activeColor))?.qty ?? 0;
   const atCartMax = !isOutOfStock && qtyInCart >= stockForSize;
 
   const handleAdd = () => {
     if (isOutOfStock || qtyInCart >= stockForSize) return;
     // max: repeatedly clicking Add-to-Cart used to keep incrementing past
     // the same unbounded path as the cart stepper -- see cartReducer.ts.
-    dispatchCart({ type: 'ADD', id: product.id, size: activeSize, color: activeColor, max: stockForSize });
+    if (!activeVariant) return;
+    dispatchCart({
+      type: 'ADD',
+      id: product.id,
+      variantId: activeVariant.id,
+      size: activeVariant.legacySize ?? activeVariant.optionValue ?? '',
+      color: activeVariant.color ?? '',
+      max: stockForSize,
+    });
     trackMetaEvent('AddToCart', {
       content_ids: [product.id],
       content_name: product.name,
@@ -164,12 +177,12 @@ export function ProductDetail() {
             )}
           </div>
 
-          <div style={{ marginTop: 24 }}>
+          {product.optionLabel && product.sizes.length > 0 && <div style={{ marginTop: 24 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1, color: C.goldDeep, textTransform: 'uppercase' }}>{t('size', lang)}</div>
-              <button onClick={() => setShowSizeGuide(true)} style={{ fontSize: 10, color: C.inkSoft, textDecoration: 'underline' }}>
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1, color: C.goldDeep, textTransform: 'uppercase' }}>{product.optionLabel}</div>
+              {product.sizeGuide && product.sizeGuide.length > 0 && <button onClick={() => setShowSizeGuide(true)} style={{ fontSize: 10, color: C.inkSoft, textDecoration: 'underline' }}>
                 {t('sizeGuide', lang)}
-              </button>
+              </button>}
             </div>
             <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
               {product.sizes.map((s) => {
@@ -199,9 +212,9 @@ export function ProductDetail() {
                 );
               })}
             </div>
-          </div>
+          </div>}
 
-          <div style={{ marginTop: 20 }}>
+          {product.colors.length > 0 && <div style={{ marginTop: 20 }}>
             <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1, color: C.goldDeep, textTransform: 'uppercase' }}>
               {t('colourLabel', lang)}: <span style={{ color: C.ink, fontWeight: 500, marginLeft: 4 }}>{activeColorLabel}</span>
             </div>
@@ -243,7 +256,7 @@ export function ProductDetail() {
                 </button>
               ))}
             </div>
-          </div>
+          </div>}
 
           <div style={{ marginTop: 24, padding: '16px 0', borderTop: `1px solid ${C.ruleLight}` }}>
             <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1, color: C.goldDeep, textTransform: 'uppercase', marginBottom: 8 }}>
@@ -252,6 +265,37 @@ export function ProductDetail() {
             <div style={{ fontSize: 13, color: C.inkSoft, lineHeight: 1.6 }}>{product.description || t('defaultDescription', lang)}</div>
           </div>
 
+          {product.productType === 'bundle' && product.bundleComponents.length > 0 && (
+            <div style={{ marginTop: 4, padding: '16px 0', borderTop: `1px solid ${C.ruleLight}` }}>
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1, color: C.goldDeep, textTransform: 'uppercase', marginBottom: 10 }}>
+                {lang === 'pt' ? 'O que está incluído' : "What's included"}
+              </div>
+              <div style={{ display: 'grid', gap: 8 }}>
+                {product.bundleComponents.map((component) => (
+                  <div key={`${component.productId}:${component.variantId}`} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 12, color: C.ink }}>
+                    <span>{component.productName}{component.optionSummary ? ` · ${component.optionSummary}` : ''}</span>
+                    <strong>× {component.qty}</strong>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {product.specifications.length > 0 && (
+            <div style={{ marginTop: 4, padding: '16px 0', borderTop: `1px solid ${C.ruleLight}` }}>
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1, color: C.goldDeep, textTransform: 'uppercase', marginBottom: 10 }}>
+                {lang === 'pt' ? 'Detalhes do produto' : 'Product details'}
+              </div>
+              <dl style={{ margin: 0, display: 'grid', gap: 8 }}>
+                {product.specifications.map((entry, index) => (
+                  <div key={`${entry.label}:${index}`} style={{ display: 'grid', gridTemplateColumns: 'minmax(100px, 0.8fr) 1.2fr', gap: 12, fontSize: 12 }}>
+                    <dt style={{ color: C.inkSoft }}>{entry.label}</dt><dd style={{ margin: 0, color: C.ink }}>{entry.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          )}
+
           <div style={{ background: C.subtleBg, borderRadius: 8, padding: 14, marginTop: 4 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, padding: '6px 0' }}>
               <span style={{ color: C.ink, fontWeight: 700 }}>{t('shipping', lang)}</span>
@@ -259,7 +303,7 @@ export function ProductDetail() {
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, padding: '6px 0' }}>
               <span style={{ color: C.ink, fontWeight: 700 }}>{t('returns', lang)}</span>
-              <span style={{ color: C.inkSoft }}>{t(market === 'AO' ? 'fortyEightHours' : 'fourteenDays', lang)}</span>
+              <span style={{ color: C.inkSoft }}>{product.returnNote || (product.returnEligible ? t(market === 'AO' ? 'fortyEightHours' : 'fourteenDays', lang) : (lang === 'pt' ? 'Este artigo não é elegível para devolução.' : 'This item is not eligible for return.'))}</span>
             </div>
           </div>
         </div>

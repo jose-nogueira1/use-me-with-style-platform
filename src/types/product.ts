@@ -36,9 +36,21 @@ export type ProductColor = {
  * until colours could have more than one language's name), matching
  * ProductColor.id and the value the cart/order flow carries end to end. */
 export type ProductVariant = {
-  color: string;
-  size: string;
+  id: string;
+  sku?: string;
+  color?: string;
+  optionValue?: string;
+  legacySize?: string;
   stock: number;
+};
+
+export type ProductSpecification = { label: string; value: string };
+export type ProductBundleComponent = {
+  productId: string;
+  productName: string;
+  variantId: string;
+  qty: number;
+  optionSummary?: string;
 };
 
 /** One merchandising badge on a product (e.g. "Novidade", "Bestseller").
@@ -72,6 +84,7 @@ export type Product = {
   cat: string;
   /** Localized category display name, from the categories collection. */
   catLabel: string;
+  productType: 'standard' | 'bundle';
   /** Regular (non-sale) price -- kept even while on sale so the storefront
    * can show a strikethrough "was" price. Use effectivePriceKz/Eur below
    * for anything money actually changes hands over (cart, checkout,
@@ -88,6 +101,7 @@ export type Product = {
   effectivePriceKz: number;
   effectivePriceEur: number;
   shippingWeightGrams: number;
+  optionLabel?: string;
   sizes: string[];
   /** Stock for the CURRENT market, keyed by size, SUMMED across colours --
    * coarse availability for cards/lists. Use `variants` for the exact
@@ -113,6 +127,10 @@ export type Product = {
   sizeGuide?: SizeGuideRow[];
   /** Localized per-product fit note shown under the size chart. */
   fitNote?: string;
+  specifications: ProductSpecification[];
+  returnEligible: boolean;
+  returnNote?: string;
+  bundleComponents: ProductBundleComponent[];
   images: ProductImage[];
   /** Placeholder product-photo tone (see components/ProductPhoto.tsx). */
   tone: ProductTone;

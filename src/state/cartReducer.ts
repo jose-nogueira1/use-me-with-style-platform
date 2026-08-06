@@ -1,5 +1,8 @@
 export type CartItem = {
   id: string;
+  /** Stable CMS variant row id. Optional only for carts cached before the
+   * flexible-product rollout. */
+  variantId?: string;
   size: string;
   // Colour's stable row id (2026-07-25 bilingual colours follow-up) --
   // NOT a display name, so the dedupe key below stays correct even if the
@@ -16,7 +19,7 @@ export type CartAction =
   // once, rather than only via a disabled button at each call site --
   // previously a shopper could click the stepper's + past actual stock
   // (only a warning appeared, nothing blocked the increment itself).
-  | { type: 'ADD'; id: string; size: string; color: string; max: number }
+  | { type: 'ADD'; id: string; variantId: string; size?: string; color?: string; max: number }
   | { type: 'INC'; idx: number; max: number }
   | { type: 'DEC'; idx: number }
   | { type: 'REMOVE'; idx: number }
@@ -28,13 +31,13 @@ export function cartReducer(state: CartItem[], action: CartAction): CartItem[] {
     case 'ADD': {
       if (action.max <= 0) return state; // out of stock -- nothing to add
       const existing = state.find(
-        (i) => i.id === action.id && i.size === action.size && i.color === action.color,
+        (i) => i.id === action.id && (i.variantId ? i.variantId === action.variantId : i.size === (action.size ?? '') && i.color === (action.color ?? '')),
       );
       if (existing) {
         if (existing.qty >= action.max) return state;
         return state.map((i) => (i === existing ? { ...i, qty: i.qty + 1 } : i));
       }
-      return [...state, { id: action.id, size: action.size, color: action.color, qty: 1 }];
+      return [...state, { id: action.id, variantId: action.variantId, size: action.size ?? '', color: action.color ?? '', qty: 1 }];
     }
     case 'INC':
       return state.map((i, idx) => (idx === action.idx && i.qty < action.max ? { ...i, qty: i.qty + 1 } : i));

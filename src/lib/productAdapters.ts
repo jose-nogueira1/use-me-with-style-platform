@@ -1,5 +1,5 @@
 import { resolveRef, type ApiProduct } from './api';
-import type { Product, ProductColor, ProductVariant, SizeGuideRow } from '../types/product';
+import type { Product, ProductBundleComponent, ProductColor, ProductVariant, SizeGuideRow } from '../types/product';
 
 const SIZE_ORDER = ['XS', 'S', 'M', 'L', 'XL'];
 import { TONE_CYCLE } from '../components/ProductPhoto';
@@ -61,16 +61,16 @@ export function adaptApiProduct(api: ApiProduct, market: 'AO' | 'PT', lang: 'pt'
   // tag is hasMany since 2026-07-31 -- Payload returns an array; resolveRef
   // unwraps each entry the same way it always has for a single ref.
   const tagDocs = (api.tag ?? []).map((ref) => resolveRef(ref)).filter((doc): doc is NonNullable<typeof doc> => doc !== null);
-  const tags = tagDocs.map((doc) => ({
+  const tags = tagDocs.filter((doc) => Boolean(doc.slug)).map((doc) => ({
     label: (lang === 'en' ? doc.labelEN : doc.labelPT)?.trim() || doc.labelPT,
-    slug: doc.slug,
+    slug: String(doc.slug),
   }));
   const isNewArrival = tagDocs.some((doc) =>
     [doc.labelPT, doc.labelEN].some((label) => label && NEW_ARRIVAL_TAG_LABELS.has(label.trim().toLowerCase())),
   );
 
-  // Variant-level inventory: colours, sizes, and stock all derive from the
-  // colour+size variant rows (row order = colour display order).
+  // Flexible variant inventory: row id is the sellable identity; colour
+  // and the localized secondary option are both optional.
   const variants: ProductVariant[] = [];
   const colors: ProductColor[] = [];
   const sizes: string[] = [];
@@ -83,15 +83,53 @@ export function adaptApiProduct(api: ApiProduct, market: 'AO' | 'PT', lang: 'pt'
     const colorId = colorDoc ? String(colorDoc.id) : '';
     const colorLabel = (lang === 'en' ? colorDoc?.nameEN : colorDoc?.namePT)?.trim() || colorDoc?.namePT || '';
     const marketStock = market === 'AO' ? row.stockAO : row.stockPT;
-    variants.push({ color: colorId, size: row.size, stock: marketStock });
+    const optionValue = (lang === 'en' ? row.optionValueEN : row.size)?.trim() || row.size?.trim() || '';
+    variants.push({
+      id: String(row.id ?? `${colorId}:${row.size ?? ''}`),
+      sku: row.sku?.trim() || undefined,
+      color: colorId || undefined,
+      optionValue: optionValue || undefined,
+      legacySize: row.size?.trim() || undefined,
+      stock: marketStock,
+    });
     if (colorDoc && !colors.some((c) => c.id === colorId)) {
       const swatch = resolveRef(colorDoc.swatch);
       colors.push({ id: colorId, name: colorLabel, hex: colorDoc.hex ?? undefined, hex2: colorDoc.hex2 ?? undefined, swatchUrl: absoluteMediaUrl(swatch?.url) });
     }
-    if (!sizes.includes(row.size)) sizes.push(row.size);
-    stock[row.size] = (stock[row.size] ?? 0) + marketStock;
+    if (optionValue && !sizes.includes(optionValue)) sizes.push(optionValue);
+    if (optionValue) stock[optionValue] = (stock[optionValue] ?? 0) + marketStock;
   }
-  sizes.sort((a, b) => SIZE_ORDER.indexOf(a) - SIZE_ORDER.indexOf(b));
+  sizes.sort((a, b) => {
+    const ai = SIZE_ORDER.indexOf(a);
+    const bi = SIZE_ORDER.indexOf(b);
+    return ai === -1 || bi === -1 ? a.localeCompare(b, lang) : ai - bi;
+  });
+
+  const bundleComponents: ProductBundleComponent[] = (api.bundleComponents ?? []).flatMap((component) => {
+    const componentProduct = resolveRef(component.product);
+    if (!componentProduct) return [];
+    const componentVariant = componentProduct.variants?.find((row) => String(row.id) === String(component.variantId));
+    const componentColor = resolveRef(componentVariant?.color);
+    const optionValue = (lang === 'en' ? componentVariant?.optionValueEN : componentVariant?.size)?.trim() || componentVariant?.size?.trim();
+    const colour = (lang === 'en' ? componentColor?.nameEN : componentColor?.namePT)?.trim() || componentColor?.namePT?.trim();
+    return [{
+      productId: String(componentProduct.id),
+      productName: (lang === 'en' ? componentProduct.nameEN : componentProduct.namePT)?.trim() || componentProduct.name,
+      variantId: String(component.variantId),
+      qty: Math.max(1, Number(component.qty ?? 1)),
+      optionSummary: [colour, optionValue].filter(Boolean).join(' · ') || undefined,
+    }];
+  });
+
+  if (api.productType === 'bundle') {
+    const componentStocks = (api.bundleComponents ?? []).map((component) => {
+      const componentProduct = resolveRef(component.product);
+      const variant = componentProduct?.variants?.find((row) => String(row.id) === String(component.variantId));
+      const available = market === 'AO' ? Number(variant?.stockAO ?? 0) : Number(variant?.stockPT ?? 0);
+      return Math.floor(available / Math.max(1, Number(component.qty ?? 1)));
+    });
+    variants.splice(0, variants.length, { id: 'bundle', stock: componentStocks.length > 0 ? Math.min(...componentStocks) : 0 });
+  }
 
   const onSale = isProductOnSale(api);
   const effectivePriceKz = onSale ? (api.saleAOKz ?? api.priceAOKz) : api.priceAOKz;
@@ -114,12 +152,14 @@ export function adaptApiProduct(api: ApiProduct, market: 'AO' | 'PT', lang: 'pt'
     slug: api.slug,
     cat: category?.slug ?? '',
     catLabel: (lang === 'en' ? category?.nameEN : category?.namePT)?.trim() || category?.namePT || '',
+    productType: api.productType === 'bundle' ? 'bundle' : 'standard',
     priceKz: api.priceAOKz,
     priceEur: api.pricePTEur,
     onSale,
     effectivePriceKz,
     effectivePriceEur,
     shippingWeightGrams: Math.max(1, Number(api.shippingWeightGrams ?? 500)),
+    optionLabel: (lang === 'en' ? api.optionLabelEN : api.optionLabelPT)?.trim() || api.optionLabelPT?.trim() || undefined,
     sizes,
     stock,
     variants,
@@ -129,6 +169,13 @@ export function adaptApiProduct(api: ApiProduct, market: 'AO' | 'PT', lang: 'pt'
     description: localizedDescription,
     sizeGuide,
     fitNote: (lang === 'en' ? api.fitNoteEN : api.fitNotePT)?.trim() || api.fitNotePT?.trim() || undefined,
+    specifications: (api.specifications ?? []).map((entry) => ({
+      label: (lang === 'en' ? entry.labelEN : entry.labelPT)?.trim() || entry.labelPT,
+      value: (lang === 'en' ? entry.valueEN : entry.valuePT)?.trim() || entry.valuePT,
+    })),
+    returnEligible: api.returnEligible !== false,
+    returnNote: (lang === 'en' ? api.returnNoteEN : api.returnNotePT)?.trim() || api.returnNotePT?.trim() || undefined,
+    bundleComponents,
     images,
     tone: TONE_CYCLE[index % TONE_CYCLE.length],
   };

@@ -128,11 +128,26 @@ export type ApiSizeGuideRef = string | number | ApiSizeGuide;
 
 /** Variant-level inventory (2026-07-25): stock per colour+size row. */
 export type ApiVariant = {
-  color: ApiColorRef;
-  size: string;
+  id?: string | null;
+  sku?: string | null;
+  color?: ApiColorRef | null;
+  size?: string | null;
+  optionValueEN?: string | null;
   stockAO: number;
   stockPT: number;
-  id?: string | null;
+};
+
+export type ApiProductSpecification = {
+  labelPT: string;
+  labelEN?: string | null;
+  valuePT: string;
+  valueEN?: string | null;
+};
+
+export type ApiBundleComponent = {
+  product: string | number | ApiProduct;
+  variantId: string;
+  qty: number;
 };
 
 /** Safely reads the populated doc off a relationship ref (id-only at depth
@@ -163,12 +178,19 @@ export type ApiProduct = {
   nameEN?: string;
   slug: string;
   category: ApiCategoryRef;
+  productType?: 'standard' | 'bundle';
   description?: string;
   descriptionPT?: string;
   descriptionEN?: string;
   sizeGuide?: ApiSizeGuideRef | null;
-  fitNotePT?: string;
-  fitNoteEN?: string;
+  fitNotePT?: string | null;
+  fitNoteEN?: string | null;
+  optionLabelPT?: string | null;
+  optionLabelEN?: string | null;
+  specifications?: ApiProductSpecification[] | null;
+  returnEligible?: boolean | null;
+  returnNotePT?: string | null;
+  returnNoteEN?: string | null;
   /** hasMany since 2026-07-31 (admin bug report: "I can only select one
    * merchandising tag per item") -- a product can carry several badges at
    * once. Payload returns an array for hasMany relationships; an unpopulated
@@ -188,6 +210,7 @@ export type ApiProduct = {
   saleStartDate?: string | null;
   saleEndDate?: string | null;
   variants: ApiVariant[];
+  bundleComponents?: ApiBundleComponent[] | null;
   active: boolean;
   /** Per-market storefront visibility (JOS market-separation decision,
    * 2026-07-10) -- a product can be sold in one market only. Both default to
@@ -210,6 +233,14 @@ export function resolveProductImage(image: ApiProductImageRef | undefined): { ur
  * out of sync on what "low" means. Per-variant since 2026-07-25 (a colour
  * running out in one size counts as low even if other colours are fine). */
 export function productIsLowStock(p: ApiProduct): boolean {
+  if (p.productType === 'bundle') {
+    const stocks = (p.bundleComponents ?? []).flatMap((component) => {
+      const child = resolveRef(component.product);
+      const variant = child?.variants?.find((row) => String(row.id) === String(component.variantId));
+      return variant ? [Math.floor((Number(variant.stockAO) + Number(variant.stockPT)) / Math.max(1, Number(component.qty)))] : [];
+    });
+    return stocks.length > 0 && Math.min(...stocks) <= 2;
+  }
   return p.variants.some((v) => v.stockAO + v.stockPT <= 2);
 }
 
@@ -218,6 +249,14 @@ export function productIsLowStock(p: ApiProduct): boolean {
  * flag "urgent" only for products that can't be sold at all right now,
  * rather than every merely-low-stock one. */
 export function productIsOutOfStock(p: ApiProduct): boolean {
+  if (p.productType === 'bundle') {
+    const stocks = (p.bundleComponents ?? []).flatMap((component) => {
+      const child = resolveRef(component.product);
+      const variant = child?.variants?.find((row) => String(row.id) === String(component.variantId));
+      return variant ? [Number(variant.stockAO) + Number(variant.stockPT)] : [];
+    });
+    return stocks.length === 0 || stocks.some((stock) => stock === 0);
+  }
   return p.variants.some((v) => v.stockAO + v.stockPT === 0);
 }
 
@@ -288,7 +327,11 @@ export async function validateCoupon(input: {
 export type OrderItemInput = {
   product: string | number;
   productName: string;
-  size: string;
+  variantId?: string;
+  size?: string;
+  optionLabel?: string;
+  optionValue?: string;
+  productType?: 'standard' | 'bundle';
   // Colour's stable ROW ID (2026-07-25, colours bilingual follow-up) --
   // NOT the display name, which now varies by storefront language. The CMS
   // resolves this to a localized, human-readable name for the stored order
@@ -690,7 +733,7 @@ export async function fetchProducts(market: 'AO' | 'PT'): Promise<ApiProduct[]> 
 
 export async function fetchProductBySlug(slug: string, market: 'AO' | 'PT'): Promise<ApiProduct | null> {
   const data = await request<{ docs: ApiProduct[] }>(
-    `/products?where[slug][equals]=${encodeURIComponent(slug)}&where[${availabilityField(market)}][equals]=true&limit=1&depth=2`,
+    `/products?where[slug][equals]=${encodeURIComponent(slug)}&where[active][equals]=true&where[${availabilityField(market)}][equals]=true&limit=1&depth=2`,
   );
   return data.docs[0] ?? null;
 }

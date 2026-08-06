@@ -124,7 +124,7 @@ export function Cart() {
     cart.some((item) => {
       const p = products.find((pp) => pp.id === item.id);
       if (!p) return false;
-      const stock = p.variants.find((v) => v.color === item.color && v.size === item.size)?.stock ?? 0;
+      const stock = p.variants.find((v) => item.variantId ? v.id === item.variantId : v.color === item.color && v.legacySize === item.size)?.stock ?? 0;
       return stock <= 0;
     });
 
@@ -227,12 +227,13 @@ export function Cart() {
               </div>
             );
           }
-          const variantStock = p.variants.find((v) => v.color === item.color && v.size === item.size)?.stock ?? 0;
+          const variant = p.variants.find((v) => item.variantId ? v.id === item.variantId : v.color === item.color && v.legacySize === item.size);
+          const variantStock = variant?.stock ?? 0;
           const isOutOfStock = variantStock <= 0;
           const isLowStock = !isOutOfStock && variantStock < item.qty;
 
           return (
-            <div key={`${item.id}:${item.size}:${item.color}`} style={{ display: 'flex', gap: 12, padding: '14px 0', borderTop: `1px solid ${C.ruleLight}` }}>
+            <div key={`${item.id}:${item.variantId ?? `${item.size}:${item.color}`}`} style={{ display: 'flex', gap: 12, padding: '14px 0', borderTop: `1px solid ${C.ruleLight}` }}>
               <div style={{ width: 72, height: 88, flexShrink: 0, borderRadius: 6, overflow: 'hidden' }}>
                 <ProductPhoto tone={p.tone} radius={6} image={p.images[0]} variant="thumbnail" />
               </div>
@@ -244,12 +245,14 @@ export function Cart() {
                       <X size={14} />
                     </button>
                   </div>
-                  <div style={{ fontSize: 11, color: C.inkSoft, marginTop: 2 }}>
+                  {(variant?.optionValue || variant?.color || p.productType === 'bundle') && <div style={{ fontSize: 11, color: C.inkSoft, marginTop: 2 }}>
                     {/* item.color is the colour's stable row id (2026-07-25
                         bilingual follow-up), resolved to a localized label
                         here via the product's own colour list. */}
-                    {item.size} · {p.colors.find((c) => c.id === item.color)?.name ?? item.color}
-                  </div>
+                    {p.productType === 'bundle'
+                      ? (lang === 'pt' ? 'Kit de produtos' : 'Product kit')
+                      : [variant?.optionValue, p.colors.find((c) => c.id === variant?.color)?.name].filter(Boolean).join(' · ')}
+                  </div>}
                   {/* Stock re-check for the CURRENT market (2026-07-27) --
                       this colour/size may have been in stock when added
                       (possibly under the other market, or before stock

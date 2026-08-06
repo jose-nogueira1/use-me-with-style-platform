@@ -41,9 +41,12 @@ const ALL_SIZES = ['XS', 'S', 'M', 'L', 'XL'];
 /** Stock cell key: `${colorId}|${size}`. */
 const cellKey = (colorId: string, size: string) => `${colorId}|${size}`;
 
-type StockCell = { ao: number; pt: number };
+type StockCell = { ao: number; pt: number; variantId?: string };
+type SpecificationForm = { labelPT: string; labelEN: string; valuePT: string; valueEN: string };
+type BundleComponentForm = { productId: string; variantId: string; qty: number };
 
 type FormState = {
+  productType: 'standard' | 'bundle';
   name: string;
   namePT: string;
   nameEN: string;
@@ -60,6 +63,16 @@ type FormState = {
   sizeGuide: string;
   fitNotePT: string;
   fitNoteEN: string;
+  hasColor: boolean;
+  hasOption: boolean;
+  optionLabelPT: string;
+  optionLabelEN: string;
+  optionValuesEN: Record<string, string>;
+  specifications: SpecificationForm[];
+  returnEligible: boolean;
+  returnNotePT: string;
+  returnNoteEN: string;
+  bundleComponents: BundleComponentForm[];
   /** Merch tag ids (string form). hasMany since 2026-07-31 (admin bug
    * report: "I can only select one merchandising tag per item") -- empty
    * array = no badges. */
@@ -84,7 +97,7 @@ type FormState = {
   availablePT: boolean;
 };
 
-const EMPTY: FormState = { name: '', namePT: '', nameEN: '', slug: '', category: '', description: '', descriptionPT: '', descriptionEN: '', sizeGuide: '', fitNotePT: '', fitNoteEN: '', tagIds: [], colorIds: [], sizes: ['S', 'M', 'L'], stock: {}, priceAOKz: '', pricePTEur: '', shippingWeightGrams: '500', saleAOKz: '', salePTEur: '', saleStartDate: '', saleEndDate: '', active: false, availableAO: true, availablePT: true };
+const EMPTY: FormState = { productType: 'standard', name: '', namePT: '', nameEN: '', slug: '', category: '', description: '', descriptionPT: '', descriptionEN: '', sizeGuide: '', fitNotePT: '', fitNoteEN: '', hasColor: true, hasOption: true, optionLabelPT: 'Tamanho', optionLabelEN: 'Size', optionValuesEN: { S: 'S', M: 'M', L: 'L' }, specifications: [], returnEligible: true, returnNotePT: '', returnNoteEN: '', bundleComponents: [], tagIds: [], colorIds: [], sizes: ['S', 'M', 'L'], stock: {}, priceAOKz: '', pricePTEur: '', shippingWeightGrams: '500', saleAOKz: '', salePTEur: '', saleStartDate: '', saleEndDate: '', active: false, availableAO: true, availablePT: true };
 
 /** Payload date fields round-trip as full ISO datetimes; the admin form uses
  * a plain <input type="date">, which needs just the YYYY-MM-DD portion. */
@@ -92,18 +105,21 @@ function toDateInputValue(iso?: string | null): string {
   return iso ? iso.slice(0, 10) : '';
 }
 
-function formFromVariants(variants: ApiVariant[]): Pick<FormState, 'colorIds' | 'sizes' | 'stock'> {
+function formFromVariants(variants: ApiVariant[]): Pick<FormState, 'hasColor' | 'hasOption' | 'colorIds' | 'sizes' | 'optionValuesEN' | 'stock'> {
   const colorIds: string[] = [];
   const sizes: string[] = [];
   const stock: Record<string, StockCell> = {};
+  const optionValuesEN: Record<string, string> = {};
   for (const variant of variants) {
     const colorId = refId(variant.color);
     if (colorId && !colorIds.includes(colorId)) colorIds.push(colorId);
-    if (!sizes.includes(variant.size)) sizes.push(variant.size);
-    stock[cellKey(colorId, variant.size)] = { ao: variant.stockAO, pt: variant.stockPT };
+    const optionValue = variant.size ?? '';
+    if (optionValue && !sizes.includes(optionValue)) sizes.push(optionValue);
+    if (optionValue) optionValuesEN[optionValue] = variant.optionValueEN?.trim() || optionValue;
+    stock[cellKey(colorId, optionValue)] = { ao: variant.stockAO, pt: variant.stockPT, variantId: variant.id ?? undefined };
   }
   sizes.sort((a, b) => ALL_SIZES.indexOf(a) - ALL_SIZES.indexOf(b));
-  return { colorIds, sizes, stock };
+  return { hasColor: colorIds.length > 0, hasOption: sizes.length > 0, colorIds, sizes, optionValuesEN, stock };
 }
 
 export function ProductEditor() {
@@ -124,6 +140,11 @@ export function ProductEditor() {
   const [tags, setTags] = useState<ApiMerchTag[]>([]);
   const [colors, setColors] = useState<ApiColor[]>([]);
   const [sizeGuides, setSizeGuides] = useState<ApiSizeGuide[]>([]);
+  const [catalogProducts, setCatalogProducts] = useState<ApiProduct[]>([]);
+
+  useEffect(() => {
+    adminListProducts().then(setCatalogProducts).catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     Promise.all([adminListCategories(), adminListMerchTags(), adminListColors(), adminListSizeGuides()])
@@ -150,6 +171,7 @@ export function ProductEditor() {
         }
         setExisting(p);
         const loaded: FormState = {
+          productType: p.productType === 'bundle' ? 'bundle' : 'standard',
           name: p.name,
           namePT: p.namePT ?? p.name,
           nameEN: p.nameEN ?? p.name,
@@ -161,6 +183,13 @@ export function ProductEditor() {
           sizeGuide: refId(p.sizeGuide),
           fitNotePT: p.fitNotePT ?? '',
           fitNoteEN: p.fitNoteEN ?? '',
+          optionLabelPT: p.optionLabelPT ?? '',
+          optionLabelEN: p.optionLabelEN ?? '',
+          specifications: (p.specifications ?? []).map((entry) => ({ labelPT: entry.labelPT, labelEN: entry.labelEN ?? '', valuePT: entry.valuePT, valueEN: entry.valueEN ?? '' })),
+          returnEligible: p.returnEligible !== false,
+          returnNotePT: p.returnNotePT ?? '',
+          returnNoteEN: p.returnNoteEN ?? '',
+          bundleComponents: (p.bundleComponents ?? []).map((component) => ({ productId: refId(component.product), variantId: component.variantId, qty: component.qty })),
           tagIds: (p.tag ?? []).map((ref) => refId(ref)).filter(Boolean),
           ...formFromVariants(p.variants ?? []),
           priceAOKz: String(p.priceAOKz),
@@ -211,12 +240,19 @@ export function ProductEditor() {
     }));
 
   const toggleSize = (size: string) =>
-    setForm((f) => ({
-      ...f,
-      sizes: f.sizes.includes(size)
-        ? f.sizes.filter((s) => s !== size)
-        : [...f.sizes, size].sort((a, b) => ALL_SIZES.indexOf(a) - ALL_SIZES.indexOf(b)),
-    }));
+    setForm((f) => {
+      const selected = f.sizes.includes(size);
+      const optionValuesEN = { ...f.optionValuesEN };
+      if (selected) delete optionValuesEN[size];
+      else optionValuesEN[size] = optionValuesEN[size] || size;
+      return {
+        ...f,
+        optionValuesEN,
+        sizes: selected
+          ? f.sizes.filter((s) => s !== size)
+          : [...f.sizes, size].sort((a, b) => ALL_SIZES.indexOf(a) - ALL_SIZES.indexOf(b)),
+      };
+    });
 
   const setStock = (colorId: string, size: string, market: 'ao' | 'pt', value: number) =>
     setForm((f) => {
@@ -230,19 +266,33 @@ export function ProductEditor() {
       setError(t('chooseCategoryError', lang));
       return;
     }
-    if (form.colorIds.length === 0 || form.sizes.length === 0) {
-      setError(t('pickColourSizeError', lang));
+    if (form.productType === 'standard' && ((form.hasColor && form.colorIds.length === 0) || (form.hasOption && form.sizes.length === 0))) {
+      setError(lang === 'pt' ? 'Escolha pelo menos um valor para cada opção ativa.' : 'Choose at least one value for every active option.');
+      return;
+    }
+    if (form.productType === 'bundle' && form.bundleComponents.length === 0) {
+      setError(lang === 'pt' ? 'Adicione pelo menos um produto ao kit.' : 'Add at least one product to the kit.');
       return;
     }
     setSaving(true);
     setError(null);
-    const variants = form.colorIds.flatMap((colorId) =>
-      form.sizes.map((size) => {
+    const colorAxis = form.hasColor ? form.colorIds : [''];
+    const optionAxis = form.hasOption ? form.sizes : [''];
+    const variants = form.productType === 'bundle' ? [] : colorAxis.flatMap((colorId) =>
+      optionAxis.map((size) => {
         const cell = form.stock[cellKey(colorId, size)] ?? { ao: 0, pt: 0 };
-        return { color: originalId(colors, colorId), size, stockAO: cell.ao, stockPT: cell.pt };
+        return {
+          id: cell.variantId,
+          color: colorId ? originalId(colors, colorId) : null,
+          size: size || null,
+          optionValueEN: size ? (form.optionValuesEN[size]?.trim() || size) : null,
+          stockAO: cell.ao,
+          stockPT: cell.pt,
+        };
       }),
     );
     const payload: Partial<ApiProduct> = {
+      productType: form.productType,
       name: form.namePT || form.name,
       namePT: form.namePT,
       nameEN: form.nameEN,
@@ -251,9 +301,20 @@ export function ProductEditor() {
       description: form.descriptionPT || form.description,
       descriptionPT: form.descriptionPT,
       descriptionEN: form.descriptionEN,
-      sizeGuide: form.sizeGuide ? originalId(sizeGuides, form.sizeGuide) : null,
-      fitNotePT: form.fitNotePT || undefined,
-      fitNoteEN: form.fitNoteEN || undefined,
+      sizeGuide: form.productType === 'standard' && form.hasOption && form.sizeGuide ? originalId(sizeGuides, form.sizeGuide) : null,
+      fitNotePT: form.productType === 'standard' ? (form.fitNotePT || null) : null,
+      fitNoteEN: form.productType === 'standard' ? (form.fitNoteEN || null) : null,
+      optionLabelPT: form.productType === 'standard' && form.hasOption ? form.optionLabelPT.trim() : null,
+      optionLabelEN: form.productType === 'standard' && form.hasOption ? form.optionLabelEN.trim() : null,
+      specifications: form.specifications.filter((entry) => entry.labelPT.trim() && entry.valuePT.trim()),
+      returnEligible: form.returnEligible,
+      returnNotePT: form.returnNotePT || null,
+      returnNoteEN: form.returnNoteEN || null,
+      bundleComponents: form.productType === 'bundle' ? form.bundleComponents.map((component) => ({
+        product: originalId(catalogProducts, component.productId),
+        variantId: component.variantId,
+        qty: Math.max(1, Number(component.qty) || 1),
+      })) : [],
       // Empty array (not undefined) so removing every badge actually clears
       // them -- hasMany since 2026-07-31.
       tag: form.tagIds.map((tagId) => originalId(tags, tagId)),
@@ -326,6 +387,8 @@ export function ProductEditor() {
   if (loading) return <div style={{ padding: '32px 28px', fontSize: 13, color: C.inkSoft }}>{t('loadingEllipsis', lang)}</div>;
 
   const selectStyle: React.CSSProperties = { width: '100%', padding: '11px 10px', fontSize: 12, fontWeight: 700, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, color: C.ink };
+  const matrixColors = form.hasColor ? form.colorIds : [''];
+  const matrixOptions = form.hasOption ? form.sizes : [''];
 
   return (
     <div style={{ paddingBottom: 32 }}>
@@ -388,6 +451,13 @@ export function ProductEditor() {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }} className="ump-admin-fields-grid">
             <label style={{ display: 'block' }}>
+              <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>{lang === 'pt' ? 'Tipo de produto' : 'Product type'}</div>
+              <select value={form.productType} onChange={(e) => set('productType', e.target.value as FormState['productType'])} style={selectStyle}>
+                <option value="standard">{lang === 'pt' ? 'Produto normal' : 'Standard product'}</option>
+                <option value="bundle">{lang === 'pt' ? 'Kit de produtos' : 'Product kit'}</option>
+              </select>
+            </label>
+            <label style={{ display: 'block' }}>
               <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>{t('categoryLabel', lang)}</div>
               <select value={form.category} onChange={(e) => set('category', e.target.value)} style={selectStyle}>
                 {form.category === '' && <option value="">{t('chooseEllipsis', lang)}</option>}
@@ -432,7 +502,7 @@ export function ProductEditor() {
                 })}
               </div>
             </div>
-            <label style={{ display: 'block' }}>
+            {form.productType === 'standard' && form.hasOption && <label style={{ display: 'block' }}>
               <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>{t('sizeGuideLabel', lang)}</div>
               <select value={form.sizeGuide} onChange={(e) => set('sizeGuide', e.target.value)} style={selectStyle}>
                 <option value="">{t('noneOption', lang)}</option>
@@ -440,7 +510,7 @@ export function ProductEditor() {
                   <option key={String(g.id)} value={String(g.id)}>{g.name}</option>
                 ))}
               </select>
-            </label>
+            </label>}
           </div>
 
           <div style={{ fontSize: 10, color: C.inkSoft, marginTop: -8 }}>
@@ -468,142 +538,119 @@ export function ProductEditor() {
             </div>
           </div>
 
-          {/* ---- Variant matrix: colours x sizes, stock per cell ---- */}
-          <div>
-            <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>{t('coloursLabel', lang)}</div>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              {colors.length === 0 && <span style={{ fontSize: 11, color: C.inkSoft }}>{t('noColoursYet', lang)}</span>}
-              {colors.map((c) => {
-                const cid = String(c.id);
-                const selected = form.colorIds.includes(cid);
-                const swatch = resolveRef(c.swatch);
-                return (
-                  <button
-                    key={cid}
-                    type="button"
-                    onClick={() => toggleColor(cid)}
-                    aria-pressed={selected}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      padding: '6px 10px',
-                      fontSize: 11,
-                      fontWeight: 700,
-                      borderRadius: 20,
-                      border: `1.5px solid ${selected ? C.gold : C.rule}`,
-                      background: selected ? C.tagBg : C.paper,
-                      color: selected ? C.goldDeep : C.ink,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {hasSwatch({ hex: c.hex, hex2: c.hex2, swatchUrl: swatch?.url }) && (
-                      <span aria-hidden style={{ width: 12, height: 12, borderRadius: '50%', flexShrink: 0, border: `1px solid ${C.rule}`, background: swatchBackground({ hex: c.hex, hex2: c.hex2, swatchUrl: swatch?.url }) }} />
-                    )}
-                    {colorLabel(c)}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div>
-            <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>{t('sizesLabel', lang)}</div>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              {ALL_SIZES.map((size) => {
-                const selected = form.sizes.includes(size);
-                return (
-                  <button
-                    key={size}
-                    type="button"
-                    onClick={() => toggleSize(size)}
-                    aria-pressed={selected}
-                    style={{
-                      minWidth: 40,
-                      padding: '6px 10px',
-                      fontSize: 11,
-                      fontWeight: 800,
-                      borderRadius: 6,
-                      border: `1.5px solid ${selected ? C.gold : C.rule}`,
-                      background: selected ? C.tagBg : C.paper,
-                      color: selected ? C.goldDeep : C.ink,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {size}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {form.colorIds.length > 0 && form.sizes.length > 0 && (
-            <div>
-              <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>
-                {t('stockByColourSize', lang)} <span style={{ fontWeight: 700, color: C.inkSoft }}>{t('aoPtPerCell', lang)}</span>
+          {form.productType === 'standard' ? (
+            <div style={{ padding: 14, border: `1px solid ${C.ruleLight}`, borderRadius: 8, display: 'grid', gap: 14 }}>
+              <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
+                <CheckField label={lang === 'pt' ? 'Este produto tem cores' : 'This product has colours'} checked={form.hasColor} onChange={(value) => set('hasColor', value)} />
+                <CheckField label={lang === 'pt' ? 'Este produto tem outra opção' : 'This product has another option'} checked={form.hasOption} onChange={(value) => set('hasOption', value)} />
               </div>
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ borderCollapse: 'collapse', fontSize: 11 }}>
-                  <thead>
-                    <tr>
-                      <th style={{ textAlign: 'left', padding: '6px 10px 6px 0', fontSize: 9, fontWeight: 800, color: C.goldDeep }}>{t('colourTableHeader', lang)}</th>
-                      {form.sizes.map((size) => (
-                        <th key={size} style={{ padding: '6px 8px', fontSize: 10, fontWeight: 800, color: C.ink }}>{size}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {form.colorIds.map((colorId) => {
-                      const color = colors.find((c) => String(c.id) === colorId);
-                      const swatch = resolveRef(color?.swatch);
-                      return (
-                        <tr key={colorId} style={{ borderTop: `1px solid ${C.ruleLight}` }}>
-                          <td style={{ padding: '8px 10px 8px 0', fontWeight: 800, color: C.ink, whiteSpace: 'nowrap' }}>
-                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                              {hasSwatch({ hex: color?.hex, hex2: color?.hex2, swatchUrl: swatch?.url }) && (
-                                <span aria-hidden style={{ width: 11, height: 11, borderRadius: '50%', border: `1px solid ${C.rule}`, background: swatchBackground({ hex: color?.hex, hex2: color?.hex2, swatchUrl: swatch?.url }) }} />
-                              )}
-                              {color ? colorLabel(color) : '?'}
-                            </span>
-                          </td>
-                          {form.sizes.map((size) => {
-                            const cell = form.stock[cellKey(colorId, size)] ?? { ao: 0, pt: 0 };
-                            return (
-                              <td key={size} style={{ padding: '6px 8px' }}>
-                                <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
-                                  <input
-                                    aria-label={t('stockAriaAO', lang, { colour: color ? colorLabel(color) : colorId, size })}
-                                    type="number"
-                                    min="0"
-                                    value={cell.ao}
-                                    onChange={(e) => setStock(colorId, size, 'ao', Number(e.target.value))}
-                                    style={{ width: 52, padding: '6px 6px', fontSize: 11, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, color: C.ink }}
-                                  />
-                                  <input
-                                    aria-label={t('stockAriaPT', lang, { colour: color ? colorLabel(color) : colorId, size })}
-                                    type="number"
-                                    min="0"
-                                    value={cell.pt}
-                                    onChange={(e) => setStock(colorId, size, 'pt', Number(e.target.value))}
-                                    style={{ width: 52, padding: '6px 6px', fontSize: 11, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, color: C.ink }}
-                                  />
-                                </div>
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+
+              {form.hasColor && <div>
+                <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>{t('coloursLabel', lang)}</div>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {colors.map((c) => {
+                    const cid = String(c.id); const selected = form.colorIds.includes(cid); const swatch = resolveRef(c.swatch);
+                    return <button key={cid} type="button" onClick={() => toggleColor(cid)} aria-pressed={selected} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 10px', fontSize: 11, fontWeight: 700, borderRadius: 20, border: `1.5px solid ${selected ? C.gold : C.rule}`, background: selected ? C.tagBg : C.paper, color: selected ? C.goldDeep : C.ink }}>
+                      {hasSwatch({ hex: c.hex, hex2: c.hex2, swatchUrl: swatch?.url }) && <span aria-hidden style={{ width: 12, height: 12, borderRadius: '50%', border: `1px solid ${C.rule}`, background: swatchBackground({ hex: c.hex, hex2: c.hex2, swatchUrl: swatch?.url }) }} />}
+                      {colorLabel(c)}
+                    </button>;
+                  })}
+                </div>
+              </div>}
+
+              {form.hasOption && <div style={{ display: 'grid', gap: 10 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }} className="ump-admin-fields-grid">
+                  <FieldInput label={lang === 'pt' ? 'Nome da opção — Português' : 'Option name — Portuguese'} value={form.optionLabelPT} onChange={(value) => set('optionLabelPT', value)} />
+                  <FieldInput label={lang === 'pt' ? 'Nome da opção — Inglês' : 'Option name — English'} value={form.optionLabelEN} onChange={(value) => set('optionLabelEN', value)} />
+                </div>
+                <FieldInput
+                  label={lang === 'pt' ? 'Valores da opção (separados por vírgulas)' : 'Option values (comma separated)'}
+                  value={form.sizes.join(', ')}
+                  onChange={(value) => {
+                    const values = [...new Set(value.split(',').map((entry) => entry.trim()).filter(Boolean))];
+                    setForm((current) => ({
+                      ...current,
+                      sizes: values,
+                      optionValuesEN: Object.fromEntries(values.map((entry) => [entry, current.optionValuesEN[entry] || entry])),
+                    }));
+                  }}
+                />
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {ALL_SIZES.map((size) => <button key={size} type="button" onClick={() => toggleSize(size)} style={{ minWidth: 40, padding: '6px 10px', fontSize: 11, fontWeight: 800, borderRadius: 6, border: `1.5px solid ${form.sizes.includes(size) ? C.gold : C.rule}`, background: form.sizes.includes(size) ? C.tagBg : C.paper, color: C.ink }}>{size}</button>)}
+                </div>
+                {form.sizes.some((value) => (form.optionValuesEN[value] || value) !== value || !ALL_SIZES.includes(value)) && (
+                  <div style={{ display: 'grid', gap: 6 }}>
+                    <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep }}>{lang === 'pt' ? 'Traduções dos valores — Inglês' : 'Option value translations — English'}</div>
+                    {form.sizes.map((value) => (
+                      <label key={value} style={{ display: 'grid', gridTemplateColumns: 'minmax(90px, 0.6fr) 1.4fr', gap: 8, alignItems: 'center', fontSize: 11, color: C.ink }}>
+                        <span>{value}</span>
+                        <input value={form.optionValuesEN[value] || ''} onChange={(event) => set('optionValuesEN', { ...form.optionValuesEN, [value]: event.target.value })} placeholder={value} style={selectStyle} />
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>}
+
+              {matrixColors.length > 0 && matrixOptions.length > 0 && <div>
+                <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>{lang === 'pt' ? 'Stock por variante' : 'Stock by variant'} <span style={{ color: C.inkSoft }}>AO / PT</span></div>
+                <div style={{ overflowX: 'auto' }}><table style={{ borderCollapse: 'collapse', fontSize: 11 }}><thead><tr>
+                  <th style={{ textAlign: 'left', padding: '6px 10px 6px 0', color: C.goldDeep }}>{form.hasColor ? t('colourTableHeader', lang) : (lang === 'pt' ? 'Produto' : 'Product')}</th>
+                  {matrixOptions.map((option) => <th key={option || 'single'} style={{ padding: '6px 8px', color: C.ink }}>{option || (lang === 'pt' ? 'Único' : 'Single')}</th>)}
+                </tr></thead><tbody>
+                  {matrixColors.map((colorId) => {
+                    const color = colors.find((entry) => String(entry.id) === colorId);
+                    return <tr key={colorId || 'single'} style={{ borderTop: `1px solid ${C.ruleLight}` }}><td style={{ paddingRight: 10, fontWeight: 800, color: C.ink }}>{color ? colorLabel(color) : (lang === 'pt' ? 'Sem cor' : 'No colour')}</td>
+                      {matrixOptions.map((option) => { const cell = form.stock[cellKey(colorId, option)] ?? { ao: 0, pt: 0 }; return <td key={option || 'single'} style={{ padding: '6px 8px' }}><div style={{ display: 'flex', gap: 4 }}>
+                        <input aria-label={`AO ${colorId} ${option}`} type="number" min="0" value={cell.ao} onChange={(event) => setStock(colorId, option, 'ao', Number(event.target.value))} style={{ width: 58, padding: 6, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, color: C.ink }} />
+                        <input aria-label={`PT ${colorId} ${option}`} type="number" min="0" value={cell.pt} onChange={(event) => setStock(colorId, option, 'pt', Number(event.target.value))} style={{ width: 58, padding: 6, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, color: C.ink }} />
+                      </div></td>; })}
+                    </tr>;
+                  })}
+                </tbody></table></div>
+              </div>}
+            </div>
+          ) : (
+            <div style={{ padding: 14, border: `1px solid ${C.ruleLight}`, borderRadius: 8, display: 'grid', gap: 10 }}>
+              <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep }}>{lang === 'pt' ? 'Conteúdo fixo do kit' : 'Fixed kit contents'}</div>
+              {form.bundleComponents.map((component, index) => {
+                const componentProduct = catalogProducts.find((product) => String(product.id) === component.productId);
+                return <div key={index} style={{ display: 'grid', gridTemplateColumns: '1.4fr 1.4fr 90px auto', gap: 8 }} className="ump-admin-fields-grid">
+                  <select value={component.productId} onChange={(event) => set('bundleComponents', form.bundleComponents.map((row, rowIndex) => rowIndex === index ? { ...row, productId: event.target.value, variantId: '' } : row))} style={selectStyle}>
+                    <option value="">{lang === 'pt' ? 'Escolher produto' : 'Choose product'}</option>
+                    {catalogProducts.filter((product) => product.productType !== 'bundle' && String(product.id) !== String(existing?.id ?? '')).map((product) => <option key={String(product.id)} value={String(product.id)}>{product.namePT || product.name}</option>)}
+                  </select>
+                  <select value={component.variantId} onChange={(event) => set('bundleComponents', form.bundleComponents.map((row, rowIndex) => rowIndex === index ? { ...row, variantId: event.target.value } : row))} style={selectStyle}>
+                    <option value="">{lang === 'pt' ? 'Escolher variante' : 'Choose variant'}</option>
+                    {(componentProduct?.variants ?? []).map((variant) => { const colour = colors.find((entry) => String(entry.id) === refId(variant.color)); const option = (lang === 'en' ? variant.optionValueEN : variant.size) || variant.size || (lang === 'pt' ? 'Único' : 'Single'); const label = [colour ? colorLabel(colour) : '', option].filter(Boolean).join(' · '); return <option key={String(variant.id)} value={String(variant.id)}>{label}</option>; })}
+                  </select>
+                  <input aria-label={lang === 'pt' ? 'Quantidade' : 'Quantity'} type="number" min="1" value={component.qty} onChange={(event) => set('bundleComponents', form.bundleComponents.map((row, rowIndex) => rowIndex === index ? { ...row, qty: Number(event.target.value) } : row))} style={selectStyle} />
+                  <button type="button" onClick={() => set('bundleComponents', form.bundleComponents.filter((_, rowIndex) => rowIndex !== index))} style={{ color: C.dangerStrong, fontWeight: 800 }}>×</button>
+                </div>;
+              })}
+              <button type="button" onClick={() => set('bundleComponents', [...form.bundleComponents, { productId: '', variantId: '', qty: 1 }])} style={{ justifySelf: 'start', padding: '8px 12px', border: `1px solid ${C.rule}`, borderRadius: 6, color: C.ink, fontWeight: 800 }}>{lang === 'pt' ? '+ Adicionar produto' : '+ Add product'}</button>
+              <div style={{ fontSize: 10, color: C.inkSoft }}>{lang === 'pt' ? 'A disponibilidade e o stock do kit são calculados a partir destas variantes.' : 'Kit availability and stock are calculated from these variants.'}</div>
             </div>
           )}
+
+          <div style={{ padding: 14, border: `1px solid ${C.ruleLight}`, borderRadius: 8, display: 'grid', gap: 10 }}>
+            <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep }}>{lang === 'pt' ? 'Detalhes do produto' : 'Product details'}</div>
+            {form.specifications.map((entry, index) => <div key={index} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr auto', gap: 8 }} className="ump-admin-fields-grid">
+              {(['labelPT', 'labelEN', 'valuePT', 'valueEN'] as const).map((key) => <input key={key} value={entry[key]} placeholder={key} onChange={(event) => set('specifications', form.specifications.map((row, rowIndex) => rowIndex === index ? { ...row, [key]: event.target.value } : row))} style={selectStyle} />)}
+              <button type="button" onClick={() => set('specifications', form.specifications.filter((_, rowIndex) => rowIndex !== index))} style={{ color: C.dangerStrong, fontWeight: 800 }}>×</button>
+            </div>)}
+            <button type="button" onClick={() => set('specifications', [...form.specifications, { labelPT: '', labelEN: '', valuePT: '', valueEN: '' }])} style={{ justifySelf: 'start', padding: '8px 12px', border: `1px solid ${C.rule}`, borderRadius: 6, color: C.ink, fontWeight: 800 }}>{lang === 'pt' ? '+ Adicionar detalhe' : '+ Add detail'}</button>
+          </div>
 
           <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
             <CheckField label={t('publishedLabel', lang)} checked={form.active} onChange={(v) => set('active', v)} />
             <CheckField label={t('availableAngola', lang)} checked={form.availableAO} onChange={(v) => set('availableAO', v)} />
             <CheckField label={t('availablePortugal', lang)} checked={form.availablePT} onChange={(v) => set('availablePT', v)} />
+            <CheckField label={lang === 'pt' ? 'Elegível para devolução normal' : 'Eligible for normal returns'} checked={form.returnEligible} onChange={(v) => set('returnEligible', v)} />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }} className="ump-admin-fields-grid">
+            <FieldInput label={lang === 'pt' ? 'Nota de devolução — Português' : 'Return note — Portuguese'} value={form.returnNotePT} onChange={(value) => set('returnNotePT', value)} />
+            <FieldInput label={lang === 'pt' ? 'Nota de devolução — Inglês' : 'Return note — English'} value={form.returnNoteEN} onChange={(value) => set('returnNoteEN', value)} />
           </div>
 
           <label style={{ display: 'block' }}>
@@ -619,7 +666,7 @@ export function ProductEditor() {
 
           <label style={{ display: 'block' }}><div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>{t('descriptionENLabel', lang)}</div><textarea value={form.descriptionEN} onChange={(e) => set('descriptionEN', e.target.value)} rows={3} style={{ width: '100%', padding: '11px 12px', fontSize: 12, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, color: C.ink, fontFamily: 'inherit' }} /></label>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }} className="ump-admin-fields-grid">
+          {form.productType === 'standard' && <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }} className="ump-admin-fields-grid">
             <label style={{ display: 'block' }}>
               <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>{t('fitNotePTLabel', lang)}</div>
               <textarea
@@ -640,7 +687,7 @@ export function ProductEditor() {
                 style={{ width: '100%', padding: '11px 12px', fontSize: 12, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, color: C.ink, fontFamily: 'inherit' }}
               />
             </label>
-          </div>
+          </div>}
 
           <div style={{ display: 'flex', gap: 10 }}>
             <button

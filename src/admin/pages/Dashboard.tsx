@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { C, F } from '../../theme';
 import { useApp } from '../../state/AppContext';
-import { adminListOrders, adminListProducts, type ApiOrder, type ApiProduct } from '../../lib/api';
+import { adminListOrders, adminListProducts, productIsLowStock, productIsOutOfStock, type ApiOrder, type ApiProduct } from '../../lib/api';
 import { PageHeader } from '../components/PageHeader';
 import { Badge, orderStatusBadgeProps } from '../components/Badge';
 import { t, type Lang } from '../i18n';
@@ -61,7 +61,7 @@ export function Dashboard() {
   // failure). See PageHeader.tsx's NotificationsButton for the same fix.
   const reviewCount = orders?.filter((o) => o.status === 'new' || o.status === 'payment_review').length ?? 0;
   const processingCount = orders?.filter((o) => o.status === 'processing').length ?? 0;
-  const lowStockCount = products?.filter((p) => p.variants.some((v) => v.stockAO + v.stockPT <= 2)).length ?? 0;
+  const lowStockCount = products?.filter(productIsLowStock).length ?? 0;
 
   // Sales-trend chart (2026-07-27 interactivity pass). Always renders 7
   // columns regardless of the selected range -- each column is a "bucket"
@@ -256,7 +256,7 @@ export function Dashboard() {
             ? t('dashAttnReviewOverdueDetail', lang, { days: daysWaiting })
             : t('dashAttnReviewDetail', lang, { market: o.market === 'AO' ? t('angolaOption', lang) : t('portugalOption', lang), paymentMethod: paymentMethodLabel(o.paymentMethod, lang) }),
           badge: overdue ? t('overdueBadge', lang) : t('reviewBadge', lang),
-          tone: (overdue ? 'red' : 'gold') as const,
+          tone: overdue ? ('red' as const) : ('gold' as const),
           priority: overdue ? '#B95545' : C.gold,
           to: `/admin/encomendas/${o.id}`,
         };
@@ -283,7 +283,7 @@ export function Dashboard() {
       to: `/admin/encomendas?market=${m}`,
     })),
     ...(products ?? [])
-      .filter((p) => p.variants.some((v) => v.stockAO + v.stockPT === 0))
+      .filter(productIsOutOfStock)
       .slice(0, 2)
       .map((p) => ({
         category: t('attentionInventory', lang),
@@ -606,7 +606,7 @@ function LegendWithDelta({
   lang: Lang;
 }) {
   let deltaText: string | null = null;
-  let deltaColor = C.inkSoft;
+  let deltaColor: string = C.inkSoft;
   if (delta.isNew) {
     deltaText = t('newActivityBadge', lang);
     deltaColor = C.successText;

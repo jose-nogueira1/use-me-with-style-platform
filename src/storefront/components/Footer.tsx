@@ -1,9 +1,11 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FileText, Mail } from 'lucide-react';
-import { C, t, type Lang } from '../../theme';
+import { C, t } from '../../theme';
 import { useApp, type Market } from '../../state/AppContext';
 import { BrandLogo } from '../../components/BrandLogo';
 import { clearAnalyticsConsent } from '../../lib/analyticsConsent';
+import { fetchCategories, type ApiCategory } from '../../lib/api';
 
 // Site-wide footer, rendered once from StorefrontLayout so it appears on
 // every storefront page -- previously the only "footer" was a two-line
@@ -20,23 +22,21 @@ import { clearAnalyticsConsent } from '../../lib/analyticsConsent';
 // renders when market === 'PT'. Links to the general portal for now; swap in
 // the business's specific operator URL once registered at
 // livroreclamacoes.pt/Operador/RegistoOperadores.
-const SHOP_LINKS = [
-  { to: '/catalogo?cat=new', labelKey: 'newArrivalsNav' },
-  { to: '/catalogo?cat=vestidos', labelKey: 'dresses' },
-  { to: '/catalogo?cat=tops', labelKey: 'tops' },
-  { to: '/catalogo?cat=leggings', labelKey: 'leggings' },
-  { to: '/catalogo?cat=conjuntos', labelKey: 'sets' },
-];
-
 const SUPPORT_LINKS = [
-  { to: '/conta', labelKey: 'orderLookupNav' },
-  { to: '/ajuda', labelKey: 'navHelp' },
-  { to: '/carrinho', labelKey: 'cart' },
+  { to: '/conta', labelKey: 'orderLookupNav' as const },
+  { to: '/ajuda', labelKey: 'navHelp' as const },
+  { to: '/carrinho', labelKey: 'cart' as const },
 ];
 
 export function Footer() {
   const { lang, market, setMarket, themeMode } = useApp();
   const year = new Date().getFullYear();
+  const [categories, setCategories] = useState<ApiCategory[]>([]);
+  useEffect(() => { fetchCategories().then(setCategories).catch(() => undefined); }, []);
+  const shopLinks = [
+    { to: '/catalogo?cat=new', label: t('newArrivalsNav', lang) },
+    ...categories.map((category) => ({ to: `/catalogo?cat=${encodeURIComponent(category.slug || '')}`, label: (lang === 'en' ? category.nameEN : category.namePT) || category.namePT })),
+  ];
 
   return (
     <footer className="ump-footer" style={{ background: C.subtleBg, borderTop: `1px solid ${C.ruleLight}` }}>
@@ -52,8 +52,8 @@ export function Footer() {
           </div>
         </div>
 
-        <FooterCol heading={t('footerShopHeading', lang)} links={SHOP_LINKS} lang={lang} />
-        <FooterCol heading={t('footerSupportHeading', lang)} links={SUPPORT_LINKS} lang={lang} />
+        <FooterCol heading={t('footerShopHeading', lang)} links={shopLinks} />
+        <FooterCol heading={t('footerSupportHeading', lang)} links={SUPPORT_LINKS.map((link) => ({ to: link.to, label: t(link.labelKey, lang) }))} />
 
         <div className="ump-footer-col">
           <FooterHeading>{t('footerInfoHeading', lang)}</FooterHeading>
@@ -205,19 +205,17 @@ function FooterHeading({ children }: { children: React.ReactNode }) {
 function FooterCol({
   heading,
   links,
-  lang,
 }: {
   heading: string;
-  links: { to: string; labelKey: string }[];
-  lang: Lang;
+  links: { to: string; label: string }[];
 }) {
   return (
     <div className="ump-footer-col">
       <FooterHeading>{heading}</FooterHeading>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
         {links.map((l) => (
-          <Link key={l.to + l.labelKey} to={l.to} style={{ fontSize: 13, color: C.ink, textDecoration: 'none' }}>
-            {t(l.labelKey, lang)}
+          <Link key={l.to + l.label} to={l.to} style={{ fontSize: 13, color: C.ink, textDecoration: 'none' }}>
+            {l.label}
           </Link>
         ))}
       </div>

@@ -542,6 +542,7 @@ export function Checkout() {
       return {
         product: cmsRelationshipId(p.id),
         productName: p.name,
+        variantId: item.variantId,
         size: item.size,
         color: item.color,
         qty: item.qty,
@@ -575,6 +576,7 @@ export function Checkout() {
       return {
         product: cmsRelationshipId(p.id),
         productName: p.name,
+        variantId: item.variantId,
         size: item.size,
         color: item.color,
         qty: item.qty,
@@ -847,7 +849,7 @@ export function Checkout() {
         customerEmail: form.email || undefined,
       });
       if (result.valid) {
-        setAppliedCoupon({ code: result.code, discountAmount: result.discountAmount, label: result.label });
+        setAppliedCoupon({ code: result.code, discountAmount: result.discountAmount, freeShipping: result.freeShipping, label: result.label });
       } else {
         setAppliedCoupon(null);
         setCouponError(localizeCouponError(result.reason, lang));
