@@ -347,6 +347,20 @@ export const T: Record<string, Record<Lang, string>> = {
     pt: 'Não encontrámos nenhuma encomenda com estes dados.',
     en: "We couldn't find an order matching those details.",
   },
+  paymentConfirming: { pt: 'A confirmar o pagamento…', en: 'Confirming your payment…' },
+  paymentConfirmingNote: {
+    pt: 'Isto pode demorar um momento. Não feche esta página — vamos atualizar assim que soubermos.',
+    en: "This can take a moment. Keep this page open — we'll update it as soon as we know.",
+  },
+  paymentStillPendingNote: {
+    pt: 'Ainda estamos a confirmar o seu pagamento. Enviaremos um email assim que for validado; também pode consultar o estado mais tarde abaixo.',
+    en: "We're still confirming your payment. We'll email you once it's validated — you can also check the status below later.",
+  },
+  paymentFailedTitle: { pt: 'Pagamento não confirmado', en: 'Payment not confirmed' },
+  paymentFailedNote: {
+    pt: 'Não foi possível confirmar o pagamento desta encomenda. Contacte-nos ou tente novamente.',
+    en: "We couldn't confirm payment for this order. Please contact us or try again.",
+  },
 
   // Help
   needAHand: { pt: 'Precisa de ajuda?', en: 'Need a hand?' },

@@ -53,7 +53,6 @@ These are exposed to the browser bundle because they use the `VITE_` prefix:
 - `VITE_APPYPAY_WIDGET_CLIENT_ID`
 - `VITE_APPYPAY_MERCHANT_NAME`
 - `VITE_APPYPAY_WIDGET_SRC`
-- `VITE_APPYPAY_REDIRECT_URI`
 - `VITE_APPYPAY_MERCHANT_LOGO_URL` (optional)
 - `VITE_APPYPAY_PAYMENT_METHODS` (optional)
 - `VITE_APPYPAY_OPTIONS` (optional JSON object configured in the AppyPay portal)

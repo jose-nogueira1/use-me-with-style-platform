@@ -18,6 +18,7 @@ import {
 import { isAppyPayWidgetConfigured } from '../../config/env';
 import { AppyPayPaymentModal } from '../components/AppyPayPaymentModal';
 import { getMetaOrderContext } from '../../lib/analyticsConsent';
+import { stashPendingOrderEmail } from '../../lib/pendingOrderEmail';
 import { PaypalButton } from '../components/PaypalButton';
 import { localizeCouponError } from '../couponError';
 import {
@@ -827,6 +828,7 @@ export function Checkout() {
       appyPayFailureHandledRef.current = null;
       setAppyPayAttempt((value) => value + 1);
       setAppyPayOrder(order);
+      stashPendingOrderEmail(order.orderNumber, form.email);
     } catch (err) {
       console.error('AppyPay retry failed', err);
       setAppyPayCancellationConfirmed(true);
@@ -928,6 +930,7 @@ export function Checkout() {
         setAppyPayPhase('loading');
         setAppyPayAttempt((value) => value + 1);
         setAppyPayOrder(order);
+        stashPendingOrderEmail(order.orderNumber, form.email);
         return;
       }
 
