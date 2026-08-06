@@ -59,6 +59,12 @@ import { absoluteMediaUrl } from '../../lib/productAdapters';
 import { PageHeader } from '../components/PageHeader';
 import { Badge } from '../components/Badge';
 import { useDirty } from '../lib/useDirty';
+import {
+  normalizeShopAssociations,
+  productRelationshipId,
+  productRelationshipKey,
+  type ShopAssociation,
+} from '../lib/instagramSpotlight';
 import { ProductTaxonomySettings } from './ProductSettings';
 import { t, type Lang } from '../i18n';
 import { DEFAULT_ANGOLA_MUNICIPALITY_PRICES, LUANDA_MUNICIPALITIES } from '../../storefront/shipping';
@@ -1899,23 +1905,12 @@ function HomeCollectionsSection() {
 // public read, no admin auth needed for that half); only the highlight pick
 // itself (CMS global `instagram-spotlight`) needs the authenticated
 // fetch/save, same self-contained pattern as every other tab here.
-type ShopAssociation = NonNullable<InstagramSpotlight['productTags']>[number];
-
 function normalizeInstagramPermalink(value: string) {
   try {
     return new URL(value).pathname.replace(/\/+$/, '').toLowerCase();
   } catch {
     return value.trim().replace(/\/+$/, '').toLowerCase();
   }
-}
-
-function normalizeShopAssociations(value: InstagramSpotlight['productTags']): ShopAssociation[] {
-  return (value ?? []).flatMap((entry) => {
-    const productIds = (entry.products ?? []).map(refId).filter(Boolean).slice(0, 4);
-    if (!entry.permalink || productIds.length === 0) return [];
-    const selections = Object.fromEntries(Object.entries(entry.variantSelections ?? {}).filter(([productId]) => productIds.includes(productId)));
-    return [{ mediaId: entry.mediaId ?? null, permalink: entry.permalink, products: productIds, variantSelections: selections }];
-  });
 }
 
 function InstagramSpotlightSection() {
@@ -1973,9 +1968,8 @@ function InstagramSpotlightSection() {
         ? currentTags[index]
         : { mediaId: post.id, permalink: post.permalink, products: [], variantSelections: {} };
       const nextEntry = update(seed);
-      const nextProducts = (nextEntry.products ?? []).map(refId).filter(Boolean).slice(0, 4);
-      const next = { ...nextEntry, mediaId: post.id, permalink: post.permalink, products: nextProducts };
-      if (nextProducts.length === 0) return index >= 0 ? currentTags.filter((_, candidate) => candidate !== index) : currentTags;
+      const next = normalizeShopAssociations([{ ...nextEntry, mediaId: post.id, permalink: post.permalink }])[0];
+      if (!next) return index >= 0 ? currentTags.filter((_, candidate) => candidate !== index) : currentTags;
       if (index < 0) return [...currentTags, next];
       return currentTags.map((entry, candidate) => candidate === index ? next : entry);
     });
@@ -1999,18 +1993,21 @@ function InstagramSpotlightSection() {
   };
 
   const toggleProduct = (post: ApiInstagramPost, product: ApiProduct) => {
-    const existingIds = (associationFor(post)?.products ?? []).map(refId).filter(Boolean);
-    const productId = String(product.id);
-    if (!existingIds.includes(productId) && existingIds.length >= 4) {
+    const existingIds = (associationFor(post)?.products ?? []).map(productRelationshipKey).filter(Boolean);
+    const productId = productRelationshipId(product);
+    const productKey = productRelationshipKey(product);
+    if (productId === null) return;
+    if (!existingIds.includes(productKey) && existingIds.length >= 4) {
       setPickerError(lang === 'pt' ? 'Pode associar no máximo quatro produtos a cada publicação.' : 'You can associate up to four products with each post.');
       return;
     }
     updateAssociation(post, (entry) => {
-      const ids = (entry.products ?? []).map(refId).filter(Boolean);
-      const selected = ids.includes(productId);
-      const nextIds = selected ? ids.filter((candidate) => candidate !== productId) : [...ids, productId];
+      const selected = (entry.products ?? []).some((candidate) => productRelationshipKey(candidate) === productKey);
+      const nextIds = selected
+        ? (entry.products ?? []).filter((candidate) => productRelationshipKey(candidate) !== productKey)
+        : [...(entry.products ?? []), productId];
       const selections = { ...(entry.variantSelections ?? {}) };
-      if (selected) delete selections[productId];
+      if (selected) delete selections[productKey];
       return { ...entry, products: nextIds, variantSelections: selections };
     });
   };
@@ -2026,7 +2023,7 @@ function InstagramSpotlightSection() {
 
   const editingPost = posts.find((post) => post.id === editingPostId) ?? null;
   const editingAssociation = editingPost ? associationFor(editingPost) : null;
-  const taggedProductIds = (editingAssociation?.products ?? []).map(refId).filter(Boolean);
+  const taggedProductIds = (editingAssociation?.products ?? []).map(productRelationshipKey).filter(Boolean);
   const filteredProducts = products.filter((product) => {
     const needle = productSearch.trim().toLowerCase();
     return !needle || [product.name, product.namePT, product.nameEN, product.slug].some((value) => value?.toLowerCase().includes(needle));
