@@ -7,6 +7,7 @@ const settingsSource = readFileSync(new URL('../src/admin/pages/Settings.tsx', i
 const feedSource = readFileSync(new URL('../src/storefront/components/InstagramFeed.tsx', import.meta.url), 'utf8');
 const shopPageSource = readFileSync(new URL('../src/storefront/pages/ShopInstagram.tsx', import.meta.url), 'utf8');
 const productCardSource = readFileSync(new URL('../src/storefront/components/InstagramProductCard.tsx', import.meta.url), 'utf8');
+const productPhotoSource = readFileSync(new URL('../src/components/ProductPhoto.tsx', import.meta.url), 'utf8');
 const productDetailSource = readFileSync(new URL('../src/storefront/pages/ProductDetail.tsx', import.meta.url), 'utf8');
 const appSource = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8');
 
@@ -40,4 +41,10 @@ test('shop look routes are public and exact colours preselect on product pages',
   assert.match(appSource, /path="shop-instagram\/:lookSlug"/);
   assert.match(productDetailSource, /searchParams\.get\('cor'\)/);
   assert.match(productDetailSource, /candidate\.id === requestedColor/);
+});
+
+test('products without catalogue images use a valid, crash-safe placeholder tone', () => {
+  assert.match(productCardSource, /tone="gold"/);
+  assert.doesNotMatch(productCardSource, /tone="light"/);
+  assert.match(productPhotoSource, /TONE_STYLES\[tone\] \?\? TONE_STYLES\.gold/);
 });

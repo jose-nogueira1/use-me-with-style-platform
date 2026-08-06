@@ -56,7 +56,11 @@ export function ProductPhoto({
     );
   }
 
-  const s = TONE_STYLES[tone];
+  // Keep image fallbacks renderable even if stale persisted/UI data ever
+  // supplies an unknown tone. ProductTone prevents this in typed callers,
+  // while the runtime guard prevents one missing product image from taking
+  // down the entire storefront through the app error boundary.
+  const s = TONE_STYLES[tone] ?? TONE_STYLES.gold;
   return (
     // data-artwork (2026-07-30): marks this as imagery for the contrast
     // guard in e2e/helpers/contrast.ts. The placeholder is built from plain
