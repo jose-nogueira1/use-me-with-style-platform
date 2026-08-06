@@ -746,8 +746,27 @@ export async function fetchHomeCollections(): Promise<HomeCollections> {
   return request<HomeCollections>('/globals/home-collections');
 }
 
+export type ApiInstagramLookProduct = {
+  id: string;
+  slug: string;
+  name: string;
+  namePT: string;
+  nameEN: string;
+  imageUrl: string | null;
+  price: number;
+  regularPrice: number;
+  currency: 'AOA' | 'EUR';
+  onSale: boolean;
+  inStock: boolean;
+  availableSizes: string[];
+  selectedColorId: string | null;
+  selectedColorNamePT: string | null;
+  selectedColorNameEN: string | null;
+};
+
 export type ApiInstagramPost = {
   id: string;
+  lookSlug: string;
   imageUrl: string;
   permalink: string;
   caption: string;
@@ -760,7 +779,7 @@ export type ApiInstagramPost = {
   // 'large' for the one post the admin picked to highlight (CMS's
   // instagram-spotlight global), 'regular' for every other post.
   size: 'regular' | 'large';
-  products?: Array<{ slug: string; name: string }>;
+  products?: ApiInstagramLookProduct[];
 };
 
 /** Instagram feed highlight (2026-08-02, simplified same day from an
@@ -770,6 +789,13 @@ export type ApiInstagramPost = {
  * highlighted -- every tile renders the same size. */
 export type InstagramSpotlight = {
   highlightedPermalink?: string | null;
+  productTags?: Array<{
+    mediaId?: string | null;
+    permalink: string;
+    products?: Array<string | number | ApiProduct> | null;
+    variantSelections?: Record<string, string> | null;
+    id?: string | null;
+  }> | null;
 };
 
 export type InstagramFeedResult = {
@@ -783,10 +809,10 @@ export type InstagramFeedResult = {
  * the CMS is unreachable, so callers can treat "no posts" as a normal state
  * and fall back to the static placeholder grid.
  */
-export async function fetchInstagramFeed(limit = 6): Promise<InstagramFeedResult> {
+export async function fetchInstagramFeed(limit = 6, market: 'AO' | 'PT' = 'AO'): Promise<InstagramFeedResult> {
   try {
     const data = await request<{ configured: boolean; posts: ApiInstagramPost[] }>(
-      `/instagram-feed?limit=${limit}`,
+      `/instagram-feed?limit=${limit}&market=${market}`,
     );
     return { posts: data.posts ?? [] };
   } catch {

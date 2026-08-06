@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
-import { Camera, Expand, X } from 'lucide-react';
+import { Camera, Expand, ShoppingBag, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { C, F, t } from '../../theme';
 import { useApp } from '../../state/AppContext';
 import { ProductPhoto, TONE_CYCLE } from '../../components/ProductPhoto';
 import { fetchInstagramFeed, type ApiInstagramPost } from '../../lib/api';
+import { trackMetaCustomEvent } from '../../lib/metaAnalytics';
+import { InstagramProductCard } from './InstagramProductCard';
 
 // Homepage "Instagram feed" section. Pulls real posts from the client's
 // Instagram Business account (@use_me_withstyle, confirmed 2026-07-16) via
@@ -82,7 +85,7 @@ const RESUME_AFTER_MS = 1500;
 const DRAG_THRESHOLD_PX = 4;
 
 export function InstagramFeed() {
-  const { lang } = useApp();
+  const { lang, market } = useApp();
   const [posts, setPosts] = useState<ApiInstagramPost[]>([]);
   const [selectedPost, setSelectedPost] = useState<ApiInstagramPost | null>(null);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -105,14 +108,14 @@ export function InstagramFeed() {
 
   useEffect(() => {
     let cancelled = false;
-    fetchInstagramFeed(TILE_COUNT).then((result) => {
+    fetchInstagramFeed(TILE_COUNT, market).then((result) => {
       if (cancelled) return;
       setPosts(result.posts);
     });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [market]);
 
   // Close the lightbox on Escape; a plain Effect rather than an inline
   // handler since it needs to listen globally (the trigger tile isn't
@@ -265,6 +268,14 @@ export function InstagramFeed() {
               onClick={() => {
                 if (draggedPastThresholdRef.current || !post) return;
                 setSelectedPost(post);
+                if ((post.products?.length ?? 0) > 0) {
+                  trackMetaCustomEvent('ShopTheLookOpen', {
+                    instagram_look_id: post.id,
+                    product_ids: post.products?.map((product) => product.id),
+                    market,
+                    surface: 'homepage_feed',
+                  });
+                }
               }}
             >
               <ProductPhoto
@@ -275,6 +286,11 @@ export function InstagramFeed() {
               <div className="ump-instagram-tile-hover">
                 <Expand size={18} color="#FFFDF8" />
               </div>
+              {(post?.products?.length ?? 0) > 0 && (
+                <div className="ump-instagram-shop-badge">
+                  <ShoppingBag size={11} /> {post?.products?.length}
+                </div>
+              )}
               {displayLabel && (
                 <div className="ump-instagram-tile-caption">
                   <span>{displayLabel}</span>
@@ -286,6 +302,18 @@ export function InstagramFeed() {
       </div>
 
       <div className="ump-content-width" style={{ textAlign: 'center', marginTop: 20, padding: '0 20px' }}>
+        {posts.some((post) => (post.products?.length ?? 0) > 0) && (
+          <Link
+            to="/shop-instagram"
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 20px', marginRight: 8,
+              borderRadius: 8, background: C.black, color: C.onDarkGold, fontSize: 11, fontWeight: 800,
+              letterSpacing: 0.5, textDecoration: 'none',
+            }}
+          >
+            <ShoppingBag size={14} /> {lang === 'pt' ? 'Comprar no Instagram' : 'Shop Instagram'}
+          </Link>
+        )}
         <a
           href={INSTAGRAM_URL}
           target="_blank"
@@ -319,7 +347,7 @@ export function InstagramFeed() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="instagram-lightbox-caption"
-            className="ump-instagram-lightbox"
+            className={`ump-instagram-lightbox${(selectedPost.products?.length ?? 0) > 0 ? ' ump-instagram-lightbox--shoppable' : ''}`}
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -344,19 +372,13 @@ export function InstagramFeed() {
                 </p>
               )}
               {(selectedPost.products?.length ?? 0) > 0 && (
-                <div style={{ marginTop: 16 }}>
+                <div style={{ marginTop: 18 }}>
                   <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.5, color: C.inkSoft, textTransform: 'uppercase' }}>
                     {lang === 'pt' ? 'Comprar este look' : 'Shop this look'}
                   </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+                  <div className="ump-instagram-product-grid">
                     {selectedPost.products?.map((product) => (
-                      <a
-                        key={product.slug}
-                        href={`/products/${encodeURIComponent(product.slug)}`}
-                        style={{ padding: '8px 10px', border: `1px solid ${C.fieldBorder}`, borderRadius: 7, color: C.ink, fontSize: 12, fontWeight: 700, textDecoration: 'none' }}
-                      >
-                        {product.name || product.slug}
-                      </a>
+                      <InstagramProductCard key={product.id} product={product} lookId={selectedPost.id} compact />
                     ))}
                   </div>
                 </div>

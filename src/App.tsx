@@ -16,6 +16,7 @@ const About = lazy(() => import('./storefront/pages/About').then((m) => ({ defau
 const PrivacyPolicy = lazy(() => import('./storefront/pages/PrivacyPolicy').then((m) => ({ default: m.PrivacyPolicy })));
 const Terms = lazy(() => import('./storefront/pages/Terms').then((m) => ({ default: m.Terms })));
 const DataDeletion = lazy(() => import('./storefront/pages/DataDeletion').then((m) => ({ default: m.DataDeletion })));
+const ShopInstagram = lazy(() => import('./storefront/pages/ShopInstagram').then((m) => ({ default: m.ShopInstagram })));
 const AdminRoutes = lazy(() => import('./admin/AdminRoutes').then((m) => ({ default: m.AdminRoutes })));
 const NotFound = lazy(() => import('./storefront/pages/NotFound').then((m) => ({ default: m.NotFound })));
 
@@ -355,6 +356,15 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
           color: ${C.onDark};
           text-align: left;
         }
+        .ump-instagram-shop-badge {
+          position: absolute; top: 9px; left: 9px;
+          display: inline-flex; align-items: center; gap: 4px;
+          padding: 5px 8px; border-radius: 999px;
+          background: rgba(5,5,5,0.78); color: ${C.onDarkGold};
+          font-size: 9px; font-weight: 850; line-height: 1;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+          pointer-events: none;
+        }
 
         /* Lightbox (2026-08-02 round 2: "don't send people away
            immediately" -- clicking a tile opens this instead of an instant
@@ -381,12 +391,39 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
         }
         .ump-instagram-lightbox-image { aspect-ratio: 4 / 5; max-height: 60vh; }
         .ump-instagram-lightbox-body { padding: 16px 18px 18px; overflow-y: auto; }
+        .ump-instagram-product-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; margin-top: 9px; }
+        @media (min-width: 760px) {
+          .ump-instagram-lightbox.ump-instagram-lightbox--shoppable {
+            max-width: 860px;
+            display: grid;
+            grid-template-columns: minmax(300px, 0.9fr) minmax(340px, 1.1fr);
+            align-items: stretch;
+          }
+          .ump-instagram-lightbox--shoppable .ump-instagram-lightbox-image {
+            aspect-ratio: auto;
+            min-height: 560px;
+            max-height: 86vh;
+          }
+          .ump-instagram-lightbox--shoppable .ump-instagram-lightbox-body { max-height: 86vh; padding: 24px; }
+        }
         .ump-instagram-lightbox-close {
           position: absolute; top: 10px; right: 10px; z-index: 1;
           width: 32px; height: 32px; border-radius: 999px;
           display: flex; align-items: center; justify-content: center;
           background: rgba(5,5,5,0.5); color: ${C.onDark};
           border: none; cursor: pointer;
+        }
+
+        .ump-shop-instagram-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(min(230px, 100%), 1fr));
+          gap: 18px;
+        }
+        .ump-shop-instagram-detail { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 28px; align-items: start; }
+        .ump-shop-instagram-products { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+        @media (max-width: 760px) {
+          .ump-shop-instagram-detail { grid-template-columns: minmax(0, 1fr); }
+          .ump-shop-instagram-products { grid-template-columns: minmax(0, 1fr); }
         }
 
         .ump-cat-row { display: flex; gap: 10px; overflow-x: auto; }
@@ -607,6 +644,8 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
               <Route path="conta" element={<ConfirmationLookup />} />
               <Route path="ajuda" element={<Help />} />
               <Route path="sobre" element={<About />} />
+              <Route path="shop-instagram" element={<ShopInstagram />} />
+              <Route path="shop-instagram/:lookSlug" element={<ShopInstagram />} />
               <Route path="politica-privacidade" element={<PrivacyPolicy />} />
               <Route path="termos-condicoes" element={<Terms />} />
               <Route path="eliminacao-de-dados" element={<DataDeletion />} />

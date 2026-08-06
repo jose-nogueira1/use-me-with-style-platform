@@ -12,6 +12,7 @@ import {
   adminListHomeCategoriesVersions,
   adminListHomeCollectionsVersions,
   adminListMerchTags,
+  adminListProducts,
   adminRestoreHomeHeroVersion,
   adminRestoreHomeCategoriesVersion,
   adminRestoreHomeCollectionsVersion,
@@ -34,10 +35,12 @@ import {
   fetchLegalContent,
   fetchMarketSettings,
   refId,
+  resolveProductImage,
   resolveRef,
   type ApiCategory,
   type ApiInstagramPost,
   type ApiMerchTag,
+  type ApiProduct,
   type AiAssistantStatus,
   type AiAutoReplyIntent,
   type AiMessagingSettings,
@@ -1896,45 +1899,97 @@ function HomeCollectionsSection() {
 // public read, no admin auth needed for that half); only the highlight pick
 // itself (CMS global `instagram-spotlight`) needs the authenticated
 // fetch/save, same self-contained pattern as every other tab here.
+type ShopAssociation = NonNullable<InstagramSpotlight['productTags']>[number];
+
+function normalizeInstagramPermalink(value: string) {
+  try {
+    return new URL(value).pathname.replace(/\/+$/, '').toLowerCase();
+  } catch {
+    return value.trim().replace(/\/+$/, '').toLowerCase();
+  }
+}
+
+function normalizeShopAssociations(value: InstagramSpotlight['productTags']): ShopAssociation[] {
+  return (value ?? []).flatMap((entry) => {
+    const productIds = (entry.products ?? []).map(refId).filter(Boolean).slice(0, 4);
+    if (!entry.permalink || productIds.length === 0) return [];
+    const selections = Object.fromEntries(Object.entries(entry.variantSelections ?? {}).filter(([productId]) => productIds.includes(productId)));
+    return [{ mediaId: entry.mediaId ?? null, permalink: entry.permalink, products: productIds, variantSelections: selections }];
+  });
+}
+
 function InstagramSpotlightSection() {
-  const { lang } = useApp();
+  const { lang, market } = useApp();
   const [posts, setPosts] = useState<ApiInstagramPost[]>([]);
+  const [products, setProducts] = useState<ApiProduct[]>([]);
   const [postsError, setPostsError] = useState<string | null>(null);
   const [highlightedPermalink, setHighlightedPermalink] = useState('');
-  const [originalHighlightedPermalink, setOriginalHighlightedPermalink] = useState<string | null>(null);
+  const [productTags, setProductTags] = useState<ShopAssociation[]>([]);
+  const [baseline, setBaseline] = useState<{ highlightedPermalink: string; productTags: ShopAssociation[] } | null>(null);
+  const [editingPostId, setEditingPostId] = useState<string | null>(null);
+  const [productSearch, setProductSearch] = useState('');
+  const [pickerError, setPickerError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
-  const isDirty = useDirty(highlightedPermalink, originalHighlightedPermalink);
+  const current = { highlightedPermalink, productTags };
+  const isDirty = useDirty(current, baseline);
 
   useEffect(() => {
     Promise.all([
-      fetchInstagramFeed(12).then((result) => setPosts(result.posts)).catch(() => setPostsError(t('couldntLoadInstagramFeed', lang))),
-      adminFetchInstagramSpotlight().then((data) => {
-        const loaded = data.highlightedPermalink ?? '';
-        setHighlightedPermalink(loaded);
-        setOriginalHighlightedPermalink(loaded);
-      }),
+      fetchInstagramFeed(12, market).then((result) => setPosts(result.posts)).catch(() => setPostsError(t('couldntLoadInstagramFeed', lang))),
+      adminFetchInstagramSpotlight(),
+      adminListProducts().then(setProducts),
     ])
+      .then(([, data]) => {
+        const loadedHighlight = data.highlightedPermalink ?? '';
+        const loadedTags = normalizeShopAssociations(data.productTags);
+        setHighlightedPermalink(loadedHighlight);
+        setProductTags(loadedTags);
+        setBaseline({ highlightedPermalink: loadedHighlight, productTags: loadedTags });
+      })
       .catch(() => setError(t('couldntLoadInstagramFeed', lang)))
       .finally(() => setLoading(false));
-  }, [lang]);
+  }, [lang, market]);
+
+  const associationIndex = (post: ApiInstagramPost) => productTags.findIndex((entry) =>
+    (entry.mediaId && entry.mediaId === post.id)
+    || normalizeInstagramPermalink(entry.permalink) === normalizeInstagramPermalink(post.permalink),
+  );
+  const associationFor = (post: ApiInstagramPost) => {
+    const index = associationIndex(post);
+    return index >= 0 ? productTags[index] : null;
+  };
+  const updateAssociation = (post: ApiInstagramPost, update: (entry: ShopAssociation) => ShopAssociation) => {
+    setSaved(false);
+    setPickerError(null);
+    setProductTags((currentTags) => {
+      const index = currentTags.findIndex((entry) =>
+        (entry.mediaId && entry.mediaId === post.id)
+        || normalizeInstagramPermalink(entry.permalink) === normalizeInstagramPermalink(post.permalink),
+      );
+      const seed: ShopAssociation = index >= 0
+        ? currentTags[index]
+        : { mediaId: post.id, permalink: post.permalink, products: [], variantSelections: {} };
+      const nextEntry = update(seed);
+      const nextProducts = (nextEntry.products ?? []).map(refId).filter(Boolean).slice(0, 4);
+      const next = { ...nextEntry, mediaId: post.id, permalink: post.permalink, products: nextProducts };
+      if (nextProducts.length === 0) return index >= 0 ? currentTags.filter((_, candidate) => candidate !== index) : currentTags;
+      if (index < 0) return [...currentTags, next];
+      return currentTags.map((entry, candidate) => candidate === index ? next : entry);
+    });
+  };
 
   const handleSave = async () => {
     setSaving(true);
     setError(null);
     setSaved(false);
     try {
-      await adminUpdateInstagramSpotlight({ highlightedPermalink: highlightedPermalink || null });
-      // Deliberately not overwriting `highlightedPermalink` from the
-      // response here (2026-08-02 bug report: "the pill disappears, and
-      // only reappears when I reload the page"). We already know exactly
-      // what was just persisted -- it's whatever the tiles were showing
-      // right before Save was clicked -- so there's no reason to let a
-      // round-tripped server value replace working local state; only the
-      // "is this dirty" baseline needs to move.
-      setOriginalHighlightedPermalink(highlightedPermalink);
+      const normalizedTags = normalizeShopAssociations(productTags);
+      await adminUpdateInstagramSpotlight({ highlightedPermalink: highlightedPermalink || null, productTags: normalizedTags });
+      setProductTags(normalizedTags);
+      setBaseline({ highlightedPermalink, productTags: normalizedTags });
       setSaved(true);
     } catch {
       setError(t('couldntSaveLoggedIn', lang));
@@ -1943,28 +1998,62 @@ function InstagramSpotlightSection() {
     }
   };
 
-  const toggleHighlight = (permalink: string) => {
-    setSaved(false);
-    setHighlightedPermalink((current) => (current === permalink ? '' : permalink));
+  const toggleProduct = (post: ApiInstagramPost, product: ApiProduct) => {
+    const existingIds = (associationFor(post)?.products ?? []).map(refId).filter(Boolean);
+    const productId = String(product.id);
+    if (!existingIds.includes(productId) && existingIds.length >= 4) {
+      setPickerError(lang === 'pt' ? 'Pode associar no máximo quatro produtos a cada publicação.' : 'You can associate up to four products with each post.');
+      return;
+    }
+    updateAssociation(post, (entry) => {
+      const ids = (entry.products ?? []).map(refId).filter(Boolean);
+      const selected = ids.includes(productId);
+      const nextIds = selected ? ids.filter((candidate) => candidate !== productId) : [...ids, productId];
+      const selections = { ...(entry.variantSelections ?? {}) };
+      if (selected) delete selections[productId];
+      return { ...entry, products: nextIds, variantSelections: selections };
+    });
+  };
+
+  const selectColour = (post: ApiInstagramPost, productId: string, colourId: string) => {
+    updateAssociation(post, (entry) => {
+      const selections = { ...(entry.variantSelections ?? {}) };
+      if (colourId) selections[productId] = colourId;
+      else delete selections[productId];
+      return { ...entry, variantSelections: selections };
+    });
+  };
+
+  const editingPost = posts.find((post) => post.id === editingPostId) ?? null;
+  const editingAssociation = editingPost ? associationFor(editingPost) : null;
+  const taggedProductIds = (editingAssociation?.products ?? []).map(refId).filter(Boolean);
+  const filteredProducts = products.filter((product) => {
+    const needle = productSearch.trim().toLowerCase();
+    return !needle || [product.name, product.namePT, product.nameEN, product.slug].some((value) => value?.toLowerCase().includes(needle));
+  });
+  const coloursFor = (product: ApiProduct) => {
+    const seen = new Set<string>();
+    return product.variants.flatMap((variant) => {
+      const colour = resolveRef(variant.color);
+      const id = refId(variant.color);
+      if (!colour || !id || seen.has(id)) return [];
+      seen.add(id);
+      return [{ id, label: (lang === 'en' ? colour.nameEN : colour.namePT)?.trim() || colour.namePT }];
+    });
   };
 
   return (
     <div style={{ padding: '20px 28px 32px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-        <div style={{ fontSize: 11, color: C.inkSoft, maxWidth: 560 }}>{t('instagramFeedHint', lang)}</div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'center', marginBottom: 14 }}>
+        <div style={{ fontSize: 11, color: C.inkSoft, maxWidth: 660 }}>
+          {lang === 'pt'
+            ? 'Escolha uma publicação para destacar e associe até quatro produtos reais a cada look. Preços, stock e links são sempre resolvidos a partir do catálogo atual.'
+            : 'Choose one highlighted post and associate up to four real products with each look. Prices, stock and links always resolve from the current catalogue.'}
+        </div>
         <button
           onClick={() => void handleSave()}
           disabled={loading || saving || !isDirty}
-          style={{
-            padding: '9px 18px',
-            background: loading || saving || !isDirty ? C.disabledBg : C.black,
-            color: loading || saving || !isDirty ? C.disabledFg : C.onDarkGold,
-            fontSize: 11,
-            fontWeight: 800,
-            borderRadius: 6,
-            flexShrink: 0,
-            cursor: loading || saving || !isDirty ? 'default' : 'pointer',
-          }}
+          style={{ padding: '9px 18px', background: loading || saving || !isDirty ? C.disabledBg : C.black, color: loading || saving || !isDirty ? C.disabledFg : C.onDarkGold, fontSize: 11, fontWeight: 800, borderRadius: 6, flexShrink: 0, cursor: loading || saving || !isDirty ? 'default' : 'pointer' }}
         >
           {saving ? '…' : t('saveInstagramFeed', lang)}
         </button>
@@ -1978,55 +2067,68 @@ function InstagramSpotlightSection() {
       ) : posts.length === 0 ? (
         <div style={{ fontSize: 11, color: C.inkSoft }}>{t('noInstagramPostsYet', lang)}</div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 14 }} className="ump-admin-media-grid">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 14 }} className="ump-admin-media-grid">
           {posts.map((post) => {
             const isHighlighted = post.permalink === highlightedPermalink;
+            const taggedCount = (associationFor(post)?.products ?? []).length;
             return (
-              <button
-                key={post.id}
-                type="button"
-                onClick={() => toggleHighlight(post.permalink)}
-                style={{
-                  position: 'relative',
-                  display: 'block',
-                  padding: 0,
-                  border: `2px solid ${isHighlighted ? C.goldDeep : C.ruleLight}`,
-                  borderRadius: 8,
-                  overflow: 'hidden',
-                  background: C.paper,
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                }}
-              >
-                <div style={{ aspectRatio: '4 / 5', overflow: 'hidden' }}>
+              <div key={post.id} style={{ position: 'relative', overflow: 'hidden', border: `2px solid ${isHighlighted ? C.goldDeep : C.ruleLight}`, borderRadius: 9, background: C.paper }}>
+                <div style={{ position: 'relative', aspectRatio: '4 / 5', overflow: 'hidden' }}>
                   <img src={post.imageUrl} alt={post.captionDisplay} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                  <button type="button" onClick={() => { setSaved(false); setHighlightedPermalink((currentHighlight) => currentHighlight === post.permalink ? '' : post.permalink); }} style={{ position: 'absolute', top: 8, right: 8, padding: '6px 9px', borderRadius: 999, background: isHighlighted ? C.goldDeep : 'rgba(5,5,5,0.72)', color: C.onDarkGold, fontSize: 8.5, fontWeight: 850, boxShadow: '0 1px 4px rgba(0,0,0,0.2)' }}>
+                    {isHighlighted ? t('instagramHighlightedBadge', lang) : (lang === 'pt' ? 'Destacar' : 'Highlight')}
+                  </button>
                 </div>
-                {isHighlighted && (
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: 8,
-                      right: 8,
-                      padding: '4px 10px',
-                      borderRadius: 999,
-                      background: C.goldDeep,
-                      color: C.onDarkGold,
-                      fontSize: 9,
-                      fontWeight: 800,
-                      letterSpacing: 0.4,
-                      textTransform: 'uppercase',
-                      boxShadow: '0 1px 4px rgba(0,0,0,0.25)',
-                    }}
-                  >
-                    {t('instagramHighlightedBadge', lang)}
-                  </div>
-                )}
-                <div style={{ padding: 8, fontSize: 10, color: C.inkSoft, lineHeight: 1.4, minHeight: 30 }}>
-                  {post.captionDisplay || t('instagramNoCaptionPlaceholder', lang)}
+                <div style={{ padding: 10 }}>
+                  <div style={{ fontSize: 10, color: C.inkSoft, lineHeight: 1.4, minHeight: 28, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{post.captionDisplay || t('instagramNoCaptionPlaceholder', lang)}</div>
+                  <button type="button" onClick={() => { setEditingPostId(post.id); setProductSearch(''); setPickerError(null); }} style={{ width: '100%', marginTop: 9, padding: '8px 10px', borderRadius: 6, background: taggedCount ? C.tagBg : C.black, color: taggedCount ? C.goldDeep : C.onDarkGold, fontSize: 9.5, fontWeight: 850 }}>
+                    {taggedCount ? `${lang === 'pt' ? 'Editar produtos' : 'Edit products'} (${taggedCount})` : (lang === 'pt' ? 'Associar produtos' : 'Tag products')}
+                  </button>
                 </div>
-              </button>
+              </div>
             );
           })}
+        </div>
+      )}
+
+      {editingPost && (
+        <div onClick={() => setEditingPostId(null)} style={{ position: 'fixed', inset: 0, zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, background: 'rgba(5,5,5,0.62)' }}>
+          <div role="dialog" aria-modal="true" aria-labelledby="shop-look-picker-title" onClick={(event) => event.stopPropagation()} style={{ width: 'min(760px, 100%)', maxHeight: '88vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', borderRadius: 12, background: C.paper, boxShadow: '0 24px 60px rgba(0,0,0,0.3)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 16, borderBottom: `1px solid ${C.ruleLight}` }}>
+              <img src={editingPost.imageUrl} alt="" style={{ width: 54, height: 68, objectFit: 'cover', borderRadius: 6 }} />
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div id="shop-look-picker-title" style={{ fontFamily: F.display, fontSize: 20, fontWeight: 800, color: C.ink }}>{lang === 'pt' ? 'Produtos neste look' : 'Products in this look'}</div>
+                <div style={{ marginTop: 3, fontSize: 10, color: C.inkSoft }}>{taggedProductIds.length}/4 {lang === 'pt' ? 'produtos associados' : 'products associated'}</div>
+              </div>
+              <button type="button" aria-label={lang === 'pt' ? 'Fechar' : 'Close'} onClick={() => setEditingPostId(null)} style={{ width: 34, height: 34, borderRadius: 999, background: C.subtleBg, color: C.ink, fontSize: 18 }}>×</button>
+            </div>
+            <div style={{ padding: 16, borderBottom: `1px solid ${C.ruleLight}` }}>
+              <input value={productSearch} onChange={(event) => setProductSearch(event.target.value)} placeholder={lang === 'pt' ? 'Pesquisar produtos…' : 'Search products…'} style={{ width: '100%', padding: '10px 12px', border: `1px solid ${C.fieldBorder}`, borderRadius: 7, background: C.paper, color: C.ink, fontSize: 12 }} />
+              {pickerError && <div style={{ marginTop: 8, color: C.danger, fontSize: 10 }}>{pickerError}</div>}
+            </div>
+            <div style={{ padding: 16, overflowY: 'auto', display: 'grid', gap: 10 }}>
+              {filteredProducts.map((product) => {
+                const id = String(product.id);
+                const selected = taggedProductIds.includes(id);
+                const colours = coloursFor(product);
+                const selection = editingAssociation?.variantSelections?.[id] ?? '';
+                const image = resolveProductImage(product.images?.[0]?.image);
+                const imageUrl = absoluteMediaUrl(image.url) || image.url;
+                return (
+                  <div key={id} style={{ display: 'grid', gridTemplateColumns: '54px minmax(0, 1fr) auto', gap: 11, alignItems: 'center', padding: 10, border: `1px solid ${selected ? C.goldDeep : C.ruleLight}`, borderRadius: 8, background: selected ? C.tagBg : C.paper }}>
+                    <div style={{ width: 54, height: 66, borderRadius: 6, overflow: 'hidden', background: C.subtleBg }}>{imageUrl && <img src={imageUrl} alt={image.alt ?? product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}</div>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 12, fontWeight: 800, color: C.ink }}>{(lang === 'en' ? product.nameEN : product.namePT)?.trim() || product.name}</div>
+                      <div style={{ marginTop: 3, display: 'flex', gap: 5, flexWrap: 'wrap', fontSize: 8.5, color: C.inkSoft }}><span>{product.active ? (lang === 'pt' ? 'Ativo' : 'Active') : (lang === 'pt' ? 'Rascunho' : 'Draft')}</span><span>· AO {product.availableAO ? '✓' : '—'}</span><span>· PT {product.availablePT ? '✓' : '—'}</span></div>
+                      {selected && colours.length > 1 && <select aria-label={`${product.name} — ${lang === 'pt' ? 'cor no look' : 'colour in look'}`} value={selection} onChange={(event) => selectColour(editingPost, id, event.target.value)} style={{ width: '100%', maxWidth: 250, marginTop: 7, padding: '7px 9px', border: `1px solid ${C.fieldBorder}`, borderRadius: 6, background: C.paper, color: C.ink, fontSize: 10 }}><option value="">{lang === 'pt' ? 'Qualquer cor / não especificar' : 'Any colour / not specified'}</option>{colours.map((colour) => <option key={colour.id} value={colour.id}>{colour.label}</option>)}</select>}
+                    </div>
+                    <button type="button" aria-pressed={selected} onClick={() => toggleProduct(editingPost, product)} style={{ padding: '8px 11px', borderRadius: 6, background: selected ? C.goldDeep : C.black, color: C.onDarkGold, fontSize: 9, fontWeight: 850 }}>{selected ? (lang === 'pt' ? 'Remover' : 'Remove') : (lang === 'pt' ? 'Adicionar' : 'Add')}</button>
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ padding: 14, borderTop: `1px solid ${C.ruleLight}`, display: 'flex', justifyContent: 'flex-end' }}><button type="button" onClick={() => setEditingPostId(null)} style={{ padding: '9px 16px', borderRadius: 6, background: C.black, color: C.onDarkGold, fontSize: 10, fontWeight: 850 }}>{lang === 'pt' ? 'Concluído' : 'Done'}</button></div>
+          </div>
         </div>
       )}
     </div>

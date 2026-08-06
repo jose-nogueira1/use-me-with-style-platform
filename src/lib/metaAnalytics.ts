@@ -69,6 +69,28 @@ export function trackMetaEvent(name: string, params: MetaEventParams = {}) {
   }).catch(() => undefined);
 }
 
+/** Consent-aware custom events used for first-party merchandising journeys
+ * that do not map cleanly to Meta's standard commerce event names. */
+export function trackMetaCustomEvent(name: 'ShopTheLookOpen' | 'ShopTheLookProductClick', params: MetaEventParams = {}) {
+  if (!ensurePixel()) return;
+  const id = eventId();
+  window.fbq?.('trackCustom', name, params, { eventID: id });
+  void fetch(`${publicEnv.apiBaseUrl.replace(/\/$/, '')}/api/meta/events`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      analyticsConsent: true,
+      eventName: name,
+      eventId: id,
+      eventSourceUrl: window.location.href,
+      customData: params,
+      fbp: cookie('_fbp'),
+      fbc: cookie('_fbc'),
+    }),
+    keepalive: true,
+  }).catch(() => undefined);
+}
+
 export function trackPageView() {
   trackMetaEvent('PageView');
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Check, Heart, Search, X } from 'lucide-react';
 import { C, F, t } from '../../theme';
 import { useApp, useFormatOriginalPrice, useFormatPrice } from '../../state/AppContext';
@@ -14,6 +14,7 @@ import { hasSwatch, swatchBackground } from '../../lib/colorSwatch';
 
 export function ProductDetail() {
   const { slug } = useParams<{ slug: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { market, lang, cart, dispatchCart, favorites, toggleFavorite } = useApp();
   const { products, loading } = useProducts(market, lang);
@@ -53,18 +54,20 @@ export function ProductDetail() {
     );
   }
 
-  const activeSize = size ?? product.sizes[Math.floor(product.sizes.length / 2)];
   // Colours are taxonomy entries now; `activeColor` holds the colour's
   // stable ROW ID (2026-07-25 bilingual follow-up -- an id, not a display
   // name, since the name now varies by storefront language and the cart
   // must keep referring to the same colour if the shopper switches
   // language mid-session). `activeColorLabel` below is what's shown.
-  const activeColor = color ?? product.colors[0]?.id;
-  const activeColorLabel = product.colors.find((c) => c.id === activeColor)?.name ?? activeColor;
+  const requestedColor = searchParams.get('cor');
+  const activeColor = color ?? (product.colors.some((candidate) => candidate.id === requestedColor) ? requestedColor : product.colors[0]?.id);
   // Variant-level stock (2026-07-25): availability is per colour+size, so
   // switching colour changes which sizes are in stock.
   const stockFor = (colorId: string | undefined, sizeName: string) =>
     product.variants.find((v) => v.color === colorId && v.size === sizeName)?.stock ?? 0;
+  const defaultSize = product.sizes.find((candidate) => stockFor(activeColor, candidate) > 0) ?? product.sizes[Math.floor(product.sizes.length / 2)];
+  const activeSize = size ?? defaultSize;
+  const activeColorLabel = product.colors.find((c) => c.id === activeColor)?.name ?? activeColor;
   const colorHasStock = (colorId: string) => product.variants.some((v) => v.color === colorId && v.stock > 0);
   const stockForSize = activeColor ? stockFor(activeColor, activeSize) : product.stock[activeSize] ?? 0;
   const isLowStock = stockForSize > 0 && stockForSize <= 3;
