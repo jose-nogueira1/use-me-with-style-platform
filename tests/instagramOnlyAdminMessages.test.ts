@@ -104,3 +104,14 @@ test('AI messaging settings expose guarded approval and hybrid controls without 
   assert.match(inboxSource, /aiAutomationDecision/);
   assert.match(inboxSource, /Sent automatically by AI/);
 });
+
+test('AI settings expose verified out-of-stock recovery controls', () => {
+  assert.match(apiSource, /outOfStockRecoveryEnabled/);
+  assert.match(settingsSource, /Out-of-stock recovery/);
+  assert.match(settingsSource, /outOfStockAllowOtherColours/);
+  assert.match(settingsSource, /outOfStockAllowOtherSizes/);
+  assert.match(settingsSource, /outOfStockMaxAlternatives/);
+  assert.match(settingsSource, /outOfStockPriceTolerancePercent/);
+  assert.match(settingsSource, /outOfStockCategoryWeight/);
+  assert.match(settingsSource, /outOfStockTagWeight/);
+});
