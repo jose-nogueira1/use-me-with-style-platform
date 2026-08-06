@@ -200,6 +200,7 @@ export function AppyPayPaymentModal({
               <AppyPayWidget
                 amount={amount}
                 description={`Use Me With Style ${order.orderNumber}`}
+                orderNumber={order.orderNumber}
                 merchantTransactionId={order.merchantTransactionId}
                 phoneNumber={phoneNumber}
                 lang={lang}

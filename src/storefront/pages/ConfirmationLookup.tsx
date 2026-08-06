@@ -1,9 +1,17 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Check } from 'lucide-react';
+import { AlertTriangle, Check, Clock3 } from 'lucide-react';
 import { C, F, t } from '../../theme';
 import { useApp } from '../../state/AppContext';
 import { lookupOrder, type PublicOrderStatus } from '../../lib/api';
+import { clearPendingOrderEmail, peekPendingOrderEmail } from '../../lib/pendingOrderEmail';
+
+// AppyPay's charge is async (see AppyPayWidget.tsx): the customer's browser
+// can land back here before the CMS webhook has verified/rejected the
+// charge. Auto-poll while it stays 'pending', capped at this ceiling -- the
+// manual lookup form below always remains available if it gives up.
+const AUTO_POLL_INTERVAL_MS = 4_000;
+const AUTO_POLL_TIMEOUT_MS = 3 * 60 * 1_000;
 
 // Figma's "06. Confirmation and Lookup" combines the order-received hero
 // with a status timeline AND an order-lookup form on one screen -- not two
@@ -37,9 +45,20 @@ export function ConfirmationLookup() {
   const { lang, dispatchCart } = useApp();
   const { orderNumber: routeOrderNumber } = useParams<{ orderNumber: string }>();
   const [orderNumber, setOrderNumber] = useState(routeOrderNumber ?? '');
-  const [email, setEmail] = useState('');
+  // Recovered synchronously (not in an effect, so there's no first-frame
+  // flash of the wrong hero) from whatever Checkout stashed right before the
+  // AppyPay widget could redirect here. Only ever non-null for that exact
+  // flow -- every other checkout path (Stripe/PayPal captured client-side,
+  // manual/bank-transfer with no online step) never stashes anything, so
+  // this whole auto-poll path is a no-op for them and they render exactly
+  // as before. `peekPendingOrderEmail` only reads, so it's safe to call from
+  // this lazy initializer even if React invokes it twice in dev StrictMode.
+  const [autoEmail] = useState(() => (routeOrderNumber ? peekPendingOrderEmail(routeOrderNumber) : null));
+  const [email, setEmail] = useState(autoEmail ?? '');
   const [result, setResult] = useState<PublicOrderStatus | null | 'not_found' | 'service_error'>(null);
   const [loading, setLoading] = useState(false);
+  const [autoPolling, setAutoPolling] = useState(Boolean(autoEmail));
+  const clearedAutoEmailRef = useRef(false);
 
   // Cart is cleared here, once we've actually landed on a real order
   // confirmation -- not from Checkout before navigating here. Checkout has
@@ -56,6 +75,61 @@ export function ConfirmationLookup() {
     if (routeOrderNumber) dispatchCart({ type: 'CLEAR' });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [routeOrderNumber]);
+
+  // One-time consume of the stashed email now that it's actually been used
+  // (a page refresh on this same URL later shouldn't re-trigger auto-poll --
+  // by then the manual lookup form covers it). The ref guard makes this
+  // idempotent under React 18 StrictMode's dev-only mount/cleanup/remount.
+  useEffect(() => {
+    if (autoEmail && routeOrderNumber && !clearedAutoEmailRef.current) {
+      clearedAutoEmailRef.current = true;
+      clearPendingOrderEmail(routeOrderNumber);
+    }
+  }, [autoEmail, routeOrderNumber]);
+
+  // Auto-poll order status while AppyPay's webhook hasn't resolved it yet.
+  // paymentStatus (not status) is the right signal here: a successfully
+  // webhook-verified AppyPay order can still sit at status 'new'/
+  // 'payment_review' pending an admin's manual "Confirm payment" click (see
+  // OrderDetail.tsx's NEXT_STEP map) -- paymentStatus is what the webhook
+  // itself actually sets to 'paid'/'failed'.
+  useEffect(() => {
+    if (!routeOrderNumber || !autoEmail) return;
+    let cancelled = false;
+    let timer: ReturnType<typeof window.setTimeout> | undefined;
+    const startedAt = Date.now();
+
+    const poll = async () => {
+      if (cancelled) return;
+      try {
+        const order = await lookupOrder(routeOrderNumber, autoEmail);
+        if (cancelled) return;
+        if (order) {
+          setResult(order);
+          if (order.paymentStatus !== 'pending') {
+            setAutoPolling(false);
+            return;
+          }
+        }
+      } catch (err) {
+        console.error('Auto payment-status poll failed', err);
+        // Transient (network blip, cold start) -- keep retrying until the
+        // timeout below rather than giving up on the first failure.
+      }
+      if (cancelled) return;
+      if (Date.now() - startedAt >= AUTO_POLL_TIMEOUT_MS) {
+        setAutoPolling(false);
+        return;
+      }
+      timer = window.setTimeout(poll, AUTO_POLL_INTERVAL_MS);
+    };
+
+    void poll();
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [routeOrderNumber, autoEmail]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -75,9 +149,21 @@ export function ConfirmationLookup() {
     ? STATUS_STEPS.findIndex((s) => s === result.status)
     : -1;
 
+  const resolvedOrder = result && result !== 'not_found' && result !== 'service_error' ? result : null;
+  // !autoEmail covers every non-AppyPay checkout path (Stripe/PayPal/manual)
+  // -- those already know their outcome by the time they navigate here, so
+  // they keep the original unconditional "confirmed" hero. Only an AppyPay
+  // redirect (autoEmail present) can land here before payment is verified.
+  const heroKind: 'confirmed' | 'pending' | 'failed' =
+    !autoEmail || resolvedOrder?.paymentStatus === 'paid'
+      ? 'confirmed'
+      : resolvedOrder?.paymentStatus === 'failed'
+        ? 'failed'
+        : 'pending';
+
   return (
     <div>
-      {routeOrderNumber && (
+      {routeOrderNumber && heroKind === 'confirmed' && (
         <div style={{ background: C.heroBg, color: C.heroText, padding: '48px 24px 40px', textAlign: 'center' }}>
           <div
             style={{
@@ -105,6 +191,58 @@ export function ConfirmationLookup() {
           <Link to="/" style={{ display: 'inline-block', marginTop: 16, fontSize: 11, color: C.heroAccent, fontWeight: 700, textDecoration: 'underline' }}>
             {t('continueShopping', lang)}
           </Link>
+        </div>
+      )}
+
+      {routeOrderNumber && heroKind === 'pending' && (
+        <div role="status" aria-live="polite" style={{ background: C.heroBg, color: C.heroText, padding: '48px 24px 40px', textAlign: 'center' }}>
+          <div
+            style={{
+              width: 60,
+              height: 60,
+              margin: '0 auto 20px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 30,
+              background: C.champagne,
+            }}
+          >
+            <Clock3 size={26} color={C.black} />
+          </div>
+          <h1 style={{ fontFamily: F.display, fontSize: 24, fontWeight: 800, margin: '0 0 8px' }}>{t('paymentConfirming', lang)}</h1>
+          <div style={{ fontSize: 13, color: C.heroSubtitle, marginBottom: 20 }}>
+            {autoPolling ? t('paymentConfirmingNote', lang) : t('paymentStillPendingNote', lang)}
+          </div>
+          <div style={{ background: C.heroFieldBg, border: `1px solid ${C.heroFieldBorder}`, borderRadius: 8, padding: 16, display: 'inline-block' }}>
+            <div style={{ fontSize: 10, color: C.heroSubtitle, textTransform: 'uppercase', letterSpacing: 1 }}>{t('orderNumber', lang)}</div>
+            <div style={{ fontFamily: F.display, fontSize: 20, color: C.heroAccent, marginTop: 4, fontWeight: 800 }}>{routeOrderNumber}</div>
+          </div>
+        </div>
+      )}
+
+      {routeOrderNumber && heroKind === 'failed' && (
+        <div role="alert" style={{ background: C.heroBg, color: C.heroText, padding: '48px 24px 40px', textAlign: 'center' }}>
+          <div
+            style={{
+              width: 60,
+              height: 60,
+              margin: '0 auto 20px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 30,
+              background: C.dangerBg,
+            }}
+          >
+            <AlertTriangle size={26} color={C.danger} />
+          </div>
+          <h1 style={{ fontFamily: F.display, fontSize: 24, fontWeight: 800, margin: '0 0 8px' }}>{t('paymentFailedTitle', lang)}</h1>
+          <div style={{ fontSize: 13, color: C.heroSubtitle, marginBottom: 20 }}>{t('paymentFailedNote', lang)}</div>
+          <div style={{ background: C.heroFieldBg, border: `1px solid ${C.heroFieldBorder}`, borderRadius: 8, padding: 16, display: 'inline-block' }}>
+            <div style={{ fontSize: 10, color: C.heroSubtitle, textTransform: 'uppercase', letterSpacing: 1 }}>{t('orderNumber', lang)}</div>
+            <div style={{ fontFamily: F.display, fontSize: 20, color: C.heroAccent, marginTop: 4, fontWeight: 800 }}>{routeOrderNumber}</div>
+          </div>
         </div>
       )}
 

@@ -40,7 +40,6 @@ export const publicEnv = {
     (paymentMode === "sandbox"
       ? "https://widget-tst.appypay.co.ao/main.js"
       : "https://widget.appypay.co.ao/main.js"),
-  appyPayRedirectUri: import.meta.env.VITE_APPYPAY_REDIRECT_URI || "",
   appyPayMerchantLogoUrl: import.meta.env.VITE_APPYPAY_MERCHANT_LOGO_URL || "",
   appyPayPaymentMethods: import.meta.env.VITE_APPYPAY_PAYMENT_METHODS || "",
   // JSON object containing optional custom keys configured in the AppyPay

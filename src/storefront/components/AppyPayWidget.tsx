@@ -6,6 +6,7 @@ const CONTAINER_ID = 'appyPay-charges-v2';
 type AppyPayWidgetProps = {
   amount: number;
   description: string;
+  orderNumber: string;
   merchantTransactionId: string;
   phoneNumber: string;
   lang: 'pt' | 'en';
@@ -21,6 +22,7 @@ type AppyPayWidgetProps = {
 export function AppyPayWidget({
   amount,
   description,
+  orderNumber,
   merchantTransactionId,
   phoneNumber,
   lang,
@@ -77,9 +79,14 @@ export function AppyPayWidget({
     // and verifies the charge server-to-server before it marks the AO order
     // paid. Widget completion alone never proves settlement.
     script.dataset.requestType = 'async';
-    if (publicEnv.appyPayRedirectUri) {
-      script.dataset.redirectUri = publicEnv.appyPayRedirectUri;
-    }
+    // Browser redirect target after the widget's own charge flow finishes --
+    // NOT the transactional webhook (that's AppyPay-portal-configured,
+    // POST-only, Basic-Auth-protected, and lives in the CMS). Built from
+    // window.location.origin so it always lands back on whichever market
+    // subdomain (ao./pt.) the customer is actually on, carrying the order
+    // number the confirmation page looks status up by.
+    const redirectUri = `${window.location.origin}/encomenda-confirmada/${encodeURIComponent(orderNumber)}`;
+    script.dataset.redirectUri = redirectUri;
     script.dataset.paymentAmount = String(amount);
     script.dataset.paymentDescription = description;
     script.dataset.phoneNumber = phoneNumber.replace(/\D/g, '');
@@ -115,12 +122,37 @@ export function AppyPayWidget({
       if (!hasInteractiveContent) markFailed();
     }, 12_000);
 
+    // AppyPay's own script runs inside this iframe and completes the charge
+    // flow with a plain `window.location.href = <redirectUri>` -- since that
+    // `window` is the IFRAME's, not the top-level page, the navigation lands
+    // *inside* the iframe instead of taking the customer to the confirmation
+    // page. Verified empirically (2026-08-06, sandbox reference charge):
+    // iframe.contentWindow navigated to the redirect URI while the tab's own
+    // window.location stayed on /checkout, leaving the whole site rendered
+    // inside the small modal iframe. Same-origin, so we can watch the
+    // frame's own location and promote a landing on our redirect URI to a
+    // real top-level navigation. Starts at "about:blank" (never assigned an
+    // iframe.src) so this stays idle until AppyPay actually redirects.
+    const redirectCheck = window.setInterval(() => {
+      let frameHref: string | null = null;
+      try {
+        frameHref = frameRef.current?.contentWindow?.location.href ?? null;
+      } catch {
+        // frame briefly cross-origin (e.g. mid 3rd-party hop) -- keep polling
+      }
+      if (frameHref && frameHref.startsWith(redirectUri)) {
+        window.clearInterval(redirectCheck);
+        window.location.assign(frameHref);
+      }
+    }, 400);
+
     return () => {
+      window.clearInterval(redirectCheck);
       window.clearTimeout(timeout);
       observer.disconnect();
       script.remove();
     };
-  }, [amount, attempt, description, merchantTransactionId, phoneNumber, lang]);
+  }, [amount, attempt, description, orderNumber, merchantTransactionId, phoneNumber, lang]);
 
   if (loadFailed) {
     return null;
