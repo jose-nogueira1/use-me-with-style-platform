@@ -497,6 +497,13 @@ const DEFAULT_AI_MESSAGING_SETTINGS: AiMessagingSettings = {
   maxAutoRepliesPerConversation: 6,
   maxAutoRepliesPerHour: 40,
   monthlyBudgetUsd: 25,
+  outOfStockRecoveryEnabled: true,
+  outOfStockAllowOtherColours: true,
+  outOfStockAllowOtherSizes: true,
+  outOfStockMaxAlternatives: 3,
+  outOfStockPriceTolerancePercent: 25,
+  outOfStockCategoryWeight: 60,
+  outOfStockTagWeight: 40,
 };
 
 const AI_INTENT_LABELS: Record<AiAutoReplyIntent, { en: string; pt: string }> = {
@@ -643,6 +650,30 @@ function AiMessagingSettingsSection() {
           <NumberSetting label={lang === 'pt' ? 'Orçamento mensal (USD)' : 'Monthly budget (USD)'} value={settings.monthlyBudgetUsd} step={1} onChange={(value) => setSettings((current) => ({ ...current, monthlyBudgetUsd: Math.min(10_000, Math.max(0, value)) }))} />
         </div>
         <div style={{ marginTop: 12, fontSize: 10, color: C.inkSoft, lineHeight: 1.45 }}>{lang === 'pt' ? 'Ao atingir um limite, a conversa fica para aprovação humana. O orçamento é uma proteção da aplicação e não substitui os limites da conta OpenAI.' : 'When a limit is reached, the conversation stays for human approval. This application guardrail does not replace the OpenAI account limits.'}</div>
+      </Card>
+
+      <Card title={lang === 'pt' ? 'Recuperação de esgotados' : 'Out-of-stock recovery'} badge={settings.outOfStockRecoveryEnabled ? (lang === 'pt' ? 'Ativa' : 'On') : (lang === 'pt' ? 'Desligada' : 'Off')} tone={settings.outOfStockRecoveryEnabled ? 'green' : 'neutral'}>
+        <label style={{ display: 'flex', gap: 9, alignItems: 'flex-start', paddingBottom: 10, marginBottom: 9, borderBottom: `1px solid ${C.ruleLight}`, fontSize: 11 }}>
+          <input type="checkbox" checked={settings.outOfStockRecoveryEnabled} onChange={(event) => setSettings((current) => ({ ...current, outOfStockRecoveryEnabled: event.target.checked }))} />
+          <span><strong>{lang === 'pt' ? 'Sugerir alternativas verificadas' : 'Suggest verified alternatives'}</strong><br /><span style={{ color: C.inkSoft }}>{lang === 'pt' ? 'Usa apenas stock, preços, categorias, etiquetas e links atuais do catálogo.' : 'Uses only current catalogue stock, prices, categories, tags and links.'}</span></span>
+        </label>
+        <div style={{ display: 'grid', gap: 8, marginBottom: 12 }}>
+          <label style={{ display: 'flex', gap: 8, fontSize: 11 }}>
+            <input type="checkbox" checked={settings.outOfStockAllowOtherColours} onChange={(event) => setSettings((current) => ({ ...current, outOfStockAllowOtherColours: event.target.checked }))} />
+            {lang === 'pt' ? 'Sugerir outras cores do mesmo produto' : 'Suggest other colours of the same product'}
+          </label>
+          <label style={{ display: 'flex', gap: 8, fontSize: 11 }}>
+            <input type="checkbox" checked={settings.outOfStockAllowOtherSizes} onChange={(event) => setSettings((current) => ({ ...current, outOfStockAllowOtherSizes: event.target.checked }))} />
+            {lang === 'pt' ? 'Mostrar outros tamanhos, deixando claro que são diferentes' : 'Show other sizes while clearly identifying them as different'}
+          </label>
+        </div>
+        <div style={{ display: 'grid', gap: 10 }}>
+          <NumberSetting label={lang === 'pt' ? 'Máximo de produtos alternativos' : 'Maximum alternative products'} value={settings.outOfStockMaxAlternatives} step={1} onChange={(value) => setSettings((current) => ({ ...current, outOfStockMaxAlternatives: Math.min(5, Math.max(1, Math.round(value))) }))} />
+          <NumberSetting label={lang === 'pt' ? 'Diferença máxima de preço (%)' : 'Maximum price difference (%)'} value={settings.outOfStockPriceTolerancePercent} step={1} onChange={(value) => setSettings((current) => ({ ...current, outOfStockPriceTolerancePercent: Math.min(100, Math.max(0, value)) }))} />
+          <NumberSetting label={lang === 'pt' ? 'Peso da mesma categoria' : 'Same-category weight'} value={settings.outOfStockCategoryWeight} step={5} onChange={(value) => setSettings((current) => ({ ...current, outOfStockCategoryWeight: Math.min(100, Math.max(0, value)) }))} />
+          <NumberSetting label={lang === 'pt' ? 'Peso das etiquetas em comum' : 'Shared-tag weight'} value={settings.outOfStockTagWeight} step={5} onChange={(value) => setSettings((current) => ({ ...current, outOfStockTagWeight: Math.min(100, Math.max(0, value)) }))} />
+        </div>
+        <div style={{ marginTop: 12, fontSize: 10, color: C.inkSoft, lineHeight: 1.45 }}>{lang === 'pt' ? 'A prioridade é: mesma opção noutra cor, outros tamanhos claramente identificados e, depois, produtos relacionados por categoria e etiquetas.' : 'Priority is: the same option in another colour, clearly identified other sizes, then products related by category and merchandising tags.'}</div>
       </Card>
     </div>
   </div>;

@@ -1031,6 +1031,13 @@ export type AiMessagingSettings = {
   maxAutoRepliesPerConversation: number;
   maxAutoRepliesPerHour: number;
   monthlyBudgetUsd: number;
+  outOfStockRecoveryEnabled: boolean;
+  outOfStockAllowOtherColours: boolean;
+  outOfStockAllowOtherSizes: boolean;
+  outOfStockMaxAlternatives: number;
+  outOfStockPriceTolerancePercent: number;
+  outOfStockCategoryWeight: number;
+  outOfStockTagWeight: number;
 };
 
 export async function adminGetAiAssistantStatus(): Promise<AiAssistantStatus> {
