@@ -868,8 +868,16 @@ export async function lookupOrder(orderNumber: string, email: string): Promise<P
   return data.order;
 }
 
-/** Help page "send us an email" form (JOS-64 follow-up). */
-export async function submitContactMessage(input: { name: string; email: string; phone?: string; orderNumber?: string; message: string }): Promise<void> {
+/**
+ * Help page "send us an email" form (JOS-64 follow-up). `lang` (added
+ * 2026-08-06) is the storefront's active UI language -- it only decides the
+ * language of the customer-facing auto-reply the CMS now sends back
+ * (sendContactAutoReplyEmail in the CMS repo's lib/email.ts); the internal
+ * team notification stays Portuguese-only regardless. Optional so this
+ * keeps working unchanged if a caller doesn't pass it (CMS defaults to
+ * 'pt').
+ */
+export async function submitContactMessage(input: { name: string; email: string; phone?: string; orderNumber?: string; message: string; lang?: 'pt' | 'en' }): Promise<void> {
   await request<{ ok: true }>('/contact', {
     method: 'POST',
     body: JSON.stringify(input),
