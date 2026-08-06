@@ -119,6 +119,9 @@ export function Help() {
         phone: contactPhone.trim(),
         orderNumber: contactOrder.trim(),
         message: contactMessage.trim(),
+        // Decides the language of the auto-reply the CMS sends back, not
+        // just the internal team notification (which stays PT-only).
+        lang,
       });
       setSendState('sent');
       setContactName('');
