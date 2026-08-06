@@ -39,7 +39,7 @@ export function InstagramProductCard({ product, lookId, compact = false }: { pro
     >
       <div style={{ aspectRatio: compact ? undefined : '4 / 5', height: compact ? 94 : undefined, minHeight: 0, overflow: 'hidden', background: C.subtleBg }}>
         <ProductPhoto
-          tone="light"
+          tone="gold"
           radius={0}
           image={product.imageUrl ? { url: absoluteMediaUrl(product.imageUrl) || product.imageUrl, alt: name } : undefined}
         />
