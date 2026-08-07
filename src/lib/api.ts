@@ -196,7 +196,9 @@ export type ApiProduct = {
    * once. Payload returns an array for hasMany relationships; an unpopulated
    * or empty product may still send null/undefined, so both are tolerated. */
   tag?: ApiMerchTagRef[] | null;
-  images?: { image: ApiProductImageRef }[];
+  // `color` (2026-08-07, per-colour galleries): optional, mirrors
+  // variants[].color -- unset means "general", shown for every colour.
+  images?: { id?: string | null; image: ApiProductImageRef; color?: ApiColorRef | null }[];
   priceAOKz: number;
   pricePTEur: number;
   shippingWeightGrams: number;

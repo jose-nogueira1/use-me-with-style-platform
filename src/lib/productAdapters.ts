@@ -1,4 +1,4 @@
-import { resolveRef, type ApiProduct } from './api';
+import { refId, resolveRef, type ApiProduct } from './api';
 import type { Product, ProductBundleComponent, ProductColor, ProductVariant, SizeGuideRow } from '../types/product';
 
 const SIZE_ORDER = ['XS', 'S', 'M', 'L', 'XL'];
@@ -28,11 +28,33 @@ function isProductOnSale(p: Pick<ApiProduct, 'saleAOKz' | 'salePTEur' | 'saleSta
 
 /** Resolves a CMS-relative media URL to an absolute one. Exported for reuse
  * anywhere else a raw media URL needs the same treatment (e.g. Home.tsx's
- * hero image, 2026-07-25). */
+ * hero image, 2026-07-25).
+ *
+ * 2026-08-07 bug fix ("uploaded a product photo, card and detail page still
+ * show the placeholder"): in production `publicEnv.apiBaseUrl` is the
+ * literal string "/" (the same-origin /api proxy configured in vercel.json
+ * -- see api.ts's own API_BASE, which already special-cases this). But
+ * `new URL(relativeOrEvenAbsoluteUrl, "/")` unconditionally THROWS --
+ * `URL`'s base argument has to be a real absolute URL (with a scheme) on
+ * its own, and a bare "/" isn't one. That exception was being silently
+ * swallowed by the catch below, so every single media URL sitewide
+ * (product photos, colour swatches, the homepage hero image) was quietly
+ * resolving to `undefined` and falling back to the placeholder -- this
+ * never showed up before because nothing had ever actually gone through
+ * this path with real uploaded photos until now. Fixed by resolving
+ * against the page's own origin instead of the raw env value whenever
+ * that value isn't itself a usable absolute base, and by short-circuiting
+ * already-absolute URLs (e.g. a real S3/R2 URL) without needing a base at
+ * all -- mirroring the CMS's own copy of this helper in lib/mediaUrl.ts. */
 export function absoluteMediaUrl(url?: string): string | undefined {
   if (!url) return undefined;
+  if (/^https?:\/\//i.test(url)) return url;
+  const base = publicEnv.apiBaseUrl && publicEnv.apiBaseUrl !== '/'
+    ? publicEnv.apiBaseUrl
+    : (typeof window !== 'undefined' ? window.location.origin : undefined);
+  if (!base) return undefined;
   try {
-    return new URL(url, publicEnv.apiBaseUrl).toString();
+    return new URL(url, base).toString();
   } catch {
     return undefined;
   }
@@ -41,7 +63,7 @@ export function absoluteMediaUrl(url?: string): string | undefined {
 export function adaptApiProduct(api: ApiProduct, market: 'AO' | 'PT', lang: 'pt' | 'en', index = 0): Product {
   const localizedName = (lang === 'en' ? api.nameEN : api.namePT)?.trim() || api.name;
   const localizedDescription = (lang === 'en' ? api.descriptionEN : api.descriptionPT)?.trim() || api.description;
-  const images = (api.images ?? []).flatMap(({ image }) => {
+  const images = (api.images ?? []).flatMap(({ image, color }) => {
     if (!image || typeof image !== 'object') return [];
     const url = absoluteMediaUrl(image.url);
     if (!url) return [];
@@ -50,6 +72,7 @@ export function adaptApiProduct(api: ApiProduct, market: 'AO' | 'PT', lang: 'pt'
       cardUrl: absoluteMediaUrl(image.sizes?.card?.url),
       thumbnailUrl: absoluteMediaUrl(image.sizes?.thumbnail?.url),
       alt: image.alt?.trim() || localizedName,
+      colorId: refId(color) || undefined,
     }];
   });
 
@@ -179,4 +202,12 @@ export function adaptApiProduct(api: ApiProduct, market: 'AO' | 'PT', lang: 'pt'
     images,
     tone: TONE_CYCLE[index % TONE_CYCLE.length],
   };
+}
+
+/** True when any size in this colour still has stock for the current
+ * market. Shared by ProductDetail's colour pills and ProductCard's colour
+ * swatches (2026-08-07) so "sold out" is decided the same way everywhere
+ * instead of two copies of the same `variants.some(...)` drifting apart. */
+export function colorHasStock(product: Pick<Product, 'variants'>, colorId: string): boolean {
+  return product.variants.some((v) => v.color === colorId && v.stock > 0);
 }

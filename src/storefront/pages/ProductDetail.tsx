@@ -8,6 +8,7 @@ import { ProductPhoto } from '../../components/ProductPhoto';
 import { ProductCard } from '../components/ProductCard';
 import { trackMetaEvent } from '../../lib/metaAnalytics';
 import { hasSwatch, swatchBackground } from '../../lib/colorSwatch';
+import { colorHasStock } from '../../lib/productAdapters';
 import { Seo, SITE_TITLE, truncateForMeta } from '../../lib/seo';
 
 // Category display names now come from the CMS categories collection (via
@@ -39,6 +40,13 @@ export function ProductDetail() {
   const [color, setColor] = useState<string | null>(null);
   const [added, setAdded] = useState(false);
   const [showSizeGuide, setShowSizeGuide] = useState(false);
+  // Gallery (2026-08-07, per-colour photo galleries): tracks the shopper's
+  // manual thumbnail pick by URL rather than by index. That sidesteps
+  // needing an effect to reset the selection when the colour-filtered
+  // gallery below changes shape -- if the previously picked URL isn't in
+  // the new list, `mainImage` below just falls back to its first photo,
+  // with no extra render/effect required.
+  const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
 
   if (loading) {
     return <div style={{ padding: 60, textAlign: 'center', color: C.inkSoft }}>…</div>;
@@ -69,7 +77,15 @@ export function ProductDetail() {
   const defaultSize = product.sizes.find((candidate) => stockFor(activeColor, candidate) > 0) ?? product.sizes[Math.floor(product.sizes.length / 2)];
   const activeSize = size ?? defaultSize;
   const activeColorLabel = product.colors.find((c) => c.id === activeColor)?.name ?? activeColor;
-  const colorHasStock = (colorId: string) => product.variants.some((v) => v.color === colorId && v.stock > 0);
+  // Colour-filtered gallery (2026-08-07): photos tagged to the selected
+  // colour win; if that colour has none of its own yet, fall back to the
+  // untagged "general" pool (approved product-wide default), and if a
+  // product somehow has neither (e.g. every photo tagged to a DIFFERENT
+  // colour), fall back to every photo rather than showing nothing.
+  const generalImages = product.images.filter((img) => !img.colorId);
+  const colorImages = activeColor ? product.images.filter((img) => img.colorId === activeColor) : [];
+  const galleryImages = colorImages.length > 0 ? colorImages : generalImages.length > 0 ? generalImages : product.images;
+  const mainImage = galleryImages.find((img) => img.url === selectedImageUrl) ?? galleryImages[0];
   const activeVariant = product.productType === 'bundle'
     ? product.variants[0]
     : product.variants.find((variant) =>
@@ -128,8 +144,9 @@ export function ProductDetail() {
     <div style={{ background: C.paper, position: 'relative' }}>
       <Seo title={seoTitle} description={seoDescription} image={seoImage} />
       <div className="ump-product-layout">
+        <div>
         <div style={{ height: 440, borderRadius: 0, overflow: 'hidden', position: 'relative' }}>
-          <ProductPhoto tone={product.tone} radius={0} image={product.images[0]} />
+          <ProductPhoto tone={product.tone} radius={0} image={mainImage} />
           <button
             onClick={() => toggleFavorite(product.id)}
             aria-label={isFav ? (lang === 'pt' ? `Remover ${product.name} dos favoritos` : `Remove ${product.name} from favorites`) : (lang === 'pt' ? `Adicionar ${product.name} aos favoritos` : `Add ${product.name} to favorites`)}
@@ -166,6 +183,32 @@ export function ProductDetail() {
               ))}
             </div>
           )}
+        </div>
+
+        {/* Thumbnail strip (2026-08-07): the page previously only ever
+            showed images[0], with no way to browse the rest -- clicking a
+            thumbnail here just moves selectedImageUrl, no navigation. Only
+            rendered when there's more than one photo to choose from. */}
+        {galleryImages.length > 1 && (
+          <div style={{ display: 'flex', gap: 8, marginTop: 10, overflowX: 'auto', padding: 2 }}>
+            {galleryImages.map((img, i) => (
+              <button
+                key={img.url}
+                type="button"
+                onClick={() => setSelectedImageUrl(img.url)}
+                aria-label={lang === 'pt' ? `Ver fotografia ${i + 1}` : `View photo ${i + 1}`}
+                aria-pressed={img.url === mainImage?.url}
+                style={{
+                  flex: '0 0 60px', width: 60, height: 60, borderRadius: 6, overflow: 'hidden', padding: 0,
+                  border: `2px solid ${img.url === mainImage?.url ? C.goldDeep : 'transparent'}`,
+                  cursor: 'pointer', background: C.subtleBg,
+                }}
+              >
+                <img src={img.thumbnailUrl || img.cardUrl || img.url} alt={img.alt} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+              </button>
+            ))}
+          </div>
+        )}
         </div>
 
         <div style={{ padding: '20px 24px' }}>
@@ -250,8 +293,8 @@ export function ProductDetail() {
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: 6,
-                    opacity: colorHasStock(co.id) ? 1 : 0.45,
-                    textDecoration: colorHasStock(co.id) ? 'none' : 'line-through',
+                    opacity: colorHasStock(product, co.id) ? 1 : 0.45,
+                    textDecoration: colorHasStock(product, co.id) ? 'none' : 'line-through',
                   }}
                 >
                   {hasSwatch(co) && (

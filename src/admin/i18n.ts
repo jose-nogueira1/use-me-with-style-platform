@@ -466,6 +466,23 @@ export const T: Record<string, Record<Lang, string>> = {
   couldntUploadImage: { en: "Couldn't upload the image.", pt: 'Não foi possível carregar a imagem.' },
   addPhotos: { en: 'Add photos', pt: 'Adicionar fotografias' },
   clientPhotoPending: { en: 'Client photo pending', pt: 'Fotografia do cliente em falta' },
+  // Image thumbnail grid (2026-08-07 admin bug fix: adding a 2nd+ photo made
+  // it invisible with no way to remove it -- the editor only ever rendered
+  // images[0] in one static box). Each thumbnail below now gets its own
+  // delete button and reorder arrows.
+  deleteImageConfirm: { en: 'Remove this photo?', pt: 'Remover esta fotografia?' },
+  couldntDeleteImage: { en: "Couldn't remove the photo.", pt: 'Não foi possível remover a fotografia.' },
+  couldntReorderImages: { en: "Couldn't reorder the photos.", pt: 'Não foi possível reordenar as fotografias.' },
+  coverImageBadge: { en: 'Cover', pt: 'Capa' },
+  deleteImageAriaLabel: { en: 'Remove photo', pt: 'Remover fotografia' },
+  moveImageEarlierAriaLabel: { en: 'Move photo earlier', pt: 'Mover fotografia para trás' },
+  moveImageLaterAriaLabel: { en: 'Move photo later', pt: 'Mover fotografia para a frente' },
+  addPhotoTile: { en: 'Add photo', pt: 'Adicionar foto' },
+  noPhotosYet: { en: 'No photos yet', pt: 'Ainda sem fotografias' },
+  // Per-colour photo galleries (2026-08-07): each thumbnail can optionally
+  // be tagged with a colour so ProductDetail's gallery can filter by the
+  // shopper's current selection.
+  generalPhotoOption: { en: 'General (all colours)', pt: 'Geral (todas as cores)' },
   productNamePT: { en: 'Product name — Portuguese', pt: 'Nome do produto — Português' },
   productNameEN: { en: 'Product name — English', pt: 'Nome do produto — Inglês' },
   statusLabel: { en: 'Status', pt: 'Estado' },

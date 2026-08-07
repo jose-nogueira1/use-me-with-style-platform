@@ -2,7 +2,15 @@ import { Link } from 'react-router-dom';
 import { C, F, t } from '../../theme';
 import { useApp, useFormatOriginalPrice, useFormatPrice } from '../../state/AppContext';
 import { ProductPhoto } from '../../components/ProductPhoto';
+import { hasSwatch, swatchBackground } from '../../lib/colorSwatch';
+import { colorHasStock } from '../../lib/productAdapters';
 import type { Product } from '../../types/product';
+
+// How many colour dots to show before collapsing into a "+N" overflow chip
+// (2026-08-07: colour availability at a glance on the catalogue/search grid,
+// not just on the product page) -- keeps a product with a large colour range
+// from blowing out the card's fixed-height footer.
+const MAX_VISIBLE_SWATCHES = 6;
 
 const TAG_STYLE: Record<string, { bg: string; text: string }> = {
   'In stock': { bg: C.successBg, text: C.successText },
@@ -72,6 +80,52 @@ export function ProductCard({ product, size = 'grid' }: { product: Product; size
           )}
           <span style={{ fontSize: 11, fontWeight: 800, color: product.onSale ? C.dangerStrong : C.ink }}>{fmtPrice(product)}</span>
         </div>
+        {/* Colour availability at a glance (2026-08-07): a diagonal strike
+            reuses the exact same "sold out in this colour" rule as the
+            product page's colour pills (colorHasStock) -- and since a
+            circular dot has no text baseline for CSS's own line-through to
+            hang off, the strike here is a small rotated bar drawn on top. */}
+        {product.colors.length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 8, flexWrap: 'wrap' }}>
+            {product.colors.slice(0, MAX_VISIBLE_SWATCHES).map((co) => {
+              const inStock = colorHasStock(product, co.id);
+              return (
+                <span key={co.id} title={co.name} style={{ position: 'relative', width: 12, height: 12, flexShrink: 0, display: 'inline-block' }}>
+                  <span
+                    aria-hidden
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      borderRadius: '50%',
+                      border: `1px solid ${C.rule}`,
+                      background: hasSwatch(co) ? swatchBackground(co) : C.subtleBg,
+                      opacity: inStock ? 1 : 0.4,
+                    }}
+                  />
+                  {!inStock && (
+                    <span
+                      aria-hidden
+                      style={{
+                        position: 'absolute',
+                        left: -1,
+                        right: -1,
+                        top: 5,
+                        height: 1.5,
+                        background: C.dangerStrong,
+                        transform: 'rotate(-45deg)',
+                      }}
+                    />
+                  )}
+                </span>
+              );
+            })}
+            {product.colors.length > MAX_VISIBLE_SWATCHES && (
+              <span style={{ fontSize: 9, fontWeight: 700, color: C.inkSoft }}>
+                +{product.colors.length - MAX_VISIBLE_SWATCHES}
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </Link>
   );

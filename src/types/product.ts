@@ -5,6 +5,11 @@ export type ProductImage = {
   cardUrl?: string;
   thumbnailUrl?: string;
   alt: string;
+  /** Per-colour photo galleries (2026-08-07). Matches ProductColor.id.
+   * Undefined means "general" -- shown regardless of which colour is
+   * selected, and used as the fallback pool for any colour that has no
+   * photos tagged to it yet. See ProductDetail.tsx's gallery filter. */
+  colorId?: string;
 };
 
 /** Colour taxonomy entry (2026-07-25): colours moved from free text to a

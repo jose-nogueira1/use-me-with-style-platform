@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { ChevronLeft, ChevronRight, Plus, X } from 'lucide-react';
 import { C } from '../../theme';
 import { useApp } from '../../state/AppContext';
 import { hasSwatch, swatchBackground } from '../../lib/colorSwatch';
@@ -365,6 +366,17 @@ export function ProductEditor() {
     }
   };
 
+  // Shared row -> save-payload conversion, used by every image mutation
+  // below. Always carries the row's existing `color` tag forward unless a
+  // caller explicitly overrides it -- earlier versions of delete/reorder
+  // mapped down to `{ image }` only, which would have silently wiped every
+  // photo's colour tag on the very next delete or reorder after this
+  // feature shipped (2026-08-07, per-colour galleries).
+  const serializeImageRow = (row: NonNullable<ApiProduct['images']>[number]) => ({
+    image: typeof row.image === 'object' ? row.image.id! : row.image,
+    color: row.color ? (typeof row.color === 'object' ? row.color.id! : row.color) : null,
+  });
+
   const handleImageUpload = async (file?: File) => {
     if (!file || !existing) return;
     setSaving(true);
@@ -372,13 +384,81 @@ export function ProductEditor() {
     try {
       const media = await adminUploadProductImage(file, form.namePT || form.name || file.name);
       const images = [
-        ...(existing.images ?? []).map(({ image }) => ({ image: typeof image === 'object' ? image.id! : image })),
-        { image: media.id },
+        ...(existing.images ?? []).map(serializeImageRow),
+        { image: media.id, color: null },
       ];
       const updated = await adminUpdateProduct(existing.id, { images });
       setExisting(updated);
     } catch {
       setError(t('couldntUploadImage', lang));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Image thumbnail grid (2026-08-07 bug fix): the editor used to render
+  // only images[0] in one static box, with a single "Add photos" button that
+  // just appended -- so a 2nd+ photo had nowhere to be seen, and nothing
+  // could ever be removed. Delete, reorder and colour-tagging below follow
+  // the exact same "persist immediately via adminUpdateProduct, don't wait
+  // for the Save button" pattern handleImageUpload above already
+  // established -- images were never part of the gated FormState/handleSave
+  // flow.
+  const handleImageDelete = async (index: number) => {
+    if (!existing) return;
+    if (!window.confirm(t('deleteImageConfirm', lang))) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const images = (existing.images ?? [])
+        .filter((_, i) => i !== index)
+        .map(serializeImageRow);
+      const updated = await adminUpdateProduct(existing.id, { images });
+      setExisting(updated);
+    } catch {
+      setError(t('couldntDeleteImage', lang));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleImageReorder = async (index: number, direction: -1 | 1) => {
+    if (!existing) return;
+    const current = existing.images ?? [];
+    const target = index + direction;
+    if (target < 0 || target >= current.length) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const reordered = [...current];
+      [reordered[index], reordered[target]] = [reordered[target], reordered[index]];
+      const images = reordered.map(serializeImageRow);
+      const updated = await adminUpdateProduct(existing.id, { images });
+      setExisting(updated);
+    } catch {
+      setError(t('couldntReorderImages', lang));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Per-colour photo tagging (2026-08-07): empty string clears the tag back
+  // to "general" (shown for every colour) -- matches the same
+  // empty-string-means-null convention the size/colour matrix elsewhere in
+  // this form already uses.
+  const handleImageColorChange = async (index: number, colorId: string) => {
+    if (!existing) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const images = (existing.images ?? []).map((row, i) => {
+        const base = serializeImageRow(row);
+        return i === index ? { ...base, color: colorId ? originalId(colors, colorId) : null } : base;
+      });
+      const updated = await adminUpdateProduct(existing.id, { images });
+      setExisting(updated);
+    } catch {
+      setError(t('couldntSaveBackend', lang));
     } finally {
       setSaving(false);
     }
@@ -410,7 +490,7 @@ export function ProductEditor() {
         <div style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 16, minWidth: 0 }}>
           <div
             style={{
-              height: 280,
+              height: 220,
               borderRadius: 8,
               border: `1px solid ${C.goldDeep}`,
               background: C.subtleBg,
@@ -427,13 +507,93 @@ export function ProductEditor() {
             {existing?.images?.length ? (
               <img src={resolveProductImage(existing.images[0].image).url} alt={resolveProductImage(existing.images[0].image).alt ?? form.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }} />
             ) : (
-              t('clientPhotoPending', lang)
+              t('noPhotosYet', lang)
             )}
           </div>
-          <label style={{ display: 'block', width: '100%', marginTop: 12, padding: 12, background: C.paper, border: `1px solid ${C.rule}`, borderRadius: 6, fontSize: 11, fontWeight: 800, color: C.ink, textAlign: 'center', cursor: 'pointer' }}>
-            {t('addPhotos', lang)}
-            <input type="file" accept="image/*" hidden onChange={(e) => void handleImageUpload(e.target.files?.[0])} />
-          </label>
+
+          {/* Thumbnail grid (2026-08-07 bug fix): every uploaded photo shown
+              here, not just the first -- each with its own delete button and
+              left/right reorder arrows. The first tile is flagged "Cover"
+              since it's what the big preview above and every product
+              card/hero elsewhere on the storefront actually use. When the
+              product has colours configured, each thumbnail also gets a
+              small colour picker underneath (2026-08-07 per-colour
+              galleries) -- "General" (the default) means the photo shows
+              for every colour; tagging it narrows it to just that one on
+              the product page. */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginTop: 12 }}>
+            {(existing?.images ?? []).map((row, index) => {
+              const resolved = resolveProductImage(row.image);
+              const count = existing?.images?.length ?? 0;
+              const rowColorId = row.color ? String(refId(row.color)) : '';
+              return (
+                <div key={row.id ?? index} style={{ display: 'flex', flexDirection: 'column', borderRadius: 6, overflow: 'hidden', border: `1px solid ${C.ruleLight}` }}>
+                  <div style={{ position: 'relative', aspectRatio: '1 / 1', background: C.subtleBg }}>
+                    <img src={resolved.url} alt={resolved.alt ?? form.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                    {index === 0 && (
+                      <div style={{ position: 'absolute', top: 4, left: 4, padding: '2px 6px', borderRadius: 4, background: 'rgba(20,20,20,0.7)', color: '#fff', fontSize: 8, fontWeight: 800, letterSpacing: 0.3, textTransform: 'uppercase' }}>
+                        {t('coverImageBadge', lang)}
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      aria-label={t('deleteImageAriaLabel', lang)}
+                      disabled={saving}
+                      onClick={() => void handleImageDelete(index)}
+                      style={{ position: 'absolute', top: 4, right: 4, width: 20, height: 20, borderRadius: 999, border: 'none', background: 'rgba(20,20,20,0.7)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: saving ? 'default' : 'pointer' }}
+                    >
+                      <X size={12} />
+                    </button>
+                    <div style={{ position: 'absolute', bottom: 4, left: 4, right: 4, display: 'flex', justifyContent: 'space-between' }}>
+                      <button
+                        type="button"
+                        aria-label={t('moveImageEarlierAriaLabel', lang)}
+                        disabled={saving || index === 0}
+                        onClick={() => void handleImageReorder(index, -1)}
+                        style={{ width: 20, height: 20, borderRadius: 999, border: 'none', background: 'rgba(20,20,20,0.7)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: saving || index === 0 ? 'default' : 'pointer', opacity: index === 0 ? 0.35 : 1 }}
+                      >
+                        <ChevronLeft size={12} />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={t('moveImageLaterAriaLabel', lang)}
+                        disabled={saving || index === count - 1}
+                        onClick={() => void handleImageReorder(index, 1)}
+                        style={{ width: 20, height: 20, borderRadius: 999, border: 'none', background: 'rgba(20,20,20,0.7)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: saving || index === count - 1 ? 'default' : 'pointer', opacity: index === count - 1 ? 0.35 : 1 }}
+                      >
+                        <ChevronRight size={12} />
+                      </button>
+                    </div>
+                  </div>
+                  {form.hasColor && colors.length > 0 && (
+                    <select
+                      value={rowColorId}
+                      disabled={saving}
+                      onChange={(e) => void handleImageColorChange(index, e.target.value)}
+                      style={{ width: '100%', border: 'none', borderTop: `1px solid ${C.ruleLight}`, background: C.paper, color: C.ink, fontSize: 8, fontWeight: 700, padding: '3px 2px' }}
+                    >
+                      <option value="">{t('generalPhotoOption', lang)}</option>
+                      {colors.map((co) => (
+                        <option key={String(co.id)} value={String(co.id)}>{colorLabel(co)}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              );
+            })}
+            <label
+              style={{
+                aspectRatio: '1 / 1', borderRadius: 6, border: `1px dashed ${C.rule}`,
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
+                cursor: existing ? 'pointer' : 'not-allowed', color: C.inkSoft, fontSize: 8, fontWeight: 800,
+                textAlign: 'center', opacity: existing ? 1 : 0.5, padding: 4,
+              }}
+            >
+              <Plus size={16} />
+              {t('addPhotoTile', lang)}
+              <input type="file" accept="image/*" hidden disabled={!existing || saving} onChange={(e) => void handleImageUpload(e.target.files?.[0])} />
+            </label>
+          </div>
         </div>
 
         <div style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 20, display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0 }}>
