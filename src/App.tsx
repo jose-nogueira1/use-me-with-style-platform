@@ -503,7 +503,12 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
            below, and with the header/footer's own 720px cutover, so there's
            no width range where some chrome looks desktop and some looks
            mobile at once. */
-        .ump-product-layout { display: block; }
+        /* padding-top (2026-08-07 bug fix, "image is touching the nav bar
+           on top"): this layout had zero top spacing at any width, so the
+           edge-to-edge hero photo sat flush against the sticky header below
+           it with no gap at all -- same 20px the browse sidebar already
+           uses for its own top breathing room. */
+        .ump-product-layout { display: block; padding-top: 20px; }
         @media (min-width: 720px) {
           .ump-product-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: flex-start; max-width: 1000px; margin: 0 auto; }
         }

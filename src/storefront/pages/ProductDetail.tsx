@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Check, Heart, Search, X } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, Heart, Search, X } from 'lucide-react';
 import { C, F, t } from '../../theme';
 import { useApp, useFormatOriginalPrice, useFormatPrice } from '../../state/AppContext';
 import { useProducts } from '../../hooks/useProducts';
@@ -86,6 +86,16 @@ export function ProductDetail() {
   const colorImages = activeColor ? product.images.filter((img) => img.colorId === activeColor) : [];
   const galleryImages = colorImages.length > 0 ? colorImages : generalImages.length > 0 ? generalImages : product.images;
   const mainImage = galleryImages.find((img) => img.url === selectedImageUrl) ?? galleryImages[0];
+  // Prev/next nav arrows (2026-08-07), alongside the thumbnail strip below.
+  // Wraps at both ends so the arrows are always active with 2+ photos,
+  // rather than disabling at the first/last image.
+  const mainImageIndex = galleryImages.findIndex((img) => img.url === mainImage?.url);
+  const goToImage = (direction: -1 | 1) => {
+    if (galleryImages.length < 2) return;
+    const from = mainImageIndex === -1 ? 0 : mainImageIndex;
+    const next = (from + direction + galleryImages.length) % galleryImages.length;
+    setSelectedImageUrl(galleryImages[next].url);
+  };
   const activeVariant = product.productType === 'bundle'
     ? product.variants[0]
     : product.variants.find((variant) =>
@@ -146,7 +156,7 @@ export function ProductDetail() {
       <div className="ump-product-layout">
         <div>
         <div style={{ height: 440, borderRadius: 0, overflow: 'hidden', position: 'relative' }}>
-          <ProductPhoto tone={product.tone} radius={0} image={mainImage} />
+          <ProductPhoto tone={product.tone} radius={0} image={mainImage} variant="card" priority />
           <button
             onClick={() => toggleFavorite(product.id)}
             aria-label={isFav ? (lang === 'pt' ? `Remover ${product.name} dos favoritos` : `Remove ${product.name} from favorites`) : (lang === 'pt' ? `Adicionar ${product.name} aos favoritos` : `Add ${product.name} to favorites`)}
@@ -171,6 +181,34 @@ export function ProductDetail() {
                 above 3:1 on the chip in both themes (C.gold managed 2.2:1). */}
             <Heart size={18} fill={isFav ? C.goldDeep : 'none'} color={isFav ? C.goldDeep : C.photoChipFg} />
           </button>
+          {galleryImages.length > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={() => goToImage(-1)}
+                aria-label={lang === 'pt' ? 'Fotografia anterior' : 'Previous photo'}
+                style={{
+                  position: 'absolute', top: '50%', left: 12, transform: 'translateY(-50%)',
+                  width: 34, height: 34, borderRadius: 17, background: C.photoChipBg,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)',
+                }}
+              >
+                <ChevronLeft size={18} color={C.photoChipFg} />
+              </button>
+              <button
+                type="button"
+                onClick={() => goToImage(1)}
+                aria-label={lang === 'pt' ? 'Próxima fotografia' : 'Next photo'}
+                style={{
+                  position: 'absolute', top: '50%', right: 12, transform: 'translateY(-50%)',
+                  width: 34, height: 34, borderRadius: 17, background: C.photoChipBg,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)',
+                }}
+              >
+                <ChevronRight size={18} color={C.photoChipFg} />
+              </button>
+            </>
+          )}
           {product.tags.length > 0 && (
             <div style={{ position: 'absolute', top: 16, left: 16, display: 'flex', flexWrap: 'wrap', gap: 6, maxWidth: 'calc(100% - 70px)' }}>
               {product.tags.map((tag) => (

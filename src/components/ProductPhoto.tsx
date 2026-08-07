@@ -29,13 +29,27 @@ export function ProductPhoto({
   radius = 8,
   image,
   variant = 'full',
+  priority = false,
 }: {
   tone: ProductTone;
   radius?: number;
   image?: ProductImage;
   variant?: 'full' | 'card' | 'thumbnail';
+  /** 2026-08-07 ("images taking a bit long to load"): the ONE above-the-fold
+   * hero photo on a page (ProductDetail's main image) shouldn't be
+   * `loading="lazy"` -- lazy defers a fetch until the browser decides the
+   * image is about to enter the viewport, which is pure downside for
+   * something that's already visible the instant the page paints. Every
+   * other use of this component (grid cards, thumbnails, cart rows) is
+   * correctly lazy by default. */
+  priority?: boolean;
 }) {
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  // 'full' still exists for callers that genuinely want the original
+  // (e.g. a future zoom/lightbox), but variant='card' is what ProductDetail's
+  // hero now requests: at a fixed ~440px display height, a 3000x3000
+  // original (150KB+ and a much heavier decode) was pure waste over the
+  // 600x800 "card" size Payload already generates for this exact purpose.
   const imageUrl = variant === 'thumbnail'
     ? image?.thumbnailUrl || image?.cardUrl || image?.url
     : variant === 'card'
@@ -48,7 +62,8 @@ export function ProductPhoto({
         data-artwork
         src={imageUrl}
         alt={image?.alt || ''}
-        loading="lazy"
+        loading={priority ? 'eager' : 'lazy'}
+        fetchPriority={priority ? 'high' : undefined}
         decoding="async"
         onError={() => setFailedUrl(imageUrl)}
         style={{ width: '100%', height: '100%', display: 'block', objectFit: 'cover', borderRadius: radius }}
