@@ -1149,7 +1149,25 @@ export function Checkout() {
         <div style={{ background: C.subtleBg, borderRadius: 8, padding: 16, border: `1px solid ${C.ruleLight}` }}>
           <Row testId="checkout-subtotal" label={t('subtotal', lang)} value={fmt(settlementSubtotal)} />
           {discountAmount > 0 && <Row testId="checkout-discount" label={appliedCoupon?.label || t('discount', lang)} value={`-${fmt(discountAmount)}`} />}
-          <Row testId="checkout-shipping" label={t('shipping', lang)} value={shippingCost === 0 ? t('free', lang) : fmt(shippingCost)} />
+          <Row
+            testId="checkout-shipping"
+            label={t('shipping', lang)}
+            value={
+              // AO-only pending state (2026-08-07 bug fix): checkoutShippingCost
+              // falls back to 0 while no municipality is selected yet (nothing to
+              // look a per-municipality price up by), which the line below can't
+              // tell apart from a genuinely free shipment -- misleadingly showing
+              // "Free" on page load for orders nowhere near the free-shipping
+              // threshold. `freeShipping` (an applied free-delivery coupon) still
+              // takes priority and reads as free immediately, since that one IS
+              // genuinely free regardless of municipality.
+              market === 'AO' && !freeShipping && !form.city
+                ? t('shippingPendingMunicipality', lang)
+                : shippingCost === 0
+                  ? t('free', lang)
+                  : fmt(shippingCost)
+            }
+          />
           <div style={{ borderTop: `1px solid ${C.rule}`, marginTop: 8, paddingTop: 8 }}>
             <Row testId="checkout-total" label={t('total', lang)} value={fmt(total)} bold />
             <div data-testid="checkout-vat-included" style={{ fontSize: 10, color: C.inkSoft, marginTop: 4, textAlign: 'right' }}>

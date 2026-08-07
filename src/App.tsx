@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { C, F, LIGHT_VARS, DARK_VARS } from './theme';
 import { AppProvider } from './state/AppContext';
 import { AppErrorBoundary } from './components/AppErrorBoundary';
+import { ScrollToTop } from './components/ScrollToTop';
 
 const StorefrontLayout = lazy(() => import('./storefront/StorefrontLayout').then((m) => ({ default: m.StorefrontLayout })));
 const Home = lazy(() => import('./storefront/pages/Home').then((m) => ({ default: m.Home })));
@@ -276,7 +277,17 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
           -ms-overflow-style: none;
           padding: 4px 20px;
           cursor: grab;
-          touch-action: pan-y;
+          /* Native panning allowed in both axes now (2026-08-07 bug fix) --
+             touch/pen drag is no longer intercepted in JS (see
+             InstagramFeed.tsx's onPointerDown), so the browser needs to be
+             free to handle horizontal touch scrolling itself. Previously
+             just pan-y, which told the browser to hand X-axis touch
+             gestures to JS instead of scrolling natively -- correct in
+             theory, but WebKit's handoff for that combination is unreliable
+             in practice, and the net effect was a strip that felt "stuck"
+             on real iPhones. Still excludes pinch-zoom so a two-finger
+             gesture on the strip doesn't zoom the page. */
+          touch-action: pan-x pan-y;
           -webkit-mask-image: linear-gradient(to right, transparent 0, black 24px, black calc(100% - 24px), transparent 100%);
           mask-image: linear-gradient(to right, transparent 0, black 24px, black calc(100% - 24px), transparent 100%);
         }
@@ -633,6 +644,7 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
       <AppErrorBoundary>
         <BrowserRouter>
           <AppProvider>
+          <ScrollToTop />
           <Suspense fallback={<div role="status" style={{ padding: 40, textAlign: 'center', color: C.inkSoft }}>…</div>}><Routes>
             <Route element={<StorefrontLayout />}>
               <Route index element={<Home />} />

@@ -307,32 +307,7 @@ export function Browse() {
         />
         <FilterGroup label={t('size', lang)} options={allSizes.map((s) => ({ value: s, label: s }))} active={filterSizes} onSelect={toggleSize} />
         <FilterGroup label={t('colour', lang)} options={allColors} active={filterColors} onSelect={toggleColor} />
-        <div>
-          <FilterLabel>{t('sort', lang)}</FilterLabel>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {([
-              { key: 'default' as const, labelKey: 'sortDefault' },
-              { key: 'price-asc' as const, labelKey: 'sortPriceAsc' },
-              { key: 'price-desc' as const, labelKey: 'sortPriceDesc' },
-            ]).map((s) => (
-              <button
-                key={s.key}
-                onClick={() => setSortBy(s.key)}
-                style={{
-                  textAlign: 'left',
-                  padding: '8px 10px',
-                  fontSize: 12,
-                  borderRadius: 6,
-                  border: `1px solid ${sortBy === s.key ? C.goldDeep : C.fieldBorder}`,
-                  background: sortBy === s.key ? C.tagBg : C.paper,
-                  color: sortBy === s.key ? C.goldDeep : C.ink,
-                }}
-              >
-                {t(s.labelKey, lang)}
-              </button>
-            ))}
-          </div>
-        </div>
+        <SortControl sortBy={sortBy} setSortBy={setSortBy} lang={lang} />
       </div>
 
       <div className="ump-browse-main">
@@ -417,6 +392,11 @@ export function Browse() {
           <div className="ump-slide-up ump-browse-filter-toggle" style={{ padding: '16px 20px', background: C.subtleBg, borderBottom: `1px solid ${C.ruleLight}` }}>
             <FilterGroup label={t('size', lang)} options={allSizes.map((s) => ({ value: s, label: s }))} active={filterSizes} onSelect={toggleSize} />
             <FilterGroup label={t('colour', lang)} options={allColors} active={filterColors} onSelect={toggleColor} />
+            {/* Bug fix, 2026-08-07: sort previously only existed in the
+                desktop sidebar (`.ump-browse-sidebar`, hidden below 720px),
+                so mobile shoppers had no way to sort by price at all -- this
+                mobile filter panel had size/colour but no sort control. */}
+            <SortControl sortBy={sortBy} setSortBy={setSortBy} lang={lang} />
             {hasActiveFilters && (
               <div style={{ paddingTop: 4 }}>
                 <ClearFiltersButton onClick={clearAllFilters} lang={lang} />
@@ -520,6 +500,53 @@ function ClearFiltersButton({ onClick, lang }: { onClick: () => void; lang: 'pt'
 function FilterLabel({ children }: { children: React.ReactNode }) {
   return (
     <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1, color: C.goldDeep, marginBottom: 6, textTransform: 'uppercase' }}>{children}</div>
+  );
+}
+
+/** Shared between the desktop sidebar and the mobile filter panel (2026-08-07
+ * bug fix: sort used to live only in the desktop sidebar markup, so it was
+ * simply absent on mobile rather than just hard-to-find). Not built on
+ * FilterGroup -- sort is single-select with no "off" state to toggle back to
+ * (there's an explicit 'default' option instead), whereas FilterGroup's
+ * single-select mode re-selecting the active chip clears it to null, which
+ * doesn't fit sortBy's non-nullable type. */
+function SortControl({
+  sortBy,
+  setSortBy,
+  lang,
+}: {
+  sortBy: 'default' | 'price-asc' | 'price-desc';
+  setSortBy: (value: 'default' | 'price-asc' | 'price-desc') => void;
+  lang: 'pt' | 'en';
+}) {
+  return (
+    <div>
+      <FilterLabel>{t('sort', lang)}</FilterLabel>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {([
+          { key: 'default' as const, labelKey: 'sortDefault' },
+          { key: 'price-asc' as const, labelKey: 'sortPriceAsc' },
+          { key: 'price-desc' as const, labelKey: 'sortPriceDesc' },
+        ]).map((s) => (
+          <button
+            key={s.key}
+            onClick={() => setSortBy(s.key)}
+            aria-current={sortBy === s.key ? 'true' : undefined}
+            style={{
+              textAlign: 'left',
+              padding: '8px 10px',
+              fontSize: 12,
+              borderRadius: 6,
+              border: `1px solid ${sortBy === s.key ? C.goldDeep : C.fieldBorder}`,
+              background: sortBy === s.key ? C.tagBg : C.paper,
+              color: sortBy === s.key ? C.goldDeep : C.ink,
+            }}
+          >
+            {t(s.labelKey, lang)}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 

@@ -129,6 +129,26 @@ export function InstagramFeed() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [selectedPost]);
 
+  // Lock background scroll while the lightbox is open (2026-08-07 bug fix,
+  // "swipe up/down swipes the background, not supposed to happen"). The
+  // backdrop is `position: fixed`, which only stops touches from reaching
+  // elements BEHIND it visually -- it does nothing to stop the page's own
+  // body from still being the thing that scrolls on a vertical touch drag,
+  // since the touch target for panning purposes is determined by the
+  // element under the finger's own scroll ancestry, not paint order. Only
+  // `document.body`'s scroll is disabled, not `.ump-instagram-lightbox-body`
+  // (the caption/product-grid panel inside the lightbox), which keeps its
+  // own `overflow-y: auto` so a long caption or product list can still
+  // scroll within the modal itself.
+  useEffect(() => {
+    if (!selectedPost) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [selectedPost]);
+
   // Auto-scroll loop. Advances scrollLeft at a constant speed, skipping
   // frames while hovered, actively dragged, or shortly after any manual
   // scroll interaction. The rendered track is the tile list doubled back to
@@ -181,6 +201,19 @@ export function InstagramFeed() {
   };
 
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    // Mouse only (2026-08-07 bug fix, "Instagram feed not swipeable on
+    // mobile, stays stuck"): touch and pen pointers fall through to the
+    // browser's own native horizontal scrolling instead -- see the
+    // `.ump-instagram-track` touch-action comment in App.tsx for why. This
+    // custom drag-to-scroll exists ONLY because desktop mice have no native
+    // click-and-drag scroll gesture; touchscreens already get one for free
+    // from `overflow-x: auto`, and letting this handler *also* seize
+    // control of scrollLeft on top of the browser's native touch panning is
+    // exactly the kind of two-systems-fighting-over-the-same-property bug
+    // that reads as the strip being "stuck" -- native touch scrolling wins
+    // some frames, the manual scrollLeft assignment wins others, and the
+    // net result is a track that barely moves or stutters.
+    if (e.pointerType !== 'mouse') return;
     const track = trackRef.current;
     if (!track) return;
     draggingRef.current = true;
@@ -301,12 +334,21 @@ export function InstagramFeed() {
         })}
       </div>
 
-      <div className="ump-content-width" style={{ textAlign: 'center', marginTop: 20, padding: '0 20px' }}>
+      {/* flex + gap (2026-08-07 bug fix) instead of a one-sided marginRight
+          on just the first button -- marginRight only ever produces a
+          horizontal gap. On desktop these two inline-flex buttons sit on
+          one line, so that was invisible; on a narrow mobile viewport they
+          wrap onto two lines (same as wrapped text), and a wrap has no
+          horizontal edge for marginRight to apply to, so the buttons ended
+          up touching with zero vertical space between them. `gap` produces
+          the right spacing in both the single-line and wrapped case from
+          one property, so this can't drift out of sync again. */}
+      <div className="ump-content-width" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 8, marginTop: 20, padding: '0 20px' }}>
         {posts.some((post) => (post.products?.length ?? 0) > 0) && (
           <Link
             to="/shop-instagram"
             style={{
-              display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 20px', marginRight: 8,
+              display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 20px',
               borderRadius: 8, background: C.black, color: C.onDarkGold, fontSize: 11, fontWeight: 800,
               letterSpacing: 0.5, textDecoration: 'none',
             }}

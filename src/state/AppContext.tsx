@@ -61,17 +61,24 @@ function readStoredLang(): Lang | null {
   }
 }
 
+// Automatic day/night theme (2026-08-07 request: "light 8AM-8PM, dark 8PM-
+// 8AM, should change automatically"). Local device time, since there's no
+// server-side timezone concept for a storefront visitor. 20 is exclusive on
+// the light side (8:00:00pm itself is already dark) to match "from 8PM till
+// 8AM" reading as dark starting exactly at 8PM.
+function timeBasedThemeMode(now: Date = new Date()): ThemeMode {
+  const hour = now.getHours();
+  return hour >= 8 && hour < 20 ? 'light' : 'dark';
+}
+
 function readInitialThemeMode(): ThemeMode {
   try {
     const stored = localStorage.getItem(THEME_STORAGE_KEY);
     if (stored === 'light' || stored === 'dark') return stored;
   } catch {
-    // localStorage unavailable (SSR/private mode) -- fall through to system preference.
+    // localStorage unavailable (SSR/private mode) -- fall through to time-of-day.
   }
-  if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches) {
-    return 'dark';
-  }
-  return 'light';
+  return timeBasedThemeMode();
 }
 
 function cartStorageKey(market: Market) {
@@ -139,6 +146,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  // Keeps the theme flipping automatically at the 8AM/8PM boundary for
+  // anyone who leaves a tab open across one, WITHOUT overriding an explicit
+  // manual choice -- once setThemeMode has been called (the header's
+  // light/dark toggle), THEME_STORAGE_KEY is set and this effect stops
+  // touching themeMode entirely, same as how a manual choice isn't fought
+  // by an OS-level dark-mode change either. Polled every minute rather than
+  // a single precisely-timed setTimeout -- simpler, and landing up to a
+  // minute late on something driven by wall-clock time is imperceptible.
+  useEffect(() => {
+    const applyIfAutomatic = () => {
+      let hasExplicitOverride: boolean;
+      try {
+        hasExplicitOverride = localStorage.getItem(THEME_STORAGE_KEY) != null;
+      } catch {
+        hasExplicitOverride = false;
+      }
+      if (hasExplicitOverride) return;
+      setThemeModeState(timeBasedThemeMode());
+    };
+    const id = setInterval(applyIfAutomatic, 60_000);
+    return () => clearInterval(id);
   }, []);
 
   useEffect(() => {

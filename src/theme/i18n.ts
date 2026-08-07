@@ -90,6 +90,12 @@ export const T: Record<string, Record<Lang, string>> = {
     en: 'Flowing fabric with a soft touch. A cut that flatters every silhouette.',
   },
   shipping: { pt: 'Envio', en: 'Shipping' },
+  // Angola-only (2026-08-07 bug fix): shown instead of "Grátis" for the
+  // brief window before a municipality is selected, where
+  // checkoutShippingCost's per-municipality lookup has nothing to key off
+  // yet and would otherwise read as genuinely free shipping regardless of
+  // the order total.
+  shippingPendingMunicipality: { pt: 'A calcular', en: 'Calculated next' },
   manualCoordination: { pt: 'Coordenação manual', en: 'Manual coordination' },
   businessDays: { pt: '1–2 dias úteis', en: '1–2 business days' },
   returns: { pt: 'Devoluções', en: 'Returns' },
@@ -513,6 +519,14 @@ export function pickBilingual(pt: string | undefined, en: string | undefined, la
 // a different separator depending on which page it appeared on, regardless
 // of the shopper's selected language. Drive it off `lang` instead so it's
 // consistent everywhere and actually reflects the bilingual toggle.
+// maximumFractionDigits pinned to 0 -- every Kz amount displayed anywhere in
+// the storefront is a whole number (matches how Kwanza is actually quoted:
+// "16 500 Kz", never cents). Without this, toLocaleString's own default (up
+// to 3 fraction digits) leaks through untouched for the one caller that
+// passes a genuine float -- the VAT-included breakdown (total - net, e.g.
+// 2026.315789...) -- rendering "2026,316 Kz" instead of a rounded "2 026
+// Kz", inconsistent with every other amount on the same page (bug found via
+// screen recording, 2026-08-07).
 export function formatKz(amount: number, lang: Lang): string {
-  return amount.toLocaleString(lang === 'pt' ? 'pt-PT' : 'en-US');
+  return amount.toLocaleString(lang === 'pt' ? 'pt-PT' : 'en-US', { maximumFractionDigits: 0 });
 }
