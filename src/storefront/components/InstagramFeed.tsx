@@ -130,22 +130,50 @@ export function InstagramFeed() {
   }, [selectedPost]);
 
   // Lock background scroll while the lightbox is open (2026-08-07 bug fix,
-  // "swipe up/down swipes the background, not supposed to happen"). The
-  // backdrop is `position: fixed`, which only stops touches from reaching
-  // elements BEHIND it visually -- it does nothing to stop the page's own
-  // body from still being the thing that scrolls on a vertical touch drag,
-  // since the touch target for panning purposes is determined by the
-  // element under the finger's own scroll ancestry, not paint order. Only
-  // `document.body`'s scroll is disabled, not `.ump-instagram-lightbox-body`
-  // (the caption/product-grid panel inside the lightbox), which keeps its
-  // own `overflow-y: auto` so a long caption or product list can still
-  // scroll within the modal itself.
+  // "swipe up/down swipes the background, not supposed to happen"; 2026-08-07
+  // round 2, "it's leaking again" -- `overflow: hidden` alone was the first
+  // attempt and it does stop scrolling on desktop, but iOS Safari has a
+  // long-standing bug where `overflow: hidden` on <body> is simply ignored
+  // for touch panning -- the page still rubber-bands/scrolls under a finger
+  // drag no matter what the body's overflow is set to. The reliable
+  // cross-browser fix is to take the body fully out of the scrollable flow:
+  // pin it with `position: fixed` at its current scroll offset (via a
+  // negative `top`), which removes it from anything a touch drag could pan,
+  // then on close undo that and jump back to the stored offset in one
+  // frame -- restoring scrollTop the normal way (rather than smoothly)
+  // avoids any visible jump/flash. The backdrop being `position: fixed` only
+  // ever stopped touches from reaching elements visually BEHIND it; it never
+  // controlled whether the body itself could still be the thing panning.
+  // `.ump-instagram-lightbox-body` (the caption/product-grid panel inside
+  // the lightbox) is untouched by any of this and keeps its own
+  // `overflow-y: auto`, so a long caption or product list can still scroll
+  // within the modal itself.
   useEffect(() => {
     if (!selectedPost) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    const scrollY = window.scrollY;
+    const body = document.body;
+    const previous = {
+      position: body.style.position,
+      top: body.style.top,
+      left: body.style.left,
+      right: body.style.right,
+      width: body.style.width,
+      overflow: body.style.overflow,
+    };
+    body.style.position = 'fixed';
+    body.style.top = `-${scrollY}px`;
+    body.style.left = '0';
+    body.style.right = '0';
+    body.style.width = '100%';
+    body.style.overflow = 'hidden';
     return () => {
-      document.body.style.overflow = previousOverflow;
+      body.style.position = previous.position;
+      body.style.top = previous.top;
+      body.style.left = previous.left;
+      body.style.right = previous.right;
+      body.style.width = previous.width;
+      body.style.overflow = previous.overflow;
+      window.scrollTo(0, scrollY);
     };
   }, [selectedPost]);
 
