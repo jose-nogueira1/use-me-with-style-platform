@@ -171,6 +171,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(id);
   }, []);
 
+  // Keeps <html lang> in sync with the live language state (2026-08-07, SEO
+  // audit item 2). index.html's static default is now "pt" (this
+  // storefront's actual default, matching readStoredLang() ?? 'pt' above),
+  // but that's only correct until hydration -- without this, toggling to EN
+  // via the header's language switch left the DOM attribute permanently
+  // wrong at "pt" for the rest of the session (and vice versa for anyone
+  // whose stored preference is "en"). A plain synchronous assignment, not
+  // useLayoutEffect: document.documentElement.lang has no paint-timing
+  // sensitivity the way a visible title/meta tag might.
+  useEffect(() => {
+    document.documentElement.lang = lang;
+  }, [lang]);
+
   useEffect(() => {
     try {
       localStorage.setItem(cartStorageKey(market), JSON.stringify(cart));

@@ -1,5 +1,11 @@
 <!doctype html>
-<html lang="en">
+<!-- lang="pt" (2026-08-07, SEO audit item 2): matches AppContext's own
+     readStoredLang() ?? 'pt' default -- Portuguese is this storefront's
+     actual default language, not English. This is only the pre-hydration
+     value a crawler/first paint sees; src/state/AppContext.tsx keeps
+     document.documentElement.lang in sync with the live `lang` state after
+     that, including across a language-toggle click. -->
+<html lang="pt">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/favicon.png" media="(prefers-color-scheme: light)" />
