@@ -93,6 +93,12 @@ export function ProductDetail() {
   // product has no CMS description yet, so this is never blank.
   const seoTitle = `${product.name} | ${SITE_TITLE}`;
   const seoDescription = truncateForMeta(product.description || t('defaultDescription', lang));
+  // og:image (2026-08-07, audit item 3): "the product's first real photo"
+  // per the audit's own spec -- product.images[0].url is already an
+  // absolute URL (built via absoluteMediaUrl in productAdapters.ts).
+  // Undefined when a product has no photos yet, which just means "don't
+  // override", leaving useSeoDefaults' wordmark fallback in place.
+  const seoImage = product.images[0]?.url;
 
   const handleAdd = () => {
     if (isOutOfStock || qtyInCart >= stockForSize) return;
@@ -120,7 +126,7 @@ export function ProductDetail() {
 
   return (
     <div style={{ background: C.paper, position: 'relative' }}>
-      <Seo title={seoTitle} description={seoDescription} />
+      <Seo title={seoTitle} description={seoDescription} image={seoImage} />
       <div className="ump-product-layout">
         <div style={{ height: 440, borderRadius: 0, overflow: 'hidden', position: 'relative' }}>
           <ProductPhoto tone={product.tone} radius={0} image={product.images[0]} />

@@ -157,7 +157,12 @@ export function Home() {
 
   return (
     <div>
-      <Seo title={seoTitle} description={seoDescription} />
+      {/* og:image (2026-08-07, audit item 3): heroImageUrl is already an
+          absolute URL (or undefined, when no CMS hero image is set and the
+          gradient placeholder below is showing instead) -- undefined just
+          means "don't override", leaving useSeoDefaults' wordmark fallback
+          in place rather than pointing a link preview at a placeholder. */}
+      <Seo title={seoTitle} description={seoDescription} image={heroImageUrl} />
       {/* Hero, per Figma "01. Home" / "07. Desktop Home and Collection" --
           background/text use the hero* tokens so this panel (and the
           matching header background in StorefrontLayout) flips between the
