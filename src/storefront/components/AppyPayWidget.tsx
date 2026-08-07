@@ -3,6 +3,20 @@ import { publicEnv } from '../../config/env';
 
 const SCRIPT_ID = 'appyPay-charges-widget-v2';
 const CONTAINER_ID = 'appyPay-charges-v2';
+
+// This mount pattern (own iframe + document.write + injected script tag) is
+// not AppyPay's documented integration (a plain <script> in the host page's
+// own <head> -- see their widget docs); it exists for CSS isolation (see the
+// comment on the returned <iframe> below). That makes it a higher-risk
+// integration point worth logging, not something to redesign before launch.
+// No error-reporting service exists in this storefront yet (grepped for
+// Sentry/Bugsnag/etc -- none), so this is plain console.error with a
+// greppable prefix, same tier as the handful of other console.error calls
+// already in Checkout.tsx.
+function logAppyPayIssue(message: string, details: Record<string, unknown>) {
+  console.error(`[appypay-widget] ${message}`, details);
+}
+
 type AppyPayWidgetProps = {
   amount: number;
   description: string;
@@ -101,12 +115,48 @@ export function AppyPayWidget({
       script.dataset.paymentMethods = publicEnv.appyPayPaymentMethods;
     }
     script.dataset.lang = lang === 'en' ? 'en' : 'pt-PT';
+    const logContext = { orderNumber, merchantTransactionId, attempt };
     const markFailed = () => {
       setLoadFailed(true);
       stateChangeRef.current('failed');
     };
-    script.onerror = markFailed;
+    script.onerror = (event) => {
+      logAppyPayIssue('script failed to load', { ...logContext, src: script.src, event: String(event) });
+      markFailed();
+    };
     frameDocument.head.appendChild(script);
+
+    // AppyPay's script (widget-tst.appypay.co.ao / widget.appypay.co.ao) is
+    // cross-origin, so the browser redacts most detail from errors it
+    // throws after load (typically just "Script error." with no
+    // filename/lineno/stack) unless AppyPay sends CORS headers we don't
+    // control. Logged anyway -- even a bare signal that *something* broke
+    // inside the widget after it reported ready (mid-interaction, e.g.
+    // while the customer is filling in a phone number or generating a
+    // reference) is strictly better than the current total silence: today
+    // nothing here watches for this at all, so a runtime error deep in
+    // AppyPay's bundle would leave the customer stuck on an unresponsive
+    // widget with neither them nor us knowing why. Log-only, no state
+    // change -- forcing the whole modal into the "failed, please retry"
+    // state on any stray script error (including ones unrelated to the
+    // actual payment flow) risks interrupting a payment that's still fine.
+    const frameWindow = frameRef.current?.contentWindow;
+    const onFrameError = (event: ErrorEvent) => {
+      logAppyPayIssue('runtime error inside widget iframe', {
+        ...logContext,
+        message: event.message,
+        filename: event.filename,
+        lineno: event.lineno,
+      });
+    };
+    const onFrameRejection = (event: PromiseRejectionEvent) => {
+      logAppyPayIssue('unhandled promise rejection inside widget iframe', {
+        ...logContext,
+        reason: String(event.reason),
+      });
+    };
+    frameWindow?.addEventListener('error', onFrameError);
+    frameWindow?.addEventListener('unhandledrejection', onFrameRejection);
 
     const observer = new MutationObserver(() => {
       const hasInteractiveContent = Boolean(
@@ -119,7 +169,10 @@ export function AppyPayWidget({
       const hasInteractiveContent = Boolean(
         container.querySelector('button, input, form, iframe, select, [role="button"], [class]'),
       );
-      if (!hasInteractiveContent) markFailed();
+      if (!hasInteractiveContent) {
+        logAppyPayIssue('widget did not report ready within 12s', logContext);
+        markFailed();
+      }
     }, 12_000);
 
     // AppyPay's own script runs inside this iframe and completes the charge
@@ -147,6 +200,8 @@ export function AppyPayWidget({
     }, 400);
 
     return () => {
+      frameWindow?.removeEventListener('error', onFrameError);
+      frameWindow?.removeEventListener('unhandledrejection', onFrameRejection);
       window.clearInterval(redirectCheck);
       window.clearTimeout(timeout);
       observer.disconnect();
