@@ -7,6 +7,7 @@ import { useProducts } from '../../hooks/useProducts';
 import { ProductCard } from '../components/ProductCard';
 import { fetchCategories, fetchMerchTags, type ApiCategory, type ApiMerchTag } from '../../lib/api';
 import { hasSwatch, swatchBackground } from '../../lib/colorSwatch';
+import { Seo, SITE_TITLE } from '../../lib/seo';
 
 // Categories became admin-managed CMS data on 2026-07-25 (previously a
 // hardcoded enum), so the pills/sidebar are built from the API. This
@@ -289,8 +290,22 @@ export function Browse() {
     });
   }
 
+  // SEO (2026-08-07, audit item 1): "{Category} | Use Me With Style" per the
+  // audit's own example -- only when exactly one category (or the ?tag=
+  // collection) is active, same "single selection only" gate item 8's
+  // category intro copy uses, since a multi-select or all-categories view
+  // has no single label that would read naturally in a <title>. Falls back
+  // to a generic catalogue title/description otherwise.
+  const activeCategoryLabel = activeCats.length === 1 ? cats.find((c) => c.key === activeCats[0])?.label : undefined;
+  const seoFilterLabel = activeCategoryLabel ?? activeTagLabel ?? undefined;
+  const seoTitle = seoFilterLabel ? `${seoFilterLabel} | ${SITE_TITLE}` : `${t('shopAll', lang)} | ${SITE_TITLE}`;
+  const seoDescription = seoFilterLabel
+    ? t('seoBrowseDescriptionFiltered', lang, { category: seoFilterLabel.toLowerCase() })
+    : t('seoBrowseDescriptionAll', lang);
+
   return (
     <div className="ump-browse-layout" style={{ background: C.paper }}>
+      <Seo title={seoTitle} description={seoDescription} />
       <div className="ump-browse-sidebar">
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, marginBottom: 12 }}>
           <div style={{ fontSize: 10, letterSpacing: 2, color: C.goldDeep, fontWeight: 800, textTransform: 'uppercase' }}>

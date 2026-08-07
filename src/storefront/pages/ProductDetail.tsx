@@ -8,6 +8,7 @@ import { ProductPhoto } from '../../components/ProductPhoto';
 import { ProductCard } from '../components/ProductCard';
 import { trackMetaEvent } from '../../lib/metaAnalytics';
 import { hasSwatch, swatchBackground } from '../../lib/colorSwatch';
+import { Seo, SITE_TITLE, truncateForMeta } from '../../lib/seo';
 
 // Category display names now come from the CMS categories collection (via
 // product.catLabel) instead of a hardcoded slug->i18n-key map (2026-07-25).
@@ -86,6 +87,13 @@ export function ProductDetail() {
   const qtyInCart = cart.find((i) => i.id === product.id && (i.variantId ? i.variantId === activeVariant?.id : i.size === activeSize && i.color === activeColor))?.qty ?? 0;
   const atCartMax = !isOutOfStock && qtyInCart >= stockForSize;
 
+  // SEO (2026-08-07, audit item 1): "product.name plus a truncated product
+  // description" per the audit's own spec for this page. Falls back to the
+  // same defaultDescription copy the page body itself already shows when a
+  // product has no CMS description yet, so this is never blank.
+  const seoTitle = `${product.name} | ${SITE_TITLE}`;
+  const seoDescription = truncateForMeta(product.description || t('defaultDescription', lang));
+
   const handleAdd = () => {
     if (isOutOfStock || qtyInCart >= stockForSize) return;
     // max: repeatedly clicking Add-to-Cart used to keep incrementing past
@@ -112,6 +120,7 @@ export function ProductDetail() {
 
   return (
     <div style={{ background: C.paper, position: 'relative' }}>
+      <Seo title={seoTitle} description={seoDescription} />
       <div className="ump-product-layout">
         <div style={{ height: 440, borderRadius: 0, overflow: 'hidden', position: 'relative' }}>
           <ProductPhoto tone={product.tone} radius={0} image={product.images[0]} />

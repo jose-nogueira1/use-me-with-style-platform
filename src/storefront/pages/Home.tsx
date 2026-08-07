@@ -18,6 +18,7 @@ import {
   type HomeCollections,
 } from '../../lib/api';
 import { absoluteMediaUrl } from '../../lib/productAdapters';
+import { Seo, SITE_TITLE, truncateForMeta } from '../../lib/seo';
 import pictorialWhite from '../../assets/brand/pictorial-white.png';
 
 // Category tiles were a hardcoded list with no admin-editable image
@@ -143,8 +144,20 @@ export function Home() {
         .filter((c): c is ApiCategory => c !== undefined))
     : categories;
 
+  // SEO (2026-08-07, audit item 1): CMS hero headline/subtitle doubles as
+  // the homepage's <title>/meta description source -- already the most
+  // current, admin-editable marketing copy for this page, and it falls back
+  // to the same t()-driven defaults the hero visuals themselves use when the
+  // CMS hasn't been configured yet, so this never shows blank/placeholder
+  // text. Brand name leads (unlike Browse/ProductDetail below) since this is
+  // the homepage -- the one page where "Use Me With Style" itself is the
+  // primary thing being searched for/recognised.
+  const seoTitle = `${SITE_TITLE} — ${heroHeadline}`;
+  const seoDescription = truncateForMeta(heroSubtitle);
+
   return (
     <div>
+      <Seo title={seoTitle} description={seoDescription} />
       {/* Hero, per Figma "01. Home" / "07. Desktop Home and Collection" --
           background/text use the hero* tokens so this panel (and the
           matching header background in StorefrontLayout) flips between the

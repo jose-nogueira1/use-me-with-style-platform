@@ -7,6 +7,7 @@ import { Footer } from './components/Footer';
 import { BrandLogo } from '../components/BrandLogo';
 import { AnalyticsConsentManager } from './components/AnalyticsConsent';
 import { fetchCategories, type ApiCategory } from '../lib/api';
+import { useSeoDefaults } from '../lib/seo';
 
 // Matches the real Figma design (node 72:2, "Phase 1 Storefront -- High
 // Fidelity"): plain header (logo center, hamburger/back left). Market,
@@ -67,6 +68,13 @@ export function StorefrontLayout() {
     ensureMeta('og:url', canonicalUrl);
     ensureMeta('og:site_name', 'Use Me With Style');
   }, [location.pathname]);
+
+  // Site-wide default <title>/meta description (2026-08-07, SEO audit item
+  // 1) -- see src/lib/seo.ts for why this has to be a layout effect and why
+  // that ordering is what lets Home/Browse/ProductDetail's own <Seo> below
+  // override it reliably. location.search included in the route key: e.g.
+  // Browse's title depends on ?cat=, not just the /catalogo path itself.
+  useSeoDefaults(lang, `${location.pathname}${location.search}`);
 
   // Real brand wordmark (see components/BrandLogo.tsx for why gold is
   // synthesized via a CSS mask rather than loaded from a separate asset).

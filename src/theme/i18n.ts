@@ -489,6 +489,19 @@ export const T: Record<string, Record<Lang, string>> = {
     en: 'Two storefronts, one brand: Angola and Portugal, each with its own local service.',
   },
   aboutCta: { pt: 'Ver a coleção', en: 'Shop the collection' },
+
+  // SEO (2026-08-07, audit item 1 -- per-route <title>/meta description; see
+  // src/lib/seo.ts). Kept in this same bilingual dictionary as the rest of
+  // the storefront copy rather than as inline strings in Browse.tsx, same
+  // pattern every other piece of UI text in this file already follows.
+  seoBrowseDescriptionAll: {
+    pt: 'Explore o catálogo Use Me With Style: leggings, conjuntos fitness, vestidos e mais, com entrega em Angola e Portugal.',
+    en: 'Explore the Use Me With Style catalogue: leggings, fitness sets, dresses and more, delivered in Angola and Portugal.',
+  },
+  seoBrowseDescriptionFiltered: {
+    pt: 'Descubra a nossa coleção de {category} — moda desportiva feminina com entrega em Angola e Portugal.',
+    en: 'Discover our {category} collection — activewear delivered in Angola and Portugal.',
+  },
 };
 
 export const t = (key: string, lang: Lang, vars?: Record<string, string | number>): string => {
