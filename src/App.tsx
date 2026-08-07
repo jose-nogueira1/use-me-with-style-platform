@@ -400,8 +400,31 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
           flex-direction: column;
           box-shadow: 0 20px 50px rgba(0,0,0,0.28);
         }
-        .ump-instagram-lightbox-image { aspect-ratio: 4 / 5; max-height: 60vh; }
-        .ump-instagram-lightbox-body { padding: 16px 18px 18px; overflow-y: auto; }
+        /* flex-shrink: 0 (2026-08-07 bug fix, "shoppable lightbox looks cut
+           on mobile"): this box sizes itself from aspect-ratio, but as a
+           flex-column child it's still a shrink target by default. When the
+           body below it has enough content to push the column past the
+           modal's max-height (18px more likely with the shoppable "Comprar
+           este look" product card than with a plain caption alone), the flex
+           algorithm shrank THIS box to help fit -- and shrinking a box with
+           aspect-ratio set doesn't just clip it, it recomputes both
+           dimensions to preserve the ratio, squashing the photo narrower
+           than the panel and making the crop line jump around. Pinning
+           flex-shrink to 0 keeps the photo exactly as tall as its own
+           aspect-ratio/max-height says, every time, regardless of the body's
+           height -- only the body (below) is allowed to give ground. */
+        .ump-instagram-lightbox-image { aspect-ratio: 4 / 5; max-height: 60vh; flex-shrink: 0; }
+        /* flex: 1 1 auto + min-height: 0 (same fix): without min-height: 0,
+           a flex child defaults to a min-height equal to its own content
+           size, which blocks it from ever shrinking down to "whatever's
+           left after the image" -- so on a tall shoppable post the combined
+           column overshot the modal's max-height: 90vh, and since the modal
+           itself clips with overflow: hidden (needed for its rounded
+           corners), the overflow-y: auto here never got a chance to kick in;
+           it just got silently cut off at the container edge instead of
+           scrolling. With min-height: 0, this box actually shrinks to the
+           remaining space and its own scrollbar takes over from there. */
+        .ump-instagram-lightbox-body { padding: 16px 18px 18px; overflow-y: auto; flex: 1 1 auto; min-height: 0; }
         .ump-instagram-product-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; margin-top: 9px; }
         @media (min-width: 760px) {
           .ump-instagram-lightbox.ump-instagram-lightbox--shoppable {
