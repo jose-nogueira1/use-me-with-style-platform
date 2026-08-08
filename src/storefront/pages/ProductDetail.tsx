@@ -273,9 +273,13 @@ export function ProductDetail() {
             )}
           </div>
 
-          {product.optionLabel && product.sizes.length > 0 && <div style={{ marginTop: 24 }}>
+          {product.sizes.length > 0 && <div style={{ marginTop: 24 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1, color: C.goldDeep, textTransform: 'uppercase' }}>{product.optionLabel}</div>
+              {/* optionLabel is admin-set copy (e.g. "Tamanho"/"Capacidade") --
+                  fall back to the generic "size" translation rather than
+                  hiding the whole selector (and its size-guide link) when a
+                  product has real size variants but no label was set. */}
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1, color: C.goldDeep, textTransform: 'uppercase' }}>{product.optionLabel || t('size', lang)}</div>
               {product.sizeGuide && product.sizeGuide.length > 0 && <button onClick={() => setShowSizeGuide(true)} style={{ fontSize: 10, color: C.inkSoft, textDecoration: 'underline' }}>
                 {t('sizeGuide', lang)}
               </button>}
@@ -393,13 +397,13 @@ export function ProductDetail() {
           )}
 
           <div style={{ background: C.subtleBg, borderRadius: 8, padding: 14, marginTop: 4 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, padding: '6px 0' }}>
-              <span style={{ color: C.ink, fontWeight: 700 }}>{t('shipping', lang)}</span>
-              <span style={{ color: C.inkSoft }}>{market === 'AO' ? t('localCourierDelivery', lang) : t('businessDays', lang)}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 12, padding: '6px 0' }}>
+              <span style={{ color: C.ink, fontWeight: 700, flexShrink: 0 }}>{t('shipping', lang)}</span>
+              <span style={{ color: C.inkSoft, textAlign: 'right' }}>{market === 'AO' ? t('localCourierDelivery', lang) : t('businessDays', lang)}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, padding: '6px 0' }}>
-              <span style={{ color: C.ink, fontWeight: 700 }}>{t('returns', lang)}</span>
-              <span style={{ color: C.inkSoft }}>{product.returnNote || (product.returnEligible ? t(market === 'AO' ? 'fortyEightHours' : 'fourteenDays', lang) : (lang === 'pt' ? 'Este artigo não é elegível para devolução.' : 'This item is not eligible for return.'))}</span>
+            <div style={{ padding: '10px 0 6px', marginTop: 4, borderTop: `1px solid ${C.ruleLight}` }}>
+              <div style={{ color: C.ink, fontWeight: 700, fontSize: 12, marginBottom: 4 }}>{t('returns', lang)}</div>
+              <div style={{ color: C.inkSoft, fontSize: 12, lineHeight: 1.5 }}>{product.returnNote || (product.returnEligible ? t(market === 'AO' ? 'fortyEightHours' : 'fourteenDays', lang) : (lang === 'pt' ? 'Este artigo não é elegível para devolução.' : 'This item is not eligible for return.'))}</div>
             </div>
           </div>
         </div>
