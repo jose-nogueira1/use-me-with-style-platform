@@ -134,7 +134,23 @@ export function Browse() {
     : null;
 
   const [showFilters, setShowFilters] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  // ?q=<term> (2026-08-08): the header's search overlay (SearchOverlay.tsx)
+  // hands off to this page via /catalogo?q=..., so its "see all N results"
+  // link actually lands pre-filtered instead of on an empty search box. Same
+  // render-time URL-sync pattern as activeTag/syncedUrlTag above (one-way,
+  // URL -> state, on mount or on a same-route nav). Deliberately NOT synced
+  // the other way (typing here doesn't write back to ?q= on every
+  // keystroke) -- this box already filters live from local state, and
+  // pushing a URL/history entry per character would spam the back button
+  // for no benefit; the deep-link case that actually needs the URL (arriving
+  // from the overlay, or a shared link) only needs the read-in direction.
+  const urlQuery = searchParams.get('q') || '';
+  const [searchTerm, setSearchTerm] = useState(urlQuery);
+  const [syncedUrlQuery, setSyncedUrlQuery] = useState(urlQuery);
+  if (urlQuery !== syncedUrlQuery) {
+    setSyncedUrlQuery(urlQuery);
+    setSearchTerm(urlQuery);
+  }
   // Category, size and colour are all multi-select (2026-07-30): a shopper
   // who wears S or M, or who is happy with black or navy, or who wants to
   // browse dresses and sets together, should be able to say so in one pass.

@@ -6,6 +6,7 @@ import { useApp } from '../state/AppContext';
 import { Footer } from './components/Footer';
 import { BrandLogo } from '../components/BrandLogo';
 import { AnalyticsConsentManager } from './components/AnalyticsConsent';
+import { SearchOverlay } from './components/SearchOverlay';
 import { fetchCategories, type ApiCategory } from '../lib/api';
 import { useSeoDefaults } from '../lib/seo';
 
@@ -27,9 +28,17 @@ export function StorefrontLayout() {
   const navigate = useNavigate();
   const cartCount = cart.reduce((sum, i) => sum + i.qty, 0);
   const isHome = location.pathname === '/';
-  const isCart = location.pathname === '/carrinho';
   const isRoot = ROOT_PATHS.includes(location.pathname);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  // 2026-08-08 ("I noticed we don't have a search option in the homepage"):
+  // site-wide search, reachable from every page including home -- see
+  // SearchOverlay.tsx. headerRef wraps the whole sticky header (trigger
+  // button + the panel itself), reusing the exact outside-click-closes
+  // pattern LanguageSwitch already uses below, just scoped to the bigger
+  // container so a click on the toggle button itself doesn't immediately
+  // re-close what it just opened.
+  const [searchOpen, setSearchOpen] = useState(false);
+  const headerRef = useRef<HTMLDivElement>(null);
   const [categories, setCategories] = useState<ApiCategory[]>([]);
   useEffect(() => { fetchCategories().then(setCategories).catch(() => undefined); }, []);
   const navItems = [
@@ -91,7 +100,27 @@ export function StorefrontLayout() {
     // Route changes are an external navigation event; close the transient UI.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMobileMenuOpen(false);
+    setSearchOpen(false);
   }, [location.pathname, location.search]);
+
+  // Close the search panel on Escape or a click/tap outside the header
+  // (which contains both the trigger button and the panel itself -- see
+  // headerRef above), same pattern as LanguageSwitch's own dropdown below.
+  useEffect(() => {
+    if (!searchOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSearchOpen(false);
+    };
+    const onPointerDown = (e: MouseEvent) => {
+      if (headerRef.current && !headerRef.current.contains(e.target as Node)) setSearchOpen(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    document.addEventListener('mousedown', onPointerDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('mousedown', onPointerDown);
+    };
+  }, [searchOpen]);
 
   return (
     <div
@@ -105,6 +134,7 @@ export function StorefrontLayout() {
       }}
     >
       <div
+        ref={headerRef}
         style={{
           flexShrink: 0,
           background: isHome ? C.heroBg : C.paper,
@@ -127,7 +157,10 @@ export function StorefrontLayout() {
           {isRoot ? (
             <IconButton
               dark={isHome}
-              onClick={() => setMobileMenuOpen((o) => !o)}
+              onClick={() => {
+                setMobileMenuOpen((o) => !o);
+                setSearchOpen(false);
+              }}
               label={mobileMenuOpen ? (lang === 'pt' ? 'Fechar menu' : 'Close menu') : 'Menu'}
               className="ump-mobile-menu-btn"
             >
@@ -167,11 +200,25 @@ export function StorefrontLayout() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
             <LanguageSwitch lang={lang} setLang={setLang} dark={isHome} />
             <ThemeToggle mode={themeMode} onChange={setThemeMode} dark={isHome} lang={lang} />
+            {/* 2026-08-08: a persistent search icon, present on every page
+                including home -- this used to only exist as a repurposed
+                cart-page icon that just navigated to the catalogue, with no
+                actual way to type a query until you were already there. */}
+            <IconButton
+              dark={isHome}
+              onClick={() => {
+                setSearchOpen((o) => !o);
+                setMobileMenuOpen(false);
+              }}
+              label={searchOpen ? t('closeSearch', lang) : t('navSearch', lang)}
+            >
+              {searchOpen ? <X size={16} /> : <Search size={16} />}
+            </IconButton>
             <div style={{ position: 'relative' }}>
-              <IconButton dark={isHome} onClick={() => navigate(isCart ? '/catalogo' : '/carrinho')} label={isCart ? (lang === 'pt' ? 'Explorar catálogo' : 'Browse catalogue') : t('cart', lang)}>
-                {isCart ? <Search size={16} /> : <ShoppingBag size={16} />}
+              <IconButton dark={isHome} onClick={() => navigate('/carrinho')} label={t('cart', lang)}>
+                <ShoppingBag size={16} />
               </IconButton>
-              {!isCart && cartCount > 0 && (
+              {cartCount > 0 && (
                 <span
                   style={{
                     position: 'absolute',
@@ -222,6 +269,8 @@ export function StorefrontLayout() {
             ))}
           </nav>
         )}
+
+        <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
       </div>
 
       <main style={{ flex: 1 }}>

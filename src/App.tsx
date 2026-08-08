@@ -183,6 +183,22 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
           .ump-theme-toggle { display: none !important; }
         }
 
+        /* Site-wide search dropdown (2026-08-08 -- see SearchOverlay.tsx).
+           Rendered as the last child of the sticky header wrapper, which is
+           itself position: sticky (a positioning context on its own), so
+           top: 100% here lands it right below the header row regardless of
+           exact header height -- no hardcoded pixel measurement needed, and
+           it naturally sits below the mobile menu too on the rare case both
+           somehow render at once (StorefrontLayout keeps them mutually
+           exclusive, but this keeps the CSS correct even if that ever
+           changes). */
+        .ump-search-panel {
+          position: absolute; top: 100%; left: 0; right: 0;
+          background: ${C.paper};
+          border-bottom: 1px solid ${C.ruleLight};
+          box-shadow: 0 16px 40px rgba(0,0,0,0.18);
+        }
+
         /* Bottom tab bar is a mobile pattern; desktop uses the header nav.
            Same 720px cutover as the header chrome above -- it used to be
            860px, which left the bar (and the hamburger above) showing

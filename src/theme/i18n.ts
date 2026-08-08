@@ -60,6 +60,12 @@ export const T: Record<string, Record<Lang, string>> = {
   collection: { pt: 'Coleção', en: 'Collection' },
   searchFilterLabel: { pt: 'Pesquisa', en: 'Search' },
   removeFilter: { pt: 'Remover filtro', en: 'Remove filter' },
+  // 2026-08-08: header search overlay (see SearchOverlay.tsx) -- there was
+  // previously no way to search from the homepage at all, only a search box
+  // buried inside the catalogue page itself.
+  searchNoResults: { pt: 'Sem resultados para "{term}"', en: 'No results for "{term}"' },
+  searchSeeAllResults: { pt: 'Ver todos os {count} resultados para "{term}"', en: 'See all {count} results for "{term}"' },
+  closeSearch: { pt: 'Fechar pesquisa', en: 'Close search' },
   // Shown in the empty state when the shopper has filtered themselves into
   // zero results -- the fix is almost always "clear a filter", not "the shop
   // is empty", so say so rather than leaving them at a dead end.
