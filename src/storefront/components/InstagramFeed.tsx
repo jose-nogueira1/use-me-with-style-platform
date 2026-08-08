@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
-import { Camera, Expand, ShoppingBag, X } from 'lucide-react';
+import { ArrowUpRight, Camera, Expand, Play, ShoppingBag, Volume2, VolumeX, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { C, F, t } from '../../theme';
 import { useApp } from '../../state/AppContext';
@@ -74,6 +74,44 @@ import { InstagramProductCard } from './InstagramProductCard';
 // `curated`/`labelPT`/`labelEN`/FALLBACK_LARGE_EVERY are gone with it --
 // `post.size` from the API is now always meaningful, no fallback rhythm
 // needed.
+//
+// 2026-08-08 redesign (Jay-P, referencing a competitor's Instagram post as
+// inspiration): three changes, approved after a "let me know your thoughts"
+// discussion rather than built straight from the request --
+//
+// 1. Lightbox now looks like Instagram's own native post view: close (X)
+//    moved to the top-left, "View on Instagram" and "Shop the look" are
+//    small pills overlaid on TOP of the photo (top-left, next to close)
+//    instead of a separate panel below it, and the caption is an overlaid
+//    gradient at the BOTTOM of the photo instead of plain text in that
+//    panel. The old `.ump-instagram-lightbox-body` content panel is gone
+//    entirely -- the whole modal is now just the photo/video with overlays,
+//    at every breakpoint (previously desktop got a special two-column
+//    layout with an always-visible product card; Jay-P chose to unify
+//    instead of keeping that variant). Tapping the shop pill jumps straight
+//    to the product page when a post tags exactly one product (matches "we
+//    already have that when we open the picture" -- no reason to show a
+//    redundant card first); a post tagging more than one product (up to 4,
+//    see resolveShopTheLookProducts) instead opens a small popover of
+//    compact product cards, since a single tap can't disambiguate which one.
+// 2. Real video support. The Graph API always exposed `media_type` and, for
+//    VIDEO items, `media_url` IS the actual playable file -- this component
+//    used to receive only a still thumbnail and had no way to play a video
+//    at all, so every video post silently became a dead photo. Tiles for
+//    video posts now show a small play-icon badge, and the lightbox renders
+//    an actual <video> (autoplay, muted, looping, with a tap-to-unmute
+//    icon -- same behavior Instagram's own app uses, including the mute
+//    icon's bottom-right placement). CAROUSEL_ALBUM posts are intentionally
+//    out of scope here (still shown as their static cover image) -- each
+//    slide needs a separate Graph API call this endpoint doesn't make yet.
+// 3. Removed the "Comprar no Instagram"/"Seguir no Instagram" buttons that
+//    used to sit below the whole strip. Reasoning: shopping is already one
+//    tap away inside any post's lightbox, so a section-level shop button was
+//    redundant, and "Segue-nos @use_me_withstyle" above the strip now IS the
+//    follow link (wrapped in an <a> to the profile) so a separate Follow
+//    button is redundant too. /shop-instagram (the "every shoppable look at
+//    once" page) still exists and is still linked -- just from the footer
+//    now instead of from here, so it isn't orphaned.
 const INSTAGRAM_URL = 'https://www.instagram.com/use_me_withstyle/';
 const TILE_COUNT = 10;
 const MIN_TILES_TO_LOOP = 6;
@@ -88,6 +126,14 @@ export function InstagramFeed() {
   const { lang, market } = useApp();
   const [posts, setPosts] = useState<ApiInstagramPost[]>([]);
   const [selectedPost, setSelectedPost] = useState<ApiInstagramPost | null>(null);
+  // Reset together whenever a (possibly different) post is opened -- see the
+  // tile onClick below. Not derived from selectedPost.id via an effect
+  // because that would also fire on the very first open, which is fine, but
+  // keeping the resets colocated with the state change that causes them is
+  // simpler to follow.
+  const [captionExpanded, setCaptionExpanded] = useState(false);
+  const [showProductPicker, setShowProductPicker] = useState(false);
+  const [videoMuted, setVideoMuted] = useState(true);
   const trackRef = useRef<HTMLDivElement>(null);
   const hoveringRef = useRef(false);
   const draggingRef = useRef(false);
@@ -144,10 +190,11 @@ export function InstagramFeed() {
   // avoids any visible jump/flash. The backdrop being `position: fixed` only
   // ever stopped touches from reaching elements visually BEHIND it; it never
   // controlled whether the body itself could still be the thing panning.
-  // `.ump-instagram-lightbox-body` (the caption/product-grid panel inside
-  // the lightbox) is untouched by any of this and keeps its own
-  // `overflow-y: auto`, so a long caption or product list can still scroll
-  // within the modal itself.
+  // The 2026-08-08 overlay redesign (see this file's header comment) removed
+  // the scrollable content panel this used to reference -- the multi-product
+  // picker (`.ump-instagram-lightbox-picker`) is the only thing inside the
+  // modal with its own `overflow-y: auto` now, and it's short enough (max
+  // 4 products) that this scroll-lock rarely matters to it either way.
   useEffect(() => {
     if (!selectedPost) return;
     const scrollY = window.scrollY;
@@ -270,6 +317,11 @@ export function InstagramFeed() {
     if (draggedPastThresholdRef.current) markManual();
   };
 
+  // Non-null, always-an-array view of the open post's tagged products --
+  // avoids `selectedPost.products!` non-null assertions scattered through
+  // the lightbox JSX below.
+  const selectedProducts = selectedPost?.products ?? [];
+
   // Real posts once loaded; otherwise TILE_COUNT placeholder slots so the
   // strip keeps its shape while the feed request is in flight.
   const tiles: (ApiInstagramPost | undefined)[] = posts.length > 0 ? posts : Array.from({ length: TILE_COUNT });
@@ -280,9 +332,23 @@ export function InstagramFeed() {
   return (
     <div style={{ padding: '28px 0 40px' }}>
       <div className="ump-content-width" style={{ textAlign: 'center', marginBottom: 16, padding: '0 20px' }}>
-        <div style={{ fontFamily: F.display, fontSize: 10, letterSpacing: 3, color: C.goldDeep, fontWeight: 800, textTransform: 'uppercase', marginBottom: 6 }}>
+        {/* 2026-08-08: the heading itself is now the follow link (opens the
+            profile in a new tab), replacing the separate "Follow on
+            Instagram" button that used to sit below the strip -- see the
+            header comment above. */}
+        <a
+          href={INSTAGRAM_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            fontFamily: F.display, fontSize: 10, letterSpacing: 3, color: C.goldDeep, fontWeight: 800,
+            textTransform: 'uppercase', marginBottom: 6, textDecoration: 'none',
+          }}
+        >
           {t('instagramHeading', lang)} <span style={{ color: C.inkSoft, fontWeight: 700 }}>{t('instagramHandle', lang)}</span>
-        </div>
+          <ArrowUpRight size={13} color={C.goldDeep} />
+        </a>
         <div style={{ fontSize: 12.5, color: C.inkSoft }}>{t('instagramSubheading', lang)}</div>
       </div>
 
@@ -329,6 +395,9 @@ export function InstagramFeed() {
               onClick={() => {
                 if (draggedPastThresholdRef.current || !post) return;
                 setSelectedPost(post);
+                setCaptionExpanded(false);
+                setShowProductPicker(false);
+                setVideoMuted(true);
                 if ((post.products?.length ?? 0) > 0) {
                   trackMetaCustomEvent('ShopTheLookOpen', {
                     instagram_look_id: post.id,
@@ -352,6 +421,11 @@ export function InstagramFeed() {
                   <ShoppingBag size={11} /> {post?.products?.length}
                 </div>
               )}
+              {post?.mediaType === 'VIDEO' && (
+                <div className="ump-instagram-video-badge" aria-hidden="true">
+                  <Play size={11} fill="currentColor" />
+                </div>
+              )}
               {displayLabel && (
                 <div className="ump-instagram-tile-caption">
                   <span>{displayLabel}</span>
@@ -360,52 +434,6 @@ export function InstagramFeed() {
             </button>
           );
         })}
-      </div>
-
-      {/* flex + gap (2026-08-07 bug fix) instead of a one-sided marginRight
-          on just the first button -- marginRight only ever produces a
-          horizontal gap. On desktop these two inline-flex buttons sit on
-          one line, so that was invisible; on a narrow mobile viewport they
-          wrap onto two lines (same as wrapped text), and a wrap has no
-          horizontal edge for marginRight to apply to, so the buttons ended
-          up touching with zero vertical space between them. `gap` produces
-          the right spacing in both the single-line and wrapped case from
-          one property, so this can't drift out of sync again. */}
-      <div className="ump-content-width" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 8, marginTop: 20, padding: '0 20px' }}>
-        {posts.some((post) => (post.products?.length ?? 0) > 0) && (
-          <Link
-            to="/shop-instagram"
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 20px',
-              borderRadius: 8, background: C.black, color: C.onDarkGold, fontSize: 11, fontWeight: 800,
-              letterSpacing: 0.5, textDecoration: 'none',
-            }}
-          >
-            <ShoppingBag size={14} /> {lang === 'pt' ? 'Comprar no Instagram' : 'Shop Instagram'}
-          </Link>
-        )}
-        <a
-          href={INSTAGRAM_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '11px 20px',
-            borderRadius: 8,
-            background: C.paper,
-            border: `1px solid ${C.fieldBorder}`,
-            color: C.ink,
-            fontSize: 11,
-            fontWeight: 800,
-            letterSpacing: 0.5,
-            textDecoration: 'none',
-          }}
-        >
-          <Camera size={14} color={C.goldDeep} />
-          {t('instagramCta', lang)}
-        </a>
       </div>
 
       {selectedPost && (
@@ -417,52 +445,115 @@ export function InstagramFeed() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="instagram-lightbox-caption"
-            className={`ump-instagram-lightbox${(selectedPost.products?.length ?? 0) > 0 ? ' ump-instagram-lightbox--shoppable' : ''}`}
+            className="ump-instagram-lightbox"
             onClick={(e) => e.stopPropagation()}
           >
-            <button
-              type="button"
-              aria-label={lang === 'pt' ? 'Fechar' : 'Close'}
-              className="ump-instagram-lightbox-close"
-              onClick={() => setSelectedPost(null)}
-            >
-              <X size={18} />
-            </button>
-            <div className="ump-instagram-lightbox-image">
-              <ProductPhoto
-                tone="dark"
-                radius={0}
-                image={{ url: selectedPost.imageUrl, alt: selectedPost.captionDisplay || '' }}
-              />
+            <div className="ump-instagram-lightbox-media">
+              {selectedPost.mediaType === 'VIDEO' && selectedPost.videoUrl ? (
+                <video
+                  key={selectedPost.id}
+                  src={selectedPost.videoUrl}
+                  poster={selectedPost.imageUrl}
+                  autoPlay
+                  loop
+                  muted={videoMuted}
+                  playsInline
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                />
+              ) : (
+                <ProductPhoto
+                  tone="dark"
+                  radius={0}
+                  image={{ url: selectedPost.imageUrl, alt: selectedPost.captionDisplay || '' }}
+                />
+              )}
             </div>
-            <div className="ump-instagram-lightbox-body">
-              {selectedPost.caption && (
-                <p id="instagram-lightbox-caption" style={{ fontSize: 13, color: C.ink, lineHeight: 1.6, margin: 0, whiteSpace: 'pre-line' }}>
-                  {selectedPost.caption}
-                </p>
-              )}
-              {(selectedPost.products?.length ?? 0) > 0 && (
-                <div style={{ marginTop: 18 }}>
-                  <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.5, color: C.inkSoft, textTransform: 'uppercase' }}>
-                    {lang === 'pt' ? 'Comprar este look' : 'Shop this look'}
-                  </div>
-                  <div className="ump-instagram-product-grid">
-                    {selectedPost.products?.map((product) => (
-                      <InstagramProductCard key={product.id} product={product} lookId={selectedPost.id} compact />
-                    ))}
-                  </div>
-                </div>
-              )}
+
+            {/* Overlaid, Instagram-native chrome (2026-08-08) -- close, "view
+                on Instagram", and "shop the look" all sit on top of the
+                photo/video instead of in a panel below it. */}
+            <div className="ump-instagram-lightbox-topbar">
+              <button
+                type="button"
+                aria-label={lang === 'pt' ? 'Fechar' : 'Close'}
+                className="ump-instagram-lightbox-close"
+                onClick={() => setSelectedPost(null)}
+              >
+                <X size={18} />
+              </button>
               <a
                 href={selectedPost.permalink}
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 14, fontSize: 11, fontWeight: 800, letterSpacing: 0.5, color: C.goldDeep, textDecoration: 'none' }}
+                className="ump-instagram-lightbox-pill"
               >
-                <Camera size={13} />
-                {lang === 'pt' ? 'Ver no Instagram ↗' : 'View on Instagram ↗'}
+                <Camera size={12} />
+                {lang === 'pt' ? 'Ver no Instagram' : 'View on Instagram'}
               </a>
+              {selectedProducts.length === 1 && (
+                <Link
+                  to={`/produto/${encodeURIComponent(selectedProducts[0].slug)}${selectedProducts[0].selectedColorId ? `?cor=${encodeURIComponent(selectedProducts[0].selectedColorId)}` : ''}`}
+                  onClick={() => trackMetaCustomEvent('ShopTheLookProductClick', {
+                    instagram_look_id: selectedPost.id,
+                    product_id: selectedProducts[0].id,
+                    product_name: (lang === 'en' ? selectedProducts[0].nameEN : selectedProducts[0].namePT) || selectedProducts[0].name,
+                    market,
+                  })}
+                  className="ump-instagram-lightbox-pill ump-instagram-lightbox-pill--gold"
+                >
+                  <ShoppingBag size={12} />
+                  {lang === 'pt' ? 'Comprar o look' : 'Shop the look'}
+                </Link>
+              )}
+              {/* More than one tagged product (rare, up to 4 -- see
+                  resolveShopTheLookProducts): a single tap can't say which
+                  one, so the pill opens a small popover instead of jumping
+                  straight to a product page. */}
+              {selectedProducts.length > 1 && (
+                <button
+                  type="button"
+                  className="ump-instagram-lightbox-pill ump-instagram-lightbox-pill--gold"
+                  onClick={() => setShowProductPicker((open) => !open)}
+                  aria-expanded={showProductPicker}
+                >
+                  <ShoppingBag size={12} />
+                  {lang === 'pt' ? 'Comprar o look' : 'Shop the look'} · {selectedProducts.length}
+                </button>
+              )}
             </div>
+
+            {showProductPicker && selectedProducts.length > 1 && (
+              <div className="ump-instagram-lightbox-picker">
+                {selectedProducts.map((product) => (
+                  <InstagramProductCard key={product.id} product={product} lookId={selectedPost.id} compact />
+                ))}
+              </div>
+            )}
+
+            {selectedPost.caption && (
+              <button
+                type="button"
+                id="instagram-lightbox-caption"
+                className="ump-instagram-lightbox-caption"
+                onClick={() => setCaptionExpanded((expanded) => !expanded)}
+                aria-expanded={captionExpanded}
+              >
+                <span style={{ WebkitLineClamp: captionExpanded ? 'unset' : 3 }}>{selectedPost.caption}</span>
+              </button>
+            )}
+
+            {/* Muted autoplay + tap-to-unmute, same placement/behavior as
+                Instagram's own video posts. */}
+            {selectedPost.mediaType === 'VIDEO' && selectedPost.videoUrl && (
+              <button
+                type="button"
+                aria-label={videoMuted ? (lang === 'pt' ? 'Ativar som' : 'Unmute') : (lang === 'pt' ? 'Silenciar' : 'Mute')}
+                className="ump-instagram-lightbox-mute"
+                onClick={() => setVideoMuted((m) => !m)}
+              >
+                {videoMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
+              </button>
+            )}
           </div>
         </div>
       )}

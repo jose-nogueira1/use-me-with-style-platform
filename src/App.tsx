@@ -376,12 +376,31 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
           box-shadow: 0 2px 8px rgba(0,0,0,0.18);
           pointer-events: none;
         }
+        /* Small play-icon badge marking video posts in the strip (2026-08-08
+           -- videos used to be indistinguishable from photos, and silently
+           had no playback path at all; see the header comment in
+           InstagramFeed.tsx). Opposite corner from the shop badge so the two
+           never collide on a video post that's also shoppable. */
+        .ump-instagram-video-badge {
+          position: absolute; top: 9px; right: 9px;
+          width: 22px; height: 22px; border-radius: 999px;
+          display: flex; align-items: center; justify-content: center;
+          background: rgba(5,5,5,0.78); color: ${C.onDarkGold};
+          box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+          pointer-events: none;
+        }
 
         /* Lightbox (2026-08-02 round 2: "don't send people away
            immediately" -- clicking a tile opens this instead of an instant
            navigation to Instagram; the storefront's only other lightbox-
            style overlay is ProductDetail's size-guide modal, whose
-           role="dialog"/scrim/close-button pattern this follows). */
+           role="dialog"/scrim/close-button pattern this follows).
+           2026-08-08 redesign: rebuilt to look like Instagram's own native
+           post view -- the modal is now just the photo/video with close,
+           "view on Instagram", "shop the look", and the caption all overlaid
+           directly on top of it, at every breakpoint (no more separate
+           content panel below the photo, and no more special wider desktop
+           layout -- see InstagramFeed.tsx's header comment for why). */
         .ump-instagram-lightbox-backdrop {
           position: fixed; inset: 0; z-index: 40;
           background: ${C.scrim};
@@ -390,61 +409,77 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
         }
         .ump-instagram-lightbox {
           position: relative;
-          background: ${C.paper};
+          background: #000;
           border-radius: 12px;
           overflow: hidden;
           width: 100%;
           max-width: 420px;
+          aspect-ratio: 4 / 5;
           max-height: 90vh;
-          display: flex;
-          flex-direction: column;
           box-shadow: 0 20px 50px rgba(0,0,0,0.28);
         }
-        /* flex-shrink: 0 (2026-08-07 bug fix, "shoppable lightbox looks cut
-           on mobile"): this box sizes itself from aspect-ratio, but as a
-           flex-column child it's still a shrink target by default. When the
-           body below it has enough content to push the column past the
-           modal's max-height (18px more likely with the shoppable "Comprar
-           este look" product card than with a plain caption alone), the flex
-           algorithm shrank THIS box to help fit -- and shrinking a box with
-           aspect-ratio set doesn't just clip it, it recomputes both
-           dimensions to preserve the ratio, squashing the photo narrower
-           than the panel and making the crop line jump around. Pinning
-           flex-shrink to 0 keeps the photo exactly as tall as its own
-           aspect-ratio/max-height says, every time, regardless of the body's
-           height -- only the body (below) is allowed to give ground. */
-        .ump-instagram-lightbox-image { aspect-ratio: 4 / 5; max-height: 60vh; flex-shrink: 0; }
-        /* flex: 1 1 auto + min-height: 0 (same fix): without min-height: 0,
-           a flex child defaults to a min-height equal to its own content
-           size, which blocks it from ever shrinking down to "whatever's
-           left after the image" -- so on a tall shoppable post the combined
-           column overshot the modal's max-height: 90vh, and since the modal
-           itself clips with overflow: hidden (needed for its rounded
-           corners), the overflow-y: auto here never got a chance to kick in;
-           it just got silently cut off at the container edge instead of
-           scrolling. With min-height: 0, this box actually shrinks to the
-           remaining space and its own scrollbar takes over from there. */
-        .ump-instagram-lightbox-body { padding: 16px 18px 18px; overflow-y: auto; flex: 1 1 auto; min-height: 0; }
-        .ump-instagram-product-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; margin-top: 9px; }
-        @media (min-width: 760px) {
-          .ump-instagram-lightbox.ump-instagram-lightbox--shoppable {
-            max-width: 860px;
-            display: grid;
-            grid-template-columns: minmax(300px, 0.9fr) minmax(340px, 1.1fr);
-            align-items: stretch;
-          }
-          .ump-instagram-lightbox--shoppable .ump-instagram-lightbox-image {
-            aspect-ratio: auto;
-            min-height: 560px;
-            max-height: 86vh;
-          }
-          .ump-instagram-lightbox--shoppable .ump-instagram-lightbox-body { max-height: 86vh; padding: 24px; }
+        @media (min-width: 760px) { .ump-instagram-lightbox { max-width: 480px; } }
+        .ump-instagram-lightbox-media { position: absolute; inset: 0; }
+        .ump-instagram-lightbox-topbar {
+          position: absolute; top: 12px; left: 12px; right: 12px; z-index: 2;
+          display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
         }
         .ump-instagram-lightbox-close {
-          position: absolute; top: 10px; right: 10px; z-index: 1;
+          flex-shrink: 0;
           width: 32px; height: 32px; border-radius: 999px;
           display: flex; align-items: center; justify-content: center;
           background: rgba(5,5,5,0.5); color: ${C.onDark};
+          border: none; cursor: pointer;
+        }
+        .ump-instagram-lightbox-pill {
+          display: inline-flex; align-items: center; gap: 5px;
+          padding: 7px 11px; border-radius: 999px;
+          background: rgba(5,5,5,0.78); color: ${C.onDark};
+          font-size: 10.5px; font-weight: 800; letter-spacing: 0.3px;
+          text-decoration: none; border: none; cursor: pointer;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+          white-space: nowrap;
+        }
+        .ump-instagram-lightbox-pill--gold { color: ${C.onDarkGold}; }
+        /* Popover for posts tagging more than one product (up to 4) -- a
+           single "shop the look" tap can't disambiguate which one, so this
+           floats over the photo instead of jumping straight to a product. */
+        .ump-instagram-lightbox-picker {
+          position: absolute; top: 58px; left: 12px; right: 12px; z-index: 3;
+          background: ${C.paper};
+          border-radius: 10px;
+          box-shadow: 0 12px 30px rgba(0,0,0,0.28);
+          padding: 8px;
+          display: flex; flex-direction: column; gap: 8px;
+          max-height: min(50vh, 320px);
+          overflow-y: auto;
+        }
+        /* Tap-to-expand caption overlaid at the bottom of the photo/video,
+           Instagram-native style -- replaces the old plain-text caption in
+           the content panel below the photo. Clamped to 3 lines by default
+           (see the inline WebkitLineClamp toggle in InstagramFeed.tsx) so a
+           long real caption doesn't cover most of the image uninvited. */
+        .ump-instagram-lightbox-caption {
+          position: absolute; left: 0; right: 0; bottom: 0; z-index: 1;
+          display: block; width: 100%;
+          padding: 40px 46px 14px 14px;
+          background: linear-gradient(to top, rgba(5,5,5,0.82) 0%, rgba(5,5,5,0.5) 50%, transparent 100%);
+          border: none; cursor: pointer; text-align: left; font: inherit;
+        }
+        .ump-instagram-lightbox-caption span {
+          display: -webkit-box;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          white-space: pre-line;
+          font-size: 12.5px; line-height: 1.5; color: ${C.onDark};
+        }
+        /* Mute toggle for video posts -- same muted-autoplay behavior and
+           bottom-right placement Instagram's own app uses. */
+        .ump-instagram-lightbox-mute {
+          position: absolute; bottom: 14px; right: 12px; z-index: 2;
+          width: 30px; height: 30px; border-radius: 999px;
+          display: flex; align-items: center; justify-content: center;
+          background: rgba(5,5,5,0.7); color: ${C.onDark};
           border: none; cursor: pointer;
         }
 

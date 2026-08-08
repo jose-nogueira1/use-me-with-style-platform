@@ -813,6 +813,12 @@ export type ApiInstagramPost = {
   id: string;
   lookSlug: string;
   imageUrl: string;
+  // 2026-08-08: real video posts, not just still frames -- see
+  // use-me-with-style-cms's lib/instagramFeed.ts. `videoUrl` is only present
+  // when mediaType is 'VIDEO'; CAROUSEL_ALBUM posts are still reported as
+  // 'IMAGE' (their per-slide media isn't fetched yet).
+  mediaType: 'IMAGE' | 'VIDEO';
+  videoUrl?: string;
   permalink: string;
   caption: string;
   // Server-cleaned short caption (hashtags/newlines stripped, truncated),

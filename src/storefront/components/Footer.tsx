@@ -36,6 +36,13 @@ export function Footer() {
   const shopLinks = [
     { to: '/catalogo?cat=new', label: t('newArrivalsNav', lang) },
     ...categories.map((category) => ({ to: `/catalogo?cat=${encodeURIComponent(category.slug || '')}`, label: (lang === 'en' ? category.nameEN : category.namePT) || category.namePT })),
+    // 2026-08-08: the Instagram feed's "Comprar no Instagram" button (its
+    // only previous entry point) was removed as part of that section's
+    // redesign -- see InstagramFeed.tsx's header comment. The page itself
+    // (every shoppable look at once) still exists and degrades gracefully
+    // to an empty state when nothing's tagged yet, so it's kept reachable
+    // here instead of being orphaned.
+    { to: '/shop-instagram', label: lang === 'pt' ? 'Compras no Instagram' : 'Shop Instagram' },
   ];
 
   return (
