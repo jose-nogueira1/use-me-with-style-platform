@@ -470,8 +470,8 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
            in the modal, so the photo peeking through and the caption below
            always keep real breathing room, on any screen size.
            Outer box is now just a positioned, clipped frame -- the actual
-           scrolling happens in the nested `-scroll` div below, so a
-           `-fade` overlay can sit on top of it at a fixed position instead
+           scrolling happens in the nested -scroll div below, so a
+           -fade overlay can sit on top of it at a fixed position instead
            of scrolling away with the content. Cards got bigger per
            feedback that this looked cramped even with the spacing fix;
            bigger cards make it more likely 3-4 products need a scroll, so
