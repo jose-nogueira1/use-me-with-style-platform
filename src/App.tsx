@@ -468,15 +468,42 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
            via live measurement, not guessed). Pinning both top and bottom
            makes the picker's height auto-fit whatever room is actually left
            in the modal, so the photo peeking through and the caption below
-           always keep real breathing room, on any screen size. */
+           always keep real breathing room, on any screen size.
+           Outer box is now just a positioned, clipped frame -- the actual
+           scrolling happens in the nested `-scroll` div below, so a
+           `-fade` overlay can sit on top of it at a fixed position instead
+           of scrolling away with the content. Cards got bigger per
+           feedback that this looked cramped even with the spacing fix;
+           bigger cards make it more likely 3-4 products need a scroll, so
+           the fade + visible scrollbar exist to make that obvious instead
+           of the last card just looking cut off. */
         .ump-instagram-lightbox-picker {
           position: absolute; top: 64px; left: 12px; right: 12px; bottom: 92px; z-index: 3;
           background: ${C.paper};
           border-radius: 10px;
           box-shadow: 0 12px 30px rgba(0,0,0,0.28);
-          padding: 10px;
-          display: flex; flex-direction: column; gap: 10px;
+          overflow: hidden;
+        }
+        .ump-instagram-lightbox-picker-scroll {
+          height: 100%;
           overflow-y: auto;
+          padding: 12px;
+          display: flex; flex-direction: column; gap: 12px;
+          scrollbar-width: thin;
+          scrollbar-color: ${C.goldDeep} transparent;
+        }
+        .ump-instagram-lightbox-picker-scroll::-webkit-scrollbar { width: 5px; }
+        .ump-instagram-lightbox-picker-scroll::-webkit-scrollbar-thumb { background: ${C.goldDeep}; border-radius: 4px; }
+        .ump-instagram-lightbox-picker-scroll::-webkit-scrollbar-track { background: transparent; }
+        /* Non-interactive hint that there's more to scroll to -- only
+           rendered (see InstagramFeed.tsx) when there are enough products
+           that the taller cards are likely to overflow the available
+           height. Sits at a fixed position over the scroll area rather
+           than inside it, so it doesn't scroll away with the content. */
+        .ump-instagram-lightbox-picker-fade {
+          position: absolute; left: 0; right: 0; bottom: 0; height: 26px;
+          background: linear-gradient(to bottom, rgba(255,255,255,0) 0%, ${C.paper} 85%);
+          pointer-events: none;
         }
         /* Tap-to-expand caption overlaid at the bottom of the photo/video,
            Instagram-native style -- replaces the old plain-text caption in

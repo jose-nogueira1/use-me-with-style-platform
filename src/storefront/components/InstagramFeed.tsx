@@ -192,9 +192,10 @@ export function InstagramFeed() {
   // controlled whether the body itself could still be the thing panning.
   // The 2026-08-08 overlay redesign (see this file's header comment) removed
   // the scrollable content panel this used to reference -- the multi-product
-  // picker (`.ump-instagram-lightbox-picker`) is the only thing inside the
-  // modal with its own `overflow-y: auto` now, and it's short enough (max
-  // 4 products) that this scroll-lock rarely matters to it either way.
+  // picker's nested `.ump-instagram-lightbox-picker-scroll` is the only
+  // thing inside the modal with its own `overflow-y: auto` now, and it's
+  // short enough (max 4 products) that this scroll-lock rarely matters to
+  // it either way.
   useEffect(() => {
     if (!selectedPost) return;
     const scrollY = window.scrollY;
@@ -524,9 +525,16 @@ export function InstagramFeed() {
 
             {showProductPicker && selectedProducts.length > 1 && (
               <div className="ump-instagram-lightbox-picker">
-                {selectedProducts.map((product) => (
-                  <InstagramProductCard key={product.id} product={product} lookId={selectedPost.id} compact />
-                ))}
+                <div className="ump-instagram-lightbox-picker-scroll">
+                  {selectedProducts.map((product) => (
+                    <InstagramProductCard key={product.id} product={product} lookId={selectedPost.id} compact />
+                  ))}
+                </div>
+                {/* Cards are tall enough now that 3+ of them routinely need
+                    a scroll -- this fade is a non-interactive hint that
+                    there's more below, rather than the last card just
+                    looking abruptly cut off. */}
+                {selectedProducts.length > 2 && <div className="ump-instagram-lightbox-picker-fade" aria-hidden="true" />}
               </div>
             )}
 
