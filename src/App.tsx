@@ -511,15 +511,43 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
           .ump-shop-instagram-products { grid-template-columns: minmax(0, 1fr); }
         }
 
-        .ump-cat-row { display: flex; gap: 10px; overflow-x: auto; }
-        @media (min-width: 720px) { .ump-cat-row { display: grid; grid-template-columns: repeat(4, 1fr); overflow-x: visible; } }
+        /* Category row (2026-08-08 bug fix, "more than 4 categories wraps to
+           a second line instead of being a carousel"): this used to switch
+           to a 4-column CSS grid at desktop widths, which was fine back when
+           the category list was a hardcoded 4-item array, but categories
+           became admin-created CMS data on 2026-07-25 -- a 5th category (or
+           more) just wraps a grid onto a second row instead of scrolling.
+           Now a horizontally-scrolling flex row at every breakpoint, same
+           carousel pattern as InstagramFeed's .ump-instagram-track: native
+           touch swipe on mobile (already worked, since this was already a
+           flex/overflow-x row below 720px -- untouched here), plus
+           click-and-drag scrolling on desktop via onCatPointerDown/Move
+           below (desktop mice have no native drag-scroll gesture the way
+           touchscreens do). Not full-bleed like the Instagram strip (it
+           lives inside .ump-content-width with side padding), so it
+           deliberately skips that section's edge-fade mask -- fading out a
+           few px inside empty padding, short of the actual page edge, would
+           look like a rendering glitch rather than an intentional cue. */
+        .ump-cat-row {
+          display: flex; gap: 10px; overflow-x: auto;
+          scrollbar-width: none;
+          touch-action: pan-x pan-y;
+          cursor: grab;
+        }
+        .ump-cat-row::-webkit-scrollbar { display: none; }
+        .ump-cat-row:active { cursor: grabbing; }
         /* Category tiles (2026-07-25 redesign: full-bleed portrait photo with
            an overlaid label instead of a tiny thumbnail floating in a mostly-
-           empty card). Tiles use aspect-ratio for their height, which needs an
-           explicit width to resolve against in the mobile flex row -- the
-           desktop grid below overrides this via grid-template-columns instead. */
+           empty card). Tiles use aspect-ratio for their height, which needs
+           an explicit width to resolve against in the flex row -- percentage
+           at mobile widths (so a couple of tiles plus a peek of the next one
+           fit the screen), fixed pixel widths above that (a percentage of a
+           1400px+ desktop row would make each tile enormous), same scaling
+           approach InstagramFeed's tiles already use. */
         .ump-cat-tile { flex: 0 0 42%; }
-        @media (min-width: 720px) { .ump-cat-tile { flex: none; } }
+        @media (min-width: 560px) { .ump-cat-tile { flex: 0 0 220px; } }
+        @media (min-width: 900px) { .ump-cat-tile { flex: 0 0 250px; } }
+        @media (min-width: 1400px) { .ump-cat-tile { flex: 0 0 280px; } }
 
         /* Browse: sidebar filter panel on desktop (per "D02. Desktop Browse
            and Filter"), inline pills + slide-down panel on mobile. Breakpoint

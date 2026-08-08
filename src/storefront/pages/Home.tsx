@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { PointerEvent as ReactPointerEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { C, F, t } from '../../theme';
 import { useApp } from '../../state/AppContext';
@@ -144,6 +145,45 @@ export function Home() {
         .filter((c): c is ApiCategory => c !== undefined))
     : categories;
 
+  // Desktop click-and-drag scrolling for the category carousel (2026-08-08,
+  // alongside the .ump-cat-row/.ump-cat-tile carousel fix in App.tsx) --
+  // mouse only, same "defer pointer capture until a real drag is detected"
+  // technique already fixed/proven in InstagramFeed.tsx's onPointerMove
+  // (capturing on every pointerdown, including plain clicks, suppressed the
+  // browser's synthesized click on the nested Link). Touch/pen fall through
+  // to native scrolling, same reasoning as that file's onPointerDown. No
+  // auto-scroll loop here -- unlike an endless content feed, this is a
+  // short, fixed set of navigation tiles a shopper is actively choosing
+  // from, so nothing should be advancing on its own while they're deciding.
+  const catTrackRef = useRef<HTMLDivElement>(null);
+  const catDraggingRef = useRef(false);
+  const catDraggedPastThresholdRef = useRef(false);
+  const catDragStartRef = useRef({ x: 0, scrollLeft: 0 });
+  const onCatPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (e.pointerType !== 'mouse') return;
+    const track = catTrackRef.current;
+    if (!track) return;
+    catDraggingRef.current = true;
+    catDraggedPastThresholdRef.current = false;
+    catDragStartRef.current = { x: e.clientX, scrollLeft: track.scrollLeft };
+  };
+  const onCatPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (!catDraggingRef.current) return;
+    const track = catTrackRef.current;
+    if (!track) return;
+    const dx = e.clientX - catDragStartRef.current.x;
+    if (!catDraggedPastThresholdRef.current && Math.abs(dx) > 4) {
+      catDraggedPastThresholdRef.current = true;
+      track.setPointerCapture(e.pointerId);
+    }
+    if (catDraggedPastThresholdRef.current) {
+      track.scrollLeft = catDragStartRef.current.scrollLeft - dx;
+    }
+  };
+  const endCatDrag = () => {
+    catDraggingRef.current = false;
+  };
+
   // SEO (2026-08-07, audit item 1): CMS hero headline/subtitle doubles as
   // the homepage's <title>/meta description source -- already the most
   // current, admin-editable marketing copy for this page, and it falls back
@@ -237,7 +277,15 @@ export function Home() {
         <div style={{ fontSize: 10, letterSpacing: 3, color: C.goldDeep, fontWeight: 800, textTransform: 'uppercase', marginBottom: 12 }}>
           {t('categories', lang)}
         </div>
-        <div className="ump-cat-row">
+        <div
+          ref={catTrackRef}
+          className="ump-cat-row"
+          onPointerDown={onCatPointerDown}
+          onPointerMove={onCatPointerMove}
+          onPointerUp={endCatDrag}
+          onPointerCancel={endCatDrag}
+          onMouseLeave={endCatDrag}
+        >
           {displayCategories.map((c, index) => {
             const slug = c.slug ?? String(c.id);
             const label = (lang === 'en' ? c.nameEN : c.namePT)?.trim() || c.namePT;
@@ -247,6 +295,10 @@ export function Home() {
                 key={String(c.id)}
                 to={`/catalogo?cat=${slug}`}
                 className="ump-hover-lift ump-cat-tile"
+                draggable={false}
+                onClick={(e) => {
+                  if (catDraggedPastThresholdRef.current) e.preventDefault();
+                }}
                 style={{
                   position: 'relative',
                   display: 'block',
