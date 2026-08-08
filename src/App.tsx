@@ -459,15 +459,23 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
         .ump-instagram-lightbox-pill--gold { color: ${C.onDarkGold}; }
         /* Popover for posts tagging more than one product (up to 4) -- a
            single "shop the look" tap can't disambiguate which one, so this
-           floats over the photo instead of jumping straight to a product. */
+           floats over the photo instead of jumping straight to a product.
+           Height is NOT a flat max-height: the modal itself is only as
+           tall as its 4:5 aspect-ratio makes it, which shrinks a lot on a
+           narrow phone viewport (unlike a fixed 320px cap, which stayed
+           320px regardless and ended up eating almost the whole modal on
+           mobile, crowding the caption into a sliver at the bottom -- confirmed
+           via live measurement, not guessed). Pinning both top and bottom
+           makes the picker's height auto-fit whatever room is actually left
+           in the modal, so the photo peeking through and the caption below
+           always keep real breathing room, on any screen size. */
         .ump-instagram-lightbox-picker {
-          position: absolute; top: 58px; left: 12px; right: 12px; z-index: 3;
+          position: absolute; top: 64px; left: 12px; right: 12px; bottom: 92px; z-index: 3;
           background: ${C.paper};
           border-radius: 10px;
           box-shadow: 0 12px 30px rgba(0,0,0,0.28);
-          padding: 8px;
-          display: flex; flex-direction: column; gap: 8px;
-          max-height: min(50vh, 320px);
+          padding: 10px;
+          display: flex; flex-direction: column; gap: 10px;
           overflow-y: auto;
         }
         /* Tap-to-expand caption overlaid at the bottom of the photo/video,
