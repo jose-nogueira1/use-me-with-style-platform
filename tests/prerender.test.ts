@@ -47,3 +47,12 @@ test('all configured static routes are public and the SPA clears captured markup
   assert.match(entry, /root\.replaceChildren\(\)/);
   assert.match(entry, /createRoot\(root\)\.render/);
 });
+
+test('production builds force the same-origin API and use a Vercel-compatible browser', () => {
+  const packageJson = JSON.parse(projectFile('package.json')) as { scripts: Record<string, string> };
+  assert.match(packageJson.scripts.build, /^VITE_API_BASE_URL=\/ vite build/);
+
+  const prerender = projectFile('scripts/prerender.mjs');
+  assert.match(prerender, /process\.env\.VERCEL === '1'/);
+  assert.match(prerender, /serverlessChromium\.executablePath\(\)/);
+});

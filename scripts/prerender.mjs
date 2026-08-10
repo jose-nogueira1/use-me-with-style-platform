@@ -3,7 +3,8 @@ import { createServer } from 'node:http'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
-import { chromium } from '@playwright/test'
+import serverlessChromium from '@sparticuz/chromium'
+import { chromium as playwrightChromium } from '@playwright/test'
 import {
   MARKETS,
   STATIC_PRERENDER_ROUTES,
@@ -17,6 +18,7 @@ const distDir = path.join(projectDir, 'dist')
 const cmsOrigin = (process.env.PRERENDER_CMS_ORIGIN || 'https://use-me-with-style-cms-production.up.railway.app').replace(/\/$/, '')
 const generatedAt = new Date().toISOString()
 const responseCache = new Map()
+const useServerlessChromium = process.env.VERCEL === '1' && process.platform === 'linux'
 
 const contentTypes = {
   '.css': 'text/css; charset=utf-8',
@@ -33,7 +35,7 @@ const contentTypes = {
 
 async function ensureBrowser() {
   try {
-    await access(chromium.executablePath())
+    await access(playwrightChromium.executablePath())
     return
   } catch {
     console.log('Playwright Chromium is not installed; downloading the pinned browser for prerendering...')
@@ -47,7 +49,7 @@ async function ensureBrowser() {
     stdio: 'inherit',
   })
   if (result.status !== 0) throw new Error('Unable to install Playwright Chromium for prerendering.')
-  await access(chromium.executablePath())
+  await access(playwrightChromium.executablePath())
 }
 
 async function fetchJson(url) {
@@ -210,7 +212,7 @@ async function captureRoute(browser, port, market, route) {
   return { html, title, url: productionUrl(market, route) }
 }
 
-await ensureBrowser()
+if (!useServerlessChromium) await ensureBrowser()
 
 const discovered = {}
 for (const market of Object.keys(MARKETS)) {
@@ -232,7 +234,15 @@ await new Promise((resolve, reject) => {
 const address = server.address()
 if (!address || typeof address === 'string') throw new Error('Could not determine prerender server port.')
 
-const browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] })
+// Vercel's build image does not ship the shared libraries needed by
+// Playwright's downloaded browser. Sparticuz packages a Linux headless
+// Chromium with its runtime dependencies; local builds keep using the exact
+// Playwright-pinned browser installed on the developer machine.
+const browser = await playwrightChromium.launch({
+  headless: true,
+  args: useServerlessChromium ? serverlessChromium.args : ['--no-sandbox'],
+  executablePath: useServerlessChromium ? await serverlessChromium.executablePath() : undefined,
+})
 const manifest = { generatedAt, cmsOrigin, markets: {} }
 try {
   for (const market of Object.keys(MARKETS)) {
