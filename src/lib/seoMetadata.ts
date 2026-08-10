@@ -82,8 +82,19 @@ const NOT_FOUND_METADATA: Record<Lang, SeoMetadata> = {
   en: { title: `Page not found | ${SITE_TITLE}`, description: 'The page you are looking for does not exist or has moved.' },
 };
 
+function normalizePathname(pathname: string): string {
+  const pathOnly = pathname.split(/[?#]/, 1)[0];
+  if (!pathOnly || pathOnly === '/') return '/';
+  return `/${pathOnly.replace(/^\/+|\/+$/g, '')}`;
+}
+
+export function canonicalUrl(origin: string, pathname: string): string {
+  const normalizedOrigin = origin.replace(/\/+$/, '');
+  return `${normalizedOrigin}${normalizePathname(pathname)}`;
+}
+
 export function routeSeoMetadata(pathname: string, lang: Lang): SeoMetadata {
-  const normalizedPath = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
+  const normalizedPath = normalizePathname(pathname);
   const exact = ROUTE_METADATA[normalizedPath];
   if (exact) return exact[lang];
 

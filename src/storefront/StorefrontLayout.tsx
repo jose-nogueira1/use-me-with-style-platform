@@ -47,42 +47,10 @@ export function StorefrontLayout() {
     { to: '/conta', label: t('orderLookupNav', lang) },
   ];
 
-  // Each market has its own public hostname, so canonical metadata must be
-  // derived from the live origin rather than the apex-domain env value. Keep
-  // query strings and fragments out of the canonical URL: catalogue filters,
-  // Stripe return parameters, and in-page anchors are alternate states of the
-  // same route, not separately indexable pages.
-  useEffect(() => {
-    const canonicalUrl = `${window.location.origin}${location.pathname}`;
-    const ensureLink = () => {
-      let element = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
-      if (!element) {
-        element = document.createElement('link');
-        element.rel = 'canonical';
-        document.head.appendChild(element);
-      }
-      element.href = canonicalUrl;
-    };
-    const ensureMeta = (property: string, content: string) => {
-      let element = document.head.querySelector<HTMLMetaElement>(`meta[property="${property}"]`);
-      if (!element) {
-        element = document.createElement('meta');
-        element.setAttribute('property', property);
-        document.head.appendChild(element);
-      }
-      element.content = content;
-    };
-
-    ensureLink();
-    ensureMeta('og:url', canonicalUrl);
-    ensureMeta('og:site_name', 'Use Me With Style');
-  }, [location.pathname]);
-
-  // Site-wide default <title>/meta description (2026-08-07, SEO audit item
-  // 1) -- see src/lib/seo.ts for why this has to be a layout effect and why
-  // that ordering is what lets Home/Browse/ProductDetail's own <Seo> below
-  // override it reliably. location.search included in the route key: e.g.
-  // Browse's title depends on ?cat=, not just the /catalogo path itself.
+  // Route-aware title, description, social metadata and canonical URL. The
+  // canonical uses the live market origin and clean pathname; query filters,
+  // sorting, checkout return parameters and fragments are intentionally not
+  // indexable URL variants. See src/lib/seo.ts for effect ordering details.
   useSeoDefaults(lang, location.pathname, location.search);
 
   // Real brand wordmark (see components/BrandLogo.tsx for why gold is

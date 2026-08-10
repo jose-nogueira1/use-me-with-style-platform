@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import { routeSeoMetadata, SITE_TITLE } from '../src/lib/seoMetadata.ts';
+import { canonicalUrl, routeSeoMetadata, SITE_TITLE } from '../src/lib/seoMetadata.ts';
 
 const projectFile = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 
@@ -48,6 +48,28 @@ test('crawler-visible HTML contains complete branded social metadata', () => {
   assert.match(html, /<meta name="twitter:title" content="[^"]+"/);
   assert.match(html, /<meta name="twitter:description" content="[^"]+"/);
   assert.match(html, /<meta name="twitter:image" content="https:\/\/[^"]+"/);
+});
+
+test('canonical URLs use the active market origin and a clean route path', () => {
+  assert.equal(canonicalUrl('https://ao.usemewithstyle.shop', '/'), 'https://ao.usemewithstyle.shop/');
+  assert.equal(canonicalUrl('https://pt.usemewithstyle.shop/', '/catalogo/'), 'https://pt.usemewithstyle.shop/catalogo');
+  assert.equal(
+    canonicalUrl('https://ao.usemewithstyle.shop', '/catalogo?cat=leggings&sort=price-asc'),
+    'https://ao.usemewithstyle.shop/catalogo',
+  );
+  assert.equal(
+    canonicalUrl('https://ao.usemewithstyle.shop', '/produto/vestido-move/'),
+    'https://ao.usemewithstyle.shop/produto/vestido-move',
+  );
+});
+
+test('the canonical implementation excludes query filters and keeps og:url aligned', () => {
+  const source = projectFile('src/lib/seo.ts');
+  const layout = projectFile('src/storefront/StorefrontLayout.tsx');
+  assert.match(source, /canonicalUrl\(origin, pathname\)/);
+  assert.match(source, /ensureCanonical\(canonical\)/);
+  assert.match(source, /ensureMeta\('property', 'og:url', canonical\)/);
+  assert.match(layout, /useSeoDefaults\(lang, location\.pathname, location\.search\)/);
 });
 
 test('page-specific SEO reruns after pathname and query-string navigation', () => {

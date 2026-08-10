@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import type { Lang } from '../theme';
 import wordmarkBlack from '../assets/brand/wordmark-black.png';
-import { routeSeoMetadata } from './seoMetadata';
+import { canonicalUrl, routeSeoMetadata } from './seoMetadata';
 
 export { SITE_TITLE } from './seoMetadata';
 
@@ -46,6 +46,16 @@ function ensureMeta(attr: 'name' | 'property', key: string, content: string) {
   element.content = content;
 }
 
+function ensureCanonical(href: string) {
+  let element = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+  if (!element) {
+    element = document.createElement('link');
+    element.rel = 'canonical';
+    document.head.appendChild(element);
+  }
+  element.href = href;
+}
+
 /**
  * Resets <title>, meta description, og:title/og:description/og:image and
  * twitter:card to the site-wide default on every route change, BEFORE any
@@ -77,17 +87,22 @@ function ensureMeta(attr: 'name' | 'property', key: string, content: string) {
  */
 export function useSeoDefaults(lang: Lang, pathname: string, search: string) {
   const metadata = routeSeoMetadata(pathname, lang);
+  const origin = typeof window === 'undefined' ? '' : window.location.origin;
+  const canonical = canonicalUrl(origin, pathname);
   useLayoutEffect(() => {
     document.title = metadata.title;
+    ensureCanonical(canonical);
     ensureMeta('name', 'description', metadata.description);
     ensureMeta('property', 'og:title', metadata.title);
     ensureMeta('property', 'og:description', metadata.description);
     ensureMeta('property', 'og:image', absoluteAssetUrl(wordmarkBlack));
+    ensureMeta('property', 'og:url', canonical);
+    ensureMeta('property', 'og:site_name', 'Use Me With Style');
     ensureMeta('name', 'twitter:card', 'summary_large_image');
     ensureMeta('name', 'twitter:title', metadata.title);
     ensureMeta('name', 'twitter:description', metadata.description);
     ensureMeta('name', 'twitter:image', absoluteAssetUrl(wordmarkBlack));
-  }, [metadata.description, metadata.title, pathname, search]);
+  }, [canonical, metadata.description, metadata.title, search]);
 }
 
 /**
