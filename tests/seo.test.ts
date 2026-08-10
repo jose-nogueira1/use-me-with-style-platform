@@ -15,6 +15,7 @@ test('every storefront route receives dedicated localized metadata', () => {
     '/encomenda-confirmada/UMP-123',
     '/conta',
     '/ajuda',
+    '/perguntas-frequentes',
     '/sobre',
     '/shop-instagram',
     '/shop-instagram/example-look',

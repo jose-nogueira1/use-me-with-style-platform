@@ -77,6 +77,12 @@ for (const [market, config] of Object.entries(MARKETS)) {
     if (entry.route === '/catalogo') {
       expect(/href="\/produto\//.test(html), `${label} contains no crawlable product links`)
     }
+    if (entry.route === '/perguntas-frequentes') {
+      const faq = blocks.find((block) => block['@type'] === 'FAQPage')
+      expect(Boolean(faq), `${label} lacks FAQPage JSON-LD`)
+      expect((faq?.mainEntity?.length ?? 0) >= 5, `${label} has too few FAQ questions`)
+      expect(/<details\b/i.test(html) && /<summary\b/i.test(html), `${label} lacks crawlable FAQ accordion content`)
+    }
   }
 }
 

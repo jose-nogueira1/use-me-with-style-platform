@@ -15,6 +15,7 @@ export const T: Record<string, Record<Lang, string>> = {
   navSearch: { pt: 'Pesquisar', en: 'Search' },
   navOrders: { pt: 'Encomendas', en: 'Orders' },
   navHelp: { pt: 'Ajuda', en: 'Help' },
+  faqNav: { pt: 'Perguntas frequentes', en: 'FAQ' },
   angola: { pt: 'Angola', en: 'Angola' },
   portugal: { pt: 'Portugal', en: 'Portugal' },
   market: { pt: 'Mercado', en: 'Market' },

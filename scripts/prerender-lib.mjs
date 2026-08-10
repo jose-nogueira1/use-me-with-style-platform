@@ -9,6 +9,7 @@ export const STATIC_PRERENDER_ROUTES = [
   '/',
   '/catalogo',
   '/ajuda',
+  '/perguntas-frequentes',
   '/sobre',
   '/shop-instagram',
   '/politica-privacidade',

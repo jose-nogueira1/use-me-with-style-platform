@@ -25,6 +25,7 @@ import { fetchCategories, type ApiCategory } from '../../lib/api';
 const SUPPORT_LINKS = [
   { to: '/conta', labelKey: 'orderLookupNav' as const },
   { to: '/ajuda', labelKey: 'navHelp' as const },
+  { to: '/perguntas-frequentes', labelKey: 'faqNav' as const },
   { to: '/carrinho', labelKey: 'cart' as const },
 ];
 
@@ -82,7 +83,7 @@ export function Footer() {
           <InfoLine
             label={t('returns', lang)}
             value={t('footerReturnsNote', lang, { days: t(market === 'AO' ? 'fortyEightHours' : 'fourteenDays', lang) })}
-            to="/ajuda"
+            to="/ajuda#devolucoes"
           />
           <InfoLine label={t('prices', lang)} value={t(market === 'AO' ? 'footerPricesNoteAo' : 'footerPricesNotePt', lang)} />
           <div style={{ marginTop: 4, fontSize: 9, letterSpacing: 2, color: C.inkSoft, textTransform: 'uppercase' }}>

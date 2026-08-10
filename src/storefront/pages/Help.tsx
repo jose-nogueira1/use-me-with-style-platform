@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { ChevronDown, Mail, Search } from 'lucide-react';
 import { C, F, t, pickBilingual } from '../../theme';
 import { useApp } from '../../state/AppContext';
@@ -25,12 +25,14 @@ import { fetchMarketSettings, submitContactMessage, type MarketSettings } from '
 // closing its siblings, since there's no strong reason a customer reading
 // the shipping info would want the returns policy to snap shut.
 function AccordionSection({
+  id,
   heading,
   text,
   loading,
   open,
   onToggle,
 }: {
+  id?: string;
   heading: string;
   text: string | null;
   loading: boolean;
@@ -39,7 +41,7 @@ function AccordionSection({
 }) {
   if (!loading && !text) return null;
   return (
-    <div style={{ marginTop: 12, borderTop: `1px solid ${C.rule}` }}>
+    <div id={id} style={{ marginTop: 12, borderTop: `1px solid ${C.rule}`, scrollMarginTop: 96 }}>
       <button
         type="button"
         onClick={onToggle}
@@ -91,9 +93,17 @@ const inputStyle = {
 
 export function Help() {
   const { lang, market } = useApp();
+  const location = useLocation();
   const [settings, setSettings] = useState<MarketSettings | null>(null);
   const [loading, setLoading] = useState(true);
-  const [openSections, setOpenSections] = useState<Set<string>>(new Set());
+  const [openSections, setOpenSections] = useState<Set<string>>(() => new Set(location.hash === '#devolucoes' ? ['returns'] : []));
+  useEffect(() => {
+    if (location.hash !== '#devolucoes') return;
+    // A same-page footer/FAQ link can update only the hash without remounting
+    // Help, so make the linked policy visible as well as scrolling to it.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setOpenSections((current) => current.has('returns') ? current : new Set([...current, 'returns']));
+  }, [location.hash]);
   const toggleSection = (key: string) =>
     setOpenSections((prev) => {
       const next = new Set(prev);
@@ -211,6 +221,7 @@ export function Help() {
           onToggle={() => toggleSection('shipping')}
         />
         <AccordionSection
+          id="devolucoes"
           heading={t('returnsPolicyHeading', lang)}
           text={returnsText}
           loading={loading}

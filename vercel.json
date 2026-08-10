@@ -42,7 +42,7 @@
       "destination": "/__prerender/ao/catalogo/category/:category/index.html"
     },
     {
-      "source": "/:page(catalogo|ajuda|sobre|shop-instagram|politica-privacidade|termos-condicoes|eliminacao-de-dados)",
+      "source": "/:page(catalogo|ajuda|perguntas-frequentes|sobre|shop-instagram|politica-privacidade|termos-condicoes|eliminacao-de-dados)",
       "has": [{ "type": "host", "value": "ao.usemewithstyle.shop" }],
       "destination": "/__prerender/ao/:page/index.html"
     },
@@ -70,7 +70,7 @@
       "destination": "/__prerender/pt/catalogo/category/:category/index.html"
     },
     {
-      "source": "/:page(catalogo|ajuda|sobre|shop-instagram|politica-privacidade|termos-condicoes|eliminacao-de-dados)",
+      "source": "/:page(catalogo|ajuda|perguntas-frequentes|sobre|shop-instagram|politica-privacidade|termos-condicoes|eliminacao-de-dados)",
       "has": [{ "type": "host", "value": "pt.usemewithstyle.shop" }],
       "destination": "/__prerender/pt/:page/index.html"
     },
@@ -105,7 +105,7 @@
       "destination": "/__spa.html"
     },
     {
-      "source": "/:page(catalogo|ajuda|sobre|shop-instagram|politica-privacidade|termos-condicoes|eliminacao-de-dados)",
+      "source": "/:page(catalogo|ajuda|perguntas-frequentes|sobre|shop-instagram|politica-privacidade|termos-condicoes|eliminacao-de-dados)",
       "missing": [
         { "type": "host", "value": "ao.usemewithstyle.shop" },
         { "type": "host", "value": "pt.usemewithstyle.shop" }

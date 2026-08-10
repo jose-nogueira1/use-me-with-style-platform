@@ -13,6 +13,7 @@ const Cart = lazy(() => import('./storefront/pages/Cart').then((m) => ({ default
 const Checkout = lazy(() => import('./storefront/pages/Checkout').then((m) => ({ default: m.Checkout })));
 const ConfirmationLookup = lazy(() => import('./storefront/pages/ConfirmationLookup').then((m) => ({ default: m.ConfirmationLookup })));
 const Help = lazy(() => import('./storefront/pages/Help').then((m) => ({ default: m.Help })));
+const Faq = lazy(() => import('./storefront/pages/Faq').then((m) => ({ default: m.Faq })));
 const About = lazy(() => import('./storefront/pages/About').then((m) => ({ default: m.About })));
 const PrivacyPolicy = lazy(() => import('./storefront/pages/PrivacyPolicy').then((m) => ({ default: m.PrivacyPolicy })));
 const Terms = lazy(() => import('./storefront/pages/Terms').then((m) => ({ default: m.Terms })));
@@ -797,6 +798,7 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
               <Route path="encomenda-confirmada/:orderNumber" element={<ConfirmationLookup />} />
               <Route path="conta" element={<ConfirmationLookup />} />
               <Route path="ajuda" element={<Help />} />
+              <Route path="perguntas-frequentes" element={<Faq />} />
               <Route path="sobre" element={<About />} />
               <Route path="shop-instagram" element={<ShopInstagram />} />
               <Route path="shop-instagram/:lookSlug" element={<ShopInstagram />} />
