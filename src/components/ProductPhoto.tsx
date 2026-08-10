@@ -55,13 +55,18 @@ export function ProductPhoto({
     : variant === 'card'
       ? image?.cardUrl || image?.url
       : image?.url;
+  // Last-resort accessibility/SEO guard. Product data normally arrives via
+  // adaptApiProduct(), which builds a product/colour/category-specific alt;
+  // this keeps direct callers and stale persisted data from ever rendering
+  // the audit's former alt="" failure mode.
+  const imageAlt = image?.alt?.trim() || 'Produto — Use Me With Style';
 
   if (imageUrl && failedUrl !== imageUrl) {
     return (
       <img
         data-artwork
         src={imageUrl}
-        alt={image?.alt || ''}
+        alt={imageAlt}
         loading={priority ? 'eager' : 'lazy'}
         fetchPriority={priority ? 'high' : undefined}
         decoding="async"

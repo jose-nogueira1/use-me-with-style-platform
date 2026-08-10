@@ -62,6 +62,7 @@ for (const [market, config] of Object.entries(MARKETS)) {
     expect(/<h1\b/i.test(html), `${label} lacks crawlable H1 content`)
     expect(blocks.some((block) => block['@type'] === 'Organization'), `${label} lacks Organization JSON-LD`)
     expect(blocks.some((block) => block['@type'] === 'WebSite'), `${label} lacks WebSite JSON-LD`)
+    expect(!/<img(?=[^>]*data-artwork)(?=[^>]*alt="")[^>]*>/i.test(html), `${label} contains a product image with empty alt text`)
 
     if (entry.route.startsWith('/produto/')) {
       const product = blocks.find((block) => block['@type'] === 'Product')
@@ -69,6 +70,9 @@ for (const [market, config] of Object.entries(MARKETS)) {
       expect(product?.offers?.priceCurrency === config.currency, `${label} uses the wrong Product currency`)
       expect(product?.offers?.url === canonical, `${label} has the wrong Product offer URL`)
       expect(typeof product?.name === 'string' && product.name.length > 0, `${label} lacks a Product name`)
+      if ((product?.image?.length ?? 0) > 0) {
+        expect(/<img(?=[^>]*data-artwork)(?=[^>]*alt="[^"]+")[^>]*>/i.test(html), `${label} omits its crawlable product image or alt text`)
+      }
     }
     if (entry.route === '/catalogo') {
       expect(/href="\/produto\//.test(html), `${label} contains no crawlable product links`)

@@ -81,4 +81,9 @@ test('production builds force the same-origin API and use a Vercel-compatible br
   assert.match(prerender, /process\.env\.VERCEL === '1'/);
   assert.match(prerender, /serverlessChromium\.executablePath\(\)/);
   assert.match(prerender, /404\.html/);
+  assert.match(prerender, /pathname\.startsWith\('\/api\/media\/file\/'\) \? route\.continue\(\) : route\.abort\(\)/);
+
+  const verifier = projectFile('scripts/verify-prerender.mjs');
+  assert.match(verifier, /contains a product image with empty alt text/);
+  assert.match(verifier, /omits its crawlable product image or alt text/);
 });

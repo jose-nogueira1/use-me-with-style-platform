@@ -800,6 +800,7 @@ export type ApiInstagramLookProduct = {
   namePT: string;
   nameEN: string;
   imageUrl: string | null;
+  imageAlt?: string | null;
   price: number;
   regularPrice: number;
   currency: 'AOA' | 'EUR';

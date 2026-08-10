@@ -479,6 +479,11 @@ export const T: Record<string, Record<Lang, string>> = {
   moveImageLaterAriaLabel: { en: 'Move photo later', pt: 'Mover fotografia para a frente' },
   addPhotoTile: { en: 'Add photo', pt: 'Adicionar foto' },
   noPhotosYet: { en: 'No photos yet', pt: 'Ainda sem fotografias' },
+  imageAltLabel: { en: 'Image description (alt text)', pt: 'Descrição da imagem (texto alternativo)' },
+  imageAltHelp: {
+    en: 'Describe what is visible, including colour or view when useful. Leave blank to use: {suggestion}',
+    pt: 'Descreva o que está visível, incluindo a cor ou vista quando for útil. Deixe em branco para usar: {suggestion}',
+  },
   // Per-colour photo galleries (2026-08-07): each thumbnail can optionally
   // be tagged with a colour so ProductDetail's gallery can filter by the
   // shopper's current selection.

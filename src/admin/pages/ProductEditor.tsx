@@ -29,6 +29,7 @@ import { PageHeader } from '../components/PageHeader';
 import { navigateWithToast } from '../lib/toastNavigation';
 import { useDirty } from '../lib/useDirty';
 import { t } from '../i18n';
+import { buildProductImageAlt } from '../../lib/productImageAlt';
 
 // Catalogue taxonomies are managed in the Product settings page
 // (/admin/definicoes-produto) since 2026-07-25; this editor only PICKS
@@ -136,6 +137,7 @@ export function ProductEditor() {
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [newImageAlt, setNewImageAlt] = useState('');
 
   const [categories, setCategories] = useState<ApiCategory[]>([]);
   const [tags, setTags] = useState<ApiMerchTag[]>([]);
@@ -227,6 +229,15 @@ export function ProductEditor() {
    * string under SQLite) so Payload's relationship validation accepts it. */
   const originalId = (docs: { id: string | number }[], stringId: string): string | number =>
     docs.find((d) => String(d.id) === stringId)?.id ?? stringId;
+
+  const selectedCategory = categories.find((category) => String(category.id) === form.category);
+  const selectedCategoryLabel = (lang === 'en' ? selectedCategory?.nameEN : selectedCategory?.namePT)?.trim()
+    || selectedCategory?.namePT
+    || '';
+  const suggestedImageAlt = buildProductImageAlt({
+    productName: form.namePT || form.name,
+    productType: selectedCategoryLabel,
+  });
 
   const toggleColor = (colorId: string) =>
     setForm((f) => ({
@@ -382,13 +393,18 @@ export function ProductEditor() {
     setSaving(true);
     setError(null);
     try {
-      const media = await adminUploadProductImage(file, form.namePT || form.name || file.name);
+      // The custom admin now explicitly prompts for image alt text. When the
+      // admin accepts the suggestion, it still produces meaningful stored
+      // content instead of the old product-name-only value; Payload's Media
+      // validation is the authoritative final guard against whitespace.
+      const media = await adminUploadProductImage(file, newImageAlt.trim() || suggestedImageAlt);
       const images = [
         ...(existing.images ?? []).map(serializeImageRow),
         { image: media.id, color: null },
       ];
       const updated = await adminUpdateProduct(existing.id, { images });
       setExisting(updated);
+      setNewImageAlt('');
     } catch {
       setError(t('couldntUploadImage', lang));
     } finally {
@@ -511,6 +527,18 @@ export function ProductEditor() {
             )}
           </div>
 
+          <label style={{ display: 'block', marginTop: 12 }}>
+            <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>{t('imageAltLabel', lang)}</div>
+            <input
+              value={newImageAlt}
+              disabled={!existing || saving}
+              placeholder={suggestedImageAlt}
+              onChange={(event) => setNewImageAlt(event.target.value)}
+              style={{ width: '100%', boxSizing: 'border-box', padding: '9px 10px', fontSize: 10, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, color: C.ink }}
+            />
+            <div style={{ marginTop: 5, fontSize: 8, lineHeight: 1.45, color: C.inkSoft }}>{t('imageAltHelp', lang, { suggestion: suggestedImageAlt })}</div>
+          </label>
+
           {/* Thumbnail grid (2026-08-07 bug fix): every uploaded photo shown
               here, not just the first -- each with its own delete button and
               left/right reorder arrows. The first tile is flagged "Cover"
@@ -578,6 +606,9 @@ export function ProductEditor() {
                       ))}
                     </select>
                   )}
+                  <div title={resolved.alt} style={{ padding: '4px 5px', borderTop: `1px solid ${C.ruleLight}`, fontSize: 7, lineHeight: 1.35, color: C.inkSoft, overflowWrap: 'anywhere' }}>
+                    {resolved.alt || suggestedImageAlt}
+                  </div>
                 </div>
               );
             })}

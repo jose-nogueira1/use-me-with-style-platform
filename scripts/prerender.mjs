@@ -172,7 +172,14 @@ async function createCaptureContext(browser) {
       // No-op for originless documents.
     }
   })
-  await context.route(/\.(?:avif|gif|jpe?g|png|svg|webp)(?:\?.*)?$/i, (request) => request.abort())
+  await context.route(/\.(?:avif|gif|jpe?g|png|svg|webp)(?:\?.*)?$/i, (route) => {
+    const pathname = new URL(route.request().url()).pathname
+    // Product media must finish loading so ProductPhoto keeps the real <img>
+    // (and its descriptive alt) in crawler HTML. These same-origin URLs are
+    // served by proxyApi() and cached above. Other decorative/social images
+    // remain skipped to keep the 58-page production build lightweight.
+    return pathname.startsWith('/api/media/file/') ? route.continue() : route.abort()
+  })
   return context
 }
 
@@ -182,10 +189,9 @@ async function captureRoute(context, port, market, route) {
   const pageErrors = []
   page.on('pageerror', (error) => pageErrors.push(error.message))
   page.on('console', (message) => {
-    // Image requests are intentionally aborted above: their URLs are already
-    // present in the captured DOM, while downloading every catalogue photo
-    // for every route would make builds needlessly slow. Chromium logs those
-    // aborts as ERR_FAILED; every other console error remains build-fatal.
+    // Non-product image requests are intentionally aborted above. Chromium
+    // logs those aborts as ERR_FAILED; every other console error remains
+    // build-fatal.
     if (message.type() === 'error' && message.text() !== 'Failed to load resource: net::ERR_FAILED') {
       pageErrors.push(`console: ${message.text()}`)
     }

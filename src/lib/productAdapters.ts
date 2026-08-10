@@ -4,6 +4,7 @@ import type { Product, ProductBundleComponent, ProductColor, ProductVariant, Siz
 const SIZE_ORDER = ['XS', 'S', 'M', 'L', 'XL'];
 import { TONE_CYCLE } from '../components/ProductPhoto';
 import { publicEnv } from '../config/env';
+import { buildProductImageAlt } from './productImageAlt';
 
 // Recognised "new arrival" merch-tag labels (2026-07-25 navbar fix), checked
 // case-insensitively against BOTH labelPT and labelEN regardless of the
@@ -63,24 +64,27 @@ export function absoluteMediaUrl(url?: string): string | undefined {
 export function adaptApiProduct(api: ApiProduct, market: 'AO' | 'PT', lang: 'pt' | 'en', index = 0): Product {
   const localizedName = (lang === 'en' ? api.nameEN : api.namePT)?.trim() || api.name;
   const localizedDescription = (lang === 'en' ? api.descriptionEN : api.descriptionPT)?.trim() || api.description;
-  const images = (api.images ?? []).flatMap(({ image, color }) => {
-    if (!image || typeof image !== 'object') return [];
-    const url = absoluteMediaUrl(image.url);
-    if (!url) return [];
-    return [{
-      url,
-      cardUrl: absoluteMediaUrl(image.sizes?.card?.url),
-      thumbnailUrl: absoluteMediaUrl(image.sizes?.thumbnail?.url),
-      alt: image.alt?.trim() || localizedName,
-      colorId: refId(color) || undefined,
-    }];
-  });
 
   // Taxonomies became relationships on 2026-07-25; every product call uses
   // depth=2, so these refs are populated docs. The unpopulated (id-only)
   // shape is still tolerated -- it just falls back to blank/empty rather
   // than crashing.
   const category = resolveRef(api.category);
+  const categoryLabel = (lang === 'en' ? category?.nameEN : category?.namePT)?.trim() || category?.namePT || '';
+  const images = (api.images ?? []).flatMap(({ image, color }) => {
+    if (!image || typeof image !== 'object') return [];
+    const url = absoluteMediaUrl(image.url);
+    if (!url) return [];
+    const colorDoc = resolveRef(color);
+    const imageColor = (lang === 'en' ? colorDoc?.nameEN : colorDoc?.namePT)?.trim() || colorDoc?.namePT || '';
+    return [{
+      url,
+      cardUrl: absoluteMediaUrl(image.sizes?.card?.url),
+      thumbnailUrl: absoluteMediaUrl(image.sizes?.thumbnail?.url),
+      alt: image.alt?.trim() || buildProductImageAlt({ productName: localizedName, colorName: imageColor, productType: categoryLabel }),
+      colorId: refId(color) || undefined,
+    }];
+  });
   // tag is hasMany since 2026-07-31 -- Payload returns an array; resolveRef
   // unwraps each entry the same way it always has for a single ref.
   const tagDocs = (api.tag ?? []).map((ref) => resolveRef(ref)).filter((doc): doc is NonNullable<typeof doc> => doc !== null);
@@ -174,7 +178,7 @@ export function adaptApiProduct(api: ApiProduct, market: 'AO' | 'PT', lang: 'pt'
     name: localizedName,
     slug: api.slug,
     cat: category?.slug ?? '',
-    catLabel: (lang === 'en' ? category?.nameEN : category?.namePT)?.trim() || category?.namePT || '',
+    catLabel: categoryLabel,
     productType: api.productType === 'bundle' ? 'bundle' : 'standard',
     priceKz: api.priceAOKz,
     priceEur: api.pricePTEur,

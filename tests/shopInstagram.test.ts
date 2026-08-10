@@ -34,6 +34,7 @@ test('homepage and dedicated page render shoppable product cards', () => {
   assert.match(shopPageSource, /shop-instagram\/\$\{encodeURIComponent\(post.lookSlug\)\}/);
   assert.match(productCardSource, /ShopTheLookProductClick/);
   assert.match(productCardSource, /Sold out — view similar/);
+  assert.match(productCardSource, /product\.imageAlt\?\.trim\(\) \|\| name/);
 });
 
 // 2026-08-08 redesign: the homepage feed no longer links to /shop-instagram
@@ -88,4 +89,10 @@ test('products without catalogue images use a valid, crash-safe placeholder tone
   assert.match(productCardSource, /tone="gold"/);
   assert.doesNotMatch(productCardSource, /tone="light"/);
   assert.match(productPhotoSource, /TONE_STYLES\[tone\] \?\? TONE_STYLES\.gold/);
+});
+
+test('ProductPhoto never renders an empty alt attribute for a real image', () => {
+  assert.match(productPhotoSource, /image\?\.alt\?\.trim\(\) \|\| 'Produto — Use Me With Style'/);
+  assert.match(productPhotoSource, /alt=\{imageAlt\}/);
+  assert.doesNotMatch(productPhotoSource, /alt=\{image\?\.alt \|\| ''\}/);
 });

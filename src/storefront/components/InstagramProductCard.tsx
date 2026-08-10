@@ -42,7 +42,7 @@ export function InstagramProductCard({ product, lookId, compact = false }: { pro
         <ProductPhoto
           tone="gold"
           radius={0}
-          image={product.imageUrl ? { url: absoluteMediaUrl(product.imageUrl) || product.imageUrl, alt: name } : undefined}
+          image={product.imageUrl ? { url: absoluteMediaUrl(product.imageUrl) || product.imageUrl, alt: product.imageAlt?.trim() || name } : undefined}
         />
       </div>
       <div style={{ padding: compact ? '12px' : 11, minWidth: 0 }}>
