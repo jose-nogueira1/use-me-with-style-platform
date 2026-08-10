@@ -14,6 +14,7 @@ import { canonicalUrl } from '../../lib/seoMetadata';
 import { buildProductStructuredData } from '../../lib/productStructuredData';
 import { serializeJsonLd } from '../../lib/jsonLd';
 import { SizeGuideTable } from '../components/SizeGuideTable';
+import { BreadcrumbJsonLd } from '../components/BreadcrumbJsonLd';
 
 // Category display names now come from the CMS categories collection (via
 // product.catLabel) instead of a hardcoded slug->i18n-key map (2026-07-25).
@@ -173,6 +174,12 @@ export function ProductDetail() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(productJsonLd) }}
       />
+      <BreadcrumbJsonLd items={[
+        { name: lang === 'pt' ? 'Início' : 'Home', path: '/' },
+        { name: lang === 'pt' ? 'Catálogo' : 'Catalogue', path: '/catalogo' },
+        ...(product.cat && product.catLabel ? [{ name: product.catLabel, path: `/catalogo?cat=${encodeURIComponent(product.cat)}` }] : []),
+        { name: product.name, path: `/produto/${encodeURIComponent(product.slug)}` },
+      ]} />
       <div className="ump-product-layout">
         <div>
         <div style={{ height: 440, borderRadius: 0, overflow: 'hidden', position: 'relative' }}>

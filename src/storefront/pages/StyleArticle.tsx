@@ -8,6 +8,7 @@ import { canonicalUrl } from '../../lib/seoMetadata';
 import { serializeJsonLd } from '../../lib/jsonLd';
 import { buildBlogPostingStructuredData, formatPostDate, localizePost, type LocalizedPostBlock } from '../../lib/styleGuide';
 import { NotFound } from './NotFound';
+import { BreadcrumbJsonLd } from '../components/BreadcrumbJsonLd';
 
 export function StyleArticle() {
   const { slug = '' } = useParams<{ slug: string }>();
@@ -39,6 +40,11 @@ export function StyleArticle() {
     <article className="ump-form-width" style={{ padding: '38px 20px 64px' }}>
       <Seo title={localized.seoTitle} description={localized.seoDescription} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(structuredData) }} />
+      <BreadcrumbJsonLd items={[
+        { name: lang === 'pt' ? 'Início' : 'Home', path: '/' },
+        { name: lang === 'pt' ? 'Guia de estilo' : 'Style guide', path: '/estilo' },
+        { name: localized.title, path: `/estilo/${encodeURIComponent(post.slug)}` },
+      ]} />
       <Link to="/estilo" style={{ color: C.goldDeep, fontSize: 12, fontWeight: 800, textDecoration: 'none' }}>
         {lang === 'pt' ? '← Guia de estilo' : '← Style guide'}
       </Link>

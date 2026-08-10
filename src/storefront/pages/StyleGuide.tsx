@@ -5,6 +5,7 @@ import { useApp } from '../../state/AppContext';
 import { fetchPosts, type ApiPost } from '../../lib/api';
 import { Seo } from '../../lib/seo';
 import { formatPostDate, localizePost } from '../../lib/styleGuide';
+import { BreadcrumbJsonLd } from '../components/BreadcrumbJsonLd';
 
 export function StyleGuide() {
   const { lang, market } = useApp();
@@ -31,6 +32,10 @@ export function StyleGuide() {
         title={lang === 'pt' ? 'Guia de estilo e moda desportiva | Use Me With Style' : 'Activewear style guide | Use Me With Style'}
         description={lang === 'pt' ? 'Guias sobre leggings, roupa para o ginásio, tecidos e estilo ativo para mulheres em Angola e Portugal.' : 'Guides to leggings, gym outfits, activewear fabrics and active style for women in Angola and Portugal.'}
       />
+      <BreadcrumbJsonLd items={[
+        { name: lang === 'pt' ? 'Início' : 'Home', path: '/' },
+        { name: title, path: '/estilo' },
+      ]} />
       <header style={{ maxWidth: 720, marginBottom: 36 }}>
         <div style={{ color: C.goldDeep, fontSize: 10, fontWeight: 800, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 10 }}>Use Me With Style</div>
         <h1 style={{ fontFamily: F.display, color: C.ink, fontSize: 36, lineHeight: 1.15, margin: '0 0 14px' }}>{title}</h1>

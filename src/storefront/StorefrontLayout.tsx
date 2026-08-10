@@ -11,6 +11,7 @@ import { fetchCategories, fetchStorefrontContent, type ApiCategory } from '../li
 import { useSeoDefaults } from '../lib/seo';
 import { buildSiteStructuredData } from '../lib/siteStructuredData';
 import { serializeJsonLd } from '../lib/jsonLd';
+import { BreadcrumbJsonLd } from './components/BreadcrumbJsonLd';
 
 // Matches the real Figma design (node 72:2, "Phase 1 Storefront -- High
 // Fidelity"): plain header (logo center, hamburger/back left). Market,
@@ -23,6 +24,15 @@ import { serializeJsonLd } from '../lib/jsonLd';
 // desktop, so both showed at once. Rendering one cluster unconditionally
 // removes the duplication at the root instead of patching the CSS.
 const ROOT_PATHS = ['/', '/catalogo'];
+const STATIC_BREADCRUMB_LABELS: Record<string, { pt: string; en: string }> = {
+  '/ajuda': { pt: 'Ajuda', en: 'Help' },
+  '/perguntas-frequentes': { pt: 'Perguntas frequentes', en: 'Frequently asked questions' },
+  '/guia-de-tamanhos': { pt: 'Guia de tamanhos', en: 'Size guide' },
+  '/sobre': { pt: 'Sobre nós', en: 'About us' },
+  '/politica-privacidade': { pt: 'Política de privacidade', en: 'Privacy policy' },
+  '/termos-condicoes': { pt: 'Termos e condições', en: 'Terms and conditions' },
+  '/eliminacao-de-dados': { pt: 'Eliminação de dados', en: 'Data deletion' },
+};
 
 export function StorefrontLayout() {
   const { lang, setLang, themeMode, setThemeMode, cart } = useApp();
@@ -45,6 +55,7 @@ export function StorefrontLayout() {
   const [tiktokUrl, setTikTokUrl] = useState('');
   const origin = typeof window === 'undefined' ? '' : window.location.origin;
   const siteJsonLd = origin ? buildSiteStructuredData(origin, tiktokUrl) : null;
+  const staticBreadcrumbLabel = STATIC_BREADCRUMB_LABELS[location.pathname]?.[lang];
   useEffect(() => { fetchCategories().then(setCategories).catch(() => undefined); }, []);
   useEffect(() => {
     fetchStorefrontContent()
@@ -116,6 +127,12 @@ export function StorefrontLayout() {
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: serializeJsonLd(siteJsonLd) }}
         />
+      ) : null}
+      {staticBreadcrumbLabel ? (
+        <BreadcrumbJsonLd items={[
+          { name: lang === 'pt' ? 'Início' : 'Home', path: '/' },
+          { name: staticBreadcrumbLabel, path: location.pathname },
+        ]} />
       ) : null}
       <div
         ref={headerRef}

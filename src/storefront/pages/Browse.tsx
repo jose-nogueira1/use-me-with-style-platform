@@ -9,6 +9,7 @@ import { fetchCategories, fetchMerchTags, type ApiCategory, type ApiMerchTag } f
 import { hasSwatch, swatchBackground } from '../../lib/colorSwatch';
 import { Seo, SITE_TITLE } from '../../lib/seo';
 import { getSingleCategoryIntro } from '../../lib/categoryIntro';
+import { BreadcrumbJsonLd } from '../components/BreadcrumbJsonLd';
 
 // Categories became admin-managed CMS data on 2026-07-25 (previously a
 // hardcoded enum), so the pills/sidebar are built from the API. This
@@ -344,10 +345,21 @@ export function Browse() {
   const seoDescription = seoFilterLabel
     ? t('seoBrowseDescriptionFiltered', lang, { category: seoFilterLabel.toLowerCase() })
     : t('seoBrowseDescriptionAll', lang);
+  const catalogueLabel = lang === 'pt' ? 'Catálogo' : 'Catalogue';
+  const breadcrumbLeafPath = activeCategoryLabel && activeCats.length === 1
+    ? `/catalogo?cat=${encodeURIComponent(activeCats[0])}`
+    : activeTagLabel && activeTag
+      ? `/catalogo?tag=${encodeURIComponent(activeTag)}`
+      : null;
 
   return (
     <div className="ump-browse-layout" style={{ background: C.paper }}>
       <Seo title={seoTitle} description={seoDescription} />
+      <BreadcrumbJsonLd items={[
+        { name: lang === 'pt' ? 'Início' : 'Home', path: '/' },
+        { name: catalogueLabel, path: '/catalogo' },
+        ...(seoFilterLabel && breadcrumbLeafPath ? [{ name: seoFilterLabel, path: breadcrumbLeafPath }] : []),
+      ]} />
       <div className="ump-browse-sidebar">
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, marginBottom: 12 }}>
           <div style={{ fontSize: 10, letterSpacing: 2, color: C.goldDeep, fontWeight: 800, textTransform: 'uppercase' }}>

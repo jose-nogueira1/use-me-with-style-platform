@@ -108,4 +108,5 @@ test('production builds force the same-origin API and use a Vercel-compatible br
   assert.match(verifier, /omits its crawlable product image or alt text/);
   assert.match(verifier, /lacks an absolute market OG image/);
   assert.match(verifier, /lacks an absolute market Twitter image/);
+  assert.match(verifier, /lacks BreadcrumbList JSON-LD/);
 });

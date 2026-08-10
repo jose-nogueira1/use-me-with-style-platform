@@ -7,6 +7,7 @@ import { trackMetaCustomEvent } from '../../lib/metaAnalytics';
 import { useApp } from '../../state/AppContext';
 import { C, F } from '../../theme';
 import { InstagramProductCard } from '../components/InstagramProductCard';
+import { BreadcrumbJsonLd } from '../components/BreadcrumbJsonLd';
 
 export function ShopInstagram() {
   const { lookSlug } = useParams<{ lookSlug?: string }>();
@@ -49,6 +50,11 @@ export function ShopInstagram() {
 
   return (
     <main style={{ minHeight: '70vh', background: C.paper }}>
+      <BreadcrumbJsonLd items={[
+        { name: lang === 'pt' ? 'Início' : 'Home', path: '/' },
+        { name: lang === 'pt' ? 'Comprar no Instagram' : 'Shop Instagram', path: '/shop-instagram' },
+        ...(selected ? [{ name: selected.captionDisplay || (lang === 'pt' ? 'Look do Instagram' : 'Instagram look'), path: `/shop-instagram/${encodeURIComponent(selected.lookSlug)}` }] : []),
+      ]} />
       <section className="ump-content-width" style={{ padding: '44px 20px 56px' }}>
         <div style={{ maxWidth: 720, margin: '0 auto 30px', textAlign: 'center' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, color: C.goldDeep, fontSize: 9, fontWeight: 850, letterSpacing: 2, textTransform: 'uppercase' }}>

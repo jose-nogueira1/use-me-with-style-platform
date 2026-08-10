@@ -64,6 +64,11 @@ for (const [market, config] of Object.entries(MARKETS)) {
     expect(/<h1\b/i.test(html), `${label} lacks crawlable H1 content`)
     expect(blocks.some((block) => block['@type'] === 'Organization'), `${label} lacks Organization JSON-LD`)
     expect(blocks.some((block) => block['@type'] === 'WebSite'), `${label} lacks WebSite JSON-LD`)
+    if (entry.route !== '/') {
+      const breadcrumbs = blocks.find((block) => block['@type'] === 'BreadcrumbList')
+      expect(Boolean(breadcrumbs), `${label} lacks BreadcrumbList JSON-LD`)
+      expect((breadcrumbs?.itemListElement?.length ?? 0) >= 2, `${label} has an incomplete BreadcrumbList`)
+    }
     expect(!/<img(?=[^>]*data-artwork)(?=[^>]*alt="")[^>]*>/i.test(html), `${label} contains a product image with empty alt text`)
 
     if (entry.route.startsWith('/produto/')) {
