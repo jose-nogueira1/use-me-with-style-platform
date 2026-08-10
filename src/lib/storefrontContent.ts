@@ -1,6 +1,14 @@
 import type { StorefrontContent, StorefrontFaqEntry } from './api';
 
 export const DEFAULT_STOREFRONT_CONTENT = {
+  homeSeoTitleAngolaPT: 'Moda desportiva feminina em Luanda | Use Me With Style',
+  homeSeoTitleAngolaEN: "Women's activewear in Luanda | Use Me With Style",
+  homeSeoDescriptionAngolaPT: 'Compre moda desportiva feminina com entrega em Luanda e pagamento por Multicaixa Express ou Referência. Preços em Kz e apoio local.',
+  homeSeoDescriptionAngolaEN: "Shop women's activewear with delivery across Luanda and payment by Multicaixa Express or Reference. Prices in Kz and local support.",
+  homeSeoTitlePortugalPT: 'Moda desportiva feminina em Portugal | Use Me With Style',
+  homeSeoTitlePortugalEN: "Women's activewear in Portugal | Use Me With Style",
+  homeSeoDescriptionPortugalPT: 'Compre leggings, conjuntos, tops e vestidos com entrega em Portugal. Peças versáteis para treino e para o dia a dia.',
+  homeSeoDescriptionPortugalEN: 'Shop leggings, sets, tops and dresses with delivery across Portugal. Versatile pieces for training and everyday wear.',
   faqTitlePT: 'Perguntas frequentes',
   faqTitleEN: 'Frequently asked questions',
   faqIntroPT: 'Encontre informação prática antes de encomendar. As condições apresentadas acompanham a loja e o mercado que está a visitar.',
@@ -51,4 +59,16 @@ export function normalizeStorefrontContent(value?: StorefrontContent | null): No
     }),
   ) as { [K in keyof typeof DEFAULT_STOREFRONT_CONTENT]: string };
   return { ...scalar, faqEntries: value?.faqEntries?.filter((entry) => entry.questionPT.trim() && entry.questionEN.trim()) ?? [] };
+}
+
+export function homeSeoMetadata(market: 'AO' | 'PT', lang: 'pt' | 'en', value?: StorefrontContent | null) {
+  const content = normalizeStorefrontContent(value);
+  if (market === 'AO') {
+    return lang === 'en'
+      ? { title: content.homeSeoTitleAngolaEN, description: content.homeSeoDescriptionAngolaEN }
+      : { title: content.homeSeoTitleAngolaPT, description: content.homeSeoDescriptionAngolaPT };
+  }
+  return lang === 'en'
+    ? { title: content.homeSeoTitlePortugalEN, description: content.homeSeoDescriptionPortugalEN }
+    : { title: content.homeSeoTitlePortugalPT, description: content.homeSeoDescriptionPortugalPT };
 }

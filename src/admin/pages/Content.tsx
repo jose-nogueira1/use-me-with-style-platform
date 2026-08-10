@@ -8,11 +8,11 @@ import { PageHeader } from '../components/PageHeader';
 import { useDirty } from '../lib/useDirty';
 import { t, type Lang } from '../i18n';
 
-type ContentTab = 'faq' | 'size-guide';
+type ContentTab = 'home-seo' | 'faq' | 'size-guide';
 
 export function Content() {
   const { lang } = useApp();
-  const [tab, setTab] = useState<ContentTab>('faq');
+  const [tab, setTab] = useState<ContentTab>('home-seo');
   const [content, setContent] = useState<NormalizedStorefrontContent | null>(null);
   const [original, setOriginal] = useState<NormalizedStorefrontContent | null>(null);
   const [saving, setSaving] = useState(false);
@@ -64,15 +64,31 @@ export function Content() {
         ctaBusy={saving}
         ctaDisabled={!dirty || saving || !faqValid}
       />
-      <div style={{ padding: '20px 28px 0', display: 'flex', gap: 8 }}>
+      <div style={{ padding: '20px 28px 0', display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+        <TabButton active={tab === 'home-seo'} onClick={() => setTab('home-seo')}>{t('contentHomeSeoTab', lang)}</TabButton>
         <TabButton active={tab === 'faq'} onClick={() => setTab('faq')}>{t('contentFaqTab', lang)}</TabButton>
         <TabButton active={tab === 'size-guide'} onClick={() => setTab('size-guide')}>{t('contentSizeGuideTab', lang)}</TabButton>
       </div>
       {error && <div role="alert" style={{ margin: '16px 28px 0', color: C.danger, fontSize: 12 }}>{error}</div>}
       {saved && <div role="status" style={{ margin: '16px 28px 0', color: C.successText, fontSize: 12 }}>{t('savedNotice', lang)}</div>}
-      {tab === 'faq'
-        ? <FaqEditor content={content} setContent={setContent} lang={lang} />
-        : <SizeGuideCopyEditor content={content} setContent={setContent} lang={lang} />}
+      {tab === 'home-seo' && <HomeSeoEditor content={content} setContent={setContent} lang={lang} />}
+      {tab === 'faq' && <FaqEditor content={content} setContent={setContent} lang={lang} />}
+      {tab === 'size-guide' && <SizeGuideCopyEditor content={content} setContent={setContent} lang={lang} />}
+    </div>
+  );
+}
+
+function HomeSeoEditor({ content, setContent, lang }: EditorProps) {
+  return (
+    <div className="ump-admin-orders-grid" style={pageStyle}>
+      <Section title={t('contentAngolaMetadata', lang)} hint={t('contentAngolaSeoHint', lang)}>
+        <BilingualField label={t('contentSeoTitle', lang)} valuePT={content.homeSeoTitleAngolaPT} valueEN={content.homeSeoTitleAngolaEN} onPT={(value) => setScalar(setContent, 'homeSeoTitleAngolaPT', value)} onEN={(value) => setScalar(setContent, 'homeSeoTitleAngolaEN', value)} />
+        <BilingualField multiline label={t('contentSeoDescription', lang)} valuePT={content.homeSeoDescriptionAngolaPT} valueEN={content.homeSeoDescriptionAngolaEN} onPT={(value) => setScalar(setContent, 'homeSeoDescriptionAngolaPT', value)} onEN={(value) => setScalar(setContent, 'homeSeoDescriptionAngolaEN', value)} />
+      </Section>
+      <Section title={t('contentPortugalMetadata', lang)} hint={t('contentSeoHint', lang)}>
+        <BilingualField label={t('contentSeoTitle', lang)} valuePT={content.homeSeoTitlePortugalPT} valueEN={content.homeSeoTitlePortugalEN} onPT={(value) => setScalar(setContent, 'homeSeoTitlePortugalPT', value)} onEN={(value) => setScalar(setContent, 'homeSeoTitlePortugalEN', value)} />
+        <BilingualField multiline label={t('contentSeoDescription', lang)} valuePT={content.homeSeoDescriptionPortugalPT} valueEN={content.homeSeoDescriptionPortugalEN} onPT={(value) => setScalar(setContent, 'homeSeoDescriptionPortugalPT', value)} onEN={(value) => setScalar(setContent, 'homeSeoDescriptionPortugalEN', value)} />
+      </Section>
     </div>
   );
 }

@@ -522,6 +522,14 @@ export type StorefrontFaqEntry = {
 
 /** FAQ and standalone size-guide copy managed from the custom admin. */
 export type StorefrontContent = {
+  homeSeoTitleAngolaPT?: string | null;
+  homeSeoTitleAngolaEN?: string | null;
+  homeSeoDescriptionAngolaPT?: string | null;
+  homeSeoDescriptionAngolaEN?: string | null;
+  homeSeoTitlePortugalPT?: string | null;
+  homeSeoTitlePortugalEN?: string | null;
+  homeSeoDescriptionPortugalPT?: string | null;
+  homeSeoDescriptionPortugalEN?: string | null;
   faqTitlePT?: string | null;
   faqTitleEN?: string | null;
   faqIntroPT?: string | null;

@@ -12,14 +12,17 @@ import {
   fetchHomeHero,
   fetchHomeCategories,
   fetchHomeCollections,
+  fetchStorefrontContent,
   resolveRef,
   type ApiCategory,
   type HomeHero,
   type HomeCategories,
   type HomeCollections,
+  type StorefrontContent,
 } from '../../lib/api';
 import { absoluteMediaUrl } from '../../lib/productAdapters';
-import { Seo, SITE_TITLE, truncateForMeta } from '../../lib/seo';
+import { Seo } from '../../lib/seo';
+import { homeSeoMetadata } from '../../lib/storefrontContent';
 import pictorialWhite from '../../assets/brand/pictorial-white.png';
 
 // Category tiles were a hardcoded list with no admin-editable image
@@ -56,6 +59,7 @@ export function Home() {
   const [hero, setHero] = useState<HomeHero | null>(null);
   const [homeCategories, setHomeCategories] = useState<HomeCategories | null>(null);
   const [homeCollections, setHomeCollections] = useState<HomeCollections | null>(null);
+  const [storefrontContent, setStorefrontContent] = useState<StorefrontContent | null>(null);
   useEffect(() => {
     let cancelled = false;
     fetchHomeHero()
@@ -78,6 +82,13 @@ export function Home() {
       })
       .catch(() => {
         /* keep the New Arrivals/Featured fallback below */
+      });
+    fetchStorefrontContent()
+      .then((content) => {
+        if (!cancelled) setStorefrontContent(content);
+      })
+      .catch(() => {
+        /* keep the market-aware metadata fallback below */
       });
     return () => {
       cancelled = true;
@@ -184,16 +195,12 @@ export function Home() {
     catDraggingRef.current = false;
   };
 
-  // SEO (2026-08-07, audit item 1): CMS hero headline/subtitle doubles as
-  // the homepage's <title>/meta description source -- already the most
-  // current, admin-editable marketing copy for this page, and it falls back
-  // to the same t()-driven defaults the hero visuals themselves use when the
-  // CMS hasn't been configured yet, so this never shows blank/placeholder
-  // text. Brand name leads (unlike Browse/ProductDetail below) since this is
-  // the homepage -- the one page where "Use Me With Style" itself is the
-  // primary thing being searched for/recognised.
-  const seoTitle = `${SITE_TITLE} — ${heroHeadline}`;
-  const seoDescription = truncateForMeta(heroSubtitle);
+  // SEO audit item 15: use dedicated, admin-editable market metadata instead
+  // of recycling the visual hero copy. AO explicitly surfaces Luanda delivery
+  // and the currently active Multicaixa methods; PT keeps separate, accurate
+  // Portugal positioning. The admin guidance prevents claiming AppyPay before
+  // its operational switch is enabled.
+  const { title: seoTitle, description: seoDescription } = homeSeoMetadata(market, lang, storefrontContent);
 
   return (
     <div>

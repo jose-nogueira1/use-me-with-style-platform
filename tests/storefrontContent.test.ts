@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { buildFaqEntries } from '../src/lib/faqContent.ts';
-import { DEFAULT_STOREFRONT_CONTENT, normalizeStorefrontContent } from '../src/lib/storefrontContent.ts';
+import { DEFAULT_STOREFRONT_CONTENT, homeSeoMetadata, normalizeStorefrontContent } from '../src/lib/storefrontContent.ts';
 
 const projectFile = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 
@@ -29,16 +29,31 @@ test('CMS FAQ order, visibility, market overrides and safe internal links drive 
   assert.equal(buildFaqEntries('AO', 'en', null, content)[0].answer, 'AO base EN');
 });
 
+test('homepage metadata is market-aware and gives Angola its local trust signals', () => {
+  const ao = homeSeoMetadata('AO', 'pt');
+  const pt = homeSeoMetadata('PT', 'pt');
+  assert.match(ao.title, /Luanda/);
+  assert.match(ao.description, /Luanda/);
+  assert.match(ao.description, /Multicaixa Express/);
+  assert.match(pt.title, /Portugal/);
+  assert.doesNotMatch(pt.description, /Luanda|Multicaixa|AppyPay/);
+  assert.ok(ao.description.length <= 160);
+  assert.ok(pt.description.length <= 160);
+});
+
 test('custom admin exposes a top-level bilingual content editor backed by Payload', () => {
   const routes = projectFile('src/admin/AdminRoutes.tsx');
   const layout = projectFile('src/admin/AdminLayout.tsx');
   const editor = projectFile('src/admin/pages/Content.tsx');
   const faq = projectFile('src/storefront/pages/Faq.tsx');
   const sizeGuide = projectFile('src/storefront/pages/SizeGuide.tsx');
+  const home = projectFile('src/storefront/pages/Home.tsx');
   assert.match(routes, /path="conteudo" element={<Content \/>}/);
   assert.match(layout, /to: '\/admin\/conteudo'/);
   assert.match(editor, /adminUpdateStorefrontContent\(content\)/);
   assert.match(editor, /contentAnswerPortugal/);
+  assert.match(editor, /contentHomeSeoTab/);
+  assert.match(home, /homeSeoMetadata\(market, lang, storefrontContent\)/);
   assert.match(faq, /fetchStorefrontContent\(\)/);
   assert.match(sizeGuide, /fetchStorefrontContent\(\)/);
 });
