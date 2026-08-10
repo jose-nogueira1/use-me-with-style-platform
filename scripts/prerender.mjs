@@ -161,9 +161,16 @@ function replaceLocalOrigins(html, port) {
 async function createCaptureContext(browser) {
   const context = await browser.newContext({ colorScheme: 'light', locale: 'pt-PT' })
   await context.addInitScript(() => {
-    localStorage.setItem('ump-lang-pref', 'pt')
-    localStorage.setItem('ump-theme-pref', 'light')
-    localStorage.setItem('use-me-analytics-consent-v1', 'rejected')
+    // The init script also runs in Chromium's transient about:blank document,
+    // where localStorage is intentionally unavailable. It runs again with
+    // normal storage access as soon as each market URL is loaded.
+    try {
+      localStorage.setItem('ump-lang-pref', 'pt')
+      localStorage.setItem('ump-theme-pref', 'light')
+      localStorage.setItem('use-me-analytics-consent-v1', 'rejected')
+    } catch {
+      // No-op for originless documents.
+    }
   })
   await context.route(/\.(?:avif|gif|jpe?g|png|svg|webp)(?:\?.*)?$/i, (request) => request.abort())
   return context
@@ -251,32 +258,30 @@ const browser = await playwrightChromium.launch({
   executablePath: useServerlessChromium ? await serverlessChromium.executablePath() : undefined,
 })
 const manifest = { generatedAt, cmsOrigin, markets: {} }
+// Sparticuz uses Chromium's single-process mode on Vercel. Keep the one
+// incognito context alive for the complete build: closing the final context
+// can terminate that browser process. localStorage remains isolated because
+// AO and PT use distinct origins, and every route still gets a fresh page.
+const context = await createCaptureContext(browser)
 try {
   for (const market of Object.keys(MARKETS)) {
     manifest.markets[market] = []
-    // Sparticuz uses Chromium's single-process mode on Vercel. Reusing one
-    // browser context per market avoids repeatedly creating and tearing down
-    // incognito processes, while a fresh page still isolates every route.
-    const context = await createCaptureContext(browser)
-    try {
-      for (const route of discovered[market]) {
-        const captured = await captureRoute(context, address.port, market, route)
-        const outputFile = outputFileForRoute(distDir, MARKETS[market].code, route)
-        await mkdir(path.dirname(outputFile), { recursive: true })
-        await writeFile(outputFile, captured.html)
-        manifest.markets[market].push({
-          route,
-          title: captured.title,
-          url: captured.url,
-          file: path.relative(distDir, outputFile),
-        })
-        console.log(`Prerendered ${market} ${route}`)
-      }
-    } finally {
-      await context.close()
+    for (const route of discovered[market]) {
+      const captured = await captureRoute(context, address.port, market, route)
+      const outputFile = outputFileForRoute(distDir, MARKETS[market].code, route)
+      await mkdir(path.dirname(outputFile), { recursive: true })
+      await writeFile(outputFile, captured.html)
+      manifest.markets[market].push({
+        route,
+        title: captured.title,
+        url: captured.url,
+        file: path.relative(distDir, outputFile),
+      })
+      console.log(`Prerendered ${market} ${route}`)
     }
   }
 } finally {
+  await context.close().catch(() => {})
   await browser.close()
   await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()))
 }
