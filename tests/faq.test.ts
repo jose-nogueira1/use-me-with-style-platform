@@ -16,6 +16,7 @@ test('FAQ content is market-aware and does not claim deferred Portugal payments 
   assert.ok(pt.some((entry) => /atualmente coordenado por email/.test(entry.answer)));
   assert.ok(pt.some((entry) => /Stripe, PayPal ou MB WAY/.test(entry.answer)));
   assert.ok(pt.some((entry) => entry.link?.to === '/ajuda#devolucoes'));
+  assert.ok(pt.some((entry) => entry.link?.to === '/guia-de-tamanhos'));
 });
 
 test('FAQPage structured data mirrors every visible question and answer', () => {

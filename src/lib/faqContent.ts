@@ -72,6 +72,7 @@ export function buildFaqEntries(market: Market, lang: Lang, settings: MarketSett
       answer: lang === 'pt'
         ? 'Abra a página do produto e consulte o guia de tamanhos associado à peça. Compare as suas medidas com a tabela e leia a nota de ajuste quando existir. Se continuar com dúvidas, contacte o apoio antes de encomendar.'
         : 'Open the product page and use the size guide assigned to that item. Compare your measurements with the table and read the fit note when one is provided. If you are still unsure, contact support before ordering.',
+      link: { to: '/guia-de-tamanhos', label: lang === 'pt' ? 'Consultar o guia de tamanhos' : 'View the size guide' },
     },
     {
       question: lang === 'pt' ? 'Posso trocar ou devolver um artigo?' : 'Can I exchange or return an item?',

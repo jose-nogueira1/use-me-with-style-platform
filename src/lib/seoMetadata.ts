@@ -41,6 +41,10 @@ const ROUTE_METADATA: Record<string, Record<Lang, SeoMetadata>> = {
     pt: { title: `Perguntas frequentes | ${SITE_TITLE}`, description: 'Respostas sobre entregas, pagamentos, tamanhos, trocas e devoluções da Use Me With Style em Angola e Portugal.' },
     en: { title: `Frequently asked questions | ${SITE_TITLE}`, description: 'Answers about Use Me With Style delivery, payments, sizing, exchanges, and returns in Angola and Portugal.' },
   },
+  '/guia-de-tamanhos': {
+    pt: { title: `Guia de tamanhos | ${SITE_TITLE}`, description: 'Consulte o guia de tamanhos de leggings, tops, vestidos e conjuntos e compare busto, cintura e anca em centímetros.' },
+    en: { title: `Size guide | ${SITE_TITLE}`, description: 'Use our size guide for leggings, tops, dresses and sets, and compare bust, waist and hip measurements in centimetres.' },
+  },
   '/sobre': {
     pt: { title: `Sobre nós | ${SITE_TITLE}`, description: 'Conheça a Use Me With Style, uma marca de moda desportiva feminina para Angola e Portugal.' },
     en: { title: `About us | ${SITE_TITLE}`, description: 'Meet Use Me With Style, a women’s activewear brand for Angola and Portugal.' },

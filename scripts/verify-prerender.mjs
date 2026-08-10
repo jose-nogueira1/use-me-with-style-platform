@@ -83,6 +83,11 @@ for (const [market, config] of Object.entries(MARKETS)) {
       expect((faq?.mainEntity?.length ?? 0) >= 5, `${label} has too few FAQ questions`)
       expect(/<details\b/i.test(html) && /<summary\b/i.test(html), `${label} lacks crawlable FAQ accordion content`)
     }
+    if (entry.route === '/guia-de-tamanhos') {
+      expect(/data-size-guide/i.test(html), `${label} contains no crawlable size charts`)
+      expect(/<table\b/i.test(html), `${label} contains no measurement table`)
+      expect(/(?:Como medir|How to measure)/i.test(html), `${label} lacks measurement instructions`)
+    }
   }
 }
 

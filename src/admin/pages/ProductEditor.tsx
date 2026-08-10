@@ -701,6 +701,7 @@ export function ProductEditor() {
                   <option key={String(g.id)} value={String(g.id)}>{g.name}</option>
                 ))}
               </select>
+              <div style={{ marginTop: 6, color: C.inkSoft, fontSize: 10, lineHeight: 1.5 }}>{t('sizeGuideAssignmentHint', lang)}</div>
             </label>}
           </div>
 

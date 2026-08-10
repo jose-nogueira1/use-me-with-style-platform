@@ -26,6 +26,7 @@ const SUPPORT_LINKS = [
   { to: '/conta', labelKey: 'orderLookupNav' as const },
   { to: '/ajuda', labelKey: 'navHelp' as const },
   { to: '/perguntas-frequentes', labelKey: 'faqNav' as const },
+  { to: '/guia-de-tamanhos', labelKey: 'sizeGuide' as const },
   { to: '/carrinho', labelKey: 'cart' as const },
 ];
 

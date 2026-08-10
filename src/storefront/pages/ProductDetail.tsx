@@ -13,6 +13,7 @@ import { Seo, SITE_TITLE, truncateForMeta } from '../../lib/seo';
 import { canonicalUrl } from '../../lib/seoMetadata';
 import { buildProductStructuredData } from '../../lib/productStructuredData';
 import { serializeJsonLd } from '../../lib/jsonLd';
+import { SizeGuideTable } from '../components/SizeGuideTable';
 
 // Category display names now come from the CMS categories collection (via
 // product.catLabel) instead of a hardcoded slug->i18n-key map (2026-07-25).
@@ -438,47 +439,7 @@ export function ProductDetail() {
               </button>
             </div>
             {product.sizeGuide && product.sizeGuide.length > 0 ? (
-              (() => {
-                // Only render columns that have at least one value -- e.g.
-                // leggings charts may skip "bust".
-                const columns = (['bust', 'waist', 'hip', 'length'] as const).filter((key) =>
-                  product.sizeGuide!.some((row) => row[key] != null),
-                );
-                const columnLabel = { bust: 'sgBust', waist: 'sgWaist', hip: 'sgHip', length: 'sgLength' } as const;
-                return (
-                  <>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-                      <thead>
-                        <tr>
-                          <th style={{ textAlign: 'left', padding: '7px 0', fontSize: 10, fontWeight: 800, letterSpacing: 1, color: C.goldDeep, textTransform: 'uppercase' }}>{t('size', lang)}</th>
-                          {columns.map((key) => (
-                            <th key={key} style={{ textAlign: 'right', padding: '7px 0', fontSize: 10, fontWeight: 800, letterSpacing: 1, color: C.goldDeep, textTransform: 'uppercase' }}>
-                              {t(columnLabel[key], lang)}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {product.sizeGuide.map((row) => (
-                          <tr key={row.size} style={{ borderTop: `1px solid ${C.ruleLight}` }}>
-                            <td style={{ padding: '9px 0', fontWeight: 700, color: C.ink }}>{row.size}</td>
-                            {columns.map((key) => (
-                              <td key={key} style={{ padding: '9px 0', textAlign: 'right', color: C.inkSoft }}>
-                                {row[key] != null ? `${row[key]} cm` : '—'}
-                              </td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                    {product.fitNote && (
-                      <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${C.ruleLight}`, fontSize: 12, color: C.inkSoft, lineHeight: 1.5 }}>
-                        {product.fitNote}
-                      </div>
-                    )}
-                  </>
-                );
-              })()
+              <SizeGuideTable rows={product.sizeGuide} lang={lang} fitNote={product.fitNote} />
             ) : (
               <div style={{ fontSize: 13, color: C.inkSoft, lineHeight: 1.6 }}>
                 {product.fitNote ||

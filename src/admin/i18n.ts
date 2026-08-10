@@ -498,6 +498,10 @@ export const T: Record<string, Record<Lang, string>> = {
   merchTagLabel: { en: 'Merchandising tag', pt: 'Etiqueta comercial' },
   noneOption: { en: 'None', pt: 'Nenhuma' },
   sizeGuideLabel: { en: 'Size guide', pt: 'Guia de tamanhos' },
+  sizeGuideAssignmentHint: {
+    en: 'Product checklist: assign a guide to every apparel item with clothing sizes. Leave blank only for accessories or items where measurements do not apply.',
+    pt: 'Checklist do produto: atribua um guia a cada peça de vestuário com tamanhos. Deixe vazio apenas para acessórios ou artigos onde as medidas não se aplicam.',
+  },
   taxonomyManagedNotePrefix: {
     en: 'Categories, tags, colours and size guides are managed in',
     pt: 'Categorias, etiquetas, cores e guias de tamanhos são geridos em',

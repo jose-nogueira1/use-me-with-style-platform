@@ -16,6 +16,7 @@ test('every storefront route receives dedicated localized metadata', () => {
     '/conta',
     '/ajuda',
     '/perguntas-frequentes',
+    '/guia-de-tamanhos',
     '/sobre',
     '/shop-instagram',
     '/shop-instagram/example-look',

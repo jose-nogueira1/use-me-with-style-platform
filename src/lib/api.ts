@@ -749,6 +749,12 @@ export async function fetchCategories(): Promise<ApiCategory[]> {
   return data.docs;
 }
 
+/** Public measurement charts used by the crawlable size-guide page. */
+export async function fetchSizeGuides(): Promise<ApiSizeGuide[]> {
+  const data = await request<{ docs: ApiSizeGuide[] }>('/size-guides?limit=100&sort=name');
+  return data.docs;
+}
+
 /** Public read of merchandising tags (2026-07-25 follow-up) -- the CMS
  * collection is publicly readable (access.read: () => true), same as
  * categories. Used by Browse.tsx to resolve a ?tag=<slug> URL param (the
