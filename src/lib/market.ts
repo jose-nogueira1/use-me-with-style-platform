@@ -53,6 +53,36 @@ export function siblingMarketUrl(targetMarket: Market, location: LocationLike): 
   return `${location.protocol}//${nextHost}${port}${location.pathname}${location.search}${location.hash ?? ''}`;
 }
 
+export type MarketAlternateUrls = {
+  'pt-AO': string;
+  'pt-PT': string;
+  'x-default': string;
+};
+
+/**
+ * Builds the three clean hreflang equivalents for a market-locked storefront
+ * route. Facets, sorting, tracking parameters and fragments deliberately do
+ * not create language alternates: every variant points to the same canonical
+ * pathname on AO, PT, and the geo-routing apex used as x-default.
+ */
+export function marketAlternateUrls(location: LocationLike): MarketAlternateUrls | null {
+  if (!marketFromHostname(location.hostname)) return null;
+
+  const cleanPathname = location.pathname === '/' ? '/' : `/${location.pathname.replace(/^\/+|\/+$/g, '')}`;
+  const cleanLocation = { ...location, pathname: cleanPathname, search: '', hash: '' };
+  const ao = siblingMarketUrl('AO', cleanLocation);
+  const pt = siblingMarketUrl('PT', cleanLocation);
+  if (!ao || !pt) return null;
+
+  const apexHost = location.hostname.split('.').slice(1).join('.');
+  const port = location.port ? `:${location.port}` : '';
+  return {
+    'pt-AO': ao,
+    'pt-PT': pt,
+    'x-default': `${location.protocol}//${apexHost}${port}${cleanPathname}`,
+  };
+}
+
 /**
  * Builds the market subdomain URL from an apex/root hostname -- e.g.
  * usemewithstyle.shop -> ao.usemewithstyle.shop -- stripping a leading "www."

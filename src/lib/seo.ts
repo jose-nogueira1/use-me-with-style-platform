@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import type { Lang } from '../theme';
 import wordmarkBlack from '../assets/brand/wordmark-black.png';
+import { marketAlternateUrls, type MarketAlternateUrls } from './market';
 import { canonicalUrl, routeSeoMetadata } from './seoMetadata';
 
 export { SITE_TITLE } from './seoMetadata';
@@ -56,6 +57,25 @@ function ensureCanonical(href: string) {
   element.href = href;
 }
 
+const HREFLANG_CODES = ['pt-AO', 'pt-PT', 'x-default'] as const;
+
+function syncHreflangLinks(alternates: MarketAlternateUrls | null) {
+  for (const hreflang of HREFLANG_CODES) {
+    const selector = `link[rel="alternate"][hreflang="${hreflang}"]`;
+    const existing = document.head.querySelector<HTMLLinkElement>(selector);
+    if (!alternates) {
+      existing?.remove();
+      continue;
+    }
+
+    const element = existing ?? document.createElement('link');
+    element.rel = 'alternate';
+    element.hreflang = hreflang;
+    element.href = alternates[hreflang];
+    if (!existing) document.head.appendChild(element);
+  }
+}
+
 /**
  * Resets <title>, meta description, og:title/og:description/og:image and
  * twitter:card to the site-wide default on every route change, BEFORE any
@@ -89,9 +109,18 @@ export function useSeoDefaults(lang: Lang, pathname: string, search: string) {
   const metadata = routeSeoMetadata(pathname, lang);
   const origin = typeof window === 'undefined' ? '' : window.location.origin;
   const canonical = canonicalUrl(origin, pathname);
+  const alternates = typeof window === 'undefined' ? null : marketAlternateUrls(window.location);
+  const aoAlternate = alternates?.['pt-AO'];
+  const ptAlternate = alternates?.['pt-PT'];
+  const defaultAlternate = alternates?.['x-default'];
   useLayoutEffect(() => {
     document.title = metadata.title;
     ensureCanonical(canonical);
+    syncHreflangLinks(aoAlternate && ptAlternate && defaultAlternate ? {
+      'pt-AO': aoAlternate,
+      'pt-PT': ptAlternate,
+      'x-default': defaultAlternate,
+    } : null);
     ensureMeta('name', 'description', metadata.description);
     ensureMeta('property', 'og:title', metadata.title);
     ensureMeta('property', 'og:description', metadata.description);
@@ -102,7 +131,7 @@ export function useSeoDefaults(lang: Lang, pathname: string, search: string) {
     ensureMeta('name', 'twitter:title', metadata.title);
     ensureMeta('name', 'twitter:description', metadata.description);
     ensureMeta('name', 'twitter:image', absoluteAssetUrl(wordmarkBlack));
-  }, [canonical, metadata.description, metadata.title, search]);
+  }, [aoAlternate, canonical, defaultAlternate, metadata.description, metadata.title, ptAlternate, search]);
 }
 
 /**

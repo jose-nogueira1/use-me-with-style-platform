@@ -72,6 +72,14 @@ test('the canonical implementation excludes query filters and keeps og:url align
   assert.match(layout, /useSeoDefaults\(lang, location\.pathname, location\.search\)/);
 });
 
+test('the SEO layer emits all market hreflang alternates', () => {
+  const source = projectFile('src/lib/seo.ts');
+  assert.match(source, /\['pt-AO', 'pt-PT', 'x-default'\]/);
+  assert.match(source, /marketAlternateUrls\(window\.location\)/);
+  assert.match(source, /element\.rel = 'alternate'/);
+  assert.match(source, /element\.hreflang = hreflang/);
+});
+
 test('page-specific SEO reruns after pathname and query-string navigation', () => {
   const source = projectFile('src/lib/seo.ts');
   assert.match(source, /location\.pathname, location\.search/);

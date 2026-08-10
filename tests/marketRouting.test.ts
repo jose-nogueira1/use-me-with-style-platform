@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { apexToMarketUrl, isMarketLockedByHostname, marketFromHostname, siblingMarketUrl } from '../src/lib/market.ts';
+import { apexToMarketUrl, isMarketLockedByHostname, marketAlternateUrls, marketFromHostname, siblingMarketUrl } from '../src/lib/market.ts';
 
 const page = {
   protocol: 'https:',
@@ -36,4 +36,18 @@ test('apex and www route to the selected market without creating ao.www', () => 
     apexToMarketUrl('PT', { hostname: 'www.usemewithstyle.shop', ...page }),
     'https://pt.usemewithstyle.shop/catalogo/vestido?cor=azul#tamanhos',
   );
+});
+
+test('hreflang alternates link clean AO/PT equivalents plus the geo-routing apex', () => {
+  assert.deepEqual(marketAlternateUrls({ hostname: 'ao.usemewithstyle.shop', ...page }), {
+    'pt-AO': 'https://ao.usemewithstyle.shop/catalogo/vestido',
+    'pt-PT': 'https://pt.usemewithstyle.shop/catalogo/vestido',
+    'x-default': 'https://usemewithstyle.shop/catalogo/vestido',
+  });
+  assert.deepEqual(marketAlternateUrls({ hostname: 'pt.usemewithstyle.shop', ...page }), {
+    'pt-AO': 'https://ao.usemewithstyle.shop/catalogo/vestido',
+    'pt-PT': 'https://pt.usemewithstyle.shop/catalogo/vestido',
+    'x-default': 'https://usemewithstyle.shop/catalogo/vestido',
+  });
+  assert.equal(marketAlternateUrls({ hostname: 'usemewithstyle.shop', ...page }), null);
 });
