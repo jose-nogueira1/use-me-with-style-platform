@@ -1,6 +1,10 @@
 import { useEffect, useLayoutEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import type { Lang } from '../theme';
 import wordmarkBlack from '../assets/brand/wordmark-black.png';
+import { routeSeoMetadata } from './seoMetadata';
+
+export { SITE_TITLE } from './seoMetadata';
 
 // Per-route <title>/meta description/Open Graph/Twitter Card tags
 // (2026-08-07, SEO audit items 1 + 3: "Static <title>, no meta description
@@ -17,18 +21,9 @@ import wordmarkBlack from '../assets/brand/wordmark-black.png';
 // second way of doing the same job. og:url/og:site_name themselves stay in
 // StorefrontLayout, unchanged -- they're already correct and per-route.
 //
-// This only fixes what a real browser tab (or a crawler that executes JS)
-// sees -- it does NOT fix what a non-JS crawler or link-preview bot sees,
-// since the site is still pure client-side rendered (audit item 9). Once
-// deployed, verify with Facebook's Sharing Debugger and Twitter's Card
-// Validator -- both need a live URL, so that check only happens post-deploy.
-
-export const SITE_TITLE = 'Use Me With Style';
-
-const SITE_DESCRIPTION: Record<Lang, string> = {
-  pt: 'Moda desportiva feminina para Angola e Portugal — leggings, conjuntos fitness e vestidos, com entrega em Luanda e em toda a Europa.',
-  en: 'Activewear for women in Angola and Portugal — leggings, fitness sets and dresses, delivered in Luanda and across Europe.',
-};
+// index.html also carries a complete site-wide fallback set for non-JS link
+// preview bots. Route-specific bot metadata still depends on prerendering
+// (audit item 9); this module replaces the fallbacks after hydration.
 
 // Site-wide og:image fallback for routes/products with no real photo of
 // their own -- the same wordmark asset already wired into the header/
@@ -56,10 +51,9 @@ function ensureMeta(attr: 'name' | 'property', key: string, content: string) {
  * twitter:card to the site-wide default on every route change, BEFORE any
  * page-specific <Seo> below gets a chance to set something more specific.
  * Rendered once, in StorefrontLayout (which wraps every storefront route
- * via <Outlet/>), so routes with no dedicated SEO copy yet (Cart, Checkout,
- * About, Help, the legal pages, etc.) still get a real title/description/
- * preview image instead of the previous static, identical-everywhere tag
- * (and, for OG, nothing at all).
+ * via <Outlet/>), using localized route metadata for every storefront page.
+ * Home, Browse and ProductDetail can still override these route defaults
+ * with live CMS/product content through <Seo> below.
  *
  * useLayoutEffect, not useEffect, is what makes the override ordering
  * reliable: React guarantees every layout effect in a commit fires before
@@ -76,25 +70,24 @@ function ensureMeta(attr: 'name' | 'property', key: string, content: string) {
  * previous page happened to set".
  *
  * twitter:card is a fixed site-wide constant ("summary_large_image", since
- * every route now has *some* image, real or the wordmark fallback) rather
- * than a per-page override -- Twitter's crawler falls back to the og:*
- * equivalents for title/description/image automatically once twitter:card
- * is present, so there's no need for separate twitter:title/description/
- * image tags too.
+ * every route now has *some* image, real or the wordmark fallback). The
+ * explicit Twitter title/description/image tags mirror their Open Graph
+ * equivalents so the crawler-visible index.html fallbacks never remain
+ * stale after hydrated client-side navigation.
  */
-export function useSeoDefaults(lang: Lang, routeKey: string) {
+export function useSeoDefaults(lang: Lang, pathname: string, search: string) {
+  const metadata = routeSeoMetadata(pathname, lang);
   useLayoutEffect(() => {
-    document.title = SITE_TITLE;
-    ensureMeta('name', 'description', SITE_DESCRIPTION[lang]);
-    ensureMeta('property', 'og:title', SITE_TITLE);
-    ensureMeta('property', 'og:description', SITE_DESCRIPTION[lang]);
+    document.title = metadata.title;
+    ensureMeta('name', 'description', metadata.description);
+    ensureMeta('property', 'og:title', metadata.title);
+    ensureMeta('property', 'og:description', metadata.description);
     ensureMeta('property', 'og:image', absoluteAssetUrl(wordmarkBlack));
     ensureMeta('name', 'twitter:card', 'summary_large_image');
-    // routeKey (typically location.pathname + search) forces this to re-run
-    // on every navigation, not just when `lang` changes -- otherwise a nav
-    // from a page that set its own <Seo> (e.g. a product) to one that
-    // doesn't (e.g. Cart) would leave the previous page's tags behind.
-  }, [lang, routeKey]);
+    ensureMeta('name', 'twitter:title', metadata.title);
+    ensureMeta('name', 'twitter:description', metadata.description);
+    ensureMeta('name', 'twitter:image', absoluteAssetUrl(wordmarkBlack));
+  }, [metadata.description, metadata.title, pathname, search]);
 }
 
 /**
@@ -122,13 +115,19 @@ export function useSeoDefaults(lang: Lang, routeKey: string) {
  * useSeoDefaults-set wordmark fallback in place.
  */
 export function Seo({ title, description, image }: { title: string; description: string; image?: string }) {
+  const location = useLocation();
   useEffect(() => {
     document.title = title;
     ensureMeta('name', 'description', description);
     ensureMeta('property', 'og:title', title);
     ensureMeta('property', 'og:description', description);
-    if (image) ensureMeta('property', 'og:image', image);
-  }, [title, description, image]);
+    ensureMeta('name', 'twitter:title', title);
+    ensureMeta('name', 'twitter:description', description);
+    if (image) {
+      ensureMeta('property', 'og:image', image);
+      ensureMeta('name', 'twitter:image', image);
+    }
+  }, [title, description, image, location.pathname, location.search]);
   return null;
 }
 

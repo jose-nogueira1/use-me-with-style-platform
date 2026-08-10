@@ -83,7 +83,7 @@ export function StorefrontLayout() {
   // that ordering is what lets Home/Browse/ProductDetail's own <Seo> below
   // override it reliably. location.search included in the route key: e.g.
   // Browse's title depends on ?cat=, not just the /catalogo path itself.
-  useSeoDefaults(lang, `${location.pathname}${location.search}`);
+  useSeoDefaults(lang, location.pathname, location.search);
 
   // Real brand wordmark (see components/BrandLogo.tsx for why gold is
   // synthesized via a CSS mask rather than loaded from a separate asset).
