@@ -560,6 +560,7 @@ export type StorefrontAboutValue = {
 
 /** FAQ and standalone size-guide copy managed from the custom admin. */
 export type StorefrontContent = {
+  tiktokUrl?: string | null;
   homeSeoTitleAngolaPT?: string | null;
   homeSeoTitleAngolaEN?: string | null;
   homeSeoDescriptionAngolaPT?: string | null;

@@ -4,6 +4,7 @@ import { C } from '../../theme';
 import { useApp } from '../../state/AppContext';
 import { adminUpdateStorefrontContent, fetchStorefrontContent, type StorefrontAboutValue, type StorefrontFaqEntry } from '../../lib/api';
 import { normalizeStorefrontContent, type NormalizedStorefrontContent } from '../../lib/storefrontContent';
+import { normalizeTikTokProfileUrl } from '../../lib/siteStructuredData';
 import { PageHeader } from '../components/PageHeader';
 import { useDirty } from '../lib/useDirty';
 import { t, type Lang } from '../i18n';
@@ -34,7 +35,8 @@ export function Content() {
 
   const faqValid = content.faqEntries.every((entry) => entry.enabled === false || Boolean(entry.questionPT.trim() && entry.questionEN.trim() && entry.answerPT.trim() && entry.answerEN.trim()));
   const aboutValid = content.aboutValues.every((entry) => entry.enabled === false || Boolean(entry.titlePT.trim() && entry.titleEN.trim() && entry.bodyPT.trim() && entry.bodyEN.trim()));
-  const contentValid = faqValid && aboutValid;
+  const tiktokValid = !content.tiktokUrl.trim() || Boolean(normalizeTikTokProfileUrl(content.tiktokUrl));
+  const contentValid = faqValid && aboutValid && tiktokValid;
   const save = async () => {
     if (!contentValid) {
       setError(t('contentRequiredError', lang));
@@ -74,6 +76,7 @@ export function Content() {
         <TabButton active={tab === 'size-guide'} onClick={() => setTab('size-guide')}>{t('contentSizeGuideTab', lang)}</TabButton>
       </div>
       {error && <div role="alert" style={{ margin: '16px 28px 0', color: C.danger, fontSize: 12 }}>{error}</div>}
+      {!tiktokValid && <div role="alert" style={{ margin: '16px 28px 0', color: C.danger, fontSize: 12 }}>{t('contentTikTokError', lang)}</div>}
       {saved && <div role="status" style={{ margin: '16px 28px 0', color: C.successText, fontSize: 12 }}>{t('savedNotice', lang)}</div>}
       {tab === 'home-seo' && <HomeSeoEditor content={content} setContent={setContent} lang={lang} />}
       {tab === 'about' && <AboutEditor content={content} setContent={setContent} lang={lang} />}
@@ -161,6 +164,22 @@ function HomeSeoEditor({ content, setContent, lang }: EditorProps) {
       <Section title={t('contentPortugalMetadata', lang)} hint={t('contentSeoHint', lang)}>
         <BilingualField label={t('contentSeoTitle', lang)} valuePT={content.homeSeoTitlePortugalPT} valueEN={content.homeSeoTitlePortugalEN} onPT={(value) => setScalar(setContent, 'homeSeoTitlePortugalPT', value)} onEN={(value) => setScalar(setContent, 'homeSeoTitlePortugalEN', value)} />
         <BilingualField multiline label={t('contentSeoDescription', lang)} valuePT={content.homeSeoDescriptionPortugalPT} valueEN={content.homeSeoDescriptionPortugalEN} onPT={(value) => setScalar(setContent, 'homeSeoDescriptionPortugalPT', value)} onEN={(value) => setScalar(setContent, 'homeSeoDescriptionPortugalEN', value)} />
+      </Section>
+      <Section title={t('contentSocialProfiles', lang)} hint={t('contentTikTokHint', lang)} wide>
+        <label style={{ display: 'block', color: C.goldDeep, fontSize: 9, fontWeight: 800, marginBottom: 6 }} htmlFor="content-tiktok-url">
+          {t('contentTikTokUrl', lang)}
+        </label>
+        <input
+          id="content-tiktok-url"
+          type="url"
+          inputMode="url"
+          placeholder="https://www.tiktok.com/@usemewithstyle"
+          value={content.tiktokUrl}
+          onChange={(event) => setScalar(setContent, 'tiktokUrl', event.target.value)}
+          aria-describedby="content-tiktok-hint"
+          style={inputStyle}
+        />
+        <p id="content-tiktok-hint" style={{ color: C.inkSoft, fontSize: 10.5, lineHeight: 1.55, margin: '7px 0 0' }}>{t('contentTikTokHint', lang)}</p>
       </Section>
     </div>
   );

@@ -7,7 +7,7 @@ import { Footer } from './components/Footer';
 import { BrandLogo } from '../components/BrandLogo';
 import { AnalyticsConsentManager } from './components/AnalyticsConsent';
 import { SearchOverlay } from './components/SearchOverlay';
-import { fetchCategories, type ApiCategory } from '../lib/api';
+import { fetchCategories, fetchStorefrontContent, type ApiCategory } from '../lib/api';
 import { useSeoDefaults } from '../lib/seo';
 import { buildSiteStructuredData } from '../lib/siteStructuredData';
 import { serializeJsonLd } from '../lib/jsonLd';
@@ -42,9 +42,15 @@ export function StorefrontLayout() {
   const [searchOpen, setSearchOpen] = useState(false);
   const headerRef = useRef<HTMLDivElement>(null);
   const [categories, setCategories] = useState<ApiCategory[]>([]);
+  const [tiktokUrl, setTikTokUrl] = useState('');
   const origin = typeof window === 'undefined' ? '' : window.location.origin;
-  const siteJsonLd = origin ? buildSiteStructuredData(origin) : null;
+  const siteJsonLd = origin ? buildSiteStructuredData(origin, tiktokUrl) : null;
   useEffect(() => { fetchCategories().then(setCategories).catch(() => undefined); }, []);
+  useEffect(() => {
+    fetchStorefrontContent()
+      .then((content) => setTikTokUrl(content.tiktokUrl?.trim() ?? ''))
+      .catch(() => undefined);
+  }, []);
   const navItems = [
     { to: '/catalogo?cat=new', label: t('newArrivalsNav', lang) },
     ...categories.slice(0, 6).map((category) => ({ to: `/catalogo?cat=${encodeURIComponent(category.slug || '')}`, label: (lang === 'en' ? category.nameEN : category.namePT) || category.namePT })),

@@ -12,6 +12,7 @@ test('storefront content falls back field-by-field without discarding saved copy
   assert.equal(content.faqIntroPT, DEFAULT_STOREFRONT_CONTENT.faqIntroPT);
   assert.deepEqual(content.faqEntries, []);
   assert.equal(content.aboutValues.length, 3);
+  assert.equal(content.tiktokUrl, '');
 });
 
 test('CMS FAQ order, visibility, market overrides and safe internal links drive the storefront', () => {
@@ -57,6 +58,8 @@ test('custom admin exposes a top-level bilingual content editor backed by Payloa
   assert.match(editor, /contentAnswerPortugal/);
   assert.match(editor, /contentHomeSeoTab/);
   assert.match(editor, /contentAboutTab/);
+  assert.match(editor, /contentTikTokUrl/);
+  assert.match(editor, /normalizeTikTokProfileUrl/);
   assert.match(editor, /aboutValues/);
   assert.match(home, /homeSeoMetadata\(market, lang, storefrontContent\)/);
   assert.match(about, /fetchStorefrontContent\(\)/);

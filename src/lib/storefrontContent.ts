@@ -7,6 +7,7 @@ export const DEFAULT_ABOUT_VALUES: StorefrontAboutValue[] = [
 ];
 
 export const DEFAULT_STOREFRONT_CONTENT = {
+  tiktokUrl: '',
   homeSeoTitleAngolaPT: 'Moda desportiva feminina em Luanda | Use Me With Style',
   homeSeoTitleAngolaEN: "Women's activewear in Luanda | Use Me With Style",
   homeSeoDescriptionAngolaPT: 'Compre moda desportiva feminina com entrega em Luanda e pagamento por Multicaixa Express ou Referência. Preços em Kz e apoio local.',

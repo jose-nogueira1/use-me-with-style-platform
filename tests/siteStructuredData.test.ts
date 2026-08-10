@@ -34,9 +34,20 @@ test('WebSite JSON-LD uses the active market origin and references the shared or
   assert.deepEqual(pt.publisher, { '@id': 'https://usemewithstyle.shop/#organization' });
 });
 
+test('Organization JSON-LD only publishes a valid optional TikTok profile', () => {
+  const valid = buildSiteStructuredData('https://ao.usemewithstyle.shop', 'https://tiktok.com/@use_me.withstyle?lang=en')['@graph'][0];
+  const invalid = buildSiteStructuredData('https://ao.usemewithstyle.shop', 'https://example.com/@use_me.withstyle')['@graph'][0];
+
+  assert.deepEqual(valid.sameAs, [
+    'https://www.instagram.com/use_me_withstyle/',
+    'https://www.tiktok.com/@use_me.withstyle',
+  ]);
+  assert.deepEqual(invalid.sameAs, ['https://www.instagram.com/use_me_withstyle/']);
+});
+
 test('the shared storefront layout emits site structured data once', () => {
   const source = projectFile('src/storefront/StorefrontLayout.tsx');
-  assert.match(source, /buildSiteStructuredData\(origin\)/);
+  assert.match(source, /buildSiteStructuredData\(origin, tiktokUrl\)/);
   assert.match(source, /type="application\/ld\+json"/);
   assert.match(source, /serializeJsonLd\(siteJsonLd\)/);
 });
