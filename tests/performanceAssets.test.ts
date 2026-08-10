@@ -18,6 +18,8 @@ test('the shared raster wordmark reserves its intrinsic layout dimensions', () =
 
 test('product loading and global controls avoid measured CLS and accessibility regressions', () => {
   assert.match(projectFile('src/storefront/pages/ProductDetail.tsx'), /minHeight: '100vh'/);
+  assert.match(projectFile('src/storefront/pages/StyleArticle.tsx'), /minHeight: '100vh'/);
   assert.match(projectFile('src/storefront/StorefrontLayout.tsx'), /language', lang\)}: \$\{lang\.toUpperCase\(\)\}/);
   assert.match(projectFile('src/storefront/components/Footer.tsx'), /minHeight: 24/);
+  assert.match(projectFile('src/storefront/components/InstagramFeed.tsx'), /ump-instagram-shop-badge" aria-hidden="true"/);
 });

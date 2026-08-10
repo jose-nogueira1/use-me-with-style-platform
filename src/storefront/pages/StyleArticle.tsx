@@ -27,7 +27,7 @@ export function StyleArticle() {
   const post = result?.key === requestKey ? result.post : undefined;
 
   if (post === undefined) {
-    return <div role="status" className="ump-form-width" style={{ padding: '48px 20px', color: C.inkSoft }}>{lang === 'pt' ? 'A carregar artigo…' : 'Loading article…'}</div>;
+    return <div role="status" className="ump-form-width" style={{ minHeight: '100vh', padding: '48px 20px', color: C.inkSoft }}>{lang === 'pt' ? 'A carregar artigo…' : 'Loading article…'}</div>;
   }
   if (post === null) return <NotFound />;
 

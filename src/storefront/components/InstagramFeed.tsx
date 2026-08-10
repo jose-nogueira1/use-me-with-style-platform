@@ -376,18 +376,10 @@ export function InstagramFeed() {
           const displayLabel = post
             ? post.captionDisplay || (lang === 'pt' ? 'Ver publicação' : 'View post')
             : undefined;
-          const ariaLabel = post
-            ? lang === 'pt'
-              ? `Ver publicação do Instagram${displayLabel ? `: ${displayLabel}` : ''}`
-              : `View Instagram post${displayLabel ? `: ${displayLabel}` : ''}`
-            : lang === 'pt'
-              ? 'A carregar publicação'
-              : 'Loading post';
           return (
             <button
               key={post ? `${post.id}-${i}` : i}
               type="button"
-              aria-label={ariaLabel}
               tabIndex={originalIndex !== i ? -1 : undefined}
               aria-hidden={originalIndex !== i ? true : undefined}
               className={`ump-instagram-tile${isLarge ? ' ump-instagram-tile--large' : ''}`}
@@ -418,7 +410,7 @@ export function InstagramFeed() {
                 <Expand size={18} color="#FFFDF8" />
               </div>
               {(post?.products?.length ?? 0) > 0 && (
-                <div className="ump-instagram-shop-badge">
+                <div className="ump-instagram-shop-badge" aria-hidden="true">
                   <ShoppingBag size={11} /> {post?.products?.length}
                 </div>
               )}
