@@ -10,6 +10,8 @@ import { trackMetaEvent } from '../../lib/metaAnalytics';
 import { hasSwatch, swatchBackground } from '../../lib/colorSwatch';
 import { colorHasStock } from '../../lib/productAdapters';
 import { Seo, SITE_TITLE, truncateForMeta } from '../../lib/seo';
+import { canonicalUrl } from '../../lib/seoMetadata';
+import { buildProductStructuredData, serializeJsonLd } from '../../lib/productStructuredData';
 
 // Category display names now come from the CMS categories collection (via
 // product.catLabel) instead of a hardcoded slug->i18n-key map (2026-07-25).
@@ -125,6 +127,13 @@ export function ProductDetail() {
   // Undefined when a product has no photos yet, which just means "don't
   // override", leaving useSeoDefaults' wordmark fallback in place.
   const seoImage = product.images[0]?.url;
+  const productUrl = canonicalUrl(typeof window === 'undefined' ? '' : window.location.origin, `/produto/${product.slug}`);
+  const productJsonLd = buildProductStructuredData({
+    product,
+    market,
+    url: productUrl,
+    fallbackDescription: t('defaultDescription', lang),
+  });
 
   const handleAdd = () => {
     if (isOutOfStock || qtyInCart >= stockForSize) return;
@@ -153,6 +162,10 @@ export function ProductDetail() {
   return (
     <div style={{ background: C.paper, position: 'relative' }}>
       <Seo title={seoTitle} description={seoDescription} image={seoImage} />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(productJsonLd) }}
+      />
       <div className="ump-product-layout">
         <div>
         <div style={{ height: 440, borderRadius: 0, overflow: 'hidden', position: 'relative' }}>
