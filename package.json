@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "dev:staging": "vite --mode staging",
-    "build": "vite build",
+    "build": "VITE_API_BASE_URL=/ vite build && node scripts/prerender.mjs && node scripts/verify-prerender.mjs",
+    "build:spa": "vite build",
     "build:staging": "vite build --mode staging",
     "build:production": "vite build --mode production",
     "env:check": "node scripts/check-env.mjs development",
@@ -18,7 +19,9 @@
     "lint": "eslint .",
     "test": "node --experimental-strip-types --test tests/*.test.ts",
     "test:e2e": "playwright test",
-    "preview": "vite preview"
+    "test:prerender": "node scripts/verify-prerender.mjs",
+    "preview": "npm run preview:prerender",
+    "preview:prerender": "node scripts/serve-prerender.mjs"
   },
   "dependencies": {
     "lucide-react": "^1.27.0",

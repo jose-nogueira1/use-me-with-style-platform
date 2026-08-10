@@ -1,4 +1,5 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
@@ -8,8 +9,48 @@
       "destination": "https://use-me-with-style-cms-production.up.railway.app/api/:path*"
     },
     {
+      "source": "/",
+      "has": [{ "type": "host", "value": "ao.usemewithstyle.shop" }],
+      "destination": "/__prerender/ao/index.html"
+    },
+    {
+      "source": "/:page(catalogo|ajuda|sobre|shop-instagram|politica-privacidade|termos-condicoes|eliminacao-de-dados)",
+      "has": [{ "type": "host", "value": "ao.usemewithstyle.shop" }],
+      "destination": "/__prerender/ao/:page/index.html"
+    },
+    {
+      "source": "/produto/:slug",
+      "has": [{ "type": "host", "value": "ao.usemewithstyle.shop" }],
+      "destination": "/__prerender/ao/produto/:slug/index.html"
+    },
+    {
+      "source": "/shop-instagram/:slug",
+      "has": [{ "type": "host", "value": "ao.usemewithstyle.shop" }],
+      "destination": "/__prerender/ao/shop-instagram/:slug/index.html"
+    },
+    {
+      "source": "/",
+      "has": [{ "type": "host", "value": "pt.usemewithstyle.shop" }],
+      "destination": "/__prerender/pt/index.html"
+    },
+    {
+      "source": "/:page(catalogo|ajuda|sobre|shop-instagram|politica-privacidade|termos-condicoes|eliminacao-de-dados)",
+      "has": [{ "type": "host", "value": "pt.usemewithstyle.shop" }],
+      "destination": "/__prerender/pt/:page/index.html"
+    },
+    {
+      "source": "/produto/:slug",
+      "has": [{ "type": "host", "value": "pt.usemewithstyle.shop" }],
+      "destination": "/__prerender/pt/produto/:slug/index.html"
+    },
+    {
+      "source": "/shop-instagram/:slug",
+      "has": [{ "type": "host", "value": "pt.usemewithstyle.shop" }],
+      "destination": "/__prerender/pt/shop-instagram/:slug/index.html"
+    },
+    {
       "source": "/(.*)",
-      "destination": "/index.html"
+      "destination": "/__spa.html"
     }
   ]
 }

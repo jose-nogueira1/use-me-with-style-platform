@@ -46,9 +46,9 @@ export function LegalPage({ heading, pendingNotice, loadingNotice, getTextPT, ge
 
   return (
     <div className="ump-form-width" style={{ padding: '40px 20px 56px', textAlign: 'left' }}>
-      <div style={{ fontFamily: F.display, fontSize: 22, color: C.ink, fontWeight: 800, marginBottom: 24, textAlign: 'center' }}>
+      <h1 style={{ fontFamily: F.display, fontSize: 22, color: C.ink, fontWeight: 800, margin: '0 0 24px', textAlign: 'center' }}>
         {heading}
-      </div>
+      </h1>
       {loading ? (
         <div role="status" style={{ textAlign: 'center', color: C.inkSoft, fontSize: 13 }}>
           {loadingNotice}

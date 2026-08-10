@@ -23,7 +23,16 @@ const apexHostname = (() => {
 redirectToDetectedMarketIfNeeded(apexHostname).then((redirected) => {
   if (redirected) return // navigation already under way -- don't mount on this page load
 
-  createRoot(document.getElementById('root')!).render(
+  const root = document.getElementById('root')!
+  // Task 9 prerendering deliberately keeps the existing SPA as the runtime
+  // application. Build-time browser snapshots give crawlers complete HTML,
+  // then the client clears that inert snapshot and mounts the same React app
+  // visitors used before this change. Hydrating a browser snapshot would be
+  // unsafe: its CMS-loaded state is not serialized, so React's initial empty
+  // catalogue would not match the captured DOM.
+  if (root.dataset.prerendered === 'true') root.replaceChildren()
+
+  createRoot(root).render(
     <StrictMode>
       <App />
     </StrictMode>,

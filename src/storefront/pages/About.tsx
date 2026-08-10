@@ -25,9 +25,9 @@ export function About() {
           <div style={{ fontSize: 10, letterSpacing: 3, color: C.heroAccent, fontWeight: 800, textTransform: 'uppercase', marginBottom: 14 }}>
             Use Me With Style
           </div>
-          <div style={{ fontFamily: F.display, fontSize: 30, fontWeight: 800, lineHeight: 1.15, marginBottom: 16 }}>
+          <h1 style={{ fontFamily: F.display, fontSize: 30, fontWeight: 800, lineHeight: 1.15, margin: '0 0 16px' }}>
             {t('aboutTitle', lang)}
-          </div>
+          </h1>
           <div style={{ fontSize: 14, color: C.heroSubtitle, lineHeight: 1.7 }}>{t('aboutIntro', lang)}</div>
         </div>
       </div>

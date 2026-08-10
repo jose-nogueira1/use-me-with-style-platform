@@ -168,7 +168,7 @@ export function Help() {
 
   return (
     <div className="ump-form-width" style={{ padding: '40px 20px', textAlign: 'center' }}>
-      <div style={{ fontFamily: F.display, fontSize: 22, color: C.ink, fontWeight: 800, marginBottom: 10 }}>{t('needAHand', lang)}</div>
+      <h1 style={{ fontFamily: F.display, fontSize: 22, color: C.ink, fontWeight: 800, margin: '0 0 10px' }}>{t('needAHand', lang)}</h1>
       <div style={{ fontSize: 13, color: C.inkSoft, lineHeight: 1.6, marginBottom: 20 }}>
         {t('helpBody', lang)}
       </div>
