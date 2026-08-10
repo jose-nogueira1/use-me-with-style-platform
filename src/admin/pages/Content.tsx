@@ -2,13 +2,13 @@ import { useEffect, useState } from 'react';
 import { ArrowDown, ArrowUp, Trash2 } from 'lucide-react';
 import { C } from '../../theme';
 import { useApp } from '../../state/AppContext';
-import { adminUpdateStorefrontContent, fetchStorefrontContent, type StorefrontFaqEntry } from '../../lib/api';
+import { adminUpdateStorefrontContent, fetchStorefrontContent, type StorefrontAboutValue, type StorefrontFaqEntry } from '../../lib/api';
 import { normalizeStorefrontContent, type NormalizedStorefrontContent } from '../../lib/storefrontContent';
 import { PageHeader } from '../components/PageHeader';
 import { useDirty } from '../lib/useDirty';
 import { t, type Lang } from '../i18n';
 
-type ContentTab = 'home-seo' | 'faq' | 'size-guide';
+type ContentTab = 'home-seo' | 'about' | 'faq' | 'size-guide';
 
 export function Content() {
   const { lang } = useApp();
@@ -33,8 +33,10 @@ export function Content() {
   if (!content) return <div style={{ padding: 28, color: error ? C.danger : C.inkSoft }}>{error || t('loadingEllipsis', lang)}</div>;
 
   const faqValid = content.faqEntries.every((entry) => entry.enabled === false || Boolean(entry.questionPT.trim() && entry.questionEN.trim() && entry.answerPT.trim() && entry.answerEN.trim()));
+  const aboutValid = content.aboutValues.every((entry) => entry.enabled === false || Boolean(entry.titlePT.trim() && entry.titleEN.trim() && entry.bodyPT.trim() && entry.bodyEN.trim()));
+  const contentValid = faqValid && aboutValid;
   const save = async () => {
-    if (!faqValid) {
+    if (!contentValid) {
       setError(t('contentRequiredError', lang));
       return;
     }
@@ -42,7 +44,8 @@ export function Content() {
     setSaved(false);
     setError(null);
     try {
-      const updated = normalizeStorefrontContent(await adminUpdateStorefrontContent(content));
+      await adminUpdateStorefrontContent(content);
+      const updated = normalizeStorefrontContent(await fetchStorefrontContent());
       setContent(updated);
       setOriginal(updated);
       setSaved(true);
@@ -62,18 +65,88 @@ export function Content() {
         cta={saving ? t('savingEllipsis', lang) : t('saveChanges', lang)}
         onCta={() => void save()}
         ctaBusy={saving}
-        ctaDisabled={!dirty || saving || !faqValid}
+        ctaDisabled={!dirty || saving || !contentValid}
       />
       <div style={{ padding: '20px 28px 0', display: 'flex', flexWrap: 'wrap', gap: 8 }}>
         <TabButton active={tab === 'home-seo'} onClick={() => setTab('home-seo')}>{t('contentHomeSeoTab', lang)}</TabButton>
+        <TabButton active={tab === 'about'} onClick={() => setTab('about')}>{t('contentAboutTab', lang)}</TabButton>
         <TabButton active={tab === 'faq'} onClick={() => setTab('faq')}>{t('contentFaqTab', lang)}</TabButton>
         <TabButton active={tab === 'size-guide'} onClick={() => setTab('size-guide')}>{t('contentSizeGuideTab', lang)}</TabButton>
       </div>
       {error && <div role="alert" style={{ margin: '16px 28px 0', color: C.danger, fontSize: 12 }}>{error}</div>}
       {saved && <div role="status" style={{ margin: '16px 28px 0', color: C.successText, fontSize: 12 }}>{t('savedNotice', lang)}</div>}
       {tab === 'home-seo' && <HomeSeoEditor content={content} setContent={setContent} lang={lang} />}
+      {tab === 'about' && <AboutEditor content={content} setContent={setContent} lang={lang} />}
       {tab === 'faq' && <FaqEditor content={content} setContent={setContent} lang={lang} />}
       {tab === 'size-guide' && <SizeGuideCopyEditor content={content} setContent={setContent} lang={lang} />}
+    </div>
+  );
+}
+
+function AboutEditor({ content, setContent, lang }: EditorProps) {
+  const updateValue = (index: number, patch: Partial<StorefrontAboutValue>) => {
+    setContent((current) => current && ({ ...current, aboutValues: current.aboutValues.map((value, i) => i === index ? { ...value, ...patch } : value) }));
+  };
+  const moveValue = (index: number, direction: -1 | 1) => {
+    setContent((current) => {
+      if (!current) return current;
+      const next = [...current.aboutValues];
+      const destination = index + direction;
+      if (destination < 0 || destination >= next.length) return current;
+      [next[index], next[destination]] = [next[destination], next[index]];
+      return { ...current, aboutValues: next };
+    });
+  };
+  const removeValue = (index: number) => setContent((current) => current && ({ ...current, aboutValues: current.aboutValues.filter((_, i) => i !== index) }));
+  const addValue = () => setContent((current) => current && ({
+    ...current,
+    aboutValues: [...current.aboutValues, { id: crypto.randomUUID(), enabled: true, titlePT: '', titleEN: '', bodyPT: '', bodyEN: '' }],
+  }));
+
+  return (
+    <div className="ump-admin-orders-grid" style={pageStyle}>
+      <Section title={t('contentAboutHero', lang)}>
+        <BilingualField label={t('contentEyebrowLabel', lang)} valuePT={content.aboutEyebrowPT} valueEN={content.aboutEyebrowEN} onPT={(value) => setScalar(setContent, 'aboutEyebrowPT', value)} onEN={(value) => setScalar(setContent, 'aboutEyebrowEN', value)} />
+        <BilingualField label={t('contentPageTitle', lang)} valuePT={content.aboutTitlePT} valueEN={content.aboutTitleEN} onPT={(value) => setScalar(setContent, 'aboutTitlePT', value)} onEN={(value) => setScalar(setContent, 'aboutTitleEN', value)} />
+        <BilingualField multiline label={t('contentIntroduction', lang)} valuePT={content.aboutIntroPT} valueEN={content.aboutIntroEN} onPT={(value) => setScalar(setContent, 'aboutIntroPT', value)} onEN={(value) => setScalar(setContent, 'aboutIntroEN', value)} />
+      </Section>
+      <Section title={t('contentAboutStory', lang)}>
+        <BilingualField label={t('contentSectionTitle', lang)} valuePT={content.aboutStoryTitlePT} valueEN={content.aboutStoryTitleEN} onPT={(value) => setScalar(setContent, 'aboutStoryTitlePT', value)} onEN={(value) => setScalar(setContent, 'aboutStoryTitleEN', value)} />
+        <BilingualField multiline label={t('contentStoryBody', lang)} valuePT={content.aboutStoryBodyPT} valueEN={content.aboutStoryBodyEN} onPT={(value) => setScalar(setContent, 'aboutStoryBodyPT', value)} onEN={(value) => setScalar(setContent, 'aboutStoryBodyEN', value)} />
+      </Section>
+      <Section title={t('contentAboutValues', lang)} hint={t('contentAboutValuesHint', lang)} wide>
+        <BilingualField label={t('contentSectionTitle', lang)} valuePT={content.aboutValuesTitlePT} valueEN={content.aboutValuesTitleEN} onPT={(value) => setScalar(setContent, 'aboutValuesTitlePT', value)} onEN={(value) => setScalar(setContent, 'aboutValuesTitleEN', value)} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {content.aboutValues.map((value, index) => (
+            <div key={value.id ?? index} style={{ border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 14, background: C.subtleBg }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                <label style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, color: C.ink, fontSize: 11, fontWeight: 800 }}>
+                  <input type="checkbox" checked={value.enabled !== false} onChange={(event) => updateValue(index, { enabled: event.target.checked })} />
+                  {t('contentEnabled', lang)}
+                </label>
+                <IconButton label={t('contentMoveUp', lang)} disabled={index === 0} onClick={() => moveValue(index, -1)}><ArrowUp size={14} /></IconButton>
+                <IconButton label={t('contentMoveDown', lang)} disabled={index === content.aboutValues.length - 1} onClick={() => moveValue(index, 1)}><ArrowDown size={14} /></IconButton>
+                <IconButton label={t('contentDeleteValue', lang)} danger onClick={() => removeValue(index)}><Trash2 size={14} /></IconButton>
+              </div>
+              <BilingualField label={t('contentValueTitle', lang)} valuePT={value.titlePT} valueEN={value.titleEN} onPT={(next) => updateValue(index, { titlePT: next })} onEN={(next) => updateValue(index, { titleEN: next })} />
+              <BilingualField multiline label={t('contentValueBody', lang)} valuePT={value.bodyPT} valueEN={value.bodyEN} onPT={(next) => updateValue(index, { bodyPT: next })} onEN={(next) => updateValue(index, { bodyEN: next })} />
+            </div>
+          ))}
+          <button type="button" onClick={addValue} style={secondaryButtonStyle}>{t('contentAddValue', lang)}</button>
+        </div>
+      </Section>
+      <Section title={t('contentAboutPresence', lang)} wide>
+        <BilingualField label={t('contentSectionTitle', lang)} valuePT={content.aboutPresenceTitlePT} valueEN={content.aboutPresenceTitleEN} onPT={(value) => setScalar(setContent, 'aboutPresenceTitlePT', value)} onEN={(value) => setScalar(setContent, 'aboutPresenceTitleEN', value)} />
+        <BilingualField label={t('contentAngolaTitle', lang)} valuePT={content.aboutAngolaTitlePT} valueEN={content.aboutAngolaTitleEN} onPT={(value) => setScalar(setContent, 'aboutAngolaTitlePT', value)} onEN={(value) => setScalar(setContent, 'aboutAngolaTitleEN', value)} />
+        <BilingualField multiline label={t('contentAngolaBody', lang)} valuePT={content.aboutAngolaBodyPT} valueEN={content.aboutAngolaBodyEN} onPT={(value) => setScalar(setContent, 'aboutAngolaBodyPT', value)} onEN={(value) => setScalar(setContent, 'aboutAngolaBodyEN', value)} />
+        <BilingualField label={t('contentPortugalTitle', lang)} valuePT={content.aboutPortugalTitlePT} valueEN={content.aboutPortugalTitleEN} onPT={(value) => setScalar(setContent, 'aboutPortugalTitlePT', value)} onEN={(value) => setScalar(setContent, 'aboutPortugalTitleEN', value)} />
+        <BilingualField multiline label={t('contentPortugalBody', lang)} valuePT={content.aboutPortugalBodyPT} valueEN={content.aboutPortugalBodyEN} onPT={(value) => setScalar(setContent, 'aboutPortugalBodyPT', value)} onEN={(value) => setScalar(setContent, 'aboutPortugalBodyEN', value)} />
+        <BilingualField label={t('contentCtaLabel', lang)} valuePT={content.aboutCtaLabelPT} valueEN={content.aboutCtaLabelEN} onPT={(value) => setScalar(setContent, 'aboutCtaLabelPT', value)} onEN={(value) => setScalar(setContent, 'aboutCtaLabelEN', value)} />
+      </Section>
+      <Section title={t('contentSeo', lang)} hint={t('contentSeoHint', lang)} wide>
+        <BilingualField label={t('contentSeoTitle', lang)} valuePT={content.aboutSeoTitlePT} valueEN={content.aboutSeoTitleEN} onPT={(value) => setScalar(setContent, 'aboutSeoTitlePT', value)} onEN={(value) => setScalar(setContent, 'aboutSeoTitleEN', value)} />
+        <BilingualField multiline label={t('contentSeoDescription', lang)} valuePT={content.aboutSeoDescriptionPT} valueEN={content.aboutSeoDescriptionEN} onPT={(value) => setScalar(setContent, 'aboutSeoDescriptionPT', value)} onEN={(value) => setScalar(setContent, 'aboutSeoDescriptionEN', value)} />
+      </Section>
     </div>
   );
 }
@@ -181,7 +254,7 @@ function SizeGuideCopyEditor({ content, setContent, lang }: EditorProps) {
 }
 
 type EditorProps = { content: NormalizedStorefrontContent; setContent: React.Dispatch<React.SetStateAction<NormalizedStorefrontContent | null>>; lang: Lang };
-type ScalarKey = keyof Omit<NormalizedStorefrontContent, 'faqEntries'>;
+type ScalarKey = keyof Omit<NormalizedStorefrontContent, 'faqEntries' | 'aboutValues'>;
 
 function setScalar(setContent: EditorProps['setContent'], key: ScalarKey, value: string) {
   setContent((current) => current && ({ ...current, [key]: value }));

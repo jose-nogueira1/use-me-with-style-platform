@@ -11,6 +11,7 @@ test('storefront content falls back field-by-field without discarding saved copy
   assert.equal(content.faqTitlePT, 'Ajuda rápida');
   assert.equal(content.faqIntroPT, DEFAULT_STOREFRONT_CONTENT.faqIntroPT);
   assert.deepEqual(content.faqEntries, []);
+  assert.equal(content.aboutValues.length, 3);
 });
 
 test('CMS FAQ order, visibility, market overrides and safe internal links drive the storefront', () => {
@@ -48,12 +49,19 @@ test('custom admin exposes a top-level bilingual content editor backed by Payloa
   const faq = projectFile('src/storefront/pages/Faq.tsx');
   const sizeGuide = projectFile('src/storefront/pages/SizeGuide.tsx');
   const home = projectFile('src/storefront/pages/Home.tsx');
+  const about = projectFile('src/storefront/pages/About.tsx');
   assert.match(routes, /path="conteudo" element={<Content \/>}/);
   assert.match(layout, /to: '\/admin\/conteudo'/);
   assert.match(editor, /adminUpdateStorefrontContent\(content\)/);
+  assert.match(editor, /normalizeStorefrontContent\(await fetchStorefrontContent\(\)\)/);
   assert.match(editor, /contentAnswerPortugal/);
   assert.match(editor, /contentHomeSeoTab/);
+  assert.match(editor, /contentAboutTab/);
+  assert.match(editor, /aboutValues/);
   assert.match(home, /homeSeoMetadata\(market, lang, storefrontContent\)/);
+  assert.match(about, /fetchStorefrontContent\(\)/);
+  assert.match(about, /aboutPresenceTitle/);
+  assert.match(about, /<Seo/);
   assert.match(faq, /fetchStorefrontContent\(\)/);
   assert.match(sizeGuide, /fetchStorefrontContent\(\)/);
 });

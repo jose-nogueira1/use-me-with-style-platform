@@ -520,6 +520,15 @@ export type StorefrontFaqEntry = {
   linkLabelEN?: string | null;
 };
 
+export type StorefrontAboutValue = {
+  id?: string | null;
+  enabled?: boolean | null;
+  titlePT: string;
+  titleEN: string;
+  bodyPT: string;
+  bodyEN: string;
+};
+
 /** FAQ and standalone size-guide copy managed from the custom admin. */
 export type StorefrontContent = {
   homeSeoTitleAngolaPT?: string | null;
@@ -530,6 +539,35 @@ export type StorefrontContent = {
   homeSeoTitlePortugalEN?: string | null;
   homeSeoDescriptionPortugalPT?: string | null;
   homeSeoDescriptionPortugalEN?: string | null;
+  aboutEyebrowPT?: string | null;
+  aboutEyebrowEN?: string | null;
+  aboutTitlePT?: string | null;
+  aboutTitleEN?: string | null;
+  aboutIntroPT?: string | null;
+  aboutIntroEN?: string | null;
+  aboutStoryTitlePT?: string | null;
+  aboutStoryTitleEN?: string | null;
+  aboutStoryBodyPT?: string | null;
+  aboutStoryBodyEN?: string | null;
+  aboutValuesTitlePT?: string | null;
+  aboutValuesTitleEN?: string | null;
+  aboutValues?: StorefrontAboutValue[] | null;
+  aboutPresenceTitlePT?: string | null;
+  aboutPresenceTitleEN?: string | null;
+  aboutAngolaTitlePT?: string | null;
+  aboutAngolaTitleEN?: string | null;
+  aboutAngolaBodyPT?: string | null;
+  aboutAngolaBodyEN?: string | null;
+  aboutPortugalTitlePT?: string | null;
+  aboutPortugalTitleEN?: string | null;
+  aboutPortugalBodyPT?: string | null;
+  aboutPortugalBodyEN?: string | null;
+  aboutCtaLabelPT?: string | null;
+  aboutCtaLabelEN?: string | null;
+  aboutSeoTitlePT?: string | null;
+  aboutSeoTitleEN?: string | null;
+  aboutSeoDescriptionPT?: string | null;
+  aboutSeoDescriptionEN?: string | null;
   faqTitlePT?: string | null;
   faqTitleEN?: string | null;
   faqIntroPT?: string | null;
