@@ -123,6 +123,35 @@ export type ApiSizeGuide = {
   rows: ApiSizeGuideRow[];
 };
 
+export type ApiPostBlock = {
+  id?: string | null;
+  kind: 'section' | 'paragraph' | 'bullets';
+  headingPT?: string | null;
+  headingEN?: string | null;
+  textPT: string;
+  textEN: string;
+};
+
+export type ApiPost = {
+  id: string | number;
+  titlePT: string;
+  titleEN: string;
+  slug: string;
+  excerptPT: string;
+  excerptEN: string;
+  body: ApiPostBlock[];
+  seoTitlePT: string;
+  seoTitleEN: string;
+  seoDescriptionPT: string;
+  seoDescriptionEN: string;
+  status: 'draft' | 'published';
+  publishedAt?: string | null;
+  availableAO: boolean;
+  availablePT: boolean;
+  updatedAt: string;
+  createdAt: string;
+};
+
 export type ApiCategoryRef = string | number | ApiCategory;
 export type ApiMerchTagRef = string | number | ApiMerchTag;
 export type ApiColorRef = string | number | ApiColor;
@@ -843,6 +872,20 @@ export async function fetchProductBySlug(slug: string, market: 'AO' | 'PT'): Pro
   return data.docs[0] ?? null;
 }
 
+export async function fetchPosts(market: 'AO' | 'PT'): Promise<ApiPost[]> {
+  const data = await request<{ docs: ApiPost[] }>(
+    `/posts?where[status][equals]=published&where[${availabilityField(market)}][equals]=true&limit=100&sort=-publishedAt`,
+  );
+  return data.docs;
+}
+
+export async function fetchPostBySlug(slug: string, market: 'AO' | 'PT'): Promise<ApiPost | null> {
+  const data = await request<{ docs: ApiPost[] }>(
+    `/posts?where[slug][equals]=${encodeURIComponent(slug)}&where[status][equals]=published&where[${availabilityField(market)}][equals]=true&limit=1`,
+  );
+  return data.docs[0] ?? null;
+}
+
 /** Public: categories for the Browse filter pills/sidebar. Sorted by
  * creation so the original four keep their familiar order. */
 export async function fetchCategories(): Promise<ApiCategory[]> {
@@ -1457,6 +1500,25 @@ export async function adminUpdateMarketSettings(input: Partial<MarketSettings>):
 
 export async function adminDeleteProduct(id: string | number): Promise<void> {
   await request<{ doc: ApiProduct }>(`/products/${id}`, { method: 'DELETE' }, { auth: true });
+}
+
+export async function adminListPosts(): Promise<ApiPost[]> {
+  const data = await request<{ docs: ApiPost[] }>('/posts?limit=200&sort=-publishedAt', {}, { auth: true });
+  return data.docs;
+}
+
+export async function adminCreatePost(input: Omit<ApiPost, 'id' | 'slug' | 'updatedAt' | 'createdAt'>): Promise<ApiPost> {
+  const data = await request<{ doc: ApiPost }>('/posts', { method: 'POST', body: JSON.stringify(input) }, { auth: true });
+  return data.doc;
+}
+
+export async function adminUpdatePost(id: string | number, input: Partial<ApiPost>): Promise<ApiPost> {
+  const data = await request<{ doc: ApiPost }>(`/posts/${id}`, { method: 'PATCH', body: JSON.stringify(input) }, { auth: true });
+  return data.doc;
+}
+
+export async function adminDeletePost(id: string | number): Promise<void> {
+  await request(`/posts/${id}`, { method: 'DELETE' }, { auth: true });
 }
 
 // General-purpose order update (address/contact/payment-status edits, on top

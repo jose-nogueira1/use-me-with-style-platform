@@ -49,6 +49,10 @@ const ROUTE_METADATA: Record<string, Record<Lang, SeoMetadata>> = {
     pt: { title: `Sobre nós | ${SITE_TITLE}`, description: 'Conheça a Use Me With Style, uma marca de moda desportiva feminina para Angola e Portugal.' },
     en: { title: `About us | ${SITE_TITLE}`, description: 'Meet Use Me With Style, a women’s activewear brand for Angola and Portugal.' },
   },
+  '/estilo': {
+    pt: { title: `Guia de estilo e moda desportiva | ${SITE_TITLE}`, description: 'Guias sobre leggings, roupa para o ginásio, tecidos e estilo ativo para mulheres em Angola e Portugal.' },
+    en: { title: `Activewear style guide | ${SITE_TITLE}`, description: 'Guides to leggings, gym outfits, activewear fabrics and active style for women in Angola and Portugal.' },
+  },
   '/shop-instagram': {
     pt: { title: `Comprar no Instagram | ${SITE_TITLE}`, description: 'Descubra e compre os looks Use Me With Style partilhados no Instagram.' },
     en: { title: `Shop Instagram | ${SITE_TITLE}`, description: 'Discover and shop the Use Me With Style looks featured on Instagram.' },
@@ -74,6 +78,10 @@ const DYNAMIC_METADATA: Array<{ matches: (pathname: string) => boolean; value: R
       pt: { title: `Produto | ${SITE_TITLE}`, description: SITE_DESCRIPTION.pt },
       en: { title: `Product | ${SITE_TITLE}`, description: SITE_DESCRIPTION.en },
     },
+  },
+  {
+    matches: (pathname) => pathname.startsWith('/estilo/'),
+    value: ROUTE_METADATA['/estilo'],
   },
   {
     matches: (pathname) => pathname.startsWith('/encomenda-confirmada/'),

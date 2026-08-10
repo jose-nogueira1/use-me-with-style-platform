@@ -15,6 +15,7 @@ export const T: Record<string, Record<Lang, string>> = {
   navOrders: { en: 'Orders', pt: 'Encomendas' },
   navProducts: { en: 'Products', pt: 'Produtos' },
   navContent: { en: 'Content', pt: 'Conteúdo' },
+  navArticles: { en: 'Articles', pt: 'Artigos' },
   navSettings: { en: 'Settings', pt: 'Definições' },
   navCustomers: { en: 'Customers', pt: 'Clientes' },
   navMessages: { en: 'Messages', pt: 'Mensagens' },

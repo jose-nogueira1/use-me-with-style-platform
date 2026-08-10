@@ -115,6 +115,28 @@ async function discoverInstagramRoutes(market) {
     .map((post) => `/shop-instagram/${encodeURIComponent(post.lookSlug.trim())}`)
 }
 
+async function discoverPostRoutes(market) {
+  const availability = market === 'AO' ? 'availableAO' : 'availablePT'
+  const routes = []
+  let page = 1
+  let totalPages = 1
+  do {
+    const url = new URL(`${cmsOrigin}/api/posts`)
+    url.searchParams.set('where[status][equals]', 'published')
+    url.searchParams.set(`where[${availability}][equals]`, 'true')
+    url.searchParams.set('limit', '100')
+    url.searchParams.set('page', String(page))
+    url.searchParams.set('depth', '0')
+    const data = await fetchJson(url)
+    for (const post of data.docs ?? []) {
+      if (typeof post.slug === 'string' && post.slug.trim()) routes.push(`/estilo/${encodeURIComponent(post.slug.trim())}`)
+    }
+    totalPages = Number(data.totalPages) || 1
+    page += 1
+  } while (page <= totalPages)
+  return routes
+}
+
 async function proxyApi(request, response) {
   if (request.method !== 'GET' && request.method !== 'HEAD') {
     response.writeHead(405).end('Prerender proxy only permits reads.')
@@ -257,8 +279,8 @@ if (!useServerlessChromium) await ensureBrowser()
 
 const discovered = {}
 for (const market of Object.keys(MARKETS)) {
-  const [catalogue, looks] = await Promise.all([discoverCatalogueRoutes(market), discoverInstagramRoutes(market)])
-  discovered[market] = uniqueRoutes([...STATIC_PRERENDER_ROUTES, '/catalogo?cat=new', ...catalogue.categories, ...catalogue.products, ...looks])
+  const [catalogue, looks, posts] = await Promise.all([discoverCatalogueRoutes(market), discoverInstagramRoutes(market), discoverPostRoutes(market)])
+  discovered[market] = uniqueRoutes([...STATIC_PRERENDER_ROUTES, '/catalogo?cat=new', ...catalogue.categories, ...catalogue.products, ...looks, ...posts])
 }
 
 const server = createServer((request, response) => {

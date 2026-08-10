@@ -16,6 +16,8 @@ const Help = lazy(() => import('./storefront/pages/Help').then((m) => ({ default
 const Faq = lazy(() => import('./storefront/pages/Faq').then((m) => ({ default: m.Faq })));
 const SizeGuide = lazy(() => import('./storefront/pages/SizeGuide').then((m) => ({ default: m.SizeGuide })));
 const About = lazy(() => import('./storefront/pages/About').then((m) => ({ default: m.About })));
+const StyleGuide = lazy(() => import('./storefront/pages/StyleGuide').then((m) => ({ default: m.StyleGuide })));
+const StyleArticle = lazy(() => import('./storefront/pages/StyleArticle').then((m) => ({ default: m.StyleArticle })));
 const PrivacyPolicy = lazy(() => import('./storefront/pages/PrivacyPolicy').then((m) => ({ default: m.PrivacyPolicy })));
 const Terms = lazy(() => import('./storefront/pages/Terms').then((m) => ({ default: m.Terms })));
 const DataDeletion = lazy(() => import('./storefront/pages/DataDeletion').then((m) => ({ default: m.DataDeletion })));
@@ -105,6 +107,8 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
            screens) -- just enough width to stop the page looking abandoned. */
         .ump-form-width { max-width: 480px; margin: 0 auto; width: 100%; box-sizing: border-box; }
         @media (min-width: 860px) { .ump-form-width { max-width: 640px; } }
+        @media (max-width: 900px) { .ump-style-guide-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; } }
+        @media (max-width: 620px) { .ump-style-guide-grid { grid-template-columns: 1fr !important; } }
 
         /* Cart & Checkout: two-column desktop layout (Phase 4, 2026-07-24 --
            follow-up to the .ump-form-width fix above). Figma's screen
@@ -802,6 +806,8 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
               <Route path="perguntas-frequentes" element={<Faq />} />
               <Route path="guia-de-tamanhos" element={<SizeGuide />} />
               <Route path="sobre" element={<About />} />
+              <Route path="estilo" element={<StyleGuide />} />
+              <Route path="estilo/:slug" element={<StyleArticle />} />
               <Route path="shop-instagram" element={<ShopInstagram />} />
               <Route path="shop-instagram/:lookSlug" element={<ShopInstagram />} />
               <Route path="politica-privacidade" element={<PrivacyPolicy />} />

@@ -444,6 +444,7 @@ export const T: Record<string, Record<Lang, string>> = {
   prices: { pt: 'Preços', en: 'Prices' },
   copyrightNote: { pt: '© {year} Use Me With Style. Todos os direitos reservados.', en: '© {year} Use Me With Style. All rights reserved.' },
   aboutNav: { pt: 'Sobre nós', en: 'About us' },
+  styleGuideNav: { pt: 'Guia de estilo', en: 'Style guide' },
 
   // Home: Instagram feed (static curated grid, no live API -- 2026-07-10
   // scope decision. Client account confirmed 2026-07-16).

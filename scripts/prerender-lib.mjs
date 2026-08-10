@@ -12,6 +12,7 @@ export const STATIC_PRERENDER_ROUTES = [
   '/perguntas-frequentes',
   '/guia-de-tamanhos',
   '/sobre',
+  '/estilo',
   '/shop-instagram',
   '/politica-privacidade',
   '/termos-condicoes',
@@ -54,6 +55,7 @@ export function isPublicRouteShape(route) {
   return Boolean(categoryRoute(route))
     || STATIC_PRERENDER_ROUTES.includes(pathname)
     || /^\/produto\/[^/]+$/.test(pathname)
+    || /^\/estilo\/[^/]+$/.test(pathname)
     || /^\/shop-instagram\/[^/]+$/.test(pathname)
 }
 

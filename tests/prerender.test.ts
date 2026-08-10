@@ -25,6 +25,10 @@ test('prerender output is isolated by market and clean route', () => {
     outputFileForRoute('/tmp/dist', 'pt', '/catalogo?cat=leggings'),
     path.join('/tmp/dist', '__prerender', 'pt', 'catalogo', 'category', 'leggings', 'index.html'),
   );
+  assert.equal(
+    outputFileForRoute('/tmp/dist', 'ao', '/estilo/como-escolher-leggings'),
+    path.join('/tmp/dist', '__prerender', 'ao', 'estilo', 'como-escolher-leggings', 'index.html'),
+  );
   assert.deepEqual(uniqueRoutes(['/', '/catalogo', '/catalogo/']), ['/', '/catalogo']);
 });
 
@@ -50,6 +54,8 @@ test('Vercel selects AO and PT documents by host before preserving the SPA fallb
   assert.match(source, /pt\.usemewithstyle\.shop/);
   assert.ok(config.rewrites.some((rule) => rule.destination === '/__prerender/ao/produto/:slug/index.html'));
   assert.ok(config.rewrites.some((rule) => rule.destination === '/__prerender/pt/produto/:slug/index.html'));
+  assert.ok(config.rewrites.some((rule) => rule.destination === '/__prerender/ao/estilo/:slug/index.html'));
+  assert.ok(config.rewrites.some((rule) => rule.destination === '/__prerender/pt/estilo/:slug/index.html'));
   assert.ok(config.rewrites.some((rule) => rule.destination.endsWith('/api/robots.txt?market=AO')));
   assert.ok(config.rewrites.some((rule) => rule.destination.endsWith('/api/sitemap.xml?market=PT')));
   assert.ok(config.rewrites.some((rule) => rule.destination === '/__prerender/ao/catalogo/category/:category/index.html' && rule.has?.some((condition) => condition.key === 'cat')));
@@ -64,13 +70,13 @@ test('Vercel selects AO and PT documents by host before preserving the SPA fallb
 });
 
 test('route allowlists distinguish public, runtime-only and genuinely invalid URLs', () => {
-  for (const route of ['/', '/catalogo', '/produto/vestido-move', '/shop-instagram/look-1']) {
+  for (const route of ['/', '/catalogo', '/produto/vestido-move', '/estilo', '/estilo/como-escolher-leggings', '/shop-instagram/look-1']) {
     assert.equal(isPublicRouteShape(route), true, route);
   }
   for (const route of ['/carrinho', '/checkout', '/conta', '/encomenda-confirmada/UMP-1', '/admin/login']) {
     assert.equal(isRuntimeSpaRoute(route), true, route);
   }
-  for (const route of ['/nao-existe', '/produto', '/produto/a/extra', '/encomenda-confirmada']) {
+  for (const route of ['/nao-existe', '/produto', '/produto/a/extra', '/estilo/a/extra', '/encomenda-confirmada']) {
     assert.equal(isPublicRouteShape(route) || isRuntimeSpaRoute(route), false, route);
   }
 });

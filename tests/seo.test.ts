@@ -18,6 +18,8 @@ test('every storefront route receives dedicated localized metadata', () => {
     '/perguntas-frequentes',
     '/guia-de-tamanhos',
     '/sobre',
+    '/estilo',
+    '/estilo/como-escolher-leggings',
     '/shop-instagram',
     '/shop-instagram/example-look',
     '/politica-privacidade',
