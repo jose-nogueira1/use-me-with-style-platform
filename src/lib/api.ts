@@ -78,6 +78,8 @@ export type ApiCategory = {
   id: string | number;
   namePT: string;
   nameEN?: string | null;
+  introPT?: string | null;
+  introEN?: string | null;
   slug?: string | null;
   /** Category tile image (2026-07-25 admin request) -- optional, falls back
    * to a decorative placeholder on the storefront when unset. */

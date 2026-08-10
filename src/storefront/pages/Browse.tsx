@@ -8,16 +8,38 @@ import { ProductCard } from '../components/ProductCard';
 import { fetchCategories, fetchMerchTags, type ApiCategory, type ApiMerchTag } from '../../lib/api';
 import { hasSwatch, swatchBackground } from '../../lib/colorSwatch';
 import { Seo, SITE_TITLE } from '../../lib/seo';
+import { getSingleCategoryIntro } from '../../lib/categoryIntro';
 
 // Categories became admin-managed CMS data on 2026-07-25 (previously a
 // hardcoded enum), so the pills/sidebar are built from the API. This
 // fallback covers only the brief moment before the fetch resolves (and an
 // unreachable CMS, where the catalogue is empty anyway).
 const FALLBACK_CATS: ApiCategory[] = [
-  { id: 'vestidos', namePT: 'Vestidos', nameEN: 'Dresses', slug: 'vestidos' },
-  { id: 'tops', namePT: 'Tops', nameEN: 'Tops', slug: 'tops' },
-  { id: 'leggings', namePT: 'Leggings', nameEN: 'Leggings', slug: 'leggings' },
-  { id: 'conjuntos', namePT: 'Conjuntos', nameEN: 'Sets', slug: 'conjuntos' },
+  {
+    id: 'vestidos', namePT: 'Vestidos', nameEN: 'Dresses', slug: 'vestidos',
+    introPT: 'Descubra vestidos desportivos femininos que combinam conforto, movimento e estilo, ideais para treinar ou acompanhar o seu dia em Angola e Portugal.',
+    introEN: 'Discover women’s sports dresses that combine comfort, movement and style, ideal for training or everyday wear in Angola and Portugal.',
+  },
+  {
+    id: 'tops', namePT: 'Tops', nameEN: 'Tops', slug: 'tops',
+    introPT: 'Explore tops desportivos femininos com suporte confortável e cortes versáteis, pensados para treinos, caminhadas e looks ativos do dia a dia.',
+    introEN: 'Explore women’s sports tops with comfortable support and versatile cuts, designed for workouts, walks and everyday active looks.',
+  },
+  {
+    id: 'leggings', namePT: 'Leggings', nameEN: 'Leggings', slug: 'leggings',
+    introPT: 'Encontre leggings femininas confortáveis e flexíveis, com modelos pensados para acompanhar cada movimento no treino e na rotina diária.',
+    introEN: 'Find comfortable, flexible women’s leggings designed to move with you through every workout and daily routine.',
+  },
+  {
+    id: 'conjuntos', namePT: 'Conjuntos', nameEN: 'Sets', slug: 'conjuntos',
+    introPT: 'Descubra conjuntos fitness femininos coordenados que unem conforto e estilo, para um look completo no treino e fora dele.',
+    introEN: 'Discover coordinated women’s fitness sets that bring comfort and style together for a complete look in and out of the gym.',
+  },
+  {
+    id: 'acessorios', namePT: 'Acessórios', nameEN: 'Accessories', slug: 'acessorios',
+    introPT: 'Complete o seu look ativo com acessórios práticos e elegantes, escolhidos para acompanhar o treino e facilitar a sua rotina.',
+    introEN: 'Complete your active look with practical, elegant accessories selected to support your workouts and simplify your routine.',
+  },
 ];
 
 export function Browse() {
@@ -313,6 +335,10 @@ export function Browse() {
   // has no single label that would read naturally in a <title>. Falls back
   // to a generic catalogue title/description otherwise.
   const activeCategoryLabel = activeCats.length === 1 ? cats.find((c) => c.key === activeCats[0])?.label : undefined;
+  const categoryIntro = useMemo(
+    () => getSingleCategoryIntro(categories, activeCats, lang),
+    [categories, activeCats, lang],
+  );
   const seoFilterLabel = activeCategoryLabel ?? activeTagLabel ?? undefined;
   const seoTitle = seoFilterLabel ? `${seoFilterLabel} | ${SITE_TITLE}` : `${t('shopAll', lang)} | ${SITE_TITLE}`;
   const seoDescription = seoFilterLabel
@@ -342,7 +368,7 @@ export function Browse() {
       </div>
 
       <div className="ump-browse-main">
-        <h1 className="ump-sr-only">{t('shopAll', lang)}</h1>
+        {!categoryIntro && <h1 className="ump-sr-only">{t('shopAll', lang)}</h1>}
         <div style={{ padding: '12px 20px', borderBottom: `1px solid ${C.ruleLight}` }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: C.paper, borderRadius: 8, border: `1px solid ${C.fieldBorder}` }}>
             <Search size={16} color={C.inkSoft} />
@@ -382,6 +408,20 @@ export function Browse() {
             </button>
           ))}
         </div>
+
+        {categoryIntro && (
+          <section
+            aria-labelledby="category-intro-title"
+            style={{ padding: '20px 20px 22px', borderTop: `1px solid ${C.ruleLight}`, borderBottom: `1px solid ${C.ruleLight}` }}
+          >
+            <h1 id="category-intro-title" style={{ margin: 0, color: C.ink, fontFamily: 'Georgia, serif', fontSize: 'clamp(24px, 4vw, 36px)', fontWeight: 400 }}>
+              {categoryIntro.title}
+            </h1>
+            <p style={{ margin: '8px 0 0', maxWidth: 760, color: C.inkSoft, fontSize: 14, lineHeight: 1.7 }}>
+              {categoryIntro.body}
+            </p>
+          </section>
+        )}
 
         {/* The standalone "Coleção: X" banner that used to sit here was
             folded into the badge row below on 2026-07-30 -- with every other
