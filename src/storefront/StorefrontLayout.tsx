@@ -9,6 +9,8 @@ import { AnalyticsConsentManager } from './components/AnalyticsConsent';
 import { SearchOverlay } from './components/SearchOverlay';
 import { fetchCategories, type ApiCategory } from '../lib/api';
 import { useSeoDefaults } from '../lib/seo';
+import { buildSiteStructuredData } from '../lib/siteStructuredData';
+import { serializeJsonLd } from '../lib/jsonLd';
 
 // Matches the real Figma design (node 72:2, "Phase 1 Storefront -- High
 // Fidelity"): plain header (logo center, hamburger/back left). Market,
@@ -40,6 +42,8 @@ export function StorefrontLayout() {
   const [searchOpen, setSearchOpen] = useState(false);
   const headerRef = useRef<HTMLDivElement>(null);
   const [categories, setCategories] = useState<ApiCategory[]>([]);
+  const origin = typeof window === 'undefined' ? '' : window.location.origin;
+  const siteJsonLd = origin ? buildSiteStructuredData(origin) : null;
   useEffect(() => { fetchCategories().then(setCategories).catch(() => undefined); }, []);
   const navItems = [
     { to: '/catalogo?cat=new', label: t('newArrivalsNav', lang) },
@@ -101,6 +105,12 @@ export function StorefrontLayout() {
         flexDirection: 'column',
       }}
     >
+      {siteJsonLd ? (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(siteJsonLd) }}
+        />
+      ) : null}
       <div
         ref={headerRef}
         style={{

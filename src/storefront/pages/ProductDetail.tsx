@@ -11,7 +11,8 @@ import { hasSwatch, swatchBackground } from '../../lib/colorSwatch';
 import { colorHasStock } from '../../lib/productAdapters';
 import { Seo, SITE_TITLE, truncateForMeta } from '../../lib/seo';
 import { canonicalUrl } from '../../lib/seoMetadata';
-import { buildProductStructuredData, serializeJsonLd } from '../../lib/productStructuredData';
+import { buildProductStructuredData } from '../../lib/productStructuredData';
+import { serializeJsonLd } from '../../lib/jsonLd';
 
 // Category display names now come from the CMS categories collection (via
 // product.catLabel) instead of a hardcoded slug->i18n-key map (2026-07-25).

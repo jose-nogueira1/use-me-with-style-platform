@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { buildProductStructuredData, serializeJsonLd } from '../src/lib/productStructuredData.ts';
+import { buildProductStructuredData } from '../src/lib/productStructuredData.ts';
+import { serializeJsonLd } from '../src/lib/jsonLd.ts';
 
 const product = {
   id: 'product-42',
