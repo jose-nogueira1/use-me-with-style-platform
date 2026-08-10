@@ -49,7 +49,47 @@
       "destination": "/__prerender/pt/shop-instagram/:slug/index.html"
     },
     {
-      "source": "/(.*)",
+      "source": "/:page(carrinho|checkout|conta)",
+      "destination": "/__spa.html"
+    },
+    {
+      "source": "/encomenda-confirmada/:orderNumber",
+      "destination": "/__spa.html"
+    },
+    {
+      "source": "/admin/:path*",
+      "destination": "/__spa.html"
+    },
+    {
+      "source": "/",
+      "missing": [
+        { "type": "host", "value": "ao.usemewithstyle.shop" },
+        { "type": "host", "value": "pt.usemewithstyle.shop" }
+      ],
+      "destination": "/__spa.html"
+    },
+    {
+      "source": "/:page(catalogo|ajuda|sobre|shop-instagram|politica-privacidade|termos-condicoes|eliminacao-de-dados)",
+      "missing": [
+        { "type": "host", "value": "ao.usemewithstyle.shop" },
+        { "type": "host", "value": "pt.usemewithstyle.shop" }
+      ],
+      "destination": "/__spa.html"
+    },
+    {
+      "source": "/produto/:slug",
+      "missing": [
+        { "type": "host", "value": "ao.usemewithstyle.shop" },
+        { "type": "host", "value": "pt.usemewithstyle.shop" }
+      ],
+      "destination": "/__spa.html"
+    },
+    {
+      "source": "/shop-instagram/:slug",
+      "missing": [
+        { "type": "host", "value": "ao.usemewithstyle.shop" },
+        { "type": "host", "value": "pt.usemewithstyle.shop" }
+      ],
       "destination": "/__spa.html"
     }
   ]

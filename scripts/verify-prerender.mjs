@@ -19,6 +19,15 @@ try {
   failures.push('SPA fallback __spa.html is missing')
 }
 
+try {
+  const notFoundFallback = await readFile(path.join(distDir, '404.html'), 'utf8')
+  expect(notFoundFallback.includes('<div id="root"></div>'), '404 document is missing its React root')
+  expect(notFoundFallback.includes('<meta name="robots" content="noindex,follow"'), '404 document is missing robots noindex')
+  expect(!notFoundFallback.includes('data-prerendered="true"'), '404 document must not pretend to be a prerendered route')
+} catch {
+  failures.push('Static 404.html is missing')
+}
+
 function jsonLdBlocks(html) {
   const parsed = [...html.matchAll(/<script[^>]+type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/gi)]
     .map((match) => {

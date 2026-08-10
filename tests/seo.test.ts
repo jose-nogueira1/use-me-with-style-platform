@@ -83,7 +83,17 @@ test('the SEO layer emits all market hreflang alternates', () => {
 test('page-specific SEO reruns after pathname and query-string navigation', () => {
   const source = projectFile('src/lib/seo.ts');
   assert.match(source, /location\.pathname, location\.search/);
-  assert.match(source, /\[title, description, image, location\.pathname, location\.search\]/);
+  assert.match(source, /\[title, description, image, robots, location\.pathname, location\.search\]/);
+});
+
+test('404 routes are noindex and valid client-side navigation resets robots', () => {
+  const seo = projectFile('src/lib/seo.ts');
+  const notFound = projectFile('src/storefront/pages/NotFound.tsx');
+  const product = projectFile('src/storefront/pages/ProductDetail.tsx');
+  assert.match(seo, /ensureMeta\('name', 'robots', 'index,follow'\)/);
+  assert.match(notFound, /robots="noindex,follow"/);
+  assert.match(notFound, /<Seo title=/);
+  assert.match(product, /notFoundTitle[\s\S]+robots="noindex,follow"/);
 });
 
 test('the document language follows the stored storefront language', () => {

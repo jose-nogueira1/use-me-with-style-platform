@@ -24,10 +24,32 @@ export const SPA_ONLY_PREFIXES = [
   '/encomenda-confirmada',
 ]
 
+function normalizedPathname(route) {
+  const url = new URL(route, 'https://usemewithstyle.shop')
+  return url.pathname === '/' ? '/' : url.pathname.replace(/\/+$/, '')
+}
+
+export function isRuntimeSpaRoute(route) {
+  const pathname = normalizedPathname(route)
+  return pathname === '/carrinho'
+    || pathname === '/checkout'
+    || pathname === '/conta'
+    || /^\/encomenda-confirmada\/[^/]+$/.test(pathname)
+    || pathname === '/admin'
+    || pathname.startsWith('/admin/')
+}
+
+export function isPublicRouteShape(route) {
+  const pathname = normalizedPathname(route)
+  return STATIC_PRERENDER_ROUTES.includes(pathname)
+    || /^\/produto\/[^/]+$/.test(pathname)
+    || /^\/shop-instagram\/[^/]+$/.test(pathname)
+}
+
 export function normalizePublicRoute(route) {
   const url = new URL(route, 'https://usemewithstyle.shop')
   if (url.search || url.hash) throw new Error(`Prerender routes cannot contain query strings or hashes: ${route}`)
-  const pathname = url.pathname === '/' ? '/' : url.pathname.replace(/\/+$/, '')
+  const pathname = normalizedPathname(route)
   if (SPA_ONLY_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) {
     throw new Error(`Private/runtime-only route cannot be prerendered: ${pathname}`)
   }

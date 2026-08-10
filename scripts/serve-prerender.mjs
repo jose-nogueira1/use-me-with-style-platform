@@ -2,7 +2,7 @@ import { readFile, stat } from 'node:fs/promises'
 import { createServer } from 'node:http'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { outputFileForRoute } from './prerender-lib.mjs'
+import { isPublicRouteShape, isRuntimeSpaRoute, outputFileForRoute } from './prerender-lib.mjs'
 
 const projectDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const distDir = path.join(projectDir, 'dist')
@@ -22,9 +22,9 @@ const contentTypes = {
   '.webp': 'image/webp',
 }
 
-async function sendFile(response, file) {
+async function sendFile(response, file, status = 200) {
   const body = await readFile(file)
-  response.writeHead(200, { 'content-type': contentTypes[path.extname(file)] || 'application/octet-stream' })
+  response.writeHead(status, { 'content-type': contentTypes[path.extname(file)] || 'application/octet-stream' })
   response.end(body)
 }
 
@@ -39,25 +39,34 @@ async function handler(request, response) {
 
   const hostname = (request.headers.host || '').split(':')[0]
   const marketCode = hostname.split('.')[0] === 'pt' ? 'pt' : hostname.split('.')[0] === 'ao' ? 'ao' : null
+
+  const requested = url.pathname === '/' ? null : url.pathname
+  if (requested) {
+    const resolved = path.resolve(distDir, `.${decodeURIComponent(requested)}`)
+    if (resolved.startsWith(`${distDir}${path.sep}`)) {
+      try {
+        if ((await stat(resolved)).isFile()) return sendFile(response, resolved)
+      } catch {
+        // Continue into route-aware HTML handling.
+      }
+    }
+  }
+
   if (marketCode) {
     try {
       const prerendered = outputFileForRoute(distDir, marketCode, url.pathname)
       if ((await stat(prerendered)).isFile()) return sendFile(response, prerendered)
     } catch {
-      // Runtime-only/unknown route: preserve the original SPA fallback.
+      // Not a generated public route.
     }
+    if (isRuntimeSpaRoute(url.pathname)) return sendFile(response, path.join(distDir, '__spa.html'))
+    return sendFile(response, path.join(distDir, '404.html'), 404)
   }
 
-  const requested = url.pathname === '/' ? '/__spa.html' : url.pathname
-  const resolved = path.resolve(distDir, `.${decodeURIComponent(requested)}`)
-  if (resolved.startsWith(`${distDir}${path.sep}`)) {
-    try {
-      if ((await stat(resolved)).isFile()) return sendFile(response, resolved)
-    } catch {
-      // Fall through to the SPA document.
-    }
+  if (isPublicRouteShape(url.pathname) || isRuntimeSpaRoute(url.pathname)) {
+    return sendFile(response, path.join(distDir, '__spa.html'))
   }
-  return sendFile(response, path.join(distDir, '__spa.html'))
+  return sendFile(response, path.join(distDir, '404.html'), 404)
 }
 
 const server = createServer((request, response) => {

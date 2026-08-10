@@ -56,9 +56,14 @@ export function ProductDetail() {
   }
 
   if (!product) {
+    const notFoundTitle = lang === 'pt' ? `Produto não encontrado | ${SITE_TITLE}` : `Product not found | ${SITE_TITLE}`;
+    const notFoundDescription = lang === 'pt'
+      ? 'Este produto não existe ou já não está disponível na Use Me With Style.'
+      : 'This product does not exist or is no longer available from Use Me With Style.';
     return (
       <div style={{ padding: '60px 30px', textAlign: 'center' }}>
-        <div style={{ fontFamily: F.display, fontSize: 20, color: C.ink, marginBottom: 12 }}>{t('productNotFound', lang)}</div>
+        <Seo title={notFoundTitle} description={notFoundDescription} robots="noindex,follow" />
+        <h1 style={{ fontFamily: F.display, fontSize: 20, color: C.ink, margin: '0 0 12px' }}>{t('productNotFound', lang)}</h1>
         <button onClick={() => navigate('/catalogo')} style={{ color: C.goldDeep, fontSize: 12, textDecoration: 'underline' }}>
           {t('continueShopping', lang)}
         </button>

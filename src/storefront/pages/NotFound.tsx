@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { C, F } from '../../theme';
 import { useApp } from '../../state/AppContext';
+import { Seo, SITE_TITLE } from '../../lib/seo';
 
 export function NotFound() {
   const { lang } = useApp();
@@ -8,20 +9,25 @@ export function NotFound() {
     ? {
         eyebrow: 'Erro 404',
         title: 'Esta página não existe.',
+        seoTitle: `Página não encontrada | ${SITE_TITLE}`,
         body: 'O endereço pode estar incorreto ou a página pode ter mudado.',
         shop: 'Explorar a loja',
         home: 'Voltar ao início',
+        description: 'A página que procura não existe ou mudou de endereço.',
       }
     : {
         eyebrow: 'Error 404',
         title: 'This page does not exist.',
+        seoTitle: `Page not found | ${SITE_TITLE}`,
         body: 'The address may be incorrect or the page may have moved.',
         shop: 'Browse the shop',
         home: 'Back to home',
+        description: 'The page you are looking for does not exist or has moved.',
       };
 
   return (
     <main className="ump-form-width" style={{ padding: '72px 20px', textAlign: 'center' }}>
+      <Seo title={copy.seoTitle} description={copy.description} robots="noindex,follow" />
       <div style={{ color: C.goldDeep, fontSize: 11, fontWeight: 800, letterSpacing: 2, textTransform: 'uppercase' }}>
         {copy.eyebrow}
       </div>

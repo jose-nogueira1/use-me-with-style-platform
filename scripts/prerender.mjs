@@ -287,9 +287,17 @@ try {
 }
 
 await writeFile(path.join(distDir, 'prerender-manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`)
+const spaSource = path.join(distDir, 'index.html')
+const spaHtml = await readFile(spaSource, 'utf8')
+const notFoundHtml = spaHtml.replace(
+  '</head>',
+  '    <meta name="robots" content="noindex,follow" />\n  </head>',
+)
+if (notFoundHtml === spaHtml) throw new Error('Could not add robots noindex to the static 404 document.')
+await writeFile(path.join(distDir, '404.html'), notFoundHtml)
 // Vercel resolves physical files before applying rewrites. If index.html
 // remained at the output root, a request for / could bypass the market-host
 // rule and serve the generic SPA document. Keep that fallback under a
 // non-route filename so AO/PT prerenders win at / as well as deeper paths.
-await rename(path.join(distDir, 'index.html'), path.join(distDir, '__spa.html'))
+await rename(spaSource, path.join(distDir, '__spa.html'))
 console.log(`Prerendered ${Object.values(manifest.markets).flat().length} market-aware pages.`)

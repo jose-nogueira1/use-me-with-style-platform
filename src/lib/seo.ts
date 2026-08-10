@@ -122,6 +122,9 @@ export function useSeoDefaults(lang: Lang, pathname: string, search: string) {
       'x-default': defaultAlternate,
     } : null);
     ensureMeta('name', 'description', metadata.description);
+    // Reset robots on every valid route so client-side navigation away from
+    // a 404 cannot leave the destination accidentally marked noindex.
+    ensureMeta('name', 'robots', 'index,follow');
     ensureMeta('property', 'og:title', metadata.title);
     ensureMeta('property', 'og:description', metadata.description);
     ensureMeta('property', 'og:image', absoluteAssetUrl(wordmarkBlack));
@@ -158,7 +161,7 @@ export function useSeoDefaults(lang: Lang, pathname: string, search: string) {
  * photo) pass one; Browse currently doesn't, and simply leaves the
  * useSeoDefaults-set wordmark fallback in place.
  */
-export function Seo({ title, description, image }: { title: string; description: string; image?: string }) {
+export function Seo({ title, description, image, robots }: { title: string; description: string; image?: string; robots?: 'index,follow' | 'noindex,follow' }) {
   const location = useLocation();
   useEffect(() => {
     document.title = title;
@@ -167,11 +170,12 @@ export function Seo({ title, description, image }: { title: string; description:
     ensureMeta('property', 'og:description', description);
     ensureMeta('name', 'twitter:title', title);
     ensureMeta('name', 'twitter:description', description);
+    if (robots) ensureMeta('name', 'robots', robots);
     if (image) {
       ensureMeta('property', 'og:image', image);
       ensureMeta('name', 'twitter:image', image);
     }
-  }, [title, description, image, location.pathname, location.search]);
+  }, [title, description, image, robots, location.pathname, location.search]);
   return null;
 }
 
