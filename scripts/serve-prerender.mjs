@@ -40,6 +40,17 @@ async function handler(request, response) {
   const hostname = (request.headers.host || '').split(':')[0]
   const marketCode = hostname.split('.')[0] === 'pt' ? 'pt' : hostname.split('.')[0] === 'ao' ? 'ao' : null
 
+  if (marketCode && (url.pathname === '/robots.txt' || url.pathname === '/sitemap.xml')) {
+    const market = marketCode.toUpperCase()
+    const upstream = await fetch(`${cmsOrigin}/api${url.pathname}?market=${market}`, { headers: { accept: request.headers.accept || '*/*' } })
+    response.writeHead(upstream.status, {
+      'content-type': upstream.headers.get('content-type') || 'application/octet-stream',
+      'cache-control': upstream.headers.get('cache-control') || 'no-store',
+    })
+    response.end(Buffer.from(await upstream.arrayBuffer()))
+    return
+  }
+
   const requested = url.pathname === '/' ? null : url.pathname
   if (requested) {
     const resolved = path.resolve(distDir, `.${decodeURIComponent(requested)}`)
@@ -54,7 +65,11 @@ async function handler(request, response) {
 
   if (marketCode) {
     try {
-      const prerendered = outputFileForRoute(distDir, marketCode, url.pathname)
+      const category = url.pathname === '/catalogo' ? url.searchParams.get('cat')?.trim() : ''
+      const lookupRoute = category && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(category)
+        ? `/catalogo?cat=${encodeURIComponent(category)}`
+        : url.pathname
+      const prerendered = outputFileForRoute(distDir, marketCode, lookupRoute)
       if ((await stat(prerendered)).isFile()) return sendFile(response, prerendered)
     } catch {
       // Not a generated public route.
@@ -63,7 +78,7 @@ async function handler(request, response) {
     return sendFile(response, path.join(distDir, '404.html'), 404)
   }
 
-  if (isPublicRouteShape(url.pathname) || isRuntimeSpaRoute(url.pathname)) {
+  if (isPublicRouteShape(`${url.pathname}${url.search}`) || isRuntimeSpaRoute(url.pathname)) {
     return sendFile(response, path.join(distDir, '__spa.html'))
   }
   return sendFile(response, path.join(distDir, '404.html'), 404)

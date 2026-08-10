@@ -108,7 +108,7 @@ function syncHreflangLinks(alternates: MarketAlternateUrls | null) {
 export function useSeoDefaults(lang: Lang, pathname: string, search: string) {
   const metadata = routeSeoMetadata(pathname, lang);
   const origin = typeof window === 'undefined' ? '' : window.location.origin;
-  const canonical = canonicalUrl(origin, pathname);
+  const canonical = canonicalUrl(origin, pathname, search);
   const alternates = typeof window === 'undefined' ? null : marketAlternateUrls(window.location);
   const aoAlternate = alternates?.['pt-AO'];
   const ptAlternate = alternates?.['pt-PT'];

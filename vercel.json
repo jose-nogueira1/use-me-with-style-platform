@@ -9,9 +9,37 @@
       "destination": "https://use-me-with-style-cms-production.up.railway.app/api/:path*"
     },
     {
+      "source": "/robots.txt",
+      "has": [{ "type": "host", "value": "ao.usemewithstyle.shop" }],
+      "destination": "https://use-me-with-style-cms-production.up.railway.app/api/robots.txt?market=AO"
+    },
+    {
+      "source": "/sitemap.xml",
+      "has": [{ "type": "host", "value": "ao.usemewithstyle.shop" }],
+      "destination": "https://use-me-with-style-cms-production.up.railway.app/api/sitemap.xml?market=AO"
+    },
+    {
+      "source": "/robots.txt",
+      "has": [{ "type": "host", "value": "pt.usemewithstyle.shop" }],
+      "destination": "https://use-me-with-style-cms-production.up.railway.app/api/robots.txt?market=PT"
+    },
+    {
+      "source": "/sitemap.xml",
+      "has": [{ "type": "host", "value": "pt.usemewithstyle.shop" }],
+      "destination": "https://use-me-with-style-cms-production.up.railway.app/api/sitemap.xml?market=PT"
+    },
+    {
       "source": "/",
       "has": [{ "type": "host", "value": "ao.usemewithstyle.shop" }],
       "destination": "/__prerender/ao/index.html"
+    },
+    {
+      "source": "/catalogo",
+      "has": [
+        { "type": "host", "value": "ao.usemewithstyle.shop" },
+        { "type": "query", "key": "cat", "value": "(?<category>[a-z0-9]+(?:-[a-z0-9]+)*)" }
+      ],
+      "destination": "/__prerender/ao/catalogo/category/:category/index.html"
     },
     {
       "source": "/:page(catalogo|ajuda|sobre|shop-instagram|politica-privacidade|termos-condicoes|eliminacao-de-dados)",
@@ -32,6 +60,14 @@
       "source": "/",
       "has": [{ "type": "host", "value": "pt.usemewithstyle.shop" }],
       "destination": "/__prerender/pt/index.html"
+    },
+    {
+      "source": "/catalogo",
+      "has": [
+        { "type": "host", "value": "pt.usemewithstyle.shop" },
+        { "type": "query", "key": "cat", "value": "(?<category>[a-z0-9]+(?:-[a-z0-9]+)*)" }
+      ],
+      "destination": "/__prerender/pt/catalogo/category/:category/index.html"
     },
     {
       "source": "/:page(catalogo|ajuda|sobre|shop-instagram|politica-privacidade|termos-condicoes|eliminacao-de-dados)",

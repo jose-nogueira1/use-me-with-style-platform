@@ -20,6 +20,11 @@ test('prerender output is isolated by market and clean route', () => {
     path.join('/tmp/dist', '__prerender', 'ao', 'produto', 'vestido-move', 'index.html'),
   );
   assert.equal(productionUrl('PT', '/catalogo/'), 'https://pt.usemewithstyle.shop/catalogo');
+  assert.equal(productionUrl('AO', '/catalogo?cat=leggings'), 'https://ao.usemewithstyle.shop/catalogo?cat=leggings');
+  assert.equal(
+    outputFileForRoute('/tmp/dist', 'pt', '/catalogo?cat=leggings'),
+    path.join('/tmp/dist', '__prerender', 'pt', 'catalogo', 'category', 'leggings', 'index.html'),
+  );
   assert.deepEqual(uniqueRoutes(['/', '/catalogo', '/catalogo/']), ['/', '/catalogo']);
 });
 
@@ -27,7 +32,8 @@ test('private and stateful routes cannot enter the prerender manifest', () => {
   for (const route of ['/admin', '/checkout', '/carrinho', '/conta', '/encomenda-confirmada/UMP-1']) {
     assert.throws(() => normalizePublicRoute(route), /cannot be prerendered/);
   }
-  assert.throws(() => normalizePublicRoute('/catalogo?cat=leggings'), /query strings/);
+  assert.equal(normalizePublicRoute('/catalogo?cat=leggings'), '/catalogo?cat=leggings');
+  assert.throws(() => normalizePublicRoute('/catalogo?cat=leggings&sort=price-asc'), /unsupported query strings/);
 });
 
 test('Vercel selects AO and PT documents by host before preserving the SPA fallback', () => {
@@ -35,7 +41,7 @@ test('Vercel selects AO and PT documents by host before preserving the SPA fallb
     rewrites: Array<{
       source: string;
       destination: string;
-      has?: Array<{ type: string; value: string }>;
+      has?: Array<{ type: string; key?: string; value: string }>;
       missing?: Array<{ type: string; value: string }>;
     }>;
   };
@@ -44,6 +50,10 @@ test('Vercel selects AO and PT documents by host before preserving the SPA fallb
   assert.match(source, /pt\.usemewithstyle\.shop/);
   assert.ok(config.rewrites.some((rule) => rule.destination === '/__prerender/ao/produto/:slug/index.html'));
   assert.ok(config.rewrites.some((rule) => rule.destination === '/__prerender/pt/produto/:slug/index.html'));
+  assert.ok(config.rewrites.some((rule) => rule.destination.endsWith('/api/robots.txt?market=AO')));
+  assert.ok(config.rewrites.some((rule) => rule.destination.endsWith('/api/sitemap.xml?market=PT')));
+  assert.ok(config.rewrites.some((rule) => rule.destination === '/__prerender/ao/catalogo/category/:category/index.html' && rule.has?.some((condition) => condition.key === 'cat')));
+  assert.ok(config.rewrites.some((rule) => rule.destination === '/__prerender/pt/catalogo/category/:category/index.html' && rule.has?.some((condition) => condition.key === 'cat')));
   assert.equal(config.rewrites.some((rule) => rule.source === '/(.*)'), false);
   assert.ok(config.rewrites.some((rule) => rule.source === '/:page(carrinho|checkout|conta)' && rule.destination === '/__spa.html'));
   const nonMarketProduct = config.rewrites.find((rule) => rule.source === '/produto/:slug' && rule.missing);

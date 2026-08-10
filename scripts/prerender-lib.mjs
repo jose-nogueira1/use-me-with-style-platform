@@ -29,6 +29,14 @@ function normalizedPathname(route) {
   return url.pathname === '/' ? '/' : url.pathname.replace(/\/+$/, '')
 }
 
+function categoryRoute(route) {
+  const url = new URL(route, 'https://usemewithstyle.shop')
+  if (normalizedPathname(route) !== '/catalogo' || url.hash) return null
+  const category = url.searchParams.get('cat')?.trim() ?? ''
+  if (![...url.searchParams.keys()].every((key) => key === 'cat')) return null
+  return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(category) ? `/catalogo?cat=${encodeURIComponent(category)}` : null
+}
+
 export function isRuntimeSpaRoute(route) {
   const pathname = normalizedPathname(route)
   return pathname === '/carrinho'
@@ -41,14 +49,16 @@ export function isRuntimeSpaRoute(route) {
 
 export function isPublicRouteShape(route) {
   const pathname = normalizedPathname(route)
-  return STATIC_PRERENDER_ROUTES.includes(pathname)
+  return Boolean(categoryRoute(route))
+    || STATIC_PRERENDER_ROUTES.includes(pathname)
     || /^\/produto\/[^/]+$/.test(pathname)
     || /^\/shop-instagram\/[^/]+$/.test(pathname)
 }
 
 export function normalizePublicRoute(route) {
   const url = new URL(route, 'https://usemewithstyle.shop')
-  if (url.search || url.hash) throw new Error(`Prerender routes cannot contain query strings or hashes: ${route}`)
+  const category = categoryRoute(route)
+  if ((url.search || url.hash) && !category) throw new Error(`Prerender routes cannot contain unsupported query strings or hashes: ${route}`)
   const pathname = normalizedPathname(route)
   if (SPA_ONLY_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) {
     throw new Error(`Private/runtime-only route cannot be prerendered: ${pathname}`)
@@ -56,11 +66,15 @@ export function normalizePublicRoute(route) {
   for (const segment of pathname.split('/')) {
     if (segment === '.' || segment === '..') throw new Error(`Unsafe prerender route: ${pathname}`)
   }
-  return pathname
+  return category || pathname
 }
 
 export function outputFileForRoute(distDir, marketCode, route) {
   const normalized = normalizePublicRoute(route)
+  if (normalized.startsWith('/catalogo?cat=')) {
+    const slug = new URL(normalized, 'https://usemewithstyle.shop').searchParams.get('cat')
+    return path.join(distDir, '__prerender', marketCode, 'catalogo', 'category', slug, 'index.html')
+  }
   const segments = normalized === '/' ? [] : normalized.slice(1).split('/')
   return path.join(distDir, '__prerender', marketCode, ...segments, 'index.html')
 }

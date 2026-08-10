@@ -69,7 +69,12 @@ export function marketAlternateUrls(location: LocationLike): MarketAlternateUrls
   if (!marketFromHostname(location.hostname)) return null;
 
   const cleanPathname = location.pathname === '/' ? '/' : `/${location.pathname.replace(/^\/+|\/+$/g, '')}`;
-  const cleanLocation = { ...location, pathname: cleanPathname, search: '', hash: '' };
+  const params = new URLSearchParams(location.search);
+  const category = params.get('cat')?.trim() ?? '';
+  const cleanSearch = cleanPathname === '/catalogo' && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(category)
+    ? `?cat=${encodeURIComponent(category)}`
+    : '';
+  const cleanLocation = { ...location, pathname: cleanPathname, search: cleanSearch, hash: '' };
   const ao = siblingMarketUrl('AO', cleanLocation);
   const pt = siblingMarketUrl('PT', cleanLocation);
   if (!ao || !pt) return null;
@@ -79,7 +84,7 @@ export function marketAlternateUrls(location: LocationLike): MarketAlternateUrls
   return {
     'pt-AO': ao,
     'pt-PT': pt,
-    'x-default': `${location.protocol}//${apexHost}${port}${cleanPathname}`,
+    'x-default': `${location.protocol}//${apexHost}${port}${cleanPathname}${cleanSearch}`,
   };
 }
 

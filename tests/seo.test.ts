@@ -55,8 +55,10 @@ test('canonical URLs use the active market origin and a clean route path', () =>
   assert.equal(canonicalUrl('https://pt.usemewithstyle.shop/', '/catalogo/'), 'https://pt.usemewithstyle.shop/catalogo');
   assert.equal(
     canonicalUrl('https://ao.usemewithstyle.shop', '/catalogo?cat=leggings&sort=price-asc'),
-    'https://ao.usemewithstyle.shop/catalogo',
+    'https://ao.usemewithstyle.shop/catalogo?cat=leggings',
   );
+  assert.equal(canonicalUrl('https://ao.usemewithstyle.shop', '/catalogo', '?cat=tops&q=verde'), 'https://ao.usemewithstyle.shop/catalogo?cat=tops');
+  assert.equal(canonicalUrl('https://ao.usemewithstyle.shop', '/catalogo', '?cat=tops,leggings'), 'https://ao.usemewithstyle.shop/catalogo');
   assert.equal(
     canonicalUrl('https://ao.usemewithstyle.shop', '/produto/vestido-move/'),
     'https://ao.usemewithstyle.shop/produto/vestido-move',
@@ -66,7 +68,7 @@ test('canonical URLs use the active market origin and a clean route path', () =>
 test('the canonical implementation excludes query filters and keeps og:url aligned', () => {
   const source = projectFile('src/lib/seo.ts');
   const layout = projectFile('src/storefront/StorefrontLayout.tsx');
-  assert.match(source, /canonicalUrl\(origin, pathname\)/);
+  assert.match(source, /canonicalUrl\(origin, pathname, search\)/);
   assert.match(source, /ensureCanonical\(canonical\)/);
   assert.match(source, /ensureMeta\('property', 'og:url', canonical\)/);
   assert.match(layout, /useSeoDefaults\(lang, location\.pathname, location\.search\)/);

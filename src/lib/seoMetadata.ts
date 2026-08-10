@@ -88,9 +88,18 @@ function normalizePathname(pathname: string): string {
   return `/${pathOnly.replace(/^\/+|\/+$/g, '')}`;
 }
 
-export function canonicalUrl(origin: string, pathname: string): string {
+function canonicalCategorySearch(pathname: string, search: string): string {
+  if (normalizePathname(pathname) !== '/catalogo') return '';
+  const params = new URLSearchParams(search);
+  const category = params.get('cat')?.trim() ?? '';
+  return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(category) ? `?cat=${encodeURIComponent(category)}` : '';
+}
+
+export function canonicalUrl(origin: string, pathname: string, search = ''): string {
   const normalizedOrigin = origin.replace(/\/+$/, '');
-  return `${normalizedOrigin}${normalizePathname(pathname)}`;
+  const parsed = new URL(pathname, 'https://usemewithstyle.shop');
+  const effectiveSearch = search || parsed.search;
+  return `${normalizedOrigin}${normalizePathname(parsed.pathname)}${canonicalCategorySearch(parsed.pathname, effectiveSearch)}`;
 }
 
 export function routeSeoMetadata(pathname: string, lang: Lang): SeoMetadata {

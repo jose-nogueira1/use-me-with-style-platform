@@ -48,7 +48,7 @@ for (const [market, config] of Object.entries(MARKETS)) {
     let html = ''
     try { html = await readFile(path.join(distDir, entry.file), 'utf8') } catch { failures.push(`${label} output file is missing`); continue }
     const blocks = jsonLdBlocks(html)
-    const canonical = entry.route === '/' ? `https://${config.host}/` : `https://${config.host}${entry.route}`
+    const canonical = entry.url
     expect(html.includes('data-prerendered="true"'), `${label} lacks the prerender marker`)
     expect(html.includes(`name="ump-prerender" content="market=${market};`), `${label} has the wrong market marker`)
     expect(!html.includes('.localhost:'), `${label} leaks a local origin`)

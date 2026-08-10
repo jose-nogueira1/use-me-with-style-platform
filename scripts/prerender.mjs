@@ -58,9 +58,10 @@ async function fetchJson(url) {
   return response.json()
 }
 
-async function discoverProductRoutes(market) {
+async function discoverCatalogueRoutes(market) {
   const availability = market === 'AO' ? 'availableAO' : 'availablePT'
   const routes = []
+  const categoryIds = new Set()
   let page = 1
   let totalPages = 1
   do {
@@ -75,13 +76,33 @@ async function discoverProductRoutes(market) {
       if (typeof product.slug === 'string' && product.slug.trim()) {
         routes.push(`/produto/${encodeURIComponent(product.slug.trim())}`)
       }
+      const categoryId = typeof product.category === 'object' ? product.category?.id : product.category
+      if (categoryId !== undefined && categoryId !== null) categoryIds.add(String(categoryId))
     }
     totalPages = Number(data.totalPages) || 1
     page += 1
   } while (page <= totalPages)
 
   if (routes.length === 0) throw new Error(`CMS returned no active ${market} product routes; refusing to publish an empty prerender.`)
-  return routes
+  const categories = []
+  page = 1
+  totalPages = 1
+  do {
+    const url = new URL(`${cmsOrigin}/api/categories`)
+    url.searchParams.set('limit', '100')
+    url.searchParams.set('page', String(page))
+    url.searchParams.set('depth', '0')
+    const data = await fetchJson(url)
+    for (const category of data.docs ?? []) {
+      if (categoryIds.has(String(category.id)) && typeof category.slug === 'string' && category.slug.trim()) {
+        categories.push(`/catalogo?cat=${encodeURIComponent(category.slug.trim())}`)
+      }
+    }
+    totalPages = Number(data.totalPages) || 1
+    page += 1
+  } while (page <= totalPages)
+
+  return { products: routes, categories }
 }
 
 async function discoverInstagramRoutes(market) {
@@ -209,7 +230,7 @@ async function captureRoute(context, port, market, route) {
         return scripts.some((script) => script.textContent?.includes('"@type":"Product"'))
       }, undefined, { timeout: 30_000 })
     }
-    if (route === '/catalogo') {
+    if (route.startsWith('/catalogo')) {
       await page.waitForFunction(() => document.querySelectorAll('a[href^="/produto/"]').length > 0, undefined, { timeout: 30_000 })
     }
 
@@ -236,8 +257,8 @@ if (!useServerlessChromium) await ensureBrowser()
 
 const discovered = {}
 for (const market of Object.keys(MARKETS)) {
-  const [products, looks] = await Promise.all([discoverProductRoutes(market), discoverInstagramRoutes(market)])
-  discovered[market] = uniqueRoutes([...STATIC_PRERENDER_ROUTES, ...products, ...looks])
+  const [catalogue, looks] = await Promise.all([discoverCatalogueRoutes(market), discoverInstagramRoutes(market)])
+  discovered[market] = uniqueRoutes([...STATIC_PRERENDER_ROUTES, '/catalogo?cat=new', ...catalogue.categories, ...catalogue.products, ...looks])
 }
 
 const server = createServer((request, response) => {

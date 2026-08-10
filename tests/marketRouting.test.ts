@@ -50,4 +50,14 @@ test('hreflang alternates link clean AO/PT equivalents plus the geo-routing apex
     'x-default': 'https://usemewithstyle.shop/catalogo/vestido',
   });
   assert.equal(marketAlternateUrls({ hostname: 'usemewithstyle.shop', ...page }), null);
+  assert.deepEqual(marketAlternateUrls({
+    hostname: 'ao.usemewithstyle.shop',
+    ...page,
+    pathname: '/catalogo',
+    search: '?cat=leggings&sort=price-asc',
+  }), {
+    'pt-AO': 'https://ao.usemewithstyle.shop/catalogo?cat=leggings',
+    'pt-PT': 'https://pt.usemewithstyle.shop/catalogo?cat=leggings',
+    'x-default': 'https://usemewithstyle.shop/catalogo?cat=leggings',
+  });
 });
