@@ -506,6 +506,61 @@ export type LegalContent = {
   dataDeletionTextEN?: string;
 };
 
+export type StorefrontFaqEntry = {
+  id?: string | null;
+  enabled?: boolean | null;
+  questionPT: string;
+  questionEN: string;
+  answerPT: string;
+  answerEN: string;
+  answerPTPT?: string | null;
+  answerENPT?: string | null;
+  linkPath?: string | null;
+  linkLabelPT?: string | null;
+  linkLabelEN?: string | null;
+};
+
+/** FAQ and standalone size-guide copy managed from the custom admin. */
+export type StorefrontContent = {
+  faqTitlePT?: string | null;
+  faqTitleEN?: string | null;
+  faqIntroPT?: string | null;
+  faqIntroEN?: string | null;
+  faqSupportPromptPT?: string | null;
+  faqSupportPromptEN?: string | null;
+  faqSupportLabelPT?: string | null;
+  faqSupportLabelEN?: string | null;
+  faqSeoTitlePT?: string | null;
+  faqSeoTitleEN?: string | null;
+  faqSeoDescriptionPT?: string | null;
+  faqSeoDescriptionEN?: string | null;
+  faqEntries?: StorefrontFaqEntry[] | null;
+  sizeGuideTitlePT?: string | null;
+  sizeGuideTitleEN?: string | null;
+  sizeGuideIntroPT?: string | null;
+  sizeGuideIntroEN?: string | null;
+  sizeGuideHowToTitlePT?: string | null;
+  sizeGuideHowToTitleEN?: string | null;
+  sizeGuideBustPT?: string | null;
+  sizeGuideBustEN?: string | null;
+  sizeGuideWaistPT?: string | null;
+  sizeGuideWaistEN?: string | null;
+  sizeGuideHipPT?: string | null;
+  sizeGuideHipEN?: string | null;
+  sizeGuideLengthPT?: string | null;
+  sizeGuideLengthEN?: string | null;
+  sizeGuideClosingPT?: string | null;
+  sizeGuideClosingEN?: string | null;
+  sizeGuideSupportLabelPT?: string | null;
+  sizeGuideSupportLabelEN?: string | null;
+  sizeGuideCatalogLabelPT?: string | null;
+  sizeGuideCatalogLabelEN?: string | null;
+  sizeGuideSeoTitlePT?: string | null;
+  sizeGuideSeoTitleEN?: string | null;
+  sizeGuideSeoDescriptionPT?: string | null;
+  sizeGuideSeoDescriptionEN?: string | null;
+};
+
 /** Storefront home hero content (2026-07-25 admin request) -- was hardcoded
  * via i18n.ts translation keys with no admin-editable source. Same
  * bilingual PT/EN pattern as LegalContent above. `heroImage`, when set,
@@ -785,6 +840,10 @@ export async function fetchTaxRates(): Promise<TaxRates> {
 
 export async function fetchLegalContent(): Promise<LegalContent> {
   return request<LegalContent>('/globals/legal-content');
+}
+
+export async function fetchStorefrontContent(): Promise<StorefrontContent> {
+  return request<StorefrontContent>('/globals/storefront-content');
 }
 
 // depth=1 so heroImage resolves to a populated media doc (url/sizes)
@@ -1411,6 +1470,14 @@ export async function adminUpdateInvoiceSettings(input: Partial<InvoiceSettings>
 export async function adminUpdateLegalContent(input: Partial<LegalContent>): Promise<LegalContent> {
   return request<LegalContent>(
     '/globals/legal-content',
+    { method: 'POST', body: JSON.stringify(input) },
+    { auth: true },
+  );
+}
+
+export async function adminUpdateStorefrontContent(input: StorefrontContent): Promise<StorefrontContent> {
+  return request<StorefrontContent>(
+    '/globals/storefront-content',
     { method: 'POST', body: JSON.stringify(input) },
     { auth: true },
   );

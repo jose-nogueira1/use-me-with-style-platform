@@ -15,6 +15,7 @@ import { Invoices } from './pages/Invoices';
 import { Media } from './pages/Media';
 import { Coupons } from './pages/Coupons';
 import { Roadmap } from './pages/Roadmap';
+import { Content } from './pages/Content';
 
 export function AdminRoutes() {
   return (
@@ -27,6 +28,7 @@ export function AdminRoutes() {
           <Route path="encomendas/:id" element={<OrderDetail />} />
           <Route path="produtos" element={<Products />} />
           <Route path="produtos/:id" element={<ProductEditor />} />
+          <Route path="conteudo" element={<Content />} />
           <Route path="clientes" element={<Customers />} />
           <Route path="clientes/:id" element={<CustomerDetail />} />
           <Route path="mensagens" element={<Mensagens />} />

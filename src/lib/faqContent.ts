@@ -1,4 +1,4 @@
-import type { MarketSettings } from './api';
+import type { MarketSettings, StorefrontContent } from './api';
 import type { Market } from '../state/AppContext';
 import type { Lang } from '../theme';
 
@@ -39,7 +39,26 @@ function paymentAnswer(market: Market, lang: Lang, settings: MarketSettings | nu
     : `In the Portugal store you can pay with ${available}. Your order is confirmed only after the payment is verified.`;
 }
 
-export function buildFaqEntries(market: Market, lang: Lang, settings: MarketSettings | null): FaqEntry[] {
+export function buildFaqEntries(market: Market, lang: Lang, settings: MarketSettings | null, content?: StorefrontContent | null): FaqEntry[] {
+  if (content?.faqEntries?.length) {
+    return content.faqEntries
+      .filter((entry) => entry.enabled !== false)
+      .map((entry) => {
+        const question = (lang === 'en' ? entry.questionEN : entry.questionPT).trim();
+        const baseAnswer = lang === 'en' ? entry.answerEN : entry.answerPT;
+        const portugalAnswer = lang === 'en' ? entry.answerENPT : entry.answerPTPT;
+        const answer = (market === 'PT' && portugalAnswer?.trim() ? portugalAnswer : baseAnswer).trim();
+        const linkLabel = (lang === 'en' ? entry.linkLabelEN : entry.linkLabelPT)?.trim();
+        const linkPath = entry.linkPath?.trim();
+        return {
+          question,
+          answer,
+          ...(linkPath?.startsWith('/') && linkLabel ? { link: { to: linkPath, label: linkLabel } } : {}),
+        };
+      })
+      .filter((entry) => entry.question && entry.answer);
+  }
+
   const freeThreshold = market === 'AO'
     ? settings?.angolaFreeShippingThreshold ?? 80_000
     : settings?.portugalFreeShippingThreshold ?? 75;
