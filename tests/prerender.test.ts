@@ -102,4 +102,6 @@ test('production builds force the same-origin API and use a Vercel-compatible br
   const verifier = projectFile('scripts/verify-prerender.mjs');
   assert.match(verifier, /contains a product image with empty alt text/);
   assert.match(verifier, /omits its crawlable product image or alt text/);
+  assert.match(verifier, /lacks an absolute market OG image/);
+  assert.match(verifier, /lacks an absolute market Twitter image/);
 });

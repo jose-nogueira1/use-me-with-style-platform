@@ -201,6 +201,14 @@ function replaceLocalOrigins(html, port) {
     .replaceAll(`http://localhost:${port}`, 'https://usemewithstyle.shop')
 }
 
+function absolutizeSocialImages(html, market) {
+  const origin = `https://${MARKETS[market].host}`
+  return html.replace(
+    /(<meta\s+(?:property="og:image"|name="twitter:image")\s+content=")\/(?!\/)([^"]+")/g,
+    `$1${origin}/$2`,
+  )
+}
+
 async function createCaptureContext(browser) {
   const context = await browser.newContext({ colorScheme: 'light', locale: 'pt-PT' })
   await context.addInitScript(() => {
@@ -268,7 +276,7 @@ async function captureRoute(context, port, market, route) {
     }, { marketName: market, stamp: generatedAt })
 
     const title = await page.title()
-    const html = replaceLocalOrigins(await page.content(), port)
+    const html = absolutizeSocialImages(replaceLocalOrigins(await page.content(), port), market)
     return { html, title, url: productionUrl(market, route) }
   } finally {
     await page.close()
