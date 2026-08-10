@@ -158,8 +158,7 @@ function replaceLocalOrigins(html, port) {
     .replaceAll(`http://localhost:${port}`, 'https://usemewithstyle.shop')
 }
 
-async function captureRoute(browser, port, market, route) {
-  const config = MARKETS[market]
+async function createCaptureContext(browser) {
   const context = await browser.newContext({ colorScheme: 'light', locale: 'pt-PT' })
   await context.addInitScript(() => {
     localStorage.setItem('ump-lang-pref', 'pt')
@@ -167,6 +166,11 @@ async function captureRoute(browser, port, market, route) {
     localStorage.setItem('use-me-analytics-consent-v1', 'rejected')
   })
   await context.route(/\.(?:avif|gif|jpe?g|png|svg|webp)(?:\?.*)?$/i, (request) => request.abort())
+  return context
+}
+
+async function captureRoute(context, port, market, route) {
+  const config = MARKETS[market]
   const page = await context.newPage()
   const pageErrors = []
   page.on('pageerror', (error) => pageErrors.push(error.message))
@@ -180,36 +184,39 @@ async function captureRoute(browser, port, market, route) {
     }
   })
 
-  const localUrl = `http://${config.code}.localhost:${port}${route}`
-  const response = await page.goto(localUrl, { waitUntil: 'networkidle', timeout: 60_000 })
-  if (!response?.ok()) throw new Error(`${market} ${route} returned ${response?.status() ?? 'no response'} during prerender.`)
-  await page.waitForFunction(() => document.querySelector('#root')?.children.length, undefined, { timeout: 15_000 })
+  try {
+    const localUrl = `http://${config.code}.localhost:${port}${route}`
+    const response = await page.goto(localUrl, { waitUntil: 'networkidle', timeout: 60_000 })
+    if (!response?.ok()) throw new Error(`${market} ${route} returned ${response?.status() ?? 'no response'} during prerender.`)
+    await page.waitForFunction(() => document.querySelector('#root')?.children.length, undefined, { timeout: 15_000 })
 
-  if (route.startsWith('/produto/')) {
-    await page.waitForFunction(() => {
-      const scripts = [...document.querySelectorAll('script[type="application/ld+json"]')]
-      return scripts.some((script) => script.textContent?.includes('"@type":"Product"'))
-    }, undefined, { timeout: 30_000 })
+    if (route.startsWith('/produto/')) {
+      await page.waitForFunction(() => {
+        const scripts = [...document.querySelectorAll('script[type="application/ld+json"]')]
+        return scripts.some((script) => script.textContent?.includes('"@type":"Product"'))
+      }, undefined, { timeout: 30_000 })
+    }
+    if (route === '/catalogo') {
+      await page.waitForFunction(() => document.querySelectorAll('a[href^="/produto/"]').length > 0, undefined, { timeout: 30_000 })
+    }
+
+    if (pageErrors.length > 0) throw new Error(`${market} ${route} browser errors:\n${pageErrors.join('\n')}`)
+    await page.evaluate(({ marketName, stamp }) => {
+      const root = document.getElementById('root')
+      if (!root) throw new Error('Missing #root')
+      root.dataset.prerendered = 'true'
+      const marker = document.createElement('meta')
+      marker.name = 'ump-prerender'
+      marker.content = `market=${marketName}; generated=${stamp}`
+      document.head.appendChild(marker)
+    }, { marketName: market, stamp: generatedAt })
+
+    const title = await page.title()
+    const html = replaceLocalOrigins(await page.content(), port)
+    return { html, title, url: productionUrl(market, route) }
+  } finally {
+    await page.close()
   }
-  if (route === '/catalogo') {
-    await page.waitForFunction(() => document.querySelectorAll('a[href^="/produto/"]').length > 0, undefined, { timeout: 30_000 })
-  }
-
-  if (pageErrors.length > 0) throw new Error(`${market} ${route} browser errors:\n${pageErrors.join('\n')}`)
-  await page.evaluate(({ marketName, stamp }) => {
-    const root = document.getElementById('root')
-    if (!root) throw new Error('Missing #root')
-    root.dataset.prerendered = 'true'
-    const marker = document.createElement('meta')
-    marker.name = 'ump-prerender'
-    marker.content = `market=${marketName}; generated=${stamp}`
-    document.head.appendChild(marker)
-  }, { marketName: market, stamp: generatedAt })
-
-  const title = await page.title()
-  const html = replaceLocalOrigins(await page.content(), port)
-  await context.close()
-  return { html, title, url: productionUrl(market, route) }
 }
 
 if (!useServerlessChromium) await ensureBrowser()
@@ -247,18 +254,26 @@ const manifest = { generatedAt, cmsOrigin, markets: {} }
 try {
   for (const market of Object.keys(MARKETS)) {
     manifest.markets[market] = []
-    for (const route of discovered[market]) {
-      const captured = await captureRoute(browser, address.port, market, route)
-      const outputFile = outputFileForRoute(distDir, MARKETS[market].code, route)
-      await mkdir(path.dirname(outputFile), { recursive: true })
-      await writeFile(outputFile, captured.html)
-      manifest.markets[market].push({
-        route,
-        title: captured.title,
-        url: captured.url,
-        file: path.relative(distDir, outputFile),
-      })
-      console.log(`Prerendered ${market} ${route}`)
+    // Sparticuz uses Chromium's single-process mode on Vercel. Reusing one
+    // browser context per market avoids repeatedly creating and tearing down
+    // incognito processes, while a fresh page still isolates every route.
+    const context = await createCaptureContext(browser)
+    try {
+      for (const route of discovered[market]) {
+        const captured = await captureRoute(context, address.port, market, route)
+        const outputFile = outputFileForRoute(distDir, MARKETS[market].code, route)
+        await mkdir(path.dirname(outputFile), { recursive: true })
+        await writeFile(outputFile, captured.html)
+        manifest.markets[market].push({
+          route,
+          title: captured.title,
+          url: captured.url,
+          file: path.relative(distDir, outputFile),
+        })
+        console.log(`Prerendered ${market} ${route}`)
+      }
+    } finally {
+      await context.close()
     }
   }
 } finally {
