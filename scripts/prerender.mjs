@@ -19,6 +19,7 @@ const cmsOrigin = (process.env.PRERENDER_CMS_ORIGIN || 'https://use-me-with-styl
 const generatedAt = new Date().toISOString()
 const responseCache = new Map()
 const useServerlessChromium = process.env.VERCEL === '1' && process.platform === 'linux'
+const retryableCmsStatuses = new Set([404, 408, 425, 429, 500, 502, 503, 504])
 
 const contentTypes = {
   '.css': 'text/css; charset=utf-8',
@@ -52,8 +53,19 @@ async function ensureBrowser() {
   await access(playwrightChromium.executablePath())
 }
 
+async function fetchCms(url, init) {
+  let response
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    response = await fetch(url, init)
+    if (!retryableCmsStatuses.has(response.status) || attempt === 2) return response
+    await response.body?.cancel().catch(() => {})
+    await new Promise((resolve) => setTimeout(resolve, attempt === 0 ? 250 : 750))
+  }
+  throw new Error(`CMS request exhausted without a response: ${url}`)
+}
+
 async function fetchJson(url) {
-  const response = await fetch(url, { headers: { accept: 'application/json' } })
+  const response = await fetchCms(url, { headers: { accept: 'application/json' } })
   if (!response.ok) throw new Error(`CMS discovery failed: ${response.status} ${url}`)
   return response.json()
 }
@@ -145,7 +157,7 @@ async function proxyApi(request, response) {
   const target = `${cmsOrigin}${request.url}`
   let cached = responseCache.get(target)
   if (!cached) {
-    const upstream = await fetch(target, { headers: { accept: request.headers.accept || '*/*' } })
+    const upstream = await fetchCms(target, { headers: { accept: request.headers.accept || '*/*' } })
     cached = {
       body: Buffer.from(await upstream.arrayBuffer()),
       contentType: upstream.headers.get('content-type') || 'application/octet-stream',
@@ -239,11 +251,16 @@ async function captureRoute(context, port, market, route) {
   const page = await context.newPage()
   const pageErrors = []
   page.on('pageerror', (error) => pageErrors.push(error.message))
+  page.on('response', (response) => {
+    if (response.status() >= 400) pageErrors.push(`response: ${response.status()} ${response.url()}`)
+  })
   page.on('console', (message) => {
     // Non-product image requests are intentionally aborted above. Chromium
     // logs those aborts as ERR_FAILED; every other console error remains
     // build-fatal.
-    if (message.type() === 'error' && message.text() !== 'Failed to load resource: net::ERR_FAILED') {
+    if (message.type() === 'error'
+      && message.text() !== 'Failed to load resource: net::ERR_FAILED'
+      && !message.text().startsWith('Failed to load resource: the server responded with a status of')) {
       pageErrors.push(`console: ${message.text()}`)
     }
   })

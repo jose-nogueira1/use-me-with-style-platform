@@ -98,6 +98,9 @@ test('production builds force the same-origin API and use a Vercel-compatible br
   assert.match(prerender, /serverlessChromium\.executablePath\(\)/);
   assert.match(prerender, /404\.html/);
   assert.match(prerender, /pathname\.startsWith\('\/api\/media\/file\/'\) \? route\.continue\(\) : route\.abort\(\)/);
+  assert.match(prerender, /retryableCmsStatuses/);
+  assert.match(prerender, /response\.status\(\) >= 400/);
+  assert.match(prerender, /response: \$\{response\.status\(\)\} \$\{response\.url\(\)\}/);
 
   const verifier = projectFile('scripts/verify-prerender.mjs');
   assert.match(verifier, /contains a product image with empty alt text/);
