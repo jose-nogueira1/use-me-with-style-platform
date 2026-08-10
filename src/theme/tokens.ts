@@ -132,11 +132,11 @@ export const C = {
 export const F = {
   // The design uses Inter exclusively (Regular/Medium/Bold/Extra Bold) --
   // no serif anywhere, including the "Use Me" wordmark.
-  sans: '"Inter", -apple-system, BlinkMacSystemFont, sans-serif',
+  sans: '"Inter Variable", "Inter", -apple-system, BlinkMacSystemFont, sans-serif',
   // Aliases kept so existing call sites (F.display / F.body) don't all need
   // renaming at once -- both point at the same real typeface now.
-  display: '"Inter", -apple-system, BlinkMacSystemFont, sans-serif',
-  body: '"Inter", -apple-system, BlinkMacSystemFont, sans-serif',
+  display: '"Inter Variable", "Inter", -apple-system, BlinkMacSystemFont, sans-serif',
+  body: '"Inter Variable", "Inter", -apple-system, BlinkMacSystemFont, sans-serif',
 } as const;
 
 // Injected as :root (light, default) and [data-theme='dark'] (override) in

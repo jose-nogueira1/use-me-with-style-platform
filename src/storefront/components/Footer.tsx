@@ -67,19 +67,19 @@ export function Footer() {
         <div className="ump-footer-col">
           <FooterHeading>{t('footerInfoHeading', lang)}</FooterHeading>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
-            <Link to="/sobre" style={{ display: 'block', color: C.ink, fontSize: 11, fontWeight: 800, textDecoration: 'none' }}>
+            <Link to="/sobre" style={{ display: 'flex', alignItems: 'center', minHeight: 24, color: C.ink, fontSize: 11, fontWeight: 800, textDecoration: 'none' }}>
               {t('aboutNav', lang)}
             </Link>
-            <Link to="/estilo" style={{ display: 'block', color: C.ink, fontSize: 11, fontWeight: 800, textDecoration: 'none' }}>
+            <Link to="/estilo" style={{ display: 'flex', alignItems: 'center', minHeight: 24, color: C.ink, fontSize: 11, fontWeight: 800, textDecoration: 'none' }}>
               {t('styleGuideNav', lang)}
             </Link>
-            <Link to="/politica-privacidade" style={{ display: 'block', color: C.ink, fontSize: 11, fontWeight: 800, textDecoration: 'none' }}>
+            <Link to="/politica-privacidade" style={{ display: 'flex', alignItems: 'center', minHeight: 24, color: C.ink, fontSize: 11, fontWeight: 800, textDecoration: 'none' }}>
               {t('privacyPolicyNav', lang)}
             </Link>
-            <Link to="/termos-condicoes" style={{ display: 'block', color: C.ink, fontSize: 11, fontWeight: 800, textDecoration: 'none' }}>
+            <Link to="/termos-condicoes" style={{ display: 'flex', alignItems: 'center', minHeight: 24, color: C.ink, fontSize: 11, fontWeight: 800, textDecoration: 'none' }}>
               {t('termsNav', lang)}
             </Link>
-            <Link to="/eliminacao-de-dados" style={{ display: 'block', color: C.ink, fontSize: 11, fontWeight: 800, textDecoration: 'none' }}>
+            <Link to="/eliminacao-de-dados" style={{ display: 'flex', alignItems: 'center', minHeight: 24, color: C.ink, fontSize: 11, fontWeight: 800, textDecoration: 'none' }}>
               {t('dataDeletionNav', lang)}
             </Link>
           </div>

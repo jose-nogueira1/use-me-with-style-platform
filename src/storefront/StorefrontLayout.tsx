@@ -317,7 +317,7 @@ function LanguageSwitch({
     <div ref={ref} style={{ position: 'relative', flexShrink: 0 }}>
       <button
         onClick={() => setOpen((o) => !o)}
-        aria-label={t('language', lang)}
+        aria-label={`${t('language', lang)}: ${lang.toUpperCase()}`}
         aria-expanded={open}
         style={{
           display: 'flex',

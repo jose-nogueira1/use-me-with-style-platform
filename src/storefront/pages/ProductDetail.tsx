@@ -54,7 +54,11 @@ export function ProductDetail() {
   const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
 
   if (loading) {
-    return <div style={{ padding: 60, textAlign: 'center', color: C.inkSoft }}>…</div>;
+    // Keep the footer below the viewport while the client reloads CMS data
+    // over prerendered HTML. A short 140px placeholder pulled the 1,100px
+    // mobile footer into view before the product returned, then pushed it
+    // down again, producing a severe layout shift (Lighthouse CLS ~0.79).
+    return <div role="status" style={{ minHeight: '100vh', padding: 60, textAlign: 'center', color: C.inkSoft }}>…</div>;
   }
 
   if (!product) {

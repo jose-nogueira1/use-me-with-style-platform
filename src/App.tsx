@@ -29,8 +29,6 @@ export default function App() {
   return (
     <div style={{ minHeight: '100vh', background: C.subtleBg, fontFamily: F.body }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
         /* Theme (dark/light mode) -- storefront only, per product decision;
            the admin panel's dark sidebar + light content is a fixed part of
            the Figma design, not a toggle. :root carries the light values

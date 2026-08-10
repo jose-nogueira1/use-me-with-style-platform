@@ -68,8 +68,10 @@ export function BrandLogo({
     <img
       src={tone === 'white' ? wordmarkWhite : wordmarkBlack}
       alt="Use Me With Style"
+      height={height}
+      width={Math.round(height * WORDMARK_ASPECT)}
       className={className}
-      style={{ height, width: 'auto', display: 'block' }}
+      style={{ height, width: height * WORDMARK_ASPECT, display: 'block' }}
     />
   );
 }
