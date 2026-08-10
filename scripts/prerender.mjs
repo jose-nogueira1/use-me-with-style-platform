@@ -235,6 +235,10 @@ async function createCaptureContext(browser) {
       // No-op for originless documents.
     }
   })
+  // Fonts do not change the crawler-visible DOM, and remote Google Fonts
+  // occasionally return transient 404s from Vercel build regions. Avoid
+  // making a production release depend on that unrelated third party.
+  await context.route(/\.(?:otf|ttf|woff2?)(?:\?.*)?$/i, (route) => route.abort())
   await context.route(/\.(?:avif|gif|jpe?g|png|svg|webp)(?:\?.*)?$/i, (route) => {
     const pathname = new URL(route.request().url()).pathname
     // Product media must finish loading so ProductPhoto keeps the real <img>

@@ -98,6 +98,7 @@ test('production builds force the same-origin API and use a Vercel-compatible br
   assert.match(prerender, /serverlessChromium\.executablePath\(\)/);
   assert.match(prerender, /404\.html/);
   assert.match(prerender, /pathname\.startsWith\('\/api\/media\/file\/'\) \? route\.continue\(\) : route\.abort\(\)/);
+  assert.match(prerender, /\(\?:otf\|ttf\|woff2\?\)/);
   assert.match(prerender, /retryableCmsStatuses/);
   assert.match(prerender, /response\.status\(\) >= 400/);
   assert.match(prerender, /response: \$\{response\.status\(\)\} \$\{response\.url\(\)\}/);
