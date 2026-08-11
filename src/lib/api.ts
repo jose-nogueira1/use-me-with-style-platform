@@ -1748,13 +1748,31 @@ export async function adminListMedia(): Promise<ApiMedia[]> {
 }
 
 export async function adminUploadMedia(file: File, alt: string, uploadPurpose: 'hero' | 'catalogue' | 'brand' = 'catalogue'): Promise<ApiMedia> {
-  const body = new FormData();
-  body.append('file', file);
-  body.append('_payload', JSON.stringify({ alt, uploadPurpose }));
-  const res = await fetch(`${API_BASE}/media`, { method: 'POST', body, credentials: 'include' });
-  if (!res.ok) throw new ApiError(`Upload failed (${res.status}): ${await res.text().catch(() => '')}`, res.status);
-  const data = (await res.json()) as { doc: ApiMedia };
-  return data.doc;
+  const transientStatuses = new Set([500, 502, 503, 504]);
+  const maxAttempts = 3;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const body = new FormData();
+    body.append('file', file);
+    body.append('_payload', JSON.stringify({ alt, uploadPurpose }));
+    let res: Response;
+    try {
+      res = await fetch(`${API_BASE}/media`, { method: 'POST', body, credentials: 'include' });
+    } catch (error) {
+      if (attempt === maxAttempts) throw error;
+      await new Promise((resolve) => window.setTimeout(resolve, 400 * 2 ** (attempt - 1)));
+      continue;
+    }
+    if (res.ok) {
+      const data = (await res.json()) as { doc: ApiMedia };
+      return data.doc;
+    }
+    const responseText = await res.text().catch(() => '');
+    if (!transientStatuses.has(res.status) || attempt === maxAttempts) {
+      throw new ApiError(`Upload failed (${res.status}): ${responseText}`, res.status);
+    }
+    await new Promise((resolve) => window.setTimeout(resolve, 400 * 2 ** (attempt - 1)));
+  }
+  throw new ApiError('Upload failed after retrying.', 500);
 }
 
 export async function adminDeleteMedia(id: string | number): Promise<void> {
