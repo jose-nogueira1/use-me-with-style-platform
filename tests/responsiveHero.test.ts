@@ -19,6 +19,10 @@ test('storefront uses mobile art direction and retains the desktop composition',
   const app = read('../src/App.tsx');
   assert.match(home, /heroImageMobile/);
   assert.match(home, /source media="\(max-width: 859px\)"/);
+  assert.match(home, /loading="eager"/);
+  assert.match(home, /fetchPriority="high"/);
+  assert.match(home, /width=\{1600\}/);
+  assert.match(home, /height=\{1067\}/);
   assert.match(home, /ump-hero-shade/);
   assert.match(app, /grid-template-columns: \.9fr 1\.15fr/);
   assert.match(app, /aspect-ratio: 3 \/ 2/);

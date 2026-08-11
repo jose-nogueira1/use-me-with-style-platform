@@ -499,8 +499,8 @@ export function Browse() {
               )}
             </div>
           )}
-          {filtered.map((p) => (
-            <ProductCard key={p.id} product={p} />
+          {filtered.map((p, index) => (
+            <ProductCard key={p.id} product={p} priority={index === 0} />
           ))}
         </div>
       </div>

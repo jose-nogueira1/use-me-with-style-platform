@@ -70,6 +70,7 @@ export function BrandLogo({
       alt="Use Me With Style"
       height={height}
       width={Math.round(height * WORDMARK_ASPECT)}
+      decoding="async"
       className={className}
       style={{ height, width: height * WORDMARK_ASPECT, display: 'block' }}
     />

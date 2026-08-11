@@ -66,6 +66,15 @@ export function ProductPhoto({
     : variant === 'card'
       ? '(max-width: 640px) 50vw, 320px'
       : '(max-width: 859px) 100vw, 50vw';
+  // Product uploads are normalized to the catalogue's 3:4 composition.
+  // Explicit dimensions give the browser an intrinsic ratio before CSS and
+  // the image bytes arrive; callers still control the final crop through
+  // their already-reserved container and object-fit: cover.
+  const intrinsicDimensions = variant === 'thumbnail'
+    ? { width: 300, height: 400 }
+    : variant === 'card'
+      ? { width: 600, height: 800 }
+      : { width: 1600, height: 2133 };
   // Last-resort accessibility/SEO guard. Product data normally arrives via
   // adaptApiProduct(), which builds a product/colour/category-specific alt;
   // this keeps direct callers and stale persisted data from ever rendering
@@ -80,6 +89,8 @@ export function ProductPhoto({
         srcSet={srcSet || undefined}
         sizes={srcSet ? responsiveSizes : undefined}
         alt={imageAlt}
+        width={intrinsicDimensions.width}
+        height={intrinsicDimensions.height}
         loading={priority ? 'eager' : 'lazy'}
         fetchPriority={priority ? 'high' : undefined}
         decoding="async"

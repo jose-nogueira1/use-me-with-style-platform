@@ -18,7 +18,7 @@ const TAG_STYLE: Record<string, { bg: string; text: string }> = {
 const DEFAULT_TAG_STYLE = { bg: C.tagBg, text: C.goldDeep };
 const TAG_KEY: Record<string, string> = { New: 'tagNew', 'Few left': 'tagFewLeft', Bestseller: 'tagBestseller', 'In stock': 'tagInStock' };
 
-export function ProductCard({ product, size = 'grid' }: { product: Product; size?: 'small' | 'grid' }) {
+export function ProductCard({ product, size = 'grid', priority = false }: { product: Product; size?: 'small' | 'grid'; priority?: boolean }) {
   const { lang } = useApp();
   const fmtPrice = useFormatPrice();
   const fmtOriginalPrice = useFormatOriginalPrice();
@@ -42,7 +42,7 @@ export function ProductCard({ product, size = 'grid' }: { product: Product; size
       }}
     >
       <div style={{ aspectRatio: '174 / 142', width: '100%' }}>
-        <ProductPhoto tone={product.tone} radius={0} image={product.images[0]} variant="card" />
+        <ProductPhoto tone={product.tone} radius={0} image={product.images[0]} variant="card" priority={priority} />
       </div>
       <div style={{ padding: '10px 8px 12px' }}>
         {/* Multi-select since 2026-07-31 -- a product can carry more than

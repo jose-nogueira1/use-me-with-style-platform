@@ -271,7 +271,7 @@ export function ProductDetail() {
                   cursor: 'pointer', background: C.subtleBg,
                 }}
               >
-                <img src={img.thumbnailUrl || img.cardUrl || img.url} alt={img.alt} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                <ProductPhoto tone={product.tone} radius={0} image={img} variant="thumbnail" />
               </button>
             ))}
           </div>

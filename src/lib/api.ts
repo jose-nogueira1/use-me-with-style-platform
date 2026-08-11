@@ -105,7 +105,7 @@ export type ApiColor = {
    * 2026-07-25 follow-up -- renders a split-circle swatch. See
    * lib/colorSwatch.ts. */
   hex2?: string | null;
-  swatch?: string | number | { url?: string } | null;
+  swatch?: string | number | { url?: string; sizes?: { small?: { url?: string } } } | null;
 };
 
 export type ApiSizeGuideRow = {

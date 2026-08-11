@@ -23,3 +23,17 @@ test('product loading and global controls avoid measured CLS and accessibility r
   assert.match(projectFile('src/storefront/components/Footer.tsx'), /minHeight: 24/);
   assert.match(projectFile('src/storefront/components/InstagramFeed.tsx'), /ump-instagram-shop-badge" aria-hidden="true"/);
 });
+
+test('storefront image priority is limited to likely LCP candidates', () => {
+  assert.match(projectFile('src/storefront/pages/Browse.tsx'), /priority=\{index === 0\}/);
+  assert.match(projectFile('src/storefront/pages/ShopInstagram.tsx'), /priority=\{index === 0\}/);
+  assert.match(projectFile('src/storefront/pages/ProductDetail.tsx'), /variant="full" priority/);
+  assert.match(projectFile('src/storefront/pages/ProductDetail.tsx'), /variant="thumbnail"/);
+});
+
+test('remaining direct storefront images have dimensions and intentional alt behavior', () => {
+  const home = projectFile('src/storefront/pages/Home.tsx');
+  assert.match(home, /alt=\{heroImage\?\.alt\?\.trim\(\)/);
+  assert.match(home, /pictorialWhite.*alt="".*width=\{400\}.*height=\{268\}/);
+  assert.match(home, /alt=""\s+width=\{1200\}\s+height=\{1600\}\s+loading="lazy"/);
+});

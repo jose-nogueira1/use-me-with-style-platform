@@ -124,7 +124,16 @@ export function adaptApiProduct(api: ApiProduct, market: 'AO' | 'PT', lang: 'pt'
     });
     if (colorDoc && !colors.some((c) => c.id === colorId)) {
       const swatch = resolveRef(colorDoc.swatch);
-      colors.push({ id: colorId, name: colorLabel, hex: colorDoc.hex ?? undefined, hex2: colorDoc.hex2 ?? undefined, swatchUrl: absoluteMediaUrl(swatch?.url) });
+      colors.push({
+        id: colorId,
+        name: colorLabel,
+        hex: colorDoc.hex ?? undefined,
+        hex2: colorDoc.hex2 ?? undefined,
+        // Pattern swatches render at only 12–20px. Use Payload's smallest
+        // aspect-preserving derivative instead of downloading the original;
+        // the original remains a compatibility fallback for older media.
+        swatchUrl: absoluteMediaUrl(swatch?.sizes?.small?.url ?? swatch?.url),
+      });
     }
     if (optionValue && !sizes.includes(optionValue)) sizes.push(optionValue);
     if (optionValue) stock[optionValue] = (stock[optionValue] ?? 0) + marketStock;

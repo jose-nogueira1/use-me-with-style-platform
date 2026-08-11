@@ -282,10 +282,13 @@ export function Home() {
                     src={heroImageUrl}
                     srcSet={heroImageSrcSet || undefined}
                     sizes="(max-width: 859px) 100vw, 58vw"
-                    alt=""
+                    alt={heroImage?.alt?.trim() || (lang === 'pt' ? 'Coleção Use Me With Style' : 'Use Me With Style collection')}
+                    width={1600}
+                    height={1067}
+                    loading="eager"
                     fetchPriority="high"
                     decoding="async"
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                   />
                 </picture>
                 <div className="ump-hero-shade" aria-hidden="true" />
@@ -312,7 +315,7 @@ export function Home() {
                     background: 'linear-gradient(160deg, #EEE4D4 0%, #D0B165 55%, #CAA039 100%)',
                   }}
                 >
-                  <img src={pictorialWhite} alt="" style={{ width: '38%', opacity: 0.55 }} />
+                  <img src={pictorialWhite} alt="" width={400} height={268} loading="eager" fetchPriority="high" decoding="async" style={{ width: '38%', height: 'auto', opacity: 0.55 }} />
                 </div>
                 <div className="ump-hero-shade" aria-hidden="true" />
               </>
@@ -374,6 +377,8 @@ export function Home() {
                     srcSet={imageSrcSet || undefined}
                     sizes="(max-width: 640px) 70vw, 280px"
                     alt=""
+                    width={1200}
+                    height={1600}
                     loading="lazy"
                     decoding="async"
                     style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}

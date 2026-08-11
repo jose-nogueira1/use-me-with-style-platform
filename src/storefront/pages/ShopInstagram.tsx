@@ -82,7 +82,7 @@ export function ShopInstagram() {
           />
         ) : posts.length > 0 ? (
           <div className="ump-shop-instagram-grid">
-            {posts.map((post) => <LookCard key={post.id} post={post} lang={lang} />)}
+            {posts.map((post, index) => <LookCard key={post.id} post={post} lang={lang} priority={index === 0} />)}
           </div>
         ) : (
           <EmptyState
@@ -96,11 +96,11 @@ export function ShopInstagram() {
   );
 }
 
-function LookCard({ post, lang }: { post: ApiInstagramPost; lang: 'pt' | 'en' }) {
+function LookCard({ post, lang, priority = false }: { post: ApiInstagramPost; lang: 'pt' | 'en'; priority?: boolean }) {
   return (
     <Link to={`/shop-instagram/${encodeURIComponent(post.lookSlug)}`} style={{ display: 'block', overflow: 'hidden', borderRadius: 12, border: `1px solid ${C.ruleLight}`, background: C.paper, color: C.ink, textDecoration: 'none' }}>
       <div style={{ aspectRatio: '4 / 5', overflow: 'hidden', position: 'relative' }}>
-        <ProductPhoto tone="dark" radius={0} image={{ url: post.imageUrl, alt: post.captionDisplay }} />
+        <ProductPhoto tone="dark" radius={0} image={{ url: post.imageUrl, alt: post.captionDisplay }} priority={priority} />
         <div style={{ position: 'absolute', left: 10, bottom: 10, display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 10px', borderRadius: 999, background: 'rgba(5,5,5,0.78)', color: C.onDarkGold, fontSize: 9, fontWeight: 850 }}>
           <ShoppingBag size={11} /> {post.products?.length} {lang === 'pt' ? 'peças' : 'pieces'}
         </div>
@@ -121,7 +121,7 @@ function LookDetail({ post, lang }: { post: ApiInstagramPost; lang: 'pt' | 'en' 
       </Link>
       <div className="ump-shop-instagram-detail">
         <div style={{ borderRadius: 12, overflow: 'hidden', background: C.subtleBg }}>
-          <div style={{ aspectRatio: '4 / 5' }}><ProductPhoto tone="dark" radius={0} image={{ url: post.imageUrl, alt: post.captionDisplay }} /></div>
+          <div style={{ aspectRatio: '4 / 5' }}><ProductPhoto tone="dark" radius={0} image={{ url: post.imageUrl, alt: post.captionDisplay }} priority /></div>
           <div style={{ padding: 16 }}>
             <p style={{ margin: 0, color: C.inkSoft, fontSize: 12, lineHeight: 1.55, whiteSpace: 'pre-line' }}>{post.caption}</p>
             <a href={post.permalink} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 12, color: C.goldDeep, fontSize: 10, fontWeight: 850, textDecoration: 'none' }}>

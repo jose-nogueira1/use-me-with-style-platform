@@ -22,3 +22,11 @@ test('product photography exposes generated responsive sources to the browser', 
   assert.match(adapter, /mediumUrl: absoluteMediaUrl/);
   assert.match(adapter, /largeUrl: absoluteMediaUrl/);
 });
+
+test('product images reserve intrinsic space and colour swatches avoid originals', () => {
+  const photo = read('../src/components/ProductPhoto.tsx');
+  const adapter = read('../src/lib/productAdapters.ts');
+  assert.match(photo, /width=\{intrinsicDimensions\.width\}/);
+  assert.match(photo, /height=\{intrinsicDimensions\.height\}/);
+  assert.match(adapter, /swatch\?\.sizes\?\.small\?\.url \?\? swatch\?\.url/);
+});
