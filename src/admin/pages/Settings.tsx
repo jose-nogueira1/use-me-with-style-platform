@@ -1235,17 +1235,24 @@ function HomeHeroSection() {
   const [uploading, setUploading] = useState(false);
   const [uploadNotice, setUploadNotice] = useState<string | null>(null);
   const [cropSource, setCropSource] = useState<File | null>(null);
+  const [cropStage, setCropStage] = useState<'desktop' | 'mobile'>('desktop');
+  const [sequenceDesktopImage, setSequenceDesktopImage] = useState<File | null>(null);
   const [pendingHeroImage, setPendingHeroImage] = useState<File | null>(null);
   const [pendingHeroPreview, setPendingHeroPreview] = useState<string | null>(null);
+  const [pendingMobileImage, setPendingMobileImage] = useState<File | null>(null);
+  const [pendingMobilePreview, setPendingMobilePreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const fieldsAreDirty = useDirty(content, originalContent);
-  const isDirty = fieldsAreDirty || pendingHeroImage !== null;
+  const isDirty = fieldsAreDirty || pendingHeroImage !== null || pendingMobileImage !== null;
 
   useEffect(() => () => {
     if (pendingHeroPreview) URL.revokeObjectURL(pendingHeroPreview);
   }, [pendingHeroPreview]);
+  useEffect(() => () => {
+    if (pendingMobilePreview) URL.revokeObjectURL(pendingMobilePreview);
+  }, [pendingMobilePreview]);
 
   // Version history (2026-07-25 follow-up, "save old homepage creations, in
   // case I want to re-activate them later"; split into an independent
@@ -1292,6 +1299,7 @@ function HomeHeroSection() {
     setSaved(false);
     try {
       let heroImageId = refId(content.heroImage) || null;
+      let heroImageMobileId = refId(content.heroImageMobile) || null;
       let notice: string | null = null;
       if (pendingHeroImage) {
         setUploading(true);
@@ -1300,11 +1308,19 @@ function HomeHeroSection() {
         heroImageId = media.id;
         notice = imageOptimizationSummary(prepared, lang);
       }
-      const updated = await adminUpdateHomeHero({ ...content, heroImage: heroImageId });
+      if (pendingMobileImage) {
+        setUploading(true);
+        const prepared = await prepareImageUpload(pendingMobileImage, 'hero', lang);
+        const media = await adminUploadMedia(prepared.file, 'Home hero image — mobile', 'hero');
+        heroImageMobileId = media.id;
+      }
+      const updated = await adminUpdateHomeHero({ ...content, heroImage: heroImageId, heroImageMobile: heroImageMobileId });
       setContent(updated);
       setOriginalContent(updated);
       setPendingHeroImage(null);
       setPendingHeroPreview(null);
+      setPendingMobileImage(null);
+      setPendingMobilePreview(null);
       setUploadNotice(notice);
       setSaved(true);
       loadVersions();
@@ -1322,8 +1338,11 @@ function HomeHeroSection() {
     try {
       const restored = await adminRestoreHomeHeroVersion(version.id);
       setCropSource(null);
+      setSequenceDesktopImage(null);
       setPendingHeroImage(null);
       setPendingHeroPreview(null);
+      setPendingMobileImage(null);
+      setPendingMobilePreview(null);
       setContent(restored);
       setOriginalContent(restored);
       setSaved(false);
@@ -1352,15 +1371,33 @@ function HomeHeroSection() {
   };
 
   const handleCropApplied = (file: File) => {
-    setCropSource(null);
     setError(null);
     setUploadNotice(null);
-    setPendingHeroImage(file);
-    setPendingHeroPreview(URL.createObjectURL(file));
+    if (cropStage === 'desktop') {
+      setSequenceDesktopImage(file);
+      setCropStage('mobile');
+      return;
+    }
+    if (!sequenceDesktopImage) return;
+    setPendingHeroImage(sequenceDesktopImage);
+    setPendingHeroPreview(URL.createObjectURL(sequenceDesktopImage));
+    setPendingMobileImage(file);
+    setPendingMobilePreview(URL.createObjectURL(file));
+    setSequenceDesktopImage(null);
+    setCropSource(null);
+    setCropStage('desktop');
+  };
+
+  const cancelCropSequence = () => {
+    setCropSource(null);
+    setSequenceDesktopImage(null);
+    setCropStage('desktop');
   };
 
   const heroImageDoc = resolveRef(content.heroImage);
   const heroImageUrl = pendingHeroPreview ?? absoluteMediaUrl(heroImageDoc?.sizes?.hero?.url ?? heroImageDoc?.url);
+  const mobileImageDoc = resolveRef(content.heroImageMobile);
+  const mobileImageUrl = pendingMobilePreview ?? absoluteMediaUrl(mobileImageDoc?.sizes?.large?.url ?? mobileImageDoc?.url) ?? heroImageUrl;
 
   return (
     <div style={{ padding: '20px 28px 32px' }}>
@@ -1448,9 +1485,13 @@ function HomeHeroSection() {
               </div>
             </div>
             <div>
-              <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>{t('heroImageLabel', lang)}</div>
-              {heroImageUrl ? (
-                <div style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>
+                {lang === 'pt' ? 'Imagens do hero' : 'Hero images'}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 16fr) minmax(0, 8fr)', gap: 10, alignItems: 'start', marginBottom: 10 }}>
+                <div>
+                  <div style={{ fontSize: 9, color: C.inkSoft, marginBottom: 5 }}>{lang === 'pt' ? 'Desktop — 16:9' : 'Desktop — 16:9'}</div>
+                  {heroImageUrl ? (
                   <div style={{ position: 'relative', width: '100%', aspectRatio: '16 / 9', borderRadius: 8, overflow: 'hidden', border: `1px solid ${C.rule}`, background: C.disabledBg }}>
                     <img src={heroImageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                     {pendingHeroImage && (
@@ -1458,21 +1499,34 @@ function HomeHeroSection() {
                         {lang === 'pt' ? 'Pré-visualização — ainda não guardada' : 'Preview — not saved yet'}
                       </div>
                     )}
-                  </div>
+                  </div>) : <div style={{ aspectRatio: '16 / 9', display: 'grid', placeItems: 'center', borderRadius: 8, border: `1px dashed ${C.rule}`, color: C.inkSoft, fontSize: 9 }}>{lang === 'pt' ? 'Sem imagem' : 'No image'}</div>}
+                </div>
+                <div>
+                  <div style={{ fontSize: 9, color: C.inkSoft, marginBottom: 5 }}>{lang === 'pt' ? 'Mobile — 4:5' : 'Mobile — 4:5'}</div>
+                  {mobileImageUrl ? (
+                    <div style={{ position: 'relative', width: '100%', aspectRatio: '4 / 5', borderRadius: 8, overflow: 'hidden', border: `1px solid ${C.rule}`, background: C.disabledBg }}>
+                      <img src={mobileImageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                      {pendingMobileImage && <div style={{ position: 'absolute', top: 6, left: 6, padding: '4px 6px', borderRadius: 4, background: 'rgba(18,16,13,.78)', color: '#fff', fontSize: 8, fontWeight: 800 }}>{lang === 'pt' ? 'Não guardada' : 'Not saved'}</div>}
+                    </div>
+                  ) : <div style={{ aspectRatio: '4 / 5', display: 'grid', placeItems: 'center', borderRadius: 8, border: `1px dashed ${C.rule}`, color: C.inkSoft, fontSize: 9, textAlign: 'center', padding: 6 }}>{lang === 'pt' ? 'Usa desktop' : 'Uses desktop'}</div>}
+                </div>
+              </div>
+              {heroImageUrl ? (
+                <div style={{ marginBottom: 10 }}>
                   <button
                     onClick={() => {
                       setPendingHeroImage(null);
                       setPendingHeroPreview(null);
-                      setContent((c) => ({ ...c, heroImage: null }));
+                      setPendingMobileImage(null);
+                      setPendingMobilePreview(null);
+                      setContent((c) => ({ ...c, heroImage: null, heroImageMobile: null }));
                     }}
                     style={{ marginTop: 8, fontSize: 10, fontWeight: 800, color: '#B95545', border: `1px solid #E1B3AA`, borderRadius: 6, padding: '6px 10px', background: 'transparent' }}
                   >
                     {t('removeAction', lang)}
                   </button>
                 </div>
-              ) : (
-                <div style={{ fontSize: 11, color: C.inkSoft, marginBottom: 8 }}>{t('noneSetPlaceholderGraphic', lang)}</div>
-              )}
+              ) : null}
               <input
                 type="file"
                 accept="image/*"
@@ -1481,13 +1535,20 @@ function HomeHeroSection() {
                   const file = e.target.files?.[0];
                   if (file) {
                     if (!file.type.startsWith('image/')) setError(lang === 'pt' ? 'Escolha um ficheiro de imagem válido.' : 'Choose a valid image file.');
-                    else setCropSource(file);
+                    else {
+                      setCropStage('desktop');
+                      setSequenceDesktopImage(null);
+                      setCropSource(file);
+                    }
                   }
                   e.target.value = '';
                 }}
                 style={{ fontSize: 11 }}
               />
-              <div style={{ fontSize: 9, color: C.inkSoft, marginTop: 5 }}>{imageUploadGuidance('hero', lang)}</div>
+              <div style={{ fontSize: 9, color: C.inkSoft, marginTop: 5 }}>
+                {lang === 'pt' ? 'Escolha uma fotografia e ajuste separadamente as versões desktop e mobile. ' : 'Choose one photo and adjust the desktop and mobile versions separately. '}
+                {imageUploadGuidance('hero', lang)}
+              </div>
               {uploadNotice && <div style={{ fontSize: 10, color: '#3F754D', marginTop: 5 }}>{uploadNotice}</div>}
               {uploading && <div style={{ fontSize: 10, color: C.inkSoft, marginTop: 4 }}>{t('uploadingEllipsis', lang)}</div>}
             </div>
@@ -1507,10 +1568,14 @@ function HomeHeroSection() {
           {cropSource && (
             <ImageCropModal
               file={cropSource}
-              aspect={16 / 9}
-              outputWidth={2560}
+              aspect={cropStage === 'desktop' ? 16 / 9 : 4 / 5}
+              outputWidth={cropStage === 'desktop' ? 2560 : 1600}
               lang={lang}
-              onCancel={() => setCropSource(null)}
+              title={cropStage === 'desktop' ? (lang === 'pt' ? '1 de 2 — Ajustar desktop' : '1 of 2 — Adjust desktop') : (lang === 'pt' ? '2 de 2 — Ajustar mobile' : '2 of 2 — Adjust mobile')}
+              description={cropStage === 'desktop' ? (lang === 'pt' ? 'Composição horizontal 16:9 para computadores.' : 'Horizontal 16:9 composition for desktop screens.') : (lang === 'pt' ? 'Composição vertical 4:5 com o texto sobre a imagem.' : 'Vertical 4:5 composition with text over the image.')}
+              applyLabel={cropStage === 'desktop' ? (lang === 'pt' ? 'Seguinte: mobile' : 'Next: mobile') : (lang === 'pt' ? 'Aplicar os dois recortes' : 'Apply both crops')}
+              outputSuffix={cropStage === 'desktop' ? 'hero-desktop' : 'hero-mobile'}
+              onCancel={cancelCropSequence}
               onApply={handleCropApplied}
             />
           )}

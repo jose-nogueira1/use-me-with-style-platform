@@ -121,6 +121,18 @@ export function Home() {
       return absolute ? [`${absolute} ${width}w`] : [];
     })
     .join(', ');
+  const heroImageMobile = resolveRef(hero?.heroImageMobile) ?? heroImage;
+  const heroImageMobileUrl = absoluteMediaUrl(heroImageMobile?.sizes?.large?.url ?? heroImageMobile?.sizes?.medium?.url ?? heroImageMobile?.url);
+  const heroImageMobileSrcSet = [
+    [heroImageMobile?.sizes?.small?.url, 480],
+    [heroImageMobile?.sizes?.medium?.url, 960],
+    [heroImageMobile?.sizes?.large?.url, 1600],
+  ]
+    .flatMap(([url, width]) => {
+      const absolute = absoluteMediaUrl(typeof url === 'string' ? url : undefined);
+      return absolute ? [`${absolute} ${width}w`] : [];
+    })
+    .join(', ');
 
   // Homepage curation (2026-08-04, "admin should have total control here"
   // over which categories and merch-tag shelves appear on the homepage --
@@ -226,23 +238,24 @@ export function Home() {
           background/text use the hero* tokens so this panel (and the
           matching header background in StorefrontLayout) flips between the
           light and dark palettes along with the rest of the app. */}
-      <div style={{ background: C.heroBg, color: C.heroText, padding: '36px 0 40px', position: 'relative', overflow: 'hidden' }}>
+      <div className="ump-home-hero" style={{ background: C.heroBg, color: C.heroText, padding: '36px 0 40px', position: 'relative', overflow: 'hidden' }}>
         <div
           className="ump-hero-grid ump-content-width"
           style={{ position: 'relative', zIndex: 1, padding: '0 20px' }}
         >
-          <div>
-            <div style={{ fontSize: 10, letterSpacing: 3, color: C.heroAccent, fontWeight: 800, textTransform: 'uppercase', marginBottom: 14 }}>
+          <div className="ump-hero-copy">
+            <div className="ump-hero-eyebrow" style={{ fontSize: 10, letterSpacing: 3, color: C.heroAccent, fontWeight: 800, textTransform: 'uppercase', marginBottom: 14 }}>
               {heroEyebrow}
             </div>
-            <h1 style={{ fontFamily: F.display, fontSize: 34, fontWeight: 800, lineHeight: 1.12, letterSpacing: '-0.01em', margin: '0 0 16px' }}>
+            <h1 className="ump-hero-headline" style={{ fontFamily: F.display, fontSize: 34, fontWeight: 800, lineHeight: 1.12, letterSpacing: '-0.01em', margin: '0 0 16px' }}>
               {heroHeadline}
             </h1>
-            <div style={{ fontSize: 13, color: C.heroSubtitle, lineHeight: 1.6, marginBottom: 22, maxWidth: 420 }}>
+            <div className="ump-hero-subtitle" style={{ fontSize: 13, color: C.heroSubtitle, lineHeight: 1.6, marginBottom: 22, maxWidth: 420 }}>
               {heroSubtitle}
             </div>
             <Link
               to={heroCtaHref}
+              className="ump-hero-cta"
               style={{
                 display: 'inline-block',
                 padding: '13px 22px',
@@ -262,15 +275,21 @@ export function Home() {
           </div>
           <div className="ump-hero-photo" style={{ aspectRatio: '16 / 9', borderRadius: 10, overflow: 'hidden' }}>
             {heroImageUrl ? (
-              <img
-                src={heroImageUrl}
-                srcSet={heroImageSrcSet || undefined}
-                sizes="(max-width: 760px) 100vw, 50vw"
-                alt=""
-                fetchPriority="high"
-                decoding="async"
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
+              <>
+                <picture>
+                  {heroImageMobileUrl && <source media="(max-width: 859px)" srcSet={heroImageMobileSrcSet || heroImageMobileUrl} sizes="100vw" />}
+                  <img
+                    src={heroImageUrl}
+                    srcSet={heroImageSrcSet || undefined}
+                    sizes="(max-width: 859px) 100vw, 58vw"
+                    alt=""
+                    fetchPriority="high"
+                    decoding="async"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                </picture>
+                <div className="ump-hero-shade" aria-hidden="true" />
+              </>
             ) : (
               // Hero placeholder (2026-07-25, option "B" picked from three
               // mocked-up alternatives after user feedback that the previous
@@ -281,19 +300,22 @@ export function Home() {
               // gold family as ProductPhoto's 'gold' tone, so it still reads
               // as "on-brand, temporary" rather than a different accent
               // color -- swapped out the moment an admin uploads a real photo.
-              <div
-                style={{
-                  position: 'relative',
-                  width: '100%',
-                  height: '100%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  background: 'linear-gradient(160deg, #EEE4D4 0%, #D0B165 55%, #CAA039 100%)',
-                }}
-              >
-                <img src={pictorialWhite} alt="" style={{ width: '38%', opacity: 0.55 }} />
-              </div>
+              <>
+                <div
+                  style={{
+                    position: 'relative',
+                    width: '100%',
+                    height: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: 'linear-gradient(160deg, #EEE4D4 0%, #D0B165 55%, #CAA039 100%)',
+                  }}
+                >
+                  <img src={pictorialWhite} alt="" style={{ width: '38%', opacity: 0.55 }} />
+                </div>
+                <div className="ump-hero-shade" aria-hidden="true" />
+              </>
             )}
           </div>
         </div>

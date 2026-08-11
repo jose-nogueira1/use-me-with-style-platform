@@ -243,11 +243,32 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
            giveaway that stacking was always the intent. It now shows at the
            260px height the element already carries inline, with the desktop
            override lifting it to 360px alongside the copy. */
-        .ump-hero-grid { display: block; }
-        .ump-hero-photo { display: block; margin-top: 20px; }
+        .ump-home-hero { padding: 0 !important; }
+        .ump-hero-grid {
+          display: flex;
+          align-items: flex-end;
+          min-height: min(76svh, 680px);
+          padding: 0 !important;
+          position: relative;
+        }
+        .ump-hero-copy { position: relative; z-index: 2; width: 100%; padding: 42px 24px 38px; color: #fff; }
+        .ump-hero-eyebrow { color: #fff !important; text-shadow: 0 1px 12px rgba(0,0,0,.45); }
+        .ump-hero-headline { color: #fff; font-size: clamp(34px, 10vw, 48px) !important; max-width: 520px; text-shadow: 0 2px 18px rgba(0,0,0,.45); }
+        .ump-hero-subtitle { display: none; }
+        .ump-hero-cta { background: #090909 !important; border-color: #090909 !important; color: #fff !important; padding: 14px 25px !important; }
+        .ump-hero-photo { display: block; position: absolute; inset: 0; margin: 0; aspect-ratio: auto !important; border-radius: 0 !important; }
+        .ump-hero-photo picture, .ump-hero-photo picture img { display: block; width: 100%; height: 100%; }
+        .ump-hero-shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.04) 25%, rgba(0,0,0,.72) 100%); pointer-events: none; }
         @media (min-width: 860px) {
-          .ump-hero-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 40px; align-items: center; }
-          .ump-hero-photo { display: block; margin-top: 0; }
+          .ump-home-hero { padding: 44px 0 48px !important; }
+          .ump-hero-grid { display: grid; grid-template-columns: .9fr 1.15fr; gap: 32px; align-items: center; min-height: 0; padding: 0 20px !important; }
+          .ump-hero-copy { width: auto; padding: 0; color: inherit; }
+          .ump-hero-eyebrow { color: ${C.heroAccent} !important; text-shadow: none; }
+          .ump-hero-headline { color: inherit; font-size: 34px !important; text-shadow: none; }
+          .ump-hero-subtitle { display: block; }
+          .ump-hero-cta { background: ${C.champagne} !important; border-color: ${C.heroCtaBorder} !important; color: ${C.black} !important; padding: 13px 22px !important; }
+          .ump-hero-photo { display: block; position: relative; inset: auto; margin: 0; aspect-ratio: 16 / 9 !important; border-radius: 10px !important; }
+          .ump-hero-shade { display: none; }
         }
 
         .ump-grid-auto { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(150px, 100%), 1fr)); gap: 10px; }

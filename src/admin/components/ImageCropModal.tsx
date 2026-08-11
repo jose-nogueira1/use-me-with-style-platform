@@ -8,6 +8,10 @@ type ImageCropModalProps = {
   aspect: number;
   outputWidth: number;
   lang: 'pt' | 'en';
+  title?: string;
+  description?: string;
+  applyLabel?: string;
+  outputSuffix?: string;
   onCancel: () => void;
   onApply: (file: File) => void;
 };
@@ -21,7 +25,7 @@ function loadImage(url: string): Promise<HTMLImageElement> {
   });
 }
 
-async function cropImage(file: File, crop: Area, outputWidth: number): Promise<File> {
+async function cropImage(file: File, crop: Area, outputWidth: number, outputSuffix: string): Promise<File> {
   const sourceUrl = URL.createObjectURL(file);
   try {
     const image = await loadImage(sourceUrl);
@@ -41,13 +45,24 @@ async function cropImage(file: File, crop: Area, outputWidth: number): Promise<F
       canvas.toBlob((result) => (result ? resolve(result) : reject(new Error('Unable to prepare image'))), 'image/webp', 0.92);
     });
     const baseName = file.name.replace(/\.[^.]+$/, '') || 'hero';
-    return new File([blob], `${baseName}-hero.webp`, { type: 'image/webp', lastModified: Date.now() });
+    return new File([blob], `${baseName}-${outputSuffix}.webp`, { type: 'image/webp', lastModified: Date.now() });
   } finally {
     URL.revokeObjectURL(sourceUrl);
   }
 }
 
-export function ImageCropModal({ file, aspect, outputWidth, lang, onCancel, onApply }: ImageCropModalProps) {
+export function ImageCropModal({
+  file,
+  aspect,
+  outputWidth,
+  lang,
+  title,
+  description,
+  applyLabel,
+  outputSuffix = 'crop',
+  onCancel,
+  onApply,
+}: ImageCropModalProps) {
   const [imageUrl] = useState(() => URL.createObjectURL(file));
   const [crop, setCrop] = useState<Point>({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
@@ -75,7 +90,7 @@ export function ImageCropModal({ file, aspect, outputWidth, lang, onCancel, onAp
     setApplying(true);
     setError(null);
     try {
-      onApply(await cropImage(file, croppedArea, outputWidth));
+      onApply(await cropImage(file, croppedArea, outputWidth, outputSuffix));
     } catch {
       setError(lang === 'pt' ? 'Não foi possível preparar este recorte. Tente outra imagem.' : 'This crop could not be prepared. Try another image.');
       setApplying(false);
@@ -95,10 +110,10 @@ export function ImageCropModal({ file, aspect, outputWidth, lang, onCancel, onAp
       <div style={{ width: 'min(760px, 100%)', background: C.paper, borderRadius: 12, overflow: 'hidden', boxShadow: '0 24px 80px rgba(0,0,0,.32)' }}>
         <div style={{ padding: '18px 20px 14px' }}>
           <div id="hero-crop-title" style={{ color: C.ink, fontSize: 16, fontWeight: 800 }}>
-            {lang === 'pt' ? 'Ajustar imagem do hero' : 'Adjust hero image'}
+            {title ?? (lang === 'pt' ? 'Ajustar imagem' : 'Adjust image')}
           </div>
           <div style={{ color: C.inkSoft, fontSize: 11, marginTop: 5 }}>
-            {lang === 'pt' ? 'Arraste a imagem e use o zoom para escolher exatamente o que ficará visível.' : 'Drag the image and use zoom to choose exactly what will be visible.'}
+            {description ?? (lang === 'pt' ? 'Arraste a imagem e use o zoom para escolher exatamente o que ficará visível.' : 'Drag the image and use zoom to choose exactly what will be visible.')}
           </div>
         </div>
 
@@ -128,7 +143,7 @@ export function ImageCropModal({ file, aspect, outputWidth, lang, onCancel, onAp
               {lang === 'pt' ? 'Cancelar' : 'Cancel'}
             </button>
             <button type="button" onClick={() => void handleApply()} disabled={applying || !croppedArea} style={{ padding: '9px 18px', border: 0, borderRadius: 6, background: C.black, color: C.onDarkGold, fontSize: 11, fontWeight: 800 }}>
-              {applying ? '…' : lang === 'pt' ? 'Aplicar recorte' : 'Apply crop'}
+              {applying ? '…' : applyLabel ?? (lang === 'pt' ? 'Aplicar recorte' : 'Apply crop')}
             </button>
           </div>
         </div>

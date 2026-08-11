@@ -664,6 +664,7 @@ export type HomeHero = {
   heroCtaCategorySlug?: string | null;
   heroCtaTagSlug?: string | null;
   heroImage?: string | number | ApiMedia | null;
+  heroImageMobile?: string | number | ApiMedia | null;
 };
 
 // Homepage curation (2026-08-04, "admin should have total control here"
