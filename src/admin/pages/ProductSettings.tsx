@@ -35,6 +35,7 @@ import { absoluteMediaUrl } from '../../lib/productAdapters';
 import { hasSwatch, swatchBackground } from '../../lib/colorSwatch';
 import { suggestColorName } from '../../lib/colorNaming';
 import { t, type Lang } from '../i18n';
+import { imageUploadGuidance, validateImageUpload } from '../../lib/imageUpload';
 
 // Product settings (2026-07-25 admin request; moved into Settings as its
 // own tab 2026-07-25): manages the catalogue taxonomies -- categories,
@@ -129,6 +130,7 @@ export function ProductTaxonomySettings() {
           // as a separate PATCH from the name/slug save above, same pattern
           // as the home hero image in Settings.tsx.
           onUploadImage={async (id, file) => {
+            await validateImageUpload(file, 'catalogue', lang);
             const category = categories.find((c) => String(c.id) === id);
             const media = await adminUploadMedia(file, `${category?.namePT ?? 'Category'} tile image`);
             const updated = await adminUpdateCategory(id, { image: media.id });
@@ -355,6 +357,7 @@ function TaxonomyPanel({
             </div>
           );
         })}
+        {onUploadImage && <div style={{ fontSize: 9, color: C.inkSoft }}>{imageUploadGuidance('catalogue', lang)}</div>}
       </div>
       <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
         <input placeholder={labels.primary} value={newDraft.primary} onChange={(e) => setNewDraft((d) => ({ ...d, primary: e.target.value }))} style={{ ...inputStyle, flex: 1 }} />

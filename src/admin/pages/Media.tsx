@@ -5,6 +5,7 @@ import { adminDeleteMedia, adminListMedia, adminUploadMedia, type ApiMedia } fro
 import { absoluteMediaUrl } from '../../lib/productAdapters';
 import { PageHeader } from '../components/PageHeader';
 import { t } from '../i18n';
+import { imageUploadGuidance, validateImageUpload } from '../../lib/imageUpload';
 
 // Standalone media library -- browse/upload/delete images independent of the
 // per-product upload flow already in ProductEditor. Added 2026-07-25 for
@@ -34,10 +35,11 @@ export function Media() {
     setUploading(true);
     setError(null);
     try {
+      await validateImageUpload(file, 'catalogue', lang);
       await adminUploadMedia(file, file.name.replace(/\.[^.]+$/, ''));
       load();
-    } catch {
-      setError(t('couldntUploadFile', lang));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('couldntUploadFile', lang));
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -64,6 +66,7 @@ export function Media() {
         cta={uploading ? t('uploadingEllipsis', lang) : t('uploadImage', lang)}
         onCta={() => fileInputRef.current?.click()}
       />
+      <div style={{ margin: '-8px 28px 0', fontSize: 11, color: C.inkSoft }}>{imageUploadGuidance('catalogue', lang)}</div>
       <input ref={fileInputRef} type="file" accept="image/*" hidden onChange={(e) => void handleUpload(e.target.files?.[0])} />
 
       {error && <div style={{ margin: '16px 28px 0', fontSize: 13, color: '#B95545' }}>{error}</div>}

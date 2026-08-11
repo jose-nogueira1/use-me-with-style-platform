@@ -67,6 +67,7 @@ import {
 } from '../lib/instagramSpotlight';
 import { ProductTaxonomySettings } from './ProductSettings';
 import { t, type Lang } from '../i18n';
+import { imageUploadGuidance, validateImageUpload } from '../../lib/imageUpload';
 import { DEFAULT_ANGOLA_MUNICIPALITY_PRICES, LUANDA_MUNICIPALITIES } from '../../storefront/shipping';
 
 const DEFAULTS: MarketSettings = {
@@ -1342,14 +1343,15 @@ function HomeHeroSection() {
     setUploading(true);
     setError(null);
     try {
-      const media = await adminUploadMedia(file, 'Home hero image');
+      await validateImageUpload(file, 'hero', lang);
+      const media = await adminUploadMedia(file, 'Home hero image', 'hero');
       const base = originalContent ?? content;
       const updated = await adminUpdateHomeHero({ ...base, heroImage: media.id });
       setContent((c) => ({ ...c, heroImage: updated.heroImage }));
       setOriginalContent((o) => ({ ...(o ?? updated), heroImage: updated.heroImage }));
       loadVersions();
-    } catch {
-      setError(t('couldntUploadImage', lang));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('couldntUploadImage', lang));
     } finally {
       setUploading(false);
     }
@@ -1469,6 +1471,7 @@ function HomeHeroSection() {
                 }}
                 style={{ fontSize: 11 }}
               />
+              <div style={{ fontSize: 9, color: C.inkSoft, marginTop: 5 }}>{imageUploadGuidance('hero', lang)}</div>
               {uploading && <div style={{ fontSize: 10, color: C.inkSoft, marginTop: 4 }}>{t('uploadingEllipsis', lang)}</div>}
             </div>
           </div>

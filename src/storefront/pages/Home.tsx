@@ -108,7 +108,19 @@ export function Home() {
       : hero?.heroCtaType === 'category' && hero.heroCtaCategorySlug
         ? `/catalogo?cat=${encodeURIComponent(hero.heroCtaCategorySlug)}`
         : '/catalogo';
-  const heroImageUrl = absoluteMediaUrl(resolveRef(hero?.heroImage)?.url);
+  const heroImage = resolveRef(hero?.heroImage);
+  const heroImageUrl = absoluteMediaUrl(heroImage?.sizes?.large?.url ?? heroImage?.sizes?.hero?.url ?? heroImage?.url);
+  const heroImageSrcSet = [
+    [heroImage?.sizes?.small?.url, 480],
+    [heroImage?.sizes?.medium?.url, 960],
+    [heroImage?.sizes?.large?.url, 1600],
+    [heroImage?.sizes?.hero?.url, 2560],
+  ]
+    .flatMap(([url, width]) => {
+      const absolute = absoluteMediaUrl(typeof url === 'string' ? url : undefined);
+      return absolute ? [`${absolute} ${width}w`] : [];
+    })
+    .join(', ');
 
   // Homepage curation (2026-08-04, "admin should have total control here"
   // over which categories and merch-tag shelves appear on the homepage --
@@ -250,7 +262,15 @@ export function Home() {
           </div>
           <div className="ump-hero-photo" style={{ height: 260, borderRadius: 10, overflow: 'hidden' }}>
             {heroImageUrl ? (
-              <img src={heroImageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <img
+                src={heroImageUrl}
+                srcSet={heroImageSrcSet || undefined}
+                sizes="(max-width: 760px) 100vw, 50vw"
+                alt=""
+                fetchPriority="high"
+                decoding="async"
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
             ) : (
               // Hero placeholder (2026-07-25, option "B" picked from three
               // mocked-up alternatives after user feedback that the previous
@@ -296,7 +316,17 @@ export function Home() {
           {displayCategories.map((c, index) => {
             const slug = c.slug ?? String(c.id);
             const label = (lang === 'en' ? c.nameEN : c.namePT)?.trim() || c.namePT;
-            const imageUrl = absoluteMediaUrl(resolveRef(c.image)?.url);
+            const categoryImage = resolveRef(c.image);
+            const imageUrl = absoluteMediaUrl(categoryImage?.sizes?.medium?.url ?? categoryImage?.sizes?.small?.url ?? categoryImage?.url);
+            const imageSrcSet = [
+              [categoryImage?.sizes?.small?.url, 480],
+              [categoryImage?.sizes?.medium?.url, 960],
+            ]
+              .flatMap(([url, width]) => {
+                const absolute = absoluteMediaUrl(typeof url === 'string' ? url : undefined);
+                return absolute ? [`${absolute} ${width}w`] : [];
+              })
+              .join(', ');
             return (
               <Link
                 key={String(c.id)}
@@ -317,7 +347,15 @@ export function Home() {
                 }}
               >
                 {imageUrl ? (
-                  <img src={imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                  <img
+                    src={imageUrl}
+                    srcSet={imageSrcSet || undefined}
+                    sizes="(max-width: 640px) 70vw, 280px"
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                  />
                 ) : (
                   <ProductPhoto tone={CATEGORY_TONE_CYCLE[index % CATEGORY_TONE_CYCLE.length]} radius={0} />
                 )}

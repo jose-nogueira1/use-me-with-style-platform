@@ -771,8 +771,12 @@ export type ApiMedia = {
   filesize?: number;
   createdAt?: string;
   sizes?: {
-    thumbnail?: { url?: string };
-    card?: { url?: string };
+    thumbnail?: { url?: string; width?: number; height?: number };
+    card?: { url?: string; width?: number; height?: number };
+    small?: { url?: string; width?: number; height?: number };
+    medium?: { url?: string; width?: number; height?: number };
+    large?: { url?: string; width?: number; height?: number };
+    hero?: { url?: string; width?: number; height?: number };
   };
 };
 
@@ -1484,7 +1488,7 @@ export async function adminUpdateProduct(id: string | number, input: Partial<Api
 export async function adminUploadProductImage(file: File, alt: string): Promise<{ id: string | number; url?: string; alt?: string }> {
   const body = new FormData();
   body.append('file', file);
-  body.append('_payload', JSON.stringify({ alt }));
+  body.append('_payload', JSON.stringify({ alt, uploadPurpose: 'catalogue' }));
   const res = await fetch(`${API_BASE}/media`, { method: 'POST', body, credentials: 'include' });
   if (!res.ok) throw new ApiError(`Image upload failed (${res.status}): ${await res.text().catch(() => '')}`, res.status);
   const data = await res.json() as { doc: { id: string | number; url?: string; alt?: string } };
@@ -1742,10 +1746,10 @@ export async function adminListMedia(): Promise<ApiMedia[]> {
   return data.docs;
 }
 
-export async function adminUploadMedia(file: File, alt: string): Promise<ApiMedia> {
+export async function adminUploadMedia(file: File, alt: string, uploadPurpose: 'hero' | 'catalogue' | 'brand' = 'catalogue'): Promise<ApiMedia> {
   const body = new FormData();
   body.append('file', file);
-  body.append('_payload', JSON.stringify({ alt }));
+  body.append('_payload', JSON.stringify({ alt, uploadPurpose }));
   const res = await fetch(`${API_BASE}/media`, { method: 'POST', body, credentials: 'include' });
   if (!res.ok) throw new ApiError(`Upload failed (${res.status}): ${await res.text().catch(() => '')}`, res.status);
   const data = (await res.json()) as { doc: ApiMedia };

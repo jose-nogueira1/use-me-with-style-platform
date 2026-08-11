@@ -30,6 +30,7 @@ import { navigateWithToast } from '../lib/toastNavigation';
 import { useDirty } from '../lib/useDirty';
 import { t } from '../i18n';
 import { buildProductImageAlt } from '../../lib/productImageAlt';
+import { imageUploadGuidance, validateImageUpload } from '../../lib/imageUpload';
 
 // Catalogue taxonomies are managed in the Product settings page
 // (/admin/definicoes-produto) since 2026-07-25; this editor only PICKS
@@ -369,6 +370,7 @@ export function ProductEditor() {
     setSaving(true);
     setError(null);
     try {
+      await validateImageUpload(file, 'catalogue', lang);
       await adminDeleteProduct(existing.id);
       navigateWithToast(navigate, '/admin/produtos', t('productDeleted', lang, { name: form.name }));
     } catch {
@@ -405,8 +407,8 @@ export function ProductEditor() {
       const updated = await adminUpdateProduct(existing.id, { images });
       setExisting(updated);
       setNewImageAlt('');
-    } catch {
-      setError(t('couldntUploadImage', lang));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('couldntUploadImage', lang));
     } finally {
       setSaving(false);
     }
@@ -625,6 +627,7 @@ export function ProductEditor() {
               <input type="file" accept="image/*" hidden disabled={!existing || saving} onChange={(e) => void handleImageUpload(e.target.files?.[0])} />
             </label>
           </div>
+          <div style={{ marginTop: 7, fontSize: 9, color: C.inkSoft }}>{imageUploadGuidance('catalogue', lang)}</div>
         </div>
 
         <div style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 20, display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0 }}>
