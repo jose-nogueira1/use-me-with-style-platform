@@ -36,6 +36,7 @@ import { hasSwatch, swatchBackground } from '../../lib/colorSwatch';
 import { suggestColorName } from '../../lib/colorNaming';
 import { t, type Lang } from '../i18n';
 import { imageOptimizationSummary, imageUploadGuidance, prepareImageUpload } from '../../lib/imageUpload';
+import { ImageCropModal } from '../components/ImageCropModal';
 
 // Product settings (2026-07-25 admin request; moved into Settings as its
 // own tab 2026-07-25): manages the catalogue taxonomies -- categories,
@@ -228,6 +229,7 @@ const inputStyle: React.CSSProperties = { padding: '8px 10px', fontSize: 11, bor
 // ---------------------------------------------------------------------------
 
 type TaxonomyEntry = { id: string; primary: string; secondary: string; meta?: string; imageUrl?: string };
+type PendingTaxonomyImage = { id: string; file: File; preview: string };
 
 function TaxonomyPanel({
   title,
@@ -265,6 +267,12 @@ function TaxonomyPanel({
   const [busy, setBusy] = useState(false);
   const [uploadingImageId, setUploadingImageId] = useState<string | null>(null);
   const [uploadNotice, setUploadNotice] = useState<string | null>(null);
+  const [cropTarget, setCropTarget] = useState<{ id: string; file: File } | null>(null);
+  const [pendingImage, setPendingImage] = useState<PendingTaxonomyImage | null>(null);
+
+  useEffect(() => () => {
+    if (pendingImage) URL.revokeObjectURL(pendingImage.preview);
+  }, [pendingImage]);
 
   const run = async (fn: () => Promise<void>, fallback: string) => {
     setBusy(true);
@@ -298,6 +306,7 @@ function TaxonomyPanel({
           const count = usage.get(entry.id) ?? 0;
           const isEditing = editing === entry.id;
           const isUploadingImage = uploadingImageId === entry.id;
+          const pendingForEntry = pendingImage?.id === entry.id ? pendingImage : null;
           return (
             <div key={entry.id} style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', padding: '7px 10px', borderRadius: 6, background: C.subtleBg, border: `1px solid ${C.ruleLight}` }}>
               {isEditing ? (
@@ -310,10 +319,12 @@ function TaxonomyPanel({
               ) : (
                 <>
                   {onUploadImage && (
-                    entry.imageUrl ? (
-                      <img src={entry.imageUrl} alt="" style={{ width: 28, height: 28, borderRadius: 4, objectFit: 'cover', border: `1px solid ${C.rule}`, flexShrink: 0 }} />
+                    pendingForEntry ? (
+                      <img src={pendingForEntry.preview} alt="" style={{ width: 42, aspectRatio: '3 / 4', borderRadius: 4, objectFit: 'cover', border: `2px dashed ${C.goldDeep}`, flexShrink: 0 }} />
+                    ) : entry.imageUrl ? (
+                      <img src={entry.imageUrl} alt="" style={{ width: 42, aspectRatio: '3 / 4', borderRadius: 4, objectFit: 'cover', border: `1px solid ${C.rule}`, flexShrink: 0 }} />
                     ) : (
-                      <span style={{ width: 28, height: 28, borderRadius: 4, border: `1px dashed ${C.rule}`, flexShrink: 0 }} title={t('noTileImageYet', lang)} />
+                      <span style={{ width: 42, aspectRatio: '3 / 4', borderRadius: 4, border: `1px dashed ${C.rule}`, flexShrink: 0 }} title={t('noTileImageYet', lang)} />
                     )
                   )}
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -324,21 +335,36 @@ function TaxonomyPanel({
                   <UsageBadge count={count} lang={lang} />
                   {onUploadImage && (
                     <>
-                      <label style={{ fontSize: 9, fontWeight: 800, color: isUploadingImage ? C.inkSoft : C.goldDeep, cursor: isUploadingImage ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' }}>
-                        {isUploadingImage ? '…' : entry.imageUrl ? t('changeImage', lang) : t('addImage', lang)}
-                        <input
-                          type="file"
-                          accept="image/*"
-                          disabled={isUploadingImage}
-                          style={{ display: 'none' }}
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            e.target.value = '';
-                            if (file) void runImage(entry.id, () => onUploadImage(entry.id, file), t('couldntUploadImageGeneric', lang));
-                          }}
-                        />
-                      </label>
-                      {entry.imageUrl && onRemoveImage && (
+                      {pendingForEntry ? (
+                        <>
+                          <SmallButton
+                            label={isUploadingImage ? '…' : (lang === 'pt' ? 'Guardar imagem' : 'Save image')}
+                            disabled={isUploadingImage}
+                            onClick={() => void runImage(entry.id, async () => {
+                              const notice = await onUploadImage(entry.id, pendingForEntry.file);
+                              setPendingImage(null);
+                              return notice;
+                            }, t('couldntUploadImageGeneric', lang))}
+                          />
+                          <SmallButton label={t('cancelAction', lang)} disabled={isUploadingImage} onClick={() => setPendingImage(null)} />
+                        </>
+                      ) : (
+                        <label style={{ fontSize: 9, fontWeight: 800, color: isUploadingImage ? C.inkSoft : C.goldDeep, cursor: isUploadingImage ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' }}>
+                          {isUploadingImage ? '…' : entry.imageUrl ? t('changeImage', lang) : t('addImage', lang)}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            disabled={isUploadingImage}
+                            style={{ display: 'none' }}
+                            onChange={(event) => {
+                              const file = event.target.files?.[0];
+                              event.target.value = '';
+                              if (file) setCropTarget({ id: entry.id, file });
+                            }}
+                          />
+                        </label>
+                      )}
+                      {!pendingForEntry && entry.imageUrl && onRemoveImage && (
                         <SmallButton
                           label={t('removeImage', lang)}
                           disabled={isUploadingImage}
@@ -369,6 +395,23 @@ function TaxonomyPanel({
         <SmallButton label={t('addAction', lang)} disabled={busy || !newDraft.primary.trim()} onClick={() => void run(async () => { await onCreate(newDraft.primary.trim(), newDraft.secondary.trim()); setNewDraft({ primary: '', secondary: '' }); }, t('couldntCreateEntry', lang))} />
       </div>
       {onUploadImage && <div style={{ fontSize: 9, color: C.inkSoft, marginTop: 8 }}>{t('newEntriesImageNote', lang)}</div>}
+      {cropTarget && (
+        <ImageCropModal
+          key={`${cropTarget.id}-${cropTarget.file.name}-${cropTarget.file.lastModified}`}
+          file={cropTarget.file}
+          aspect={3 / 4}
+          outputWidth={1200}
+          outputSuffix="category"
+          lang={lang}
+          title={lang === 'pt' ? 'Ajustar imagem da categoria' : 'Adjust category image'}
+          description={lang === 'pt' ? 'Escolha o enquadramento vertical 3:4 que aparecerá no mosaico da página inicial.' : 'Choose the 3:4 portrait framing used by the home-page category tile.'}
+          onCancel={() => setCropTarget(null)}
+          onApply={(file) => {
+            setPendingImage({ id: cropTarget.id, file, preview: URL.createObjectURL(file) });
+            setCropTarget(null);
+          }}
+        />
+      )}
     </Panel>
   );
 }
