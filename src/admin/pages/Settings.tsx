@@ -67,7 +67,7 @@ import {
 } from '../lib/instagramSpotlight';
 import { ProductTaxonomySettings } from './ProductSettings';
 import { t, type Lang } from '../i18n';
-import { imageUploadGuidance, validateImageUpload } from '../../lib/imageUpload';
+import { imageOptimizationSummary, imageUploadGuidance, prepareImageUpload } from '../../lib/imageUpload';
 import { DEFAULT_ANGOLA_MUNICIPALITY_PRICES, LUANDA_MUNICIPALITIES } from '../../storefront/shipping';
 
 const DEFAULTS: MarketSettings = {
@@ -1233,6 +1233,7 @@ function HomeHeroSection() {
   const [originalContent, setOriginalContent] = useState<HomeHero | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [uploadNotice, setUploadNotice] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -1342,14 +1343,16 @@ function HomeHeroSection() {
   const handleImageUpload = async (file: File) => {
     setUploading(true);
     setError(null);
+    setUploadNotice(null);
     try {
-      await validateImageUpload(file, 'hero', lang);
-      const media = await adminUploadMedia(file, 'Home hero image', 'hero');
+      const prepared = await prepareImageUpload(file, 'hero', lang);
+      const media = await adminUploadMedia(prepared.file, 'Home hero image', 'hero');
       const base = originalContent ?? content;
       const updated = await adminUpdateHomeHero({ ...base, heroImage: media.id });
       setContent((c) => ({ ...c, heroImage: updated.heroImage }));
       setOriginalContent((o) => ({ ...(o ?? updated), heroImage: updated.heroImage }));
       loadVersions();
+      setUploadNotice(imageOptimizationSummary(prepared, lang));
     } catch (err) {
       setError(err instanceof Error ? err.message : t('couldntUploadImage', lang));
     } finally {
@@ -1472,6 +1475,7 @@ function HomeHeroSection() {
                 style={{ fontSize: 11 }}
               />
               <div style={{ fontSize: 9, color: C.inkSoft, marginTop: 5 }}>{imageUploadGuidance('hero', lang)}</div>
+              {uploadNotice && <div style={{ fontSize: 10, color: '#3F754D', marginTop: 5 }}>{uploadNotice}</div>}
               {uploading && <div style={{ fontSize: 10, color: C.inkSoft, marginTop: 4 }}>{t('uploadingEllipsis', lang)}</div>}
             </div>
           </div>

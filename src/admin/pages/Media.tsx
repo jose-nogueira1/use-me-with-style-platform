@@ -5,7 +5,7 @@ import { adminDeleteMedia, adminListMedia, adminUploadMedia, type ApiMedia } fro
 import { absoluteMediaUrl } from '../../lib/productAdapters';
 import { PageHeader } from '../components/PageHeader';
 import { t } from '../i18n';
-import { imageUploadGuidance, validateImageUpload } from '../../lib/imageUpload';
+import { imageOptimizationSummary, imageUploadGuidance, prepareImageUpload } from '../../lib/imageUpload';
 
 // Standalone media library -- browse/upload/delete images independent of the
 // per-product upload flow already in ProductEditor. Added 2026-07-25 for
@@ -18,6 +18,7 @@ export function Media() {
   const [items, setItems] = useState<ApiMedia[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadNotice, setUploadNotice] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(() => {
@@ -34,9 +35,11 @@ export function Media() {
     if (!file) return;
     setUploading(true);
     setError(null);
+    setUploadNotice(null);
     try {
-      await validateImageUpload(file, 'catalogue', lang);
-      await adminUploadMedia(file, file.name.replace(/\.[^.]+$/, ''));
+      const prepared = await prepareImageUpload(file, 'catalogue', lang);
+      await adminUploadMedia(prepared.file, file.name.replace(/\.[^.]+$/, ''));
+      setUploadNotice(imageOptimizationSummary(prepared, lang));
       load();
     } catch (err) {
       setError(err instanceof Error ? err.message : t('couldntUploadFile', lang));
@@ -70,6 +73,7 @@ export function Media() {
       <input ref={fileInputRef} type="file" accept="image/*" hidden onChange={(e) => void handleUpload(e.target.files?.[0])} />
 
       {error && <div style={{ margin: '16px 28px 0', fontSize: 13, color: '#B95545' }}>{error}</div>}
+      {uploadNotice && <div style={{ margin: '16px 28px 0', fontSize: 12, color: '#3F754D' }}>{uploadNotice}</div>}
       {items && items.length === 0 && <div style={{ margin: '20px 28px', fontSize: 13, color: C.inkSoft }}>{t('noMediaYet', lang)}</div>}
 
       <div style={{ padding: '20px 28px 0', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 14 }} className="ump-admin-media-grid">

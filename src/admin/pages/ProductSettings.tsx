@@ -35,7 +35,7 @@ import { absoluteMediaUrl } from '../../lib/productAdapters';
 import { hasSwatch, swatchBackground } from '../../lib/colorSwatch';
 import { suggestColorName } from '../../lib/colorNaming';
 import { t, type Lang } from '../i18n';
-import { imageUploadGuidance, validateImageUpload } from '../../lib/imageUpload';
+import { imageOptimizationSummary, imageUploadGuidance, prepareImageUpload } from '../../lib/imageUpload';
 
 // Product settings (2026-07-25 admin request; moved into Settings as its
 // own tab 2026-07-25): manages the catalogue taxonomies -- categories,
@@ -130,11 +130,12 @@ export function ProductTaxonomySettings() {
           // as a separate PATCH from the name/slug save above, same pattern
           // as the home hero image in Settings.tsx.
           onUploadImage={async (id, file) => {
-            await validateImageUpload(file, 'catalogue', lang);
+            const prepared = await prepareImageUpload(file, 'catalogue', lang);
             const category = categories.find((c) => String(c.id) === id);
-            const media = await adminUploadMedia(file, `${category?.namePT ?? 'Category'} tile image`);
+            const media = await adminUploadMedia(prepared.file, `${category?.namePT ?? 'Category'} tile image`);
             const updated = await adminUpdateCategory(id, { image: media.id });
             setCategories((prev) => prev.map((c) => (String(c.id) === id ? updated : c)));
+            return imageOptimizationSummary(prepared, lang) ?? undefined;
           }}
           onRemoveImage={async (id) => {
             const updated = await adminUpdateCategory(id, { image: null });
@@ -253,7 +254,7 @@ function TaxonomyPanel({
   /** Optional image upload/remove (2026-07-25 admin request, Categories
    * only) -- happens as its own save, separate from onSave's name/slug PATCH,
    * since the entry must already exist to attach media to it. */
-  onUploadImage?: (id: string, file: File) => Promise<void>;
+  onUploadImage?: (id: string, file: File) => Promise<string | undefined>;
   onRemoveImage?: (id: string) => Promise<void>;
   setError: (message: string | null) => void;
   lang: Lang;
@@ -263,6 +264,7 @@ function TaxonomyPanel({
   const [newDraft, setNewDraft] = useState<{ primary: string; secondary: string }>({ primary: '', secondary: '' });
   const [busy, setBusy] = useState(false);
   const [uploadingImageId, setUploadingImageId] = useState<string | null>(null);
+  const [uploadNotice, setUploadNotice] = useState<string | null>(null);
 
   const run = async (fn: () => Promise<void>, fallback: string) => {
     setBusy(true);
@@ -276,11 +278,12 @@ function TaxonomyPanel({
     }
   };
 
-  const runImage = async (id: string, fn: () => Promise<void>, fallback: string) => {
+  const runImage = async (id: string, fn: () => Promise<string | undefined | void>, fallback: string) => {
     setUploadingImageId(id);
     setError(null);
+    setUploadNotice(null);
     try {
-      await fn();
+      setUploadNotice((await fn()) ?? null);
     } catch (err) {
       setError(taxonomyErrorMessage(err, fallback));
     } finally {
@@ -358,6 +361,7 @@ function TaxonomyPanel({
           );
         })}
         {onUploadImage && <div style={{ fontSize: 9, color: C.inkSoft }}>{imageUploadGuidance('catalogue', lang)}</div>}
+        {uploadNotice && <div style={{ fontSize: 10, color: '#3F754D' }}>{uploadNotice}</div>}
       </div>
       <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
         <input placeholder={labels.primary} value={newDraft.primary} onChange={(e) => setNewDraft((d) => ({ ...d, primary: e.target.value }))} style={{ ...inputStyle, flex: 1 }} />

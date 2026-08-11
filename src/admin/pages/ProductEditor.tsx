@@ -30,7 +30,7 @@ import { navigateWithToast } from '../lib/toastNavigation';
 import { useDirty } from '../lib/useDirty';
 import { t } from '../i18n';
 import { buildProductImageAlt } from '../../lib/productImageAlt';
-import { imageUploadGuidance, validateImageUpload } from '../../lib/imageUpload';
+import { imageOptimizationSummary, imageUploadGuidance, prepareImageUpload } from '../../lib/imageUpload';
 
 // Catalogue taxonomies are managed in the Product settings page
 // (/admin/definicoes-produto) since 2026-07-25; this editor only PICKS
@@ -138,6 +138,7 @@ export function ProductEditor() {
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [uploadNotice, setUploadNotice] = useState<string | null>(null);
   const [newImageAlt, setNewImageAlt] = useState('');
 
   const [categories, setCategories] = useState<ApiCategory[]>([]);
@@ -370,7 +371,6 @@ export function ProductEditor() {
     setSaving(true);
     setError(null);
     try {
-      await validateImageUpload(file, 'catalogue', lang);
       await adminDeleteProduct(existing.id);
       navigateWithToast(navigate, '/admin/produtos', t('productDeleted', lang, { name: form.name }));
     } catch {
@@ -394,12 +394,14 @@ export function ProductEditor() {
     if (!file || !existing) return;
     setSaving(true);
     setError(null);
+    setUploadNotice(null);
     try {
+      const prepared = await prepareImageUpload(file, 'catalogue', lang);
       // The custom admin now explicitly prompts for image alt text. When the
       // admin accepts the suggestion, it still produces meaningful stored
       // content instead of the old product-name-only value; Payload's Media
       // validation is the authoritative final guard against whitespace.
-      const media = await adminUploadProductImage(file, newImageAlt.trim() || suggestedImageAlt);
+      const media = await adminUploadProductImage(prepared.file, newImageAlt.trim() || suggestedImageAlt);
       const images = [
         ...(existing.images ?? []).map(serializeImageRow),
         { image: media.id, color: null },
@@ -407,6 +409,7 @@ export function ProductEditor() {
       const updated = await adminUpdateProduct(existing.id, { images });
       setExisting(updated);
       setNewImageAlt('');
+      setUploadNotice(imageOptimizationSummary(prepared, lang));
     } catch (err) {
       setError(err instanceof Error ? err.message : t('couldntUploadImage', lang));
     } finally {
@@ -628,6 +631,7 @@ export function ProductEditor() {
             </label>
           </div>
           <div style={{ marginTop: 7, fontSize: 9, color: C.inkSoft }}>{imageUploadGuidance('catalogue', lang)}</div>
+          {uploadNotice && <div style={{ marginTop: 7, fontSize: 10, color: '#3F754D' }}>{uploadNotice}</div>}
         </div>
 
         <div style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 20, display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0 }}>
