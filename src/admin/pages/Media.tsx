@@ -1,11 +1,22 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { C } from '../../theme';
 import { useApp } from '../../state/AppContext';
-import { adminDeleteMedia, adminListMedia, adminUploadMedia, type ApiMedia } from '../../lib/api';
+import {
+  adminDeleteMedia,
+  adminListCategories,
+  adminListColors,
+  adminListMedia,
+  adminListProducts,
+  adminUploadMedia,
+  fetchHomeHero,
+  type ApiMedia,
+} from '../../lib/api';
 import { absoluteMediaUrl } from '../../lib/productAdapters';
 import { PageHeader } from '../components/PageHeader';
 import { t } from '../i18n';
 import { imageOptimizationSummary, imageUploadGuidance, prepareImageUpload } from '../../lib/imageUpload';
+import { buildMediaUsageIndex, type MediaUsageIndex } from '../mediaUsage';
 
 // Standalone media library -- browse/upload/delete images independent of the
 // per-product upload flow already in ProductEditor. Added 2026-07-25 for
@@ -19,11 +30,15 @@ export function Media() {
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadNotice, setUploadNotice] = useState<string | null>(null);
+  const [usageIndex, setUsageIndex] = useState<MediaUsageIndex>(new Map());
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(() => {
-    adminListMedia()
-      .then(setItems)
+    Promise.all([adminListMedia(), adminListProducts(), adminListCategories(), adminListColors(), fetchHomeHero()])
+      .then(([media, products, categories, colours, hero]) => {
+        setItems(media);
+        setUsageIndex(buildMediaUsageIndex(products, categories, colours, hero, lang));
+      })
       .catch(() => setError(t('couldntConnectBackend', lang)));
   }, [lang]);
 
@@ -50,6 +65,8 @@ export function Media() {
   };
 
   const handleDelete = async (item: ApiMedia) => {
+    const usages = usageIndex.get(String(item.id)) ?? [];
+    if (usages.length > 0) return;
     if (!window.confirm(t('deleteMediaConfirm', lang, { name: item.alt || item.filename || '' }))) return;
     setError(null);
     try {
@@ -90,8 +107,10 @@ export function Media() {
       {items && items.length === 0 && <div style={{ margin: '20px 28px', fontSize: 13, color: C.inkSoft }}>{t('noMediaYet', lang)}</div>}
 
       <div style={{ padding: '20px 28px 0', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 14 }} className="ump-admin-media-grid">
-        {(items ?? []).map((item) => (
-          <div key={item.id} style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 10 }}>
+        {(items ?? []).map((item) => {
+          const usages = usageIndex.get(String(item.id)) ?? [];
+          return (
+          <div key={item.id} style={{ background: C.paper, border: `1px solid ${usages.length ? C.goldDeep : C.ruleLight}`, borderRadius: 8, padding: 10 }}>
             <div style={{ height: 130, borderRadius: 6, background: C.subtleBg, border: `1px solid ${C.rule}`, overflow: 'hidden' }}>
               {(() => {
                 // Bug (2026-07-31, admin report: "Media tab is not showing
@@ -110,14 +129,31 @@ export function Media() {
             <div style={{ fontSize: 11, fontWeight: 700, color: C.ink, marginTop: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {item.alt || item.filename || t('untitledMedia', lang)}
             </div>
+            <div style={{ marginTop: 7, fontSize: 9, fontWeight: 800, color: usages.length ? C.goldDeep : C.inkSoft }}>
+              {usages.length
+                ? t(usages.length === 1 ? 'mediaUsedOnce' : 'mediaUsedMultiple', lang, { n: usages.length })
+                : t('mediaUnused', lang)}
+            </div>
+            {usages.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 6 }}>
+                {usages.map((usage) => (
+                  <Link key={usage.key} to={usage.href} style={{ fontSize: 9, lineHeight: 1.35, color: C.goldDeep, fontWeight: 700, textDecoration: 'underline' }}>
+                    {usage.label}
+                  </Link>
+                ))}
+              </div>
+            )}
             <button
               onClick={() => handleDelete(item)}
-              style={{ width: '100%', marginTop: 8, padding: '7px 0', fontSize: 10, fontWeight: 800, color: '#B95545', border: '1px solid #E1B3AA', borderRadius: 6, background: 'transparent' }}
+              disabled={usages.length > 0}
+              title={usages.length > 0 ? t('mediaDeleteBlockedTitle', lang) : undefined}
+              style={{ width: '100%', marginTop: 8, padding: '7px 0', fontSize: 10, fontWeight: 800, color: usages.length ? C.inkSoft : '#B95545', border: `1px solid ${usages.length ? C.rule : '#E1B3AA'}`, borderRadius: 6, background: 'transparent', cursor: usages.length ? 'not-allowed' : 'pointer', opacity: usages.length ? 0.65 : 1 }}
             >
-              {t('deleteAction', lang)}
+              {usages.length ? t('mediaInUseAction', lang) : t('deleteAction', lang)}
             </button>
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

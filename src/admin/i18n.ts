@@ -893,6 +893,14 @@ export const T: Record<string, Record<Lang, string>> = {
   },
   noMediaYet: { en: 'No media yet.', pt: 'Ainda não existe multimédia.' },
   untitledMedia: { en: 'Untitled', pt: 'Sem título' },
+  mediaUsedOnce: { en: 'Used in 1 place', pt: 'Usada em 1 local' },
+  mediaUsedMultiple: { en: 'Used in {n} places', pt: 'Usada em {n} locais' },
+  mediaUnused: { en: 'Not currently used', pt: 'Não está a ser usada' },
+  mediaInUseAction: { en: 'In use — remove assignments first', pt: 'Em uso — remova primeiro as associações' },
+  mediaDeleteBlockedTitle: {
+    en: 'Open the assignments above and remove this image before deleting it.',
+    pt: 'Abra as associações acima e remova esta imagem antes de a eliminar.',
+  },
 
   // ---- Coupons page ----
   settingsDiscounts: { en: 'Settings / Discounts', pt: 'Definições / Descontos' },
@@ -988,8 +996,26 @@ export const T: Record<string, Record<Lang, string>> = {
   noSwatchYet: { en: 'No swatch yet', pt: 'Ainda sem amostra' },
   coloursTitle: { en: 'Colours', pt: 'Cores' },
   coloursHint: {
-    en: 'Hex renders a swatch dot; for patterned fabrics leave the hex off and upload a swatch image on the colour in the CMS admin. Two-tone adds a second hex for combination colours (e.g. red & white), rendered as a split circle. Names are bilingual — leave English blank to fall back to Portuguese, or start typing a hex to get a suggested name.',
-    pt: 'O código hex mostra uma amostra circular; para tecidos estampados, não defina o hex e carregue uma imagem de amostra na cor no admin do CMS. "Duas cores" adiciona um segundo hex para cores combinadas (ex.: vermelho e branco), mostradas como um círculo dividido. Os nomes são bilingues — deixe o Inglês vazio para usar o Português, ou comece a escrever um hex para obter uma sugestão de nome.',
+    en: 'Hex renders a swatch dot. For patterned fabrics, use a cropped swatch image here; it takes precedence over hex. Two-tone adds a second hex for combination colours.',
+    pt: 'O código hex mostra uma amostra circular. Para tecidos estampados, use aqui uma imagem recortada; esta tem prioridade sobre o hex. "Duas cores" adiciona um segundo hex para cores combinadas.',
+  },
+  colourSwatchesCalloutTitle: { en: 'Pattern swatches:', pt: 'Amostras de padrões:' },
+  colourSwatchesCalloutBody: {
+    en: 'Use Add swatch on a saved colour, choose the square framing, then explicitly save it.',
+    pt: 'Use Adicionar amostra numa cor guardada, escolha o enquadramento quadrado e depois guarde-a explicitamente.',
+  },
+  addSwatch: { en: 'Add swatch', pt: 'Adicionar amostra' },
+  changeSwatch: { en: 'Change swatch', pt: 'Alterar amostra' },
+  removeSwatch: { en: 'Remove swatch', pt: 'Remover amostra' },
+  saveSwatch: { en: 'Save swatch', pt: 'Guardar amostra' },
+  adjustSwatchTitle: { en: 'Adjust colour swatch', pt: 'Ajustar amostra da cor' },
+  adjustSwatchDescription: {
+    en: 'Choose the square area that best represents the fabric pattern at a small size.',
+    pt: 'Escolha a área quadrada que melhor representa o padrão do tecido em tamanho reduzido.',
+  },
+  newColourSwatchNote: {
+    en: 'Create a new colour first; its image swatch can then be added to the saved row above.',
+    pt: 'Crie primeiro uma cor nova; depois poderá adicionar a imagem da amostra na linha guardada acima.',
   },
   namePlaceholderPT: { en: 'Name (PT)', pt: 'Nome (PT)' },
   namePlaceholderEN: { en: 'Name (EN)', pt: 'Nome (EN)' },

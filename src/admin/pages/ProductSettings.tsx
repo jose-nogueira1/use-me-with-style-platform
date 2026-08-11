@@ -492,6 +492,14 @@ function ColorsPanel({
   const [draft, setDraft] = useState<ColorDraft>(EMPTY_COLOR_DRAFT);
   const [newDraft, setNewDraft] = useState<ColorDraft>(EMPTY_COLOR_DRAFT);
   const [busy, setBusy] = useState(false);
+  const [uploadingSwatchId, setUploadingSwatchId] = useState<string | null>(null);
+  const [swatchNotice, setSwatchNotice] = useState<string | null>(null);
+  const [swatchCropTarget, setSwatchCropTarget] = useState<{ id: string; file: File } | null>(null);
+  const [pendingSwatch, setPendingSwatch] = useState<PendingTaxonomyImage | null>(null);
+
+  useEffect(() => () => {
+    if (pendingSwatch) URL.revokeObjectURL(pendingSwatch.preview);
+  }, [pendingSwatch]);
 
   const run = async (fn: () => Promise<void>, fallback: string) => {
     setBusy(true);
@@ -502,6 +510,38 @@ function ColorsPanel({
       setError(taxonomyErrorMessage(err, fallback));
     } finally {
       setBusy(false);
+    }
+  };
+
+  const saveSwatch = async (id: string, file: File) => {
+    setUploadingSwatchId(id);
+    setError(null);
+    setSwatchNotice(null);
+    try {
+      const prepared = await prepareImageUpload(file, 'brand', lang);
+      const colour = colors.find((item) => String(item.id) === id);
+      const media = await adminUploadMedia(prepared.file, `${colour?.namePT ?? 'Colour'} fabric swatch`, 'brand');
+      const updated = await adminUpdateColor(id, { swatch: media.id });
+      setColors((prev) => prev.map((item) => (String(item.id) === id ? updated : item)));
+      setPendingSwatch(null);
+      setSwatchNotice(imageOptimizationSummary(prepared, lang));
+    } catch (err) {
+      setError(taxonomyErrorMessage(err, t('couldntUploadImageGeneric', lang)));
+    } finally {
+      setUploadingSwatchId(null);
+    }
+  };
+
+  const removeSwatch = async (id: string) => {
+    setUploadingSwatchId(id);
+    setError(null);
+    try {
+      const updated = await adminUpdateColor(id, { swatch: null });
+      setColors((prev) => prev.map((item) => (String(item.id) === id ? updated : item)));
+    } catch (err) {
+      setError(taxonomyErrorMessage(err, t('couldntRemoveImage', lang)));
+    } finally {
+      setUploadingSwatchId(null);
     }
   };
 
@@ -554,12 +594,18 @@ function ColorsPanel({
 
   return (
     <Panel title={t('coloursTitle', lang)} hint={t('coloursHint', lang)}>
+      <div style={{ marginBottom: 10, padding: '9px 10px', fontSize: 10, lineHeight: 1.5, color: C.inkSoft, background: C.subtleBg, border: `1px solid ${C.ruleLight}`, borderRadius: 6 }}>
+        <strong style={{ color: C.ink }}>{t('colourSwatchesCalloutTitle', lang)}</strong>{' '}
+        {t('colourSwatchesCalloutBody', lang)}
+      </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {colors.map((color) => {
           const id = String(color.id);
           const count = usage.get(id) ?? 0;
           const swatch = resolveRef(color.swatch);
           const isEditing = editing === id;
+          const isUploadingSwatch = uploadingSwatchId === id;
+          const pendingForColour = pendingSwatch?.id === id ? pendingSwatch : null;
           return (
             <div key={id} style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', padding: '7px 10px', borderRadius: 6, background: C.subtleBg, border: `1px solid ${C.ruleLight}` }}>
               {isEditing ? (
@@ -579,12 +625,40 @@ function ColorsPanel({
                 </>
               ) : (
                 <>
-                  <ColorDot hex={color.hex} hex2={color.hex2} swatchUrl={swatch?.url} lang={lang} />
+                  {pendingForColour ? (
+                    <img src={pendingForColour.preview} alt="" style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', border: `2px dashed ${C.goldDeep}`, flexShrink: 0 }} />
+                  ) : (
+                    <ColorDot hex={color.hex} hex2={color.hex2} swatchUrl={absoluteMediaUrl(swatch?.url)} lang={lang} />
+                  )}
                   <div style={{ flex: 1, minWidth: 0, fontSize: 12, fontWeight: 800, color: C.ink }}>
                     {colorLabel(color)}
                     {color.hex && <span style={{ fontSize: 9, fontWeight: 700, color: C.inkSoft, marginLeft: 6 }}>{color.hex}{color.hex2 ? ` / ${color.hex2}` : ''}</span>}
                   </div>
                   <UsageBadge count={count} lang={lang} />
+                  {pendingForColour ? (
+                    <>
+                      <SmallButton label={isUploadingSwatch ? '…' : t('saveSwatch', lang)} disabled={isUploadingSwatch} onClick={() => void saveSwatch(id, pendingForColour.file)} />
+                      <SmallButton label={t('cancelAction', lang)} disabled={isUploadingSwatch} onClick={() => setPendingSwatch(null)} />
+                    </>
+                  ) : (
+                    <>
+                      <label style={{ padding: '5px 9px', fontSize: 9, fontWeight: 800, color: isUploadingSwatch ? C.inkSoft : C.goldDeep, cursor: isUploadingSwatch ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', background: C.paper, border: `1px solid ${C.rule}`, borderRadius: 5 }}>
+                        {isUploadingSwatch ? '…' : swatch?.url ? t('changeSwatch', lang) : t('addSwatch', lang)}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          disabled={isUploadingSwatch}
+                          style={{ display: 'none' }}
+                          onChange={(event) => {
+                            const file = event.target.files?.[0];
+                            event.target.value = '';
+                            if (file) setSwatchCropTarget({ id, file });
+                          }}
+                        />
+                      </label>
+                      {swatch?.url && <SmallButton label={t('removeSwatch', lang)} disabled={isUploadingSwatch} onClick={() => void removeSwatch(id)} />}
+                    </>
+                  )}
                   <SmallButton
                     label={t('editAction', lang)}
                     disabled={busy}
@@ -619,6 +693,25 @@ function ColorsPanel({
           setNewDraft(EMPTY_COLOR_DRAFT);
         }, t('couldntCreateColour', lang))} />
       </div>
+      <div style={{ fontSize: 9, color: C.inkSoft, marginTop: 8 }}>{t('newColourSwatchNote', lang)}</div>
+      {swatchNotice && <div style={{ fontSize: 10, color: '#3F754D', marginTop: 8 }}>{swatchNotice}</div>}
+      {swatchCropTarget && (
+        <ImageCropModal
+          key={`${swatchCropTarget.id}-${swatchCropTarget.file.name}-${swatchCropTarget.file.lastModified}`}
+          file={swatchCropTarget.file}
+          aspect={1}
+          outputWidth={800}
+          outputSuffix="swatch"
+          lang={lang}
+          title={t('adjustSwatchTitle', lang)}
+          description={t('adjustSwatchDescription', lang)}
+          onCancel={() => setSwatchCropTarget(null)}
+          onApply={(file) => {
+            setPendingSwatch({ id: swatchCropTarget.id, file, preview: URL.createObjectURL(file) });
+            setSwatchCropTarget(null);
+          }}
+        />
+      )}
     </Panel>
   );
 }

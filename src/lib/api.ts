@@ -1420,9 +1420,12 @@ export async function adminCreateColor(input: { namePT: string; nameEN?: string;
   return data.doc;
 }
 
-export async function adminUpdateColor(id: string | number, input: { namePT?: string; nameEN?: string; hex?: string | null; hex2?: string | null }): Promise<ApiColor> {
+export async function adminUpdateColor(
+  id: string | number,
+  input: { namePT?: string; nameEN?: string; hex?: string | null; hex2?: string | null; swatch?: string | number | null },
+): Promise<ApiColor> {
   const data = await request<{ doc: ApiColor }>(
-    `/colors/${id}`,
+    `/colors/${id}?depth=1`,
     { method: 'PATCH', body: JSON.stringify(input) },
     { auth: true },
   );
