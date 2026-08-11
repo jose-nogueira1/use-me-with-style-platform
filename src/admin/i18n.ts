@@ -601,7 +601,7 @@ export const T: Record<string, Record<Lang, string>> = {
   tabInvoicing: { en: 'Invoicing', pt: 'Faturação' },
   tabLegal: { en: 'Legal pages', pt: 'Páginas legais' },
   tabHome: { en: 'Home page', pt: 'Página inicial' },
-  tabProducts: { en: 'Products', pt: 'Produtos' },
+  tabProducts: { en: 'Products & categories', pt: 'Produtos e categorias' },
   tabAiMessaging: { en: 'AI messaging bot', pt: 'Bot de mensagens IA' },
   tabMarketsTitle: { en: 'Launch configuration', pt: 'Configuração de lançamento' },
   tabMarketsSubtitle: {
@@ -878,8 +878,8 @@ export const T: Record<string, Record<Lang, string>> = {
   settingsMedia: { en: 'Settings / Media', pt: 'Definições / Multimédia' },
   mediaLibraryTitle: { en: 'Media library', pt: 'Biblioteca de multimédia' },
   mediaLibrarySubtitle: {
-    en: "Every uploaded image, independent of any single product. Deleting here removes it everywhere it's used.",
-    pt: 'Todas as imagens carregadas, independentemente de qualquer produto. Eliminar aqui remove-a de todos os locais onde é usada.',
+    en: 'Browse uploaded images independently of any single product. Images that are still in use are protected from deletion.',
+    pt: 'Consulte as imagens carregadas independentemente de qualquer produto. As imagens ainda em uso estão protegidas contra eliminação.',
   },
   uploadImage: { en: 'Upload image', pt: 'Carregar imagem' },
   couldntUploadFile: { en: "Couldn't upload the file.", pt: 'Não foi possível carregar o ficheiro.' },
@@ -957,8 +957,13 @@ export const T: Record<string, Record<Lang, string>> = {
   productCountBadgePlural: { en: '{n} products', pt: '{n} produtos' },
   categoriesTitle: { en: 'Categories', pt: 'Categorias' },
   categoriesHint: {
-    en: 'Shown as storefront filter pills and home page tiles. The slug (URL) is created once and never changes.',
-    pt: 'Mostradas como filtros na loja e blocos da página inicial. O slug (URL) é criado uma vez e nunca muda.',
+    en: 'Shown as storefront filter pills and home page tiles. Add or change each tile image here. The slug (URL) is created once and never changes.',
+    pt: 'Mostradas como filtros na loja e blocos da página inicial. Adicione ou altere aqui a imagem de cada bloco. O slug (URL) é criado uma vez e nunca muda.',
+  },
+  categoryImagesCalloutTitle: { en: 'Category images:', pt: 'Imagens das categorias:' },
+  categoryImagesCalloutBody: {
+    en: 'Use Add image on a saved category below. New categories must be created first, then their image can be added.',
+    pt: 'Use Adicionar imagem numa categoria guardada abaixo. Uma categoria nova deve ser criada primeiro; depois poderá adicionar a imagem.',
   },
   namePortugueseLabel: { en: 'Name — Portuguese', pt: 'Nome — Português' },
   nameEnglishOptionalLabel: { en: 'Name — English (optional)', pt: 'Nome — Inglês (opcional)' },

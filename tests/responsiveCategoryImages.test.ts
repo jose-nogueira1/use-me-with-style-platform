@@ -11,6 +11,14 @@ test('category images use a staged 3:4 crop and explicit image save', () => {
   assert.match(settings, /outputSuffix="category"/);
   assert.match(settings, /Save image/);
   assert.match(settings, /pendingForEntry\.file/);
+  assert.match(settings, /categoryImagesCalloutTitle/);
+  assert.match(settings, /categoryImagesCalloutBody/);
+});
+
+test('media upload guidance is separated from the page header', () => {
+  const media = read('../src/admin/pages/Media.tsx');
+  assert.match(media, /margin: '14px 28px 0'/);
+  assert.doesNotMatch(media, /margin: '-8px 28px 0'/);
 });
 
 test('category tiles retain responsive 480 and 960 pixel sources', () => {

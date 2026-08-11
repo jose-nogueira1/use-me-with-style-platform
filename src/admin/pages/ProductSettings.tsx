@@ -301,6 +301,23 @@ function TaxonomyPanel({
 
   return (
     <Panel title={title} hint={hint}>
+      {onUploadImage && (
+        <div
+          style={{
+            marginBottom: 10,
+            padding: '9px 10px',
+            fontSize: 10,
+            lineHeight: 1.5,
+            color: C.inkSoft,
+            background: C.subtleBg,
+            border: `1px solid ${C.ruleLight}`,
+            borderRadius: 6,
+          }}
+        >
+          <strong style={{ color: C.ink }}>{t('categoryImagesCalloutTitle', lang)}</strong>{' '}
+          {t('categoryImagesCalloutBody', lang)}
+        </div>
+      )}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {entries.map((entry) => {
           const count = usage.get(entry.id) ?? 0;
@@ -349,7 +366,19 @@ function TaxonomyPanel({
                           <SmallButton label={t('cancelAction', lang)} disabled={isUploadingImage} onClick={() => setPendingImage(null)} />
                         </>
                       ) : (
-                        <label style={{ fontSize: 9, fontWeight: 800, color: isUploadingImage ? C.inkSoft : C.goldDeep, cursor: isUploadingImage ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' }}>
+                        <label
+                          style={{
+                            padding: '5px 9px',
+                            fontSize: 9,
+                            fontWeight: 800,
+                            color: isUploadingImage ? C.inkSoft : C.goldDeep,
+                            cursor: isUploadingImage ? 'not-allowed' : 'pointer',
+                            whiteSpace: 'nowrap',
+                            background: C.paper,
+                            border: `1px solid ${C.rule}`,
+                            borderRadius: 5,
+                          }}
+                        >
                           {isUploadingImage ? '…' : entry.imageUrl ? t('changeImage', lang) : t('addImage', lang)}
                           <input
                             type="file"

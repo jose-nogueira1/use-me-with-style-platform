@@ -69,7 +69,20 @@ export function Media() {
         cta={uploading ? t('uploadingEllipsis', lang) : t('uploadImage', lang)}
         onCta={() => fileInputRef.current?.click()}
       />
-      <div style={{ margin: '-8px 28px 0', fontSize: 11, color: C.inkSoft }}>{imageUploadGuidance('catalogue', lang)}</div>
+      <div
+        style={{
+          margin: '14px 28px 0',
+          padding: '10px 12px',
+          fontSize: 11,
+          lineHeight: 1.5,
+          color: C.inkSoft,
+          background: C.subtleBg,
+          border: `1px solid ${C.ruleLight}`,
+          borderRadius: 6,
+        }}
+      >
+        {imageUploadGuidance('catalogue', lang)}
+      </div>
       <input ref={fileInputRef} type="file" accept="image/*" hidden onChange={(e) => void handleUpload(e.target.files?.[0])} />
 
       {error && <div style={{ margin: '16px 28px 0', fontSize: 13, color: '#B95545' }}>{error}</div>}
