@@ -58,6 +58,7 @@ import {
 import { absoluteMediaUrl } from '../../lib/productAdapters';
 import { PageHeader } from '../components/PageHeader';
 import { Badge } from '../components/Badge';
+import { ImageCropModal } from '../components/ImageCropModal';
 import { useDirty } from '../lib/useDirty';
 import {
   normalizeShopAssociations,
@@ -1226,18 +1227,25 @@ function HomeHeroSection() {
   const [content, setContent] = useState<HomeHero>(HOME_HERO_DEFAULTS);
   // Snapshot of `content` exactly as loaded (or last saved/restored), to
   // disable Save until something actually changed (2026-07-31 admin
-  // report) -- see admin/lib/useDirty.ts. A freshly-uploaded hero image
-  // (handleImageUpload below) deliberately does NOT update this snapshot,
-  // since that upload alone hasn't been saved yet -- it should read as a
-  // pending change same as any text edit.
+  // report) -- see admin/lib/useDirty.ts. A newly cropped hero stays in a
+  // separate local draft until Save is clicked, so it counts as pending
+  // without changing either CMS-backed snapshot.
   const [originalContent, setOriginalContent] = useState<HomeHero | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [uploadNotice, setUploadNotice] = useState<string | null>(null);
+  const [cropSource, setCropSource] = useState<File | null>(null);
+  const [pendingHeroImage, setPendingHeroImage] = useState<File | null>(null);
+  const [pendingHeroPreview, setPendingHeroPreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
-  const isDirty = useDirty(content, originalContent);
+  const fieldsAreDirty = useDirty(content, originalContent);
+  const isDirty = fieldsAreDirty || pendingHeroImage !== null;
+
+  useEffect(() => () => {
+    if (pendingHeroPreview) URL.revokeObjectURL(pendingHeroPreview);
+  }, [pendingHeroPreview]);
 
   // Version history (2026-07-25 follow-up, "save old homepage creations, in
   // case I want to re-activate them later"; split into an independent
@@ -1283,14 +1291,27 @@ function HomeHeroSection() {
     setError(null);
     setSaved(false);
     try {
-      const updated = await adminUpdateHomeHero({ ...content, heroImage: refId(content.heroImage) || null });
+      let heroImageId = refId(content.heroImage) || null;
+      let notice: string | null = null;
+      if (pendingHeroImage) {
+        setUploading(true);
+        const prepared = await prepareImageUpload(pendingHeroImage, 'hero', lang);
+        const media = await adminUploadMedia(prepared.file, 'Home hero image', 'hero');
+        heroImageId = media.id;
+        notice = imageOptimizationSummary(prepared, lang);
+      }
+      const updated = await adminUpdateHomeHero({ ...content, heroImage: heroImageId });
       setContent(updated);
       setOriginalContent(updated);
+      setPendingHeroImage(null);
+      setPendingHeroPreview(null);
+      setUploadNotice(notice);
       setSaved(true);
       loadVersions();
-    } catch {
-      setError(t('couldntSaveLoggedIn', lang));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('couldntSaveLoggedIn', lang));
     } finally {
+      setUploading(false);
       setSaving(false);
     }
   };
@@ -1300,6 +1321,9 @@ function HomeHeroSection() {
     setVersionsError(null);
     try {
       const restored = await adminRestoreHomeHeroVersion(version.id);
+      setCropSource(null);
+      setPendingHeroImage(null);
+      setPendingHeroPreview(null);
       setContent(restored);
       setOriginalContent(restored);
       setSaved(false);
@@ -1327,41 +1351,16 @@ function HomeHeroSection() {
     }
   };
 
-  // 2026-08-04 follow-up ("I still don't see a preview of the hero
-  // image"): this used to only stage the upload in local `content` state,
-  // requiring a separate click on "Save hero" before it actually persisted
-  // -- easy to miss, and if that second step never happened the image
-  // never made it past this component's own state, so nothing was ever
-  // actually saved (confirmed against real data: heroImage had never once
-  // been set). Now the upload immediately persists, same pattern as the
-  // category tile image upload in ProductSettings.tsx. Saved against
-  // `originalContent` (the last-known-saved doc), not the live `content`
-  // draft, so an in-progress unsaved text edit elsewhere in the form isn't
-  // silently swept into this save -- it stays pending for the normal Save
-  // button. The server response is depth=1 populated, so the preview below
-  // is guaranteed to have a real, resolved image the moment this resolves.
-  const handleImageUpload = async (file: File) => {
-    setUploading(true);
+  const handleCropApplied = (file: File) => {
+    setCropSource(null);
     setError(null);
     setUploadNotice(null);
-    try {
-      const prepared = await prepareImageUpload(file, 'hero', lang);
-      const media = await adminUploadMedia(prepared.file, 'Home hero image', 'hero');
-      const base = originalContent ?? content;
-      const updated = await adminUpdateHomeHero({ ...base, heroImage: media.id });
-      setContent((c) => ({ ...c, heroImage: updated.heroImage }));
-      setOriginalContent((o) => ({ ...(o ?? updated), heroImage: updated.heroImage }));
-      loadVersions();
-      setUploadNotice(imageOptimizationSummary(prepared, lang));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('couldntUploadImage', lang));
-    } finally {
-      setUploading(false);
-    }
+    setPendingHeroImage(file);
+    setPendingHeroPreview(URL.createObjectURL(file));
   };
 
   const heroImageDoc = resolveRef(content.heroImage);
-  const heroImageUrl = absoluteMediaUrl(heroImageDoc?.url);
+  const heroImageUrl = pendingHeroPreview ?? absoluteMediaUrl(heroImageDoc?.sizes?.hero?.url ?? heroImageDoc?.url);
 
   return (
     <div style={{ padding: '20px 28px 32px' }}>
@@ -1451,11 +1450,22 @@ function HomeHeroSection() {
             <div>
               <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>{t('heroImageLabel', lang)}</div>
               {heroImageUrl ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                  <img src={heroImageUrl} alt="" style={{ width: 64, height: 64, borderRadius: 6, objectFit: 'cover', border: `1px solid ${C.rule}` }} />
+                <div style={{ marginBottom: 10 }}>
+                  <div style={{ position: 'relative', width: '100%', aspectRatio: '16 / 9', borderRadius: 8, overflow: 'hidden', border: `1px solid ${C.rule}`, background: C.disabledBg }}>
+                    <img src={heroImageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                    {pendingHeroImage && (
+                      <div style={{ position: 'absolute', top: 8, left: 8, padding: '5px 8px', borderRadius: 5, background: 'rgba(18,16,13,.78)', color: '#fff', fontSize: 9, fontWeight: 800 }}>
+                        {lang === 'pt' ? 'Pré-visualização — ainda não guardada' : 'Preview — not saved yet'}
+                      </div>
+                    )}
+                  </div>
                   <button
-                    onClick={() => setContent((c) => ({ ...c, heroImage: null }))}
-                    style={{ fontSize: 10, fontWeight: 800, color: '#B95545', border: `1px solid #E1B3AA`, borderRadius: 6, padding: '6px 10px', background: 'transparent' }}
+                    onClick={() => {
+                      setPendingHeroImage(null);
+                      setPendingHeroPreview(null);
+                      setContent((c) => ({ ...c, heroImage: null }));
+                    }}
+                    style={{ marginTop: 8, fontSize: 10, fontWeight: 800, color: '#B95545', border: `1px solid #E1B3AA`, borderRadius: 6, padding: '6px 10px', background: 'transparent' }}
                   >
                     {t('removeAction', lang)}
                   </button>
@@ -1466,10 +1476,13 @@ function HomeHeroSection() {
               <input
                 type="file"
                 accept="image/*"
-                disabled={uploading}
+                disabled={uploading || saving}
                 onChange={(e) => {
                   const file = e.target.files?.[0];
-                  if (file) void handleImageUpload(file);
+                  if (file) {
+                    if (!file.type.startsWith('image/')) setError(lang === 'pt' ? 'Escolha um ficheiro de imagem válido.' : 'Choose a valid image file.');
+                    else setCropSource(file);
+                  }
                   e.target.value = '';
                 }}
                 style={{ fontSize: 11 }}
@@ -1491,6 +1504,16 @@ function HomeHeroSection() {
             summarize={(v) => v.heroHeadlinePT?.trim() || v.heroHeadlineEN?.trim() || t('noHeadlinePlaceholder', lang)}
             renderDetail={(v) => <HeroVersionDetail lang={lang} version={v} />}
           />
+          {cropSource && (
+            <ImageCropModal
+              file={cropSource}
+              aspect={16 / 9}
+              outputWidth={2560}
+              lang={lang}
+              onCancel={() => setCropSource(null)}
+              onApply={handleCropApplied}
+            />
+          )}
         </>
       )}
     </div>

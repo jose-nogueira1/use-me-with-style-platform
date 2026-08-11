@@ -260,7 +260,7 @@ export function Home() {
               {heroCtaLabel}
             </Link>
           </div>
-          <div className="ump-hero-photo" style={{ height: 260, borderRadius: 10, overflow: 'hidden' }}>
+          <div className="ump-hero-photo" style={{ aspectRatio: '16 / 9', borderRadius: 10, overflow: 'hidden' }}>
             {heroImageUrl ? (
               <img
                 src={heroImageUrl}

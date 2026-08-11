@@ -247,7 +247,7 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
         .ump-hero-photo { display: block; margin-top: 20px; }
         @media (min-width: 860px) {
           .ump-hero-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 40px; align-items: center; }
-          .ump-hero-photo { display: block; margin-top: 0; height: 360px !important; }
+          .ump-hero-photo { display: block; margin-top: 0; }
         }
 
         .ump-grid-auto { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(150px, 100%), 1fr)); gap: 10px; }
