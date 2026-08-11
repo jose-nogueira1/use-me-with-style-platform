@@ -81,6 +81,9 @@ export function adaptApiProduct(api: ApiProduct, market: 'AO' | 'PT', lang: 'pt'
       url,
       cardUrl: absoluteMediaUrl(image.sizes?.card?.url),
       thumbnailUrl: absoluteMediaUrl(image.sizes?.thumbnail?.url),
+      smallUrl: absoluteMediaUrl(image.sizes?.small?.url),
+      mediumUrl: absoluteMediaUrl(image.sizes?.medium?.url),
+      largeUrl: absoluteMediaUrl(image.sizes?.large?.url),
       alt: image.alt?.trim() || buildProductImageAlt({ productName: localizedName, colorName: imageColor, productType: categoryLabel }),
       colorId: refId(color) || undefined,
     }];

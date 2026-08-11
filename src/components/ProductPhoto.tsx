@@ -54,7 +54,18 @@ export function ProductPhoto({
     ? image?.thumbnailUrl || image?.cardUrl || image?.url
     : variant === 'card'
       ? image?.cardUrl || image?.url
-      : image?.url;
+      : image?.largeUrl || image?.mediumUrl || image?.url;
+  const responsiveCandidates = variant === 'thumbnail'
+    ? [[image?.thumbnailUrl, 300], [image?.smallUrl, 480], [image?.cardUrl, 600]] as const
+    : [[image?.smallUrl, 480], [image?.cardUrl, 600], [image?.mediumUrl, 960], [image?.largeUrl, 1600]] as const;
+  const srcSet = responsiveCandidates
+    .flatMap(([url, width]) => (url ? [`${url} ${width}w`] : []))
+    .join(', ');
+  const responsiveSizes = variant === 'thumbnail'
+    ? '80px'
+    : variant === 'card'
+      ? '(max-width: 640px) 50vw, 320px'
+      : '(max-width: 859px) 100vw, 50vw';
   // Last-resort accessibility/SEO guard. Product data normally arrives via
   // adaptApiProduct(), which builds a product/colour/category-specific alt;
   // this keeps direct callers and stale persisted data from ever rendering
@@ -66,6 +77,8 @@ export function ProductPhoto({
       <img
         data-artwork
         src={imageUrl}
+        srcSet={srcSet || undefined}
+        sizes={srcSet ? responsiveSizes : undefined}
         alt={imageAlt}
         loading={priority ? 'eager' : 'lazy'}
         fetchPriority={priority ? 'high' : undefined}

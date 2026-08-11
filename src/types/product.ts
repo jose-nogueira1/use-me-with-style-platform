@@ -4,6 +4,9 @@ export type ProductImage = {
   url: string;
   cardUrl?: string;
   thumbnailUrl?: string;
+  smallUrl?: string;
+  mediumUrl?: string;
+  largeUrl?: string;
   alt: string;
   /** Per-colour photo galleries (2026-08-07). Matches ProductColor.id.
    * Undefined means "general" -- shown regardless of which colour is

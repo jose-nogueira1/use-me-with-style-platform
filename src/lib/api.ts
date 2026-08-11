@@ -1487,13 +1487,7 @@ export async function adminUpdateProduct(id: string | number, input: Partial<Api
 }
 
 export async function adminUploadProductImage(file: File, alt: string): Promise<{ id: string | number; url?: string; alt?: string }> {
-  const body = new FormData();
-  body.append('file', file);
-  body.append('_payload', JSON.stringify({ alt, uploadPurpose: 'catalogue' }));
-  const res = await fetch(`${API_BASE}/media`, { method: 'POST', body, credentials: 'include' });
-  if (!res.ok) throw new ApiError(`Image upload failed (${res.status}): ${await res.text().catch(() => '')}`, res.status);
-  const data = await res.json() as { doc: { id: string | number; url?: string; alt?: string } };
-  return data.doc;
+  return adminUploadMedia(file, alt, 'catalogue');
 }
 
 /** Payload wraps successful global updates in `{ message, result }`, unlike

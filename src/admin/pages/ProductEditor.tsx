@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Plus, X } from 'lucide-react';
 import { C } from '../../theme';
@@ -30,7 +30,8 @@ import { navigateWithToast } from '../lib/toastNavigation';
 import { useDirty } from '../lib/useDirty';
 import { t } from '../i18n';
 import { buildProductImageAlt } from '../../lib/productImageAlt';
-import { imageOptimizationSummary, imageUploadGuidance, prepareImageUpload } from '../../lib/imageUpload';
+import { imageUploadGuidance, prepareImageUpload } from '../../lib/imageUpload';
+import { ImageCropModal } from '../components/ImageCropModal';
 
 // Catalogue taxonomies are managed in the Product settings page
 // (/admin/definicoes-produto) since 2026-07-25; this editor only PICKS
@@ -47,6 +48,7 @@ const cellKey = (colorId: string, size: string) => `${colorId}|${size}`;
 type StockCell = { ao: number; pt: number; variantId?: string };
 type SpecificationForm = { labelPT: string; labelEN: string; valuePT: string; valueEN: string };
 type BundleComponentForm = { productId: string; variantId: string; qty: number };
+type PendingProductImage = { file: File; preview: string; alt: string; colorId: string };
 
 type FormState = {
   productType: 'standard' | 'bundle';
@@ -140,12 +142,23 @@ export function ProductEditor() {
   const [error, setError] = useState<string | null>(null);
   const [uploadNotice, setUploadNotice] = useState<string | null>(null);
   const [newImageAlt, setNewImageAlt] = useState('');
+  const [cropSource, setCropSource] = useState<File | null>(null);
+  const [cropQueue, setCropQueue] = useState<File[]>([]);
+  const [pendingImages, setPendingImages] = useState<PendingProductImage[]>([]);
+  const pendingImagesRef = useRef<PendingProductImage[]>([]);
 
   const [categories, setCategories] = useState<ApiCategory[]>([]);
   const [tags, setTags] = useState<ApiMerchTag[]>([]);
   const [colors, setColors] = useState<ApiColor[]>([]);
   const [sizeGuides, setSizeGuides] = useState<ApiSizeGuide[]>([]);
   const [catalogProducts, setCatalogProducts] = useState<ApiProduct[]>([]);
+
+  useEffect(() => {
+    pendingImagesRef.current = pendingImages;
+  }, [pendingImages]);
+  useEffect(() => () => {
+    pendingImagesRef.current.forEach((pending) => URL.revokeObjectURL(pending.preview));
+  }, []);
 
   useEffect(() => {
     adminListProducts().then(setCatalogProducts).catch(() => undefined);
@@ -225,7 +238,7 @@ export function ProductEditor() {
   // "unchanged" baseline to speak of yet, subject to the validation
   // handleSave already does.
   const formIsDirty = useDirty(form, originalForm);
-  const isDirty = isNew || formIsDirty;
+  const isDirty = isNew || formIsDirty || pendingImages.length > 0;
 
   /** Maps a string-form id back to the ORIGINAL id (number under Postgres,
    * string under SQLite) so Payload's relationship validation accepts it. */
@@ -355,11 +368,25 @@ export function ProductEditor() {
         // photographs.
         navigateWithToast(navigate, `/admin/produtos/${created.id}`, t('productCreated', lang, { name: payload.name ?? '' }));
       } else if (existing) {
-        await adminUpdateProduct(existing.id, payload);
+        const uploadedRows = await Promise.all(pendingImages.map(async (pending) => {
+          const prepared = await prepareImageUpload(pending.file, 'catalogue', lang);
+          const media = await adminUploadProductImage(prepared.file, pending.alt.trim() || suggestedImageAlt);
+          return {
+            image: media.id,
+            color: pending.colorId ? originalId(colors, pending.colorId) : null,
+          };
+        }));
+        const images = [
+          ...(existing.images ?? []).map(serializeImageRow),
+          ...uploadedRows,
+        ];
+        await adminUpdateProduct(existing.id, { ...payload, images });
+        pendingImages.forEach((pending) => URL.revokeObjectURL(pending.preview));
+        setPendingImages([]);
         navigateWithToast(navigate, '/admin/produtos', t('productSaved', lang, { name: payload.name ?? '' }));
       }
-    } catch {
-      setError(t('couldntSaveBackend', lang));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('couldntSaveBackend', lang));
     } finally {
       setSaving(false);
     }
@@ -390,31 +417,39 @@ export function ProductEditor() {
     color: row.color ? (typeof row.color === 'object' ? row.color.id! : row.color) : null,
   });
 
-  const handleImageUpload = async (file?: File) => {
-    if (!file || !existing) return;
-    setSaving(true);
+  const startImageCrops = (files: File[]) => {
+    if (!existing || files.length === 0) return;
     setError(null);
     setUploadNotice(null);
-    try {
-      const prepared = await prepareImageUpload(file, 'catalogue', lang);
-      // The custom admin now explicitly prompts for image alt text. When the
-      // admin accepts the suggestion, it still produces meaningful stored
-      // content instead of the old product-name-only value; Payload's Media
-      // validation is the authoritative final guard against whitespace.
-      const media = await adminUploadProductImage(prepared.file, newImageAlt.trim() || suggestedImageAlt);
-      const images = [
-        ...(existing.images ?? []).map(serializeImageRow),
-        { image: media.id, color: null },
-      ];
-      const updated = await adminUpdateProduct(existing.id, { images });
-      setExisting(updated);
-      setNewImageAlt('');
-      setUploadNotice(imageOptimizationSummary(prepared, lang));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('couldntUploadImage', lang));
-    } finally {
-      setSaving(false);
-    }
+    setCropSource(files[0]);
+    setCropQueue(files.slice(1));
+  };
+
+  const advanceCropQueue = () => {
+    setCropQueue((queue) => {
+      setCropSource(queue[0] ?? null);
+      return queue.slice(1);
+    });
+  };
+
+  const stageCroppedImage = (file: File) => {
+    const preview = URL.createObjectURL(file);
+    setPendingImages((images) => [...images, {
+      file,
+      preview,
+      alt: newImageAlt.trim() || suggestedImageAlt,
+      colorId: '',
+    }]);
+    setNewImageAlt('');
+    setUploadNotice(lang === 'pt' ? 'Recorte preparado. Clique em Guardar alterações para publicar.' : 'Crop prepared. Click Save changes to publish.');
+    advanceCropQueue();
+  };
+
+  const removePendingImage = (index: number) => {
+    setPendingImages((images) => {
+      URL.revokeObjectURL(images[index].preview);
+      return images.filter((_, imageIndex) => imageIndex !== index);
+    });
   };
 
   // Image thumbnail grid (2026-08-07 bug fix): the editor used to render
@@ -527,6 +562,8 @@ export function ProductEditor() {
           >
             {existing?.images?.length ? (
               <img src={resolveProductImage(existing.images[0].image).url} alt={resolveProductImage(existing.images[0].image).alt ?? form.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }} />
+            ) : pendingImages.length ? (
+              <img src={pendingImages[0].preview} alt={pendingImages[0].alt} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }} />
             ) : (
               t('noPhotosYet', lang)
             )}
@@ -561,7 +598,7 @@ export function ProductEditor() {
               const rowColorId = row.color ? String(refId(row.color)) : '';
               return (
                 <div key={row.id ?? index} style={{ display: 'flex', flexDirection: 'column', borderRadius: 6, overflow: 'hidden', border: `1px solid ${C.ruleLight}` }}>
-                  <div style={{ position: 'relative', aspectRatio: '1 / 1', background: C.subtleBg }}>
+                  <div style={{ position: 'relative', aspectRatio: '3 / 4', background: C.subtleBg }}>
                     <img src={resolved.url} alt={resolved.alt ?? form.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                     {index === 0 && (
                       <div style={{ position: 'absolute', top: 4, left: 4, padding: '2px 6px', borderRadius: 4, background: 'rgba(20,20,20,0.7)', color: '#fff', fontSize: 8, fontWeight: 800, letterSpacing: 0.3, textTransform: 'uppercase' }}>
@@ -617,9 +654,38 @@ export function ProductEditor() {
                 </div>
               );
             })}
+            {pendingImages.map((pending, index) => (
+              <div key={pending.preview} style={{ display: 'flex', flexDirection: 'column', borderRadius: 6, overflow: 'hidden', border: `2px dashed ${C.goldDeep}` }}>
+                <div style={{ position: 'relative', aspectRatio: '3 / 4', background: C.subtleBg }}>
+                  <img src={pending.preview} alt={pending.alt} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                  <div style={{ position: 'absolute', top: 4, left: 4, padding: '2px 6px', borderRadius: 4, background: 'rgba(20,20,20,0.72)', color: '#fff', fontSize: 8, fontWeight: 800, textTransform: 'uppercase' }}>
+                    {lang === 'pt' ? 'Pendente' : 'Pending'}
+                  </div>
+                  <button type="button" aria-label={t('deleteImageAriaLabel', lang)} onClick={() => removePendingImage(index)} style={{ position: 'absolute', top: 4, right: 4, width: 20, height: 20, borderRadius: 999, border: 'none', background: 'rgba(20,20,20,0.7)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <X size={12} />
+                  </button>
+                </div>
+                {form.hasColor && colors.length > 0 && (
+                  <select
+                    value={pending.colorId}
+                    onChange={(event) => setPendingImages((images) => images.map((image, imageIndex) => imageIndex === index ? { ...image, colorId: event.target.value } : image))}
+                    style={{ width: '100%', border: 'none', borderTop: `1px solid ${C.ruleLight}`, background: C.paper, color: C.ink, fontSize: 8, fontWeight: 700, padding: '3px 2px' }}
+                  >
+                    <option value="">{t('generalPhotoOption', lang)}</option>
+                    {colors.map((color) => <option key={String(color.id)} value={String(color.id)}>{colorLabel(color)}</option>)}
+                  </select>
+                )}
+                <input
+                  aria-label={t('imageAltLabel', lang)}
+                  value={pending.alt}
+                  onChange={(event) => setPendingImages((images) => images.map((image, imageIndex) => imageIndex === index ? { ...image, alt: event.target.value } : image))}
+                  style={{ border: 0, borderTop: `1px solid ${C.ruleLight}`, padding: '5px', fontSize: 8, color: C.ink, background: C.paper }}
+                />
+              </div>
+            ))}
             <label
               style={{
-                aspectRatio: '1 / 1', borderRadius: 6, border: `1px dashed ${C.rule}`,
+                aspectRatio: '3 / 4', borderRadius: 6, border: `1px dashed ${C.rule}`,
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
                 cursor: existing ? 'pointer' : 'not-allowed', color: C.inkSoft, fontSize: 8, fontWeight: 800,
                 textAlign: 'center', opacity: existing ? 1 : 0.5, padding: 4,
@@ -627,7 +693,11 @@ export function ProductEditor() {
             >
               <Plus size={16} />
               {t('addPhotoTile', lang)}
-              <input type="file" accept="image/*" hidden disabled={!existing || saving} onChange={(e) => void handleImageUpload(e.target.files?.[0])} />
+              <input type="file" accept="image/*" multiple hidden disabled={!existing || saving} onChange={(event) => {
+                const files = Array.from(event.target.files ?? []);
+                event.target.value = '';
+                startImageCrops(files);
+              }} />
             </label>
           </div>
           <div style={{ marginTop: 7, fontSize: 9, color: C.inkSoft }}>{imageUploadGuidance('catalogue', lang)}</div>
@@ -918,6 +988,22 @@ export function ProductEditor() {
           </div>
         </div>
       </div>
+
+      {cropSource && (
+        <ImageCropModal
+          key={`${cropSource.name}-${cropSource.lastModified}`}
+          file={cropSource}
+          aspect={3 / 4}
+          outputWidth={1600}
+          outputSuffix="product"
+          lang={lang}
+          title={lang === 'pt' ? 'Ajustar fotografia do produto' : 'Adjust product photo'}
+          description={lang === 'pt' ? 'Escolha o enquadramento vertical 3:4 usado no catálogo e na página do produto.' : 'Choose the 3:4 portrait framing used in the catalogue and product page.'}
+          applyLabel={cropQueue.length > 0 ? (lang === 'pt' ? 'Aplicar e continuar' : 'Apply and continue') : undefined}
+          onCancel={() => { setCropSource(null); setCropQueue([]); }}
+          onApply={stageCroppedImage}
+        />
+      )}
     </div>
   );
 }

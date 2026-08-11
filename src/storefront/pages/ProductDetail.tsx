@@ -187,7 +187,7 @@ export function ProductDetail() {
       <div className="ump-product-layout">
         <div>
         <div style={{ height: 440, borderRadius: 0, overflow: 'hidden', position: 'relative' }}>
-          <ProductPhoto tone={product.tone} radius={0} image={mainImage} variant="card" priority />
+          <ProductPhoto tone={product.tone} radius={0} image={mainImage} variant="full" priority />
           <button
             onClick={() => toggleFavorite(product.id)}
             aria-label={isFav ? (lang === 'pt' ? `Remover ${product.name} dos favoritos` : `Remove ${product.name} from favorites`) : (lang === 'pt' ? `Adicionar ${product.name} aos favoritos` : `Add ${product.name} to favorites`)}
