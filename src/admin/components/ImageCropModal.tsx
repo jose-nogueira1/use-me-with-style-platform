@@ -107,7 +107,7 @@ export function ImageCropModal({
         if (event.target === event.currentTarget && !applying) onCancel();
       }}
     >
-      <div style={{ width: 'min(760px, 100%)', background: C.paper, borderRadius: 12, overflow: 'hidden', boxShadow: '0 24px 80px rgba(0,0,0,.32)' }}>
+      <div style={{ width: 'min(760px, 100%)', maxHeight: 'calc(100dvh - 32px)', background: C.paper, borderRadius: 12, overflowY: 'auto', boxShadow: '0 24px 80px rgba(0,0,0,.32)' }}>
         <div style={{ padding: '18px 20px 14px' }}>
           <div id="hero-crop-title" style={{ color: C.ink, fontSize: 16, fontWeight: 800 }}>
             {title ?? (lang === 'pt' ? 'Ajustar imagem' : 'Adjust image')}
@@ -117,7 +117,19 @@ export function ImageCropModal({
           </div>
         </div>
 
-        <div style={{ position: 'relative', width: '100%', aspectRatio: String(aspect), background: '#171717' }}>
+        <div
+          style={{
+            position: 'relative',
+            width: '100%',
+            // The crop itself retains `aspect`; only the surrounding editor
+            // workspace is viewport-bound. A 4:5 workspace based on the
+            // modal's full desktop width was taller than the screen and
+            // pushed the zoom/actions out of reach.
+            height: aspect < 1 ? 'min(58dvh, 520px)' : 'min(52dvh, 440px)',
+            minHeight: 280,
+            background: '#171717',
+          }}
+        >
           <Cropper
             image={imageUrl}
             crop={crop}

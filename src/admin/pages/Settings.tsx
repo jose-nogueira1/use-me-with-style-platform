@@ -1490,16 +1490,16 @@ function HomeHeroSection() {
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 16fr) minmax(0, 8fr)', gap: 10, alignItems: 'start', marginBottom: 10 }}>
                 <div>
-                  <div style={{ fontSize: 9, color: C.inkSoft, marginBottom: 5 }}>{lang === 'pt' ? 'Desktop — 16:9' : 'Desktop — 16:9'}</div>
+                  <div style={{ fontSize: 9, color: C.inkSoft, marginBottom: 5 }}>{lang === 'pt' ? 'Desktop — 3:2' : 'Desktop — 3:2'}</div>
                   {heroImageUrl ? (
-                  <div style={{ position: 'relative', width: '100%', aspectRatio: '16 / 9', borderRadius: 8, overflow: 'hidden', border: `1px solid ${C.rule}`, background: C.disabledBg }}>
+                  <div style={{ position: 'relative', width: '100%', aspectRatio: '3 / 2', borderRadius: 8, overflow: 'hidden', border: `1px solid ${C.rule}`, background: C.disabledBg }}>
                     <img src={heroImageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                     {pendingHeroImage && (
                       <div style={{ position: 'absolute', top: 8, left: 8, padding: '5px 8px', borderRadius: 5, background: 'rgba(18,16,13,.78)', color: '#fff', fontSize: 9, fontWeight: 800 }}>
                         {lang === 'pt' ? 'Pré-visualização — ainda não guardada' : 'Preview — not saved yet'}
                       </div>
                     )}
-                  </div>) : <div style={{ aspectRatio: '16 / 9', display: 'grid', placeItems: 'center', borderRadius: 8, border: `1px dashed ${C.rule}`, color: C.inkSoft, fontSize: 9 }}>{lang === 'pt' ? 'Sem imagem' : 'No image'}</div>}
+                  </div>) : <div style={{ aspectRatio: '3 / 2', display: 'grid', placeItems: 'center', borderRadius: 8, border: `1px dashed ${C.rule}`, color: C.inkSoft, fontSize: 9 }}>{lang === 'pt' ? 'Sem imagem' : 'No image'}</div>}
                 </div>
                 <div>
                   <div style={{ fontSize: 9, color: C.inkSoft, marginBottom: 5 }}>{lang === 'pt' ? 'Mobile — 4:5' : 'Mobile — 4:5'}</div>
@@ -1568,11 +1568,11 @@ function HomeHeroSection() {
           {cropSource && (
             <ImageCropModal
               file={cropSource}
-              aspect={cropStage === 'desktop' ? 16 / 9 : 4 / 5}
+              aspect={cropStage === 'desktop' ? 3 / 2 : 4 / 5}
               outputWidth={cropStage === 'desktop' ? 2560 : 1600}
               lang={lang}
               title={cropStage === 'desktop' ? (lang === 'pt' ? '1 de 2 — Ajustar desktop' : '1 of 2 — Adjust desktop') : (lang === 'pt' ? '2 de 2 — Ajustar mobile' : '2 of 2 — Adjust mobile')}
-              description={cropStage === 'desktop' ? (lang === 'pt' ? 'Composição horizontal 16:9 para computadores.' : 'Horizontal 16:9 composition for desktop screens.') : (lang === 'pt' ? 'Composição vertical 4:5 com o texto sobre a imagem.' : 'Vertical 4:5 composition with text over the image.')}
+              description={cropStage === 'desktop' ? (lang === 'pt' ? 'Composição horizontal 3:2 para mostrar mais da fotografia no computador.' : 'Horizontal 3:2 composition that retains more of the photograph on desktop.') : (lang === 'pt' ? 'Composição vertical 4:5 com o texto sobre a imagem.' : 'Vertical 4:5 composition with text over the image.')}
               applyLabel={cropStage === 'desktop' ? (lang === 'pt' ? 'Seguinte: mobile' : 'Next: mobile') : (lang === 'pt' ? 'Aplicar os dois recortes' : 'Apply both crops')}
               outputSuffix={cropStage === 'desktop' ? 'hero-desktop' : 'hero-mobile'}
               onCancel={cancelCropSequence}

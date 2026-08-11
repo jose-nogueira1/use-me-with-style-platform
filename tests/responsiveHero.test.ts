@@ -20,5 +20,13 @@ test('storefront uses mobile art direction and retains the desktop composition',
   assert.match(home, /source media="\(max-width: 859px\)"/);
   assert.match(home, /ump-hero-shade/);
   assert.match(app, /grid-template-columns: \.9fr 1\.15fr/);
+  assert.match(app, /aspect-ratio: 3 \/ 2/);
   assert.match(app, /min-height: min\(76svh, 680px\)/);
+});
+
+test('crop editor remains usable for a tall mobile crop on a desktop viewport', () => {
+  const modal = read('../src/admin/components/ImageCropModal.tsx');
+  assert.match(modal, /maxHeight: 'calc\(100dvh - 32px\)'/);
+  assert.match(modal, /aspect < 1 \? 'min\(58dvh, 520px\)'/);
+  assert.doesNotMatch(modal, /aspectRatio: String\(aspect\)/);
 });

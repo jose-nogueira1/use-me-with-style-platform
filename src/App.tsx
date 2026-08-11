@@ -267,7 +267,7 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
           .ump-hero-headline { color: inherit; font-size: 34px !important; text-shadow: none; }
           .ump-hero-subtitle { display: block; }
           .ump-hero-cta { background: ${C.champagne} !important; border-color: ${C.heroCtaBorder} !important; color: ${C.black} !important; padding: 13px 22px !important; }
-          .ump-hero-photo { display: block; position: relative; inset: auto; margin: 0; aspect-ratio: 16 / 9 !important; border-radius: 10px !important; }
+          .ump-hero-photo { display: block; position: relative; inset: auto; margin: 0; aspect-ratio: 3 / 2 !important; border-radius: 10px !important; }
           .ump-hero-shade { display: none; }
         }
 
