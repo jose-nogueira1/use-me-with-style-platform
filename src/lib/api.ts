@@ -1496,12 +1496,21 @@ export async function adminUploadProductImage(file: File, alt: string): Promise<
   return data.doc;
 }
 
-export async function adminUpdateMarketSettings(input: Partial<MarketSettings>): Promise<MarketSettings> {
-  return request<MarketSettings>(
-    '/globals/market-settings',
+/** Payload wraps successful global updates in `{ message, result }`, unlike
+ * global reads, which return the document directly. Keep that REST detail in
+ * one place so admin forms receive the saved document rather than replacing
+ * their state with the response envelope. */
+async function adminUpdateGlobal<T>(path: string, input: Partial<T> | T): Promise<T> {
+  const data = await request<{ message: string; result: T }>(
+    path,
     { method: 'POST', body: JSON.stringify(input) },
     { auth: true },
   );
+  return data.result;
+}
+
+export async function adminUpdateMarketSettings(input: Partial<MarketSettings>): Promise<MarketSettings> {
+  return adminUpdateGlobal('/globals/market-settings', input);
 }
 
 export async function adminDeleteProduct(id: string | number): Promise<void> {
@@ -1574,49 +1583,25 @@ export async function adminFetchInvoiceSettings(): Promise<InvoiceSettings> {
 }
 
 export async function adminUpdateInvoiceSettings(input: Partial<InvoiceSettings>): Promise<InvoiceSettings> {
-  return request<InvoiceSettings>(
-    '/globals/invoice-settings',
-    { method: 'POST', body: JSON.stringify(input) },
-    { auth: true },
-  );
+  return adminUpdateGlobal('/globals/invoice-settings', input);
 }
 
 export async function adminUpdateLegalContent(input: Partial<LegalContent>): Promise<LegalContent> {
-  return request<LegalContent>(
-    '/globals/legal-content',
-    { method: 'POST', body: JSON.stringify(input) },
-    { auth: true },
-  );
+  return adminUpdateGlobal('/globals/legal-content', input);
 }
 
 export async function adminUpdateStorefrontContent(input: StorefrontContent): Promise<StorefrontContent> {
-  return request<StorefrontContent>(
-    '/globals/storefront-content',
-    { method: 'POST', body: JSON.stringify(input) },
-    { auth: true },
-  );
+  return adminUpdateGlobal('/globals/storefront-content', input);
 }
 
 export async function adminUpdateHomeHero(input: Partial<HomeHero>): Promise<HomeHero> {
-  return request<HomeHero>(
-    '/globals/home-hero?depth=1',
-    { method: 'POST', body: JSON.stringify(input) },
-    { auth: true },
-  );
+  return adminUpdateGlobal('/globals/home-hero?depth=1', input);
 }
 export async function adminUpdateHomeCategories(input: Partial<HomeCategories>): Promise<HomeCategories> {
-  return request<HomeCategories>(
-    '/globals/home-categories',
-    { method: 'POST', body: JSON.stringify(input) },
-    { auth: true },
-  );
+  return adminUpdateGlobal('/globals/home-categories', input);
 }
 export async function adminUpdateHomeCollections(input: Partial<HomeCollections>): Promise<HomeCollections> {
-  return request<HomeCollections>(
-    '/globals/home-collections',
-    { method: 'POST', body: JSON.stringify(input) },
-    { auth: true },
-  );
+  return adminUpdateGlobal('/globals/home-collections', input);
 }
 
 /** Admin: Instagram feed curation (2026-08-02). Same self-contained
@@ -1629,11 +1614,7 @@ export async function adminFetchInstagramSpotlight(): Promise<InstagramSpotlight
 }
 
 export async function adminUpdateInstagramSpotlight(input: InstagramSpotlight): Promise<InstagramSpotlight> {
-  return request<InstagramSpotlight>(
-    '/globals/instagram-spotlight',
-    { method: 'POST', body: JSON.stringify(input) },
-    { auth: true },
-  );
+  return adminUpdateGlobal('/globals/instagram-spotlight', input);
 }
 
 /** Past saves of each home-page global (2026-07-25 follow-up, "save old
