@@ -506,14 +506,49 @@ const BOTTOM_NAV_ITEMS = [
 
 function BottomNav({ lang }: { lang: Lang }) {
   const location = useLocation();
+  const navRef = useRef<HTMLDivElement>(null);
+
+  // iOS 26 WebKit can intermittently paint `position: fixed; bottom: 0`
+  // against the layout viewport after momentum scrolling, leaving the bar
+  // floating above/below the actually visible bottom edge. Correct only the
+  // difference between those two viewports; on browsers without a visual
+  // viewport (and whenever they already agree) this remains exactly 0px.
+  // Writing directly to the element avoids rerendering the storefront on
+  // every Safari toolbar animation frame.
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    const nav = navRef.current;
+    if (!viewport || !nav) return;
+    let frame = 0;
+    const syncBottom = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const visibleBottom = viewport.offsetTop + viewport.height;
+        const correction = Math.max(0, window.innerHeight - visibleBottom);
+        nav.style.bottom = `${correction}px`;
+      });
+    };
+    syncBottom();
+    viewport.addEventListener('resize', syncBottom);
+    viewport.addEventListener('scroll', syncBottom);
+    window.addEventListener('resize', syncBottom);
+    return () => {
+      cancelAnimationFrame(frame);
+      viewport.removeEventListener('resize', syncBottom);
+      viewport.removeEventListener('scroll', syncBottom);
+      window.removeEventListener('resize', syncBottom);
+    };
+  }, []);
+
   return (
     <div
+      ref={navRef}
       style={{
         flexShrink: 0,
         borderTop: `1px solid ${C.ruleLight}`,
         background: C.paper,
         display: 'flex',
-        padding: '10px 0 16px',
+        padding: '10px 0 max(16px, env(safe-area-inset-bottom))',
         // Fixed (not sticky) so the bar is always pinned to the viewport
         // bottom while browsing, the standard mobile app tab-bar pattern --
         // it used to be `position: sticky`, which only pins while scrolling
@@ -531,6 +566,10 @@ function BottomNav({ lang }: { lang: Lang }) {
         right: 0,
         bottom: 0,
         zIndex: 10,
+        // A dedicated compositing layer prevents Safari from leaving the
+        // old painted position behind while its toolbar animates.
+        transform: 'translateZ(0)',
+        willChange: 'bottom',
       }}
     >
       {BOTTOM_NAV_ITEMS.map((item) => {
