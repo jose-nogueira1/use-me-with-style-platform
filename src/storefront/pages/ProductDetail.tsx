@@ -12,6 +12,7 @@ import { colorHasStock } from '../../lib/productAdapters';
 import { Seo, SITE_TITLE, truncateForMeta } from '../../lib/seo';
 import { canonicalUrl } from '../../lib/seoMetadata';
 import { buildProductStructuredData } from '../../lib/productStructuredData';
+import { imagesForColor } from '../../lib/productGallery';
 import { serializeJsonLd } from '../../lib/jsonLd';
 import { SizeGuideTable } from '../components/SizeGuideTable';
 import { BreadcrumbJsonLd } from '../components/BreadcrumbJsonLd';
@@ -91,14 +92,11 @@ export function ProductDetail() {
   const defaultSize = product.sizes.find((candidate) => stockFor(activeColor, candidate) > 0) ?? product.sizes[Math.floor(product.sizes.length / 2)];
   const activeSize = size ?? defaultSize;
   const activeColorLabel = product.colors.find((c) => c.id === activeColor)?.name ?? activeColor;
-  // Colour-filtered gallery (2026-08-07): photos tagged to the selected
-  // colour win; if that colour has none of its own yet, fall back to the
-  // untagged "general" pool (approved product-wide default), and if a
-  // product somehow has neither (e.g. every photo tagged to a DIFFERENT
-  // colour), fall back to every photo rather than showing nothing.
-  const generalImages = product.images.filter((img) => !img.colorId);
-  const colorImages = activeColor ? product.images.filter((img) => img.colorId === activeColor) : [];
-  const galleryImages = colorImages.length > 0 ? colorImages : generalImages.length > 0 ? generalImages : product.images;
+  // General photos are product-wide and therefore remain visible alongside
+  // the selected colour's own photos. The helper preserves the gallery order
+  // chosen in the admin and only falls back to every photo for stale data
+  // where the selected colour has neither general nor matching imagery.
+  const galleryImages = imagesForColor(product.images, activeColor);
   const mainImage = galleryImages.find((img) => img.url === selectedImageUrl) ?? galleryImages[0];
   // Prev/next nav arrows (2026-08-07), alongside the thumbnail strip below.
   // Wraps at both ends so the arrows are always active with 2+ photos,
