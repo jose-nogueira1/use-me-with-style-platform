@@ -1567,6 +1567,11 @@ function HomeHeroSection() {
           />
           {cropSource && (
             <ImageCropModal
+              // Desktop -> mobile changes the editor's complete interaction
+              // context. Remount between steps so transient state such as
+              // `applying`, crop coordinates, zoom and errors cannot leak
+              // from the completed desktop crop and lock the mobile modal.
+              key={cropStage}
               file={cropSource}
               aspect={cropStage === 'desktop' ? 3 / 2 : 4 / 5}
               outputWidth={cropStage === 'desktop' ? 2560 : 1600}

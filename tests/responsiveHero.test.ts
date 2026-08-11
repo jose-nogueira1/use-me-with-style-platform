@@ -11,6 +11,7 @@ test('hero admin stages independent desktop and mobile crops behind Save', () =>
   assert.match(settings, /heroImageMobile: heroImageMobileId/);
   assert.match(settings, /1 de 2 — Ajustar desktop/);
   assert.match(settings, /2 de 2 — Ajustar mobile/);
+  assert.match(settings, /key=\{cropStage\}/);
 });
 
 test('storefront uses mobile art direction and retains the desktop composition', () => {
