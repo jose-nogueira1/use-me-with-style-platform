@@ -16,6 +16,7 @@ import { imagesForColor } from '../../lib/productGallery';
 import { serializeJsonLd } from '../../lib/jsonLd';
 import { SizeGuideTable } from '../components/SizeGuideTable';
 import { BreadcrumbJsonLd } from '../components/BreadcrumbJsonLd';
+import { CartAddedDrawer } from '../components/CartAddedDrawer';
 
 // Category display names now come from the CMS categories collection (via
 // product.catLabel) instead of a hardcoded slug->i18n-key map (2026-07-25).
@@ -166,8 +167,14 @@ export function ProductDetail() {
       currency: market === 'AO' ? 'AOA' : 'EUR',
     });
     setAdded(true);
-    setTimeout(() => setAdded(false), 1500);
   };
+
+  const cartCountAfterAdd = cart.reduce((total, item) => total + item.qty, 0);
+  const addedDetails = [
+    activeColorLabel ? `${lang === 'pt' ? 'Cor' : 'Colour'}: ${activeColorLabel}` : '',
+    activeSize ? `${lang === 'pt' ? 'Tamanho' : 'Size'}: ${activeSize}` : '',
+    `${lang === 'pt' ? 'Quantidade' : 'Quantity'}: 1`,
+  ].filter(Boolean).join(' · ');
 
   return (
     <div style={{ background: C.paper, position: 'relative' }}>
@@ -182,6 +189,18 @@ export function ProductDetail() {
         ...(product.cat && product.catLabel ? [{ name: product.catLabel, path: `/catalogo?cat=${encodeURIComponent(product.cat)}` }] : []),
         { name: product.name, path: `/produto/${encodeURIComponent(product.slug)}` },
       ]} />
+      <CartAddedDrawer
+        open={added}
+        onClose={() => setAdded(false)}
+        onViewCart={() => { setAdded(false); navigate('/carrinho'); }}
+        lang={lang}
+        productName={product.name}
+        image={mainImage}
+        tone={product.tone}
+        details={addedDetails}
+        price={fmtPrice(product)}
+        cartCount={cartCountAfterAdd}
+      />
       <div className="ump-product-layout">
         <div>
         <div style={{ height: 440, borderRadius: 0, overflow: 'hidden', position: 'relative' }}>

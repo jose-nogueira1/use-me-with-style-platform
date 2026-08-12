@@ -675,6 +675,21 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
            so there's nothing left to clear. */
         .ump-sticky-cta { position: sticky; bottom: 58px; }
         @media (min-width: 720px) { .ump-sticky-cta { bottom: 0; position: static; border-top: none !important; box-shadow: none !important; } }
+        .ump-cart-added-overlay { position: fixed; inset: 0; z-index: 1200; background: rgba(0,0,0,.42); display: flex; align-items: flex-end; }
+        .ump-cart-added-drawer { width: 100%; max-height: min(82vh, 620px); overflow-y: auto; background: ${C.paper}; border-radius: 20px 20px 0 0; padding: 20px 20px calc(20px + env(safe-area-inset-bottom)); box-shadow: 0 -12px 40px rgba(0,0,0,.18); outline: none; }
+        .ump-cart-added-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-bottom: 18px; border-bottom: 1px solid ${C.ruleLight}; }
+        .ump-cart-added-check { width: 30px; height: 30px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: ${C.gold}; color: ${C.black}; }
+        .ump-cart-added-close { width: 40px; height: 40px; border: 1px solid ${C.fieldBorder}; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: ${C.ink}; }
+        .ump-cart-added-product { display: grid; grid-template-columns: 92px minmax(0,1fr); gap: 16px; align-items: center; padding: 20px 0; }
+        .ump-cart-added-image { width: 92px; aspect-ratio: 3/4; overflow: hidden; border-radius: 10px; background: ${C.disabledBg}; }
+        .ump-cart-added-count { padding: 12px 0 16px; border-top: 1px solid ${C.ruleLight}; color: ${C.inkSoft}; font-size: 12px; }
+        .ump-cart-added-primary, .ump-cart-added-secondary { width: 100%; min-height: 50px; border-radius: 8px; font-size: 12px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; }
+        .ump-cart-added-primary { background: ${C.ctaBg}; color: ${C.onDarkGold}; border: 1px solid ${C.ctaBorder}; }
+        .ump-cart-added-secondary { margin-top: 10px; color: ${C.ink}; border: 1px solid ${C.fieldBorder}; }
+        @media (min-width: 720px) {
+          .ump-cart-added-overlay { justify-content: flex-end; align-items: stretch; }
+          .ump-cart-added-drawer { width: min(430px, 92vw); max-height: none; border-radius: 0; padding: 28px; box-shadow: -12px 0 40px rgba(0,0,0,.18); }
+        }
         .ump-pd-width { }
         @media (min-width: 720px) { .ump-pd-width { max-width: 1000px; margin: 0 auto; } }
 
