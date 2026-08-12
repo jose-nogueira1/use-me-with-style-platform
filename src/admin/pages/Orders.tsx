@@ -7,6 +7,7 @@ import { PageHeader } from '../components/PageHeader';
 import { Badge, orderStatusBadgeProps, statusBadgeProps } from '../components/Badge';
 import { deliveryMethodLabel, paymentMethodLabel } from '../lib/orderLabels';
 import { downloadOrdersCsv } from '../lib/ordersCsv';
+import { reportFilename } from '../lib/reportExports';
 import { dateTimeInputValue, filterOrdersByDateTime, formatOrderDateTime, orderDateRange } from '../lib/orderDateRange';
 import { t } from '../i18n';
 
@@ -224,8 +225,8 @@ export function Orders() {
   // active filters so a repeated export (e.g. "Angola, Processing" every
   // morning) doesn't just overwrite the same generic orders-<date>.csv.
   const handleExport = () => {
-    const parts = ['orders', marketFilter, statusFilter, new Date().toISOString().slice(0, 10)].filter(Boolean);
-    downloadOrdersCsv(orders ?? [], lang, `${parts.join('-')}.csv`);
+    const detail = [marketFilter, statusFilter, fromDate && `from-${fromDate.slice(0, 10)}`, toDate && `to-${toDate.slice(0, 10)}`].filter(Boolean).join('-');
+    downloadOrdersCsv(orders ?? [], lang, reportFilename('orders', detail));
   };
 
   return (
@@ -355,6 +356,7 @@ export function Orders() {
         >
           {t('exportOrders', lang)}
         </button>
+        <div style={{ flexBasis: '100%', textAlign: 'right', fontSize: 10.5, color: C.inkSoft }}>{t('ordersExportScopeNote', lang, { n: orders?.length ?? 0 })} {t('phase2ReportingNote', lang)}</div>
       </div>
 
       {error && <div style={{ margin: '20px 28px', fontSize: 13, color: '#B95545' }}>{t('couldntConnectBackend', lang)}</div>}

@@ -2,24 +2,37 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { C } from '../../theme';
 import { useApp } from '../../state/AppContext';
-import { adminListCustomers, type ApiCustomer } from '../../lib/api';
+import { adminListCustomers, adminListOrders, type ApiCustomer, type ApiOrder } from '../../lib/api';
 import { PageHeader } from '../components/PageHeader';
 import { t } from '../i18n';
+import { customersCsv, downloadText, reportFilename } from '../lib/reportExports';
 
 export function Customers() {
   const { lang } = useApp();
   const [customers, setCustomers] = useState<ApiCustomer[] | null>(null);
+  const [orders, setOrders] = useState<ApiOrder[] | null>(null);
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    adminListCustomers()
-      .then(setCustomers)
+    Promise.all([adminListCustomers(), adminListOrders()])
+      .then(([customerRows, orderRows]) => {
+        setCustomers(customerRows);
+        setOrders(orderRows);
+      })
       .catch(() => setError(true));
   }, []);
 
   return (
     <div style={{ paddingBottom: 32 }}>
-      <PageHeader eyebrow={t('navCustomers', lang)} title={t('contactLog', lang)} subtitle={t('contactLogSubtitle', lang)} />
+      <PageHeader
+        eyebrow={t('navCustomers', lang)}
+        title={t('contactLog', lang)}
+        subtitle={t('contactLogSubtitle', lang)}
+        cta={t('exportCustomers', lang)}
+        ctaDisabled={!customers || !orders || customers.length === 0}
+        onCta={() => downloadText(customersCsv(customers ?? [], orders ?? []), reportFilename('customers'))}
+      />
+      <div style={{ margin: '12px 28px 0', textAlign: 'right', fontSize: 10.5, color: C.inkSoft }}>{t('customersExportScopeNote', lang, { n: customers?.length ?? 0 })} {t('phase2ReportingNote', lang)}</div>
 
       {error && <div style={{ margin: '20px 28px', fontSize: 13, color: '#B95545' }}>{t('couldntConnectBackend', lang)}</div>}
       {customers && customers.length === 0 && <div style={{ margin: '20px 28px', fontSize: 13, color: C.inkSoft }}>{t('noCustomersYet', lang)}</div>}

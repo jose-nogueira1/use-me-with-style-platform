@@ -7,7 +7,7 @@ import { PageHeader } from '../components/PageHeader';
 import { Badge, orderStatusBadgeProps } from '../components/Badge';
 import { t, type Lang } from '../i18n';
 import { deliveryMethodLabel, paymentMethodLabel } from '../lib/orderLabels';
-import { downloadOrdersCsv } from '../lib/ordersCsv';
+import { dashboardSummaryCsv, downloadDashboardPdf, downloadText, reportFilename } from '../lib/reportExports';
 import { isCountedOrder, isRecognizedRevenue, ordersOnLocalDay } from '../lib/orderMetrics';
 import { formatOrderDateTime } from '../lib/orderDateRange';
 import {
@@ -305,8 +305,24 @@ export function Dashboard() {
         title={t('morningCheck', lang)}
         subtitle={t('morningCheckSubtitle', lang)}
         cta={t('exportSummary', lang)}
-        onCta={() => downloadOrdersCsv(todayOrders, lang)}
+        onCta={() => downloadDashboardPdf({ from: chart.currentWindow.start, to: chart.currentWindow.end, orders: currentPeriodOrders, products: products ?? [] })}
+        ctaDisabled={!orders || !products}
       />
+
+      <div style={{ margin: '12px 28px 0', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+        <button
+          type="button"
+          disabled={!orders || !products}
+          onClick={() => downloadText(
+            dashboardSummaryCsv({ from: chart.currentWindow.start, to: chart.currentWindow.end, orders: currentPeriodOrders, products: products ?? [] }),
+            reportFilename('dashboard-data', `${localISODate(chart.currentWindow.start)}-to-${localISODate(chart.currentWindow.end)}`),
+          )}
+          style={{ padding: '7px 12px', border: `1px solid ${C.rule}`, borderRadius: 6, background: C.paper, color: !orders || !products ? C.disabledFg : C.ink, fontSize: 11, fontWeight: 800 }}
+        >
+          {t('exportDashboardCsv', lang)}
+        </button>
+        <span style={{ fontSize: 10.5, color: C.inkSoft }}>{t('phase2ReportingNote', lang)}</span>
+      </div>
 
       {error && (
         <div style={{ margin: '20px 28px', fontSize: 13, color: '#B95545' }}>

@@ -5,6 +5,7 @@ import { useApp } from '../../state/AppContext';
 import { adminListProducts, productIsLowStock, resolveProductImage, resolveRef, type ApiProduct } from '../../lib/api';
 import { PageHeader } from '../components/PageHeader';
 import { t } from '../i18n';
+import { downloadText, inventoryCsv, reportFilename } from '../lib/reportExports';
 
 export function Products() {
   const { lang } = useApp();
@@ -57,12 +58,23 @@ export function Products() {
         onCta={() => navigate('/admin/produtos/novo')}
       />
 
-      <div style={{ padding: '20px 28px 0', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <FilterPill label={t('filterAll', lang, { n: counts.all })} active={filter === 'all'} onClick={() => setFilter('all')} />
-        <FilterPill label={t('filterActive', lang, { n: counts.active })} active={filter === 'active'} onClick={() => setFilter('active')} />
-        <FilterPill label={t('filterDraft', lang, { n: counts.draft })} active={filter === 'draft'} onClick={() => setFilter('draft')} />
-        <FilterPill label={t('filterLowStock', lang, { n: counts.low })} active={filter === 'low'} onClick={() => setFilter('low')} />
-        <FilterPill label={t('filterPhotoPending', lang, { n: counts.photo })} active={filter === 'photo'} onClick={() => setFilter('photo')} />
+      <div style={{ padding: '20px 28px 0', display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <FilterPill label={t('filterAll', lang, { n: counts.all })} active={filter === 'all'} onClick={() => setFilter('all')} />
+          <FilterPill label={t('filterActive', lang, { n: counts.active })} active={filter === 'active'} onClick={() => setFilter('active')} />
+          <FilterPill label={t('filterDraft', lang, { n: counts.draft })} active={filter === 'draft'} onClick={() => setFilter('draft')} />
+          <FilterPill label={t('filterLowStock', lang, { n: counts.low })} active={filter === 'low'} onClick={() => setFilter('low')} />
+          <FilterPill label={t('filterPhotoPending', lang, { n: counts.photo })} active={filter === 'photo'} onClick={() => setFilter('photo')} />
+        </div>
+        <button
+          type="button"
+          disabled={!products || filtered.length === 0}
+          onClick={() => downloadText(inventoryCsv(filtered), reportFilename('inventory', filter === 'all' ? undefined : filter))}
+          style={{ padding: '7px 14px', fontSize: 11, fontWeight: 800, borderRadius: 6, border: `1px solid ${C.rule}`, background: C.paper, color: !products || filtered.length === 0 ? C.disabledFg : C.ink }}
+        >
+          {t('exportInventory', lang)}
+        </button>
+        <div style={{ flexBasis: '100%', textAlign: 'right', fontSize: 10.5, color: C.inkSoft }}>{t('inventoryExportScopeNote', lang, { n: filtered.length })} {t('phase2ReportingNote', lang)}</div>
       </div>
 
       {error && <div style={{ margin: '20px 28px', fontSize: 13, color: '#B95545' }}>{t('couldntConnectBackend', lang)}</div>}

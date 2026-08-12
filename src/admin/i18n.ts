@@ -142,6 +142,16 @@ export const T: Record<string, Record<Lang, string>> = {
   // Dashboard's "Export summary" (always just today); this one downloads
   // whatever's currently filtered on the Orders page.
   exportOrders: { en: 'Export CSV', pt: 'Exportar CSV' },
+  exportDashboardCsv: { en: 'Download detailed CSV', pt: 'Descarregar CSV detalhado' },
+  exportInventory: { en: 'Export inventory CSV', pt: 'Exportar inventário CSV' },
+  exportCustomers: { en: 'Export customers CSV', pt: 'Exportar clientes CSV' },
+  ordersExportScopeNote: { en: '{n} filtered orders will be exported.', pt: 'Serão exportadas {n} encomendas filtradas.' },
+  inventoryExportScopeNote: { en: '{n} filtered products; one row per variant.', pt: '{n} produtos filtrados; uma linha por variante.' },
+  customersExportScopeNote: { en: '{n} customers with valid-order and market-separated spend history.', pt: '{n} clientes com histórico de encomendas válidas e gastos separados por mercado.' },
+  phase2ReportingNote: {
+    en: 'Phase 2: saved templates, column picker, Excel workbooks, scheduled reports and email delivery.',
+    pt: 'Fase 2: modelos guardados, seleção de colunas, ficheiros Excel, relatórios agendados e envio por email.',
+  },
   ordersToday: { en: 'Orders today', pt: 'Encomendas de hoje' },
   revenueToday: { en: 'Revenue today', pt: 'Receita de hoje' },
   separatelyNote: { en: 'EUR {amount} separately', pt: 'EUR {amount} em separado' },
@@ -1141,7 +1151,10 @@ export const T: Record<string, Record<Lang, string>> = {
     pt: 'Mensagens com IA (agente completo, além das regras da Fase 1)',
     en: 'AI messaging (full agent, beyond Phase 1 rules)',
   },
-  roadmapPhase2Item4: { pt: 'Analytics e relatórios de desempenho', en: 'Analytics and performance reporting' },
+  roadmapPhase2Item4: {
+    pt: 'Analytics e relatórios avançados: modelos guardados, seleção de colunas, Excel, agendamento e envio por email',
+    en: 'Advanced analytics and reporting: saved templates, column picker, Excel, scheduling and email delivery',
+  },
   roadmapPhase3Item1: { pt: 'Meta Ads', en: 'Meta Ads' },
   roadmapPhase3Item2: { pt: 'Automação avançada', en: 'Advanced automation' },
   roadmapPhase3Item3: { pt: 'Inventário multi-armazém', en: 'Multi-warehouse inventory' },
