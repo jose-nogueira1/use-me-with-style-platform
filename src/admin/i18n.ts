@@ -769,6 +769,13 @@ export const T: Record<string, Record<Lang, string>> = {
   swiftBicLabel: { en: 'SWIFT / BIC', pt: 'SWIFT / BIC' },
   paymentInstructionsLabel: { en: 'Additional payment instructions', pt: 'Instruções adicionais de pagamento' },
   vatRateLabel: { en: 'VAT rate (%) included in prices', pt: 'Taxa de IVA (%) incluída nos preços' },
+  vatRateMainlandLabel: { en: 'Mainland VAT rate (%) included in prices', pt: 'Taxa de IVA do continente (%) incluída nos preços' },
+  vatRateMadeiraLabel: { en: 'Madeira VAT rate (%) included in prices', pt: 'Taxa de IVA da Madeira (%) incluída nos preços' },
+  vatRateAzoresLabel: { en: 'Azores VAT rate (%) included in prices', pt: 'Taxa de IVA dos Açores (%) incluída nos preços' },
+  portugalVatRegionNote: {
+    en: 'The applicable rate is selected automatically from the delivery postcode.',
+    pt: 'A taxa aplicável é selecionada automaticamente através do código postal de entrega.',
+  },
   vatNoteLabel: { en: 'VAT / exemption note', pt: 'Nota de IVA / isenção' },
   invoicePrefixLabel: { en: 'Invoice prefix', pt: 'Prefixo da fatura' },
   pdfFooterLabel: { en: 'PDF footer', pt: 'Rodapé do PDF' },

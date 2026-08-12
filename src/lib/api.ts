@@ -740,7 +740,9 @@ export type InvoiceSettings = {
   bankAccountPT?: string;
   swiftBicPT?: string;
   paymentInstructionsPT?: string;
-  vatRatePT: number;
+  vatRatePortugalMainland: number;
+  vatRatePortugalMadeira: number;
+  vatRatePortugalAzores: number;
   taxNotePT?: string;
   invoicePrefixPT?: string;
   invoiceFooterPT?: string;

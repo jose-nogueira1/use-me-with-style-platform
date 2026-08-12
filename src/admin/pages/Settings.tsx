@@ -738,7 +738,7 @@ const INVOICE_SETTINGS_DEFAULTS: InvoiceSettings = {
   bankAccountAO: '',
   swiftBicAO: '',
   paymentInstructionsAO: '',
-  vatRateAO: 0,
+  vatRateAO: 14,
   taxNoteAO: '',
   invoicePrefixAO: 'UMWS-AO',
   invoiceFooterAO: '',
@@ -751,7 +751,9 @@ const INVOICE_SETTINGS_DEFAULTS: InvoiceSettings = {
   bankAccountPT: '',
   swiftBicPT: '',
   paymentInstructionsPT: '',
-  vatRatePT: 0,
+  vatRatePortugalMainland: 23,
+  vatRatePortugalMadeira: 22,
+  vatRatePortugalAzores: 16,
   taxNotePT: '',
   invoicePrefixPT: 'UMWS-PT',
   invoiceFooterPT: '',
@@ -880,7 +882,6 @@ function InvoiceMarketCard({
   const bankAccountKey = `bankAccount${market}` as const;
   const swiftBicKey = `swiftBic${market}` as const;
   const paymentInstructionsKey = `paymentInstructions${market}` as const;
-  const vatKey = `vatRate${market}` as const;
   const taxNoteKey = `taxNote${market}` as const;
   const prefixKey = `invoicePrefix${market}` as const;
   const footerKey = `invoiceFooter${market}` as const;
@@ -905,7 +906,38 @@ function InvoiceMarketCard({
           <SettingsTextarea label={t('paymentInstructionsLabel', lang)} value={settings[paymentInstructionsKey] ?? ''} onChange={(v) => set(paymentInstructionsKey, v)} rows={3} />
         </div>
       </details>
-      <SettingsField label={t('vatRateLabel', lang)} value={String(settings[vatKey] ?? 0)} onChange={(v) => set(vatKey, Number(v) || 0)} type="number" />
+      {market === 'AO' ? (
+        <SettingsField
+          label={t('vatRateLabel', lang)}
+          value={String(settings.vatRateAO ?? 14)}
+          onChange={(v) => set('vatRateAO', Number(v) || 0)}
+          type="number"
+        />
+      ) : (
+        <div style={{ marginBottom: 10 }}>
+          <div style={{ fontSize: 10, color: C.inkSoft, lineHeight: 1.5, marginBottom: 10 }}>
+            {t('portugalVatRegionNote', lang)}
+          </div>
+          <SettingsField
+            label={t('vatRateMainlandLabel', lang)}
+            value={String(settings.vatRatePortugalMainland ?? 23)}
+            onChange={(v) => set('vatRatePortugalMainland', Number(v) || 0)}
+            type="number"
+          />
+          <SettingsField
+            label={t('vatRateMadeiraLabel', lang)}
+            value={String(settings.vatRatePortugalMadeira ?? 22)}
+            onChange={(v) => set('vatRatePortugalMadeira', Number(v) || 0)}
+            type="number"
+          />
+          <SettingsField
+            label={t('vatRateAzoresLabel', lang)}
+            value={String(settings.vatRatePortugalAzores ?? 16)}
+            onChange={(v) => set('vatRatePortugalAzores', Number(v) || 0)}
+            type="number"
+          />
+        </div>
+      )}
       <SettingsField label={t('vatNoteLabel', lang)} value={settings[taxNoteKey] ?? ''} onChange={(v) => set(taxNoteKey, v)} />
       <SettingsField label={t('invoicePrefixLabel', lang)} value={settings[prefixKey] ?? ''} onChange={(v) => set(prefixKey, v)} />
       <SettingsTextarea label={t('pdfFooterLabel', lang)} value={settings[footerKey] ?? ''} onChange={(v) => set(footerKey, v)} rows={2} />
