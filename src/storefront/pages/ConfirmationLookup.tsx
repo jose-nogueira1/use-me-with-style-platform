@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { AlertTriangle, Check, Clock3 } from 'lucide-react';
 import { C, F, t } from '../../theme';
 import { useApp } from '../../state/AppContext';
@@ -45,7 +45,10 @@ const ALL_STATUS_LABEL_KEY: Record<string, string> = {
 export function ConfirmationLookup() {
   const { lang, dispatchCart } = useApp();
   const { orderNumber: routeOrderNumber } = useParams<{ orderNumber: string }>();
-  const [orderNumber, setOrderNumber] = useState(routeOrderNumber ?? '');
+  const [searchParams] = useSearchParams();
+  const linkedOrderNumber = searchParams.get('order')?.trim() ?? '';
+  const linkedEmail = searchParams.get('email')?.trim() ?? '';
+  const [orderNumber, setOrderNumber] = useState(routeOrderNumber ?? linkedOrderNumber);
   // Recovered synchronously (not in an effect, so there's no first-frame
   // flash of the wrong hero) from whatever Checkout stashed right before the
   // AppyPay widget could redirect here. Only ever non-null for that exact
@@ -56,7 +59,7 @@ export function ConfirmationLookup() {
   // this lazy initializer even if React invokes it twice in dev StrictMode.
   const [autoEmail] = useState(() => (routeOrderNumber ? peekPendingOrderEmail(routeOrderNumber) : null));
   const [manualWhatsapp] = useState(() => (routeOrderNumber ? loadManualWhatsappPayload(routeOrderNumber) : null));
-  const [email, setEmail] = useState(autoEmail ?? '');
+  const [email, setEmail] = useState(autoEmail ?? linkedEmail);
   const [result, setResult] = useState<PublicOrderStatus | null | 'not_found' | 'service_error'>(null);
   const [loading, setLoading] = useState(false);
   const [autoPolling, setAutoPolling] = useState(Boolean(autoEmail));
@@ -190,10 +193,10 @@ export function ConfirmationLookup() {
           <div style={{ fontSize: 12, color: C.heroSubtitle, marginTop: 20, lineHeight: 1.6, maxWidth: 320, marginLeft: 'auto', marginRight: 'auto' }}>
             {manualWhatsapp ? t('whatsappPendingNote', lang) : t('confirmationSentNote', lang)}
           </div>
-          {manualWhatsapp && <a href={manualWhatsapp.url} target="_blank" rel="noreferrer" style={{ display: 'inline-block', marginTop: 16, padding: '12px 18px', borderRadius: 8, background: '#25D366', color: '#111', fontSize: 11, fontWeight: 800, textDecoration: 'none' }}>{t('continueWhatsapp', lang)}</a>}
-          <Link to="/" style={{ display: 'inline-block', marginTop: 16, fontSize: 11, color: C.heroAccent, fontWeight: 700, textDecoration: 'underline' }}>
-            {t('continueShopping', lang)}
-          </Link>
+          <div className="ump-confirmation-actions">
+            {manualWhatsapp && <a className="ump-whatsapp-cta" href={manualWhatsapp.url} target="_blank" rel="noreferrer">{t('continueWhatsapp', lang)}</a>}
+            <Link to="/" className="ump-confirmation-secondary">{t('continueShopping', lang)}</Link>
+          </div>
         </div>
       )}
 
@@ -271,7 +274,7 @@ export function ConfirmationLookup() {
                       fontWeight: 800,
                     }}
                   >
-                    {i < activeStatusIdx ? <Check size={13} /> : i + 1}
+                    {i <= activeStatusIdx ? <Check size={13} /> : i + 1}
                   </div>
                   {i < STATUS_STEPS.length - 1 && (
                     <div style={{ flex: 1, height: 2, background: i < activeStatusIdx ? C.gold : C.ruleLight }} />

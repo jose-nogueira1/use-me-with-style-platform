@@ -334,6 +334,7 @@ export function OrderDetail() {
             <EditField label={t('phoneWhatsappField', lang)} value={form.customerPhone} onChange={(v) => setField('customerPhone', v)} />
             <EditField label={t('emailField', lang)} value={form.customerEmail} onChange={(v) => setField('customerEmail', v)} type="email" />
             <EditField label={t('addressField', lang)} value={form.address} onChange={(v) => setField('address', v)} />
+            <EditField label={t('addressLine2Field', lang)} value={form.addressLine2} onChange={(v) => setField('addressLine2', v)} />
             {/* PT-only fields, previously shown (and editable) for every
                 order regardless of market (2026-07-31, found via screen
                 recording: an Angola order showed an editable "Postal code
@@ -342,7 +343,6 @@ export function OrderDetail() {
                 never matched that. */}
             {order.market === 'PT' && (
               <>
-                <EditField label={t('floorDoorPT', lang)} value={form.addressLine2} onChange={(v) => setField('addressLine2', v)} />
                 <EditField label={t('postalCodePT', lang)} value={form.postalCode} onChange={(v) => setField('postalCode', v)} />
               </>
             )}

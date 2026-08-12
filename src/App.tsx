@@ -165,7 +165,7 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
            720-860px gap showed a hamburger + bottom tab bar stacked above
            already-desktop-looking content). */
         .ump-desktop-nav { display: none; }
-        @media (min-width: 720px) {
+        @media (min-width: 1080px) {
           .ump-desktop-nav { display: flex; }
         }
 
@@ -179,9 +179,15 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
            so a non-important rule would silently lose and the button would
            keep showing on desktop, same bug as the earlier duplicate
            theme-toggle issue. */
-        @media (min-width: 720px) {
+        @media (min-width: 1080px) {
           .ump-mobile-menu-btn { display: none !important; }
           .ump-mobile-menu { display: none !important; }
+        }
+        .ump-confirmation-actions { display: flex; flex-direction: column; align-items: center; gap: 14px; margin-top: 18px; }
+        .ump-whatsapp-cta { display: inline-flex; min-height: 44px; padding: 0 20px; align-items: center; justify-content: center; border-radius: 8px; background: #25D366; color: #111; font-size: 11px; font-weight: 800; text-decoration: none; }
+        .ump-confirmation-secondary { font-size: 11px; color: ${C.heroAccent}; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+        @media (min-width: 520px) {
+          .ump-confirmation-actions { flex-direction: row; justify-content: center; gap: 20px; }
         }
         @media (max-width: 340px) {
           .ump-theme-toggle { display: none !important; }

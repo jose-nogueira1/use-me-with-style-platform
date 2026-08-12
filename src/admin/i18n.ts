@@ -78,6 +78,7 @@ export const T: Record<string, Record<Lang, string>> = {
   phoneField: { en: 'Phone', pt: 'Telefone' },
   emailField: { en: 'Email', pt: 'Email' },
   addressField: { en: 'Address', pt: 'Morada' },
+  addressLine2Field: { en: 'Address line 2', pt: 'Morada — linha 2' },
   cityField: { en: 'City', pt: 'Cidade' },
   municipalityField: { en: 'Municipality', pt: 'Município' },
   countryField: { en: 'Country', pt: 'País' },
