@@ -243,7 +243,10 @@ export const T: Record<string, Record<Lang, string>> = {
   // Portugal's checkout fallback while payments are deferred (2026-08-04) --
   // replaces the old hard-blocking error with a single manual method,
   // mirrored on Angola's existing bank-transfer fallback.
-  paymentManualWhatsapp: { pt: 'Coordenação manual por email', en: 'Manual coordination by email' },
+  paymentManualWhatsapp: { pt: 'Coordenar pagamento pelo WhatsApp', en: 'Arrange payment through WhatsApp' },
+  completeWhatsapp: { pt: 'Finalizar encomenda pelo WhatsApp', en: 'Complete order through WhatsApp' },
+  continueWhatsapp: { pt: 'Continuar no WhatsApp', en: 'Continue on WhatsApp' },
+  whatsappPendingNote: { pt: 'A encomenda foi criada e aguarda a confirmação manual do pagamento.', en: 'Your order has been created and is awaiting manual payment confirmation.' },
   paymentBankTransfer: { pt: 'Transferência bancária', en: 'Bank transfer' },
   localCourierDelivery: { pt: 'Entrega por estafeta local', en: 'Local courier delivery' },
   stripeRedirecting: { pt: 'A redirecionar para o pagamento seguro…', en: 'Redirecting to secure payment…' },

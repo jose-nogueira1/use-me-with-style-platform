@@ -21,6 +21,7 @@ import { getMetaOrderContext } from '../../lib/analyticsConsent';
 import { stashPendingOrderEmail } from '../../lib/pendingOrderEmail';
 import { PaypalButton } from '../components/PaypalButton';
 import { localizeCouponError } from '../couponError';
+import { buildManualWhatsappPayload, saveManualWhatsappPayload } from '../../lib/manualWhatsapp';
 import {
   checkoutShippingCost,
   DEFAULT_TAX_RATES,
@@ -51,6 +52,11 @@ const DEFAULT_MARKET_SETTINGS: MarketSettings = {
   },
   angolaFreeShippingThreshold: 80000,
   portugalPaymentsEnabled: false,
+  manualWhatsappNumber: '',
+  angolaWhatsappNumber: '',
+  portugalWhatsappNumber: '',
+  manualWhatsappMessagePT: '',
+  manualWhatsappMessageEN: '',
   portugalManualCheckoutInstructionsPT:
     'Enviaremos por email as instruções para concluir o pagamento assim que a encomenda for confirmada.',
   portugalManualCheckoutInstructionsEN:
@@ -464,7 +470,10 @@ export function Checkout() {
   // While deferred, 'manual_whatsapp' is the only PT payment option offered
   // (2026-08-04) -- checkout still creates a real pending order instead of
   // hard-blocking, same pattern as Angola's bank-transfer fallback below.
-  const paymentOptions = market === 'AO' ? ['multicaixa_express'] : portugalCheckoutDeferred ? ['manual_whatsapp'] : settings.portugalPaymentMethods;
+  const angolaCheckoutDeferred = market === 'AO' && !settings.angolaPaymentLive;
+  const paymentOptions = angolaCheckoutDeferred || portugalCheckoutDeferred
+    ? ['manual_whatsapp']
+    : market === 'AO' ? settings.angolaPaymentMethods : settings.portugalPaymentMethods;
   // Deployed widget credentials are the authoritative readiness signal. The
   // CMS toggle remains backwards-compatible, but a stale `false` must not
   // force a configured production checkout back to the manual fallback.
@@ -910,6 +919,7 @@ export function Checkout() {
     setError(null);
     if (!validateRequiredFields()) return;
 
+    const whatsappWindow = paymentMethod === 'manual_whatsapp' ? window.open('', '_blank') : null;
     setSubmitting(true);
     try {
       if (paymentMethod === 'stripe') {
@@ -935,8 +945,15 @@ export function Checkout() {
       }
 
       const order = await createOrder(buildOrderInput());
+      if (paymentMethod === 'manual_whatsapp') {
+        const whatsapp = buildManualWhatsappPayload(order, settings);
+        saveManualWhatsappPayload(whatsapp);
+        if (whatsappWindow) whatsappWindow.location.href = whatsapp.url;
+        else window.open(whatsapp.url, '_blank', 'noopener,noreferrer');
+      }
       navigate(`/encomenda-confirmada/${order.orderNumber}`);
     } catch (err) {
+      whatsappWindow?.close();
       console.error('Order/payment creation failed', err);
       setError(paymentMethod === 'stripe' ? t('stripeUnavailable', lang) : t('orderFailed', lang));
     } finally {
@@ -1093,14 +1110,11 @@ export function Checkout() {
           {paymentOptions.map((opt) => (
             <RadioRow key={opt} name="payment" value={opt} checked={paymentMethod === opt} onSelect={() => handleSelectPaymentMethod(opt)} label={PAYMENT_LABEL_KEYS[opt] ? t(PAYMENT_LABEL_KEYS[opt], lang) : opt} />
           ))}
-          {paymentMethod === 'multicaixa_express' && !appyPayLive && (
-            <div style={{ marginTop: 8, padding: 12, background: C.subtleBg, borderRadius: 6, fontSize: 12, color: C.inkSoft, lineHeight: 1.5 }}>
-              {pickBilingual(settings.angolaBankTransferInstructionsPT, settings.angolaBankTransferInstructionsEN, lang)}
-            </div>
-          )}
           {paymentMethod === 'manual_whatsapp' && (
             <div role="status" style={{ marginTop: 8, padding: 12, background: C.subtleBg, borderRadius: 6, fontSize: 12, color: C.inkSoft, lineHeight: 1.5 }}>
-              {pickBilingual(settings.portugalManualCheckoutInstructionsPT, settings.portugalManualCheckoutInstructionsEN, lang)}
+              {market === 'AO'
+                ? pickBilingual(settings.angolaBankTransferInstructionsPT, settings.angolaBankTransferInstructionsEN, lang)
+                : pickBilingual(settings.portugalManualCheckoutInstructionsPT, settings.portugalManualCheckoutInstructionsEN, lang)}
             </div>
           )}
         </Section>
@@ -1225,7 +1239,7 @@ export function Checkout() {
               borderRadius: 8,
             }}
           >
-            {submitting ? (paymentMethod === 'stripe' ? t('stripeRedirecting', lang) : '…') : `${t('payNow', lang)} · ${fmt(total)}`}
+            {submitting ? (paymentMethod === 'stripe' ? t('stripeRedirecting', lang) : '…') : paymentMethod === 'manual_whatsapp' ? `${t('completeWhatsapp', lang)} · ${fmt(total)}` : `${t('payNow', lang)} · ${fmt(total)}`}
           </button>
         )}
       </div>

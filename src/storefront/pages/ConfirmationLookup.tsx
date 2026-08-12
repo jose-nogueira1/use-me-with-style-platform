@@ -5,6 +5,7 @@ import { C, F, t } from '../../theme';
 import { useApp } from '../../state/AppContext';
 import { lookupOrder, type PublicOrderStatus } from '../../lib/api';
 import { clearPendingOrderEmail, peekPendingOrderEmail } from '../../lib/pendingOrderEmail';
+import { loadManualWhatsappPayload } from '../../lib/manualWhatsapp';
 
 // AppyPay's charge is async (see AppyPayWidget.tsx): the customer's browser
 // can land back here before the CMS webhook has verified/rejected the
@@ -54,6 +55,7 @@ export function ConfirmationLookup() {
   // as before. `peekPendingOrderEmail` only reads, so it's safe to call from
   // this lazy initializer even if React invokes it twice in dev StrictMode.
   const [autoEmail] = useState(() => (routeOrderNumber ? peekPendingOrderEmail(routeOrderNumber) : null));
+  const [manualWhatsapp] = useState(() => (routeOrderNumber ? loadManualWhatsappPayload(routeOrderNumber) : null));
   const [email, setEmail] = useState(autoEmail ?? '');
   const [result, setResult] = useState<PublicOrderStatus | null | 'not_found' | 'service_error'>(null);
   const [loading, setLoading] = useState(false);
@@ -186,8 +188,9 @@ export function ConfirmationLookup() {
             <div style={{ fontFamily: F.display, fontSize: 20, color: C.heroAccent, marginTop: 4, fontWeight: 800 }}>{routeOrderNumber}</div>
           </div>
           <div style={{ fontSize: 12, color: C.heroSubtitle, marginTop: 20, lineHeight: 1.6, maxWidth: 320, marginLeft: 'auto', marginRight: 'auto' }}>
-            {t('confirmationSentNote', lang)}
+            {manualWhatsapp ? t('whatsappPendingNote', lang) : t('confirmationSentNote', lang)}
           </div>
+          {manualWhatsapp && <a href={manualWhatsapp.url} target="_blank" rel="noreferrer" style={{ display: 'inline-block', marginTop: 16, padding: '12px 18px', borderRadius: 8, background: '#25D366', color: '#111', fontSize: 11, fontWeight: 800, textDecoration: 'none' }}>{t('continueWhatsapp', lang)}</a>}
           <Link to="/" style={{ display: 'inline-block', marginTop: 16, fontSize: 11, color: C.heroAccent, fontWeight: 700, textDecoration: 'underline' }}>
             {t('continueShopping', lang)}
           </Link>

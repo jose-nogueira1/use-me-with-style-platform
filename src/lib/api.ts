@@ -484,6 +484,11 @@ export type MarketSettings = {
   angolaMunicipalityPrices: Record<string, number>;
   angolaFreeShippingThreshold: number;
   portugalPaymentsEnabled: boolean;
+  manualWhatsappNumber?: string;
+  angolaWhatsappNumber?: string;
+  portugalWhatsappNumber?: string;
+  manualWhatsappMessagePT?: string;
+  manualWhatsappMessageEN?: string;
   /** Shown at checkout while portugalPaymentsEnabled is off, PT/EN pair --
    * same pattern as angolaBankTransferInstructionsPT/EN above (2026-08-04
    * addition: PT checkout now offers a manual WhatsApp-coordination method

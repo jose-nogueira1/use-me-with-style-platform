@@ -80,6 +80,11 @@ const DEFAULTS: MarketSettings = {
   angolaMunicipalityPrices: DEFAULT_ANGOLA_MUNICIPALITY_PRICES,
   angolaFreeShippingThreshold: 80000,
   portugalPaymentsEnabled: false,
+  manualWhatsappNumber: '',
+  angolaWhatsappNumber: '',
+  portugalWhatsappNumber: '',
+  manualWhatsappMessagePT: '',
+  manualWhatsappMessageEN: '',
   portugalManualCheckoutInstructionsPT: '',
   portugalManualCheckoutInstructionsEN: '',
   portugalPaymentMethods: ['paypal', 'stripe'],
@@ -230,6 +235,7 @@ export function Settings() {
       {tab === 'markets' && (
         <div style={{ padding: '20px 28px 0', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }} className="ump-admin-orders-grid">
           <Card title={t('angolaOption', lang)} badge={t('multicaixaBadge', lang)} tone="gold">
+            <ConfigRow label="WhatsApp Use Me" value={<div><input value={settings.manualWhatsappNumber ?? ''} onChange={(e) => setSettings((s) => ({ ...s, manualWhatsappNumber: e.target.value }))} placeholder="244..." style={{ width: '100%', padding: 8, fontSize: 11, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg, marginBottom: 8 }} /><input value={settings.angolaWhatsappNumber ?? ''} onChange={(e) => setSettings((s) => ({ ...s, angolaWhatsappNumber: e.target.value }))} placeholder="Angola override (optional)" style={{ width: '100%', padding: 8, fontSize: 11, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg }} /></div>} />
             <ConfigRow label={t('currencyLabel', lang)} value={t('angolaCurrencyNote', lang)} />
             <ConfigRow
               label={t('paymentLabel', lang)}
@@ -300,6 +306,7 @@ export function Settings() {
           </Card>
 
           <Card title={t('portugalOption', lang)} badge={settings.portugalPaymentsEnabled ? t('configuredBadge', lang) : t('deferredBadge', lang)} tone={settings.portugalPaymentsEnabled ? 'green' : 'gold'}>
+            <ConfigRow label="WhatsApp Portugal" value={<input value={settings.portugalWhatsappNumber ?? ''} onChange={(e) => setSettings((s) => ({ ...s, portugalWhatsappNumber: e.target.value }))} placeholder="Optional market override" style={{ width: '100%', padding: 8, fontSize: 11, border: `1px solid ${C.rule}`, borderRadius: 6, background: C.subtleBg }} />} />
             <ConfigRow label={t('currencyLabel', lang)} value={t('portugalCurrencyNote', lang)} />
             <ConfigRow
               label={t('portugalPaymentsEnabledLabel', lang)}
