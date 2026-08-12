@@ -152,7 +152,7 @@ export function AdminLayout() {
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: 14 }}><AdminLanguageSwitch dark /></div>
         </div>
 
-        <div className="ump-admin-groups" style={{ gap: 6, marginBottom: 20 }}>
+        <div className="ump-admin-groups" style={{ gap: 6, marginBottom: 6 }}>
           {primaryNav.map((item) => (
             <NavItem key={item.to} {...item} onClick={closeNav} />
           ))}
