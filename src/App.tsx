@@ -186,6 +186,16 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
         .ump-confirmation-actions { display: flex; flex-direction: column; align-items: center; gap: 14px; margin-top: 18px; }
         .ump-whatsapp-cta { display: inline-flex; min-height: 44px; padding: 0 20px; align-items: center; justify-content: center; border-radius: 8px; background: #25D366; color: #111; font-size: 11px; font-weight: 800; text-decoration: none; }
         .ump-confirmation-secondary { font-size: 11px; color: ${C.heroAccent}; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+        .ump-order-progress-track,
+        .ump-order-progress-labels { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+        .ump-order-progress-track { position: relative; align-items: center; }
+        .ump-order-progress-step { position: relative; z-index: 1; display: flex; justify-content: center; }
+        .ump-order-progress-line { position: absolute; z-index: 0; left: 12.5%; right: 12.5%; top: 50%; height: 2px; overflow: hidden; transform: translateY(-50%); background: ${C.ruleLight}; }
+        .ump-order-progress-labels { margin-top: 9px; }
+        @media (max-width: 520px) {
+          .ump-order-progress-labels { column-gap: 6px; }
+          .ump-order-progress-labels > div { font-size: 8px !important; }
+        }
         @media (min-width: 520px) {
           .ump-confirmation-actions { flex-direction: row; justify-content: center; gap: 20px; }
         }

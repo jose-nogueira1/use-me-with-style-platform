@@ -16,6 +16,9 @@ test('email lookup parameters prefill order and email without auto-submitting', 
 test('confirmation actions use a responsive non-overlapping group and completed steps show checks', () => {
   assert.match(lookup, /className="ump-confirmation-actions"/);
   assert.match(lookup, /i <= activeStatusIdx \? <Check/);
+  assert.match(lookup, /className="ump-order-progress-track"/);
+  assert.match(app, /grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/);
+  assert.match(app, /left: 12\.5%; right: 12\.5%/);
   assert.match(app, /\.ump-confirmation-actions \{ display: flex; flex-direction: column/);
   assert.match(app, /@media \(min-width: 520px\)/);
 });

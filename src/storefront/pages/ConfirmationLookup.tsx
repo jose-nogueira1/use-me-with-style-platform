@@ -256,9 +256,12 @@ export function ConfirmationLookup() {
         {activeStatusIdx >= 0 && (
           <div style={{ marginBottom: 32 }}>
             <div style={{ fontSize: 10, letterSpacing: 1, color: C.goldDeep, fontWeight: 800, textTransform: 'uppercase', marginBottom: 14 }}>{t('orderStatus', lang)}</div>
-            <div style={{ display: 'flex', alignItems: 'center' }}>
+            <div className="ump-order-progress-track">
+              <div className="ump-order-progress-line" aria-hidden="true">
+                <div style={{ width: `${(activeStatusIdx / (STATUS_STEPS.length - 1)) * 100}%`, height: '100%', background: C.gold }} />
+              </div>
               {STATUS_STEPS.map((step, i) => (
-                <div key={step} style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+                <div key={step} className="ump-order-progress-step">
                   <div
                     style={{
                       width: 26,
@@ -276,15 +279,12 @@ export function ConfirmationLookup() {
                   >
                     {i <= activeStatusIdx ? <Check size={13} /> : i + 1}
                   </div>
-                  {i < STATUS_STEPS.length - 1 && (
-                    <div style={{ flex: 1, height: 2, background: i < activeStatusIdx ? C.gold : C.ruleLight }} />
-                  )}
                 </div>
               ))}
             </div>
-            <div style={{ display: 'flex', marginTop: 8 }}>
+            <div className="ump-order-progress-labels">
               {STATUS_STEPS.map((step) => (
-                <div key={step} style={{ flex: 1, fontSize: 9, color: C.inkSoft, textAlign: 'center' }}>
+                <div key={step} style={{ fontSize: 9, color: C.inkSoft, textAlign: 'center', lineHeight: 1.35 }}>
                   {t(STATUS_LABEL_KEY[step], lang)}
                 </div>
               ))}
