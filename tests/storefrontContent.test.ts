@@ -43,16 +43,19 @@ test('homepage metadata is market-aware and gives Angola its local trust signals
   assert.ok(pt.description.length <= 160);
 });
 
-test('custom admin exposes a top-level bilingual content editor backed by Payload', () => {
+test('custom admin exposes the bilingual content editor inside Settings', () => {
   const routes = projectFile('src/admin/AdminRoutes.tsx');
   const layout = projectFile('src/admin/AdminLayout.tsx');
+  const settings = projectFile('src/admin/pages/Settings.tsx');
   const editor = projectFile('src/admin/pages/Content.tsx');
   const faq = projectFile('src/storefront/pages/Faq.tsx');
   const sizeGuide = projectFile('src/storefront/pages/SizeGuide.tsx');
   const home = projectFile('src/storefront/pages/Home.tsx');
   const about = projectFile('src/storefront/pages/About.tsx');
-  assert.match(routes, /path="conteudo" element={<Content \/>}/);
-  assert.match(layout, /to: '\/admin\/conteudo'/);
+  assert.match(routes, /path="conteudo" element={<Navigate to="\/admin\/definicoes\?tab=content" replace \/>}/);
+  assert.doesNotMatch(layout, /to: '\/admin\/conteudo'/);
+  assert.match(settings, /key: 'content'/);
+  assert.match(settings, /tab === 'content' && <Content embedded \/>/);
   assert.match(editor, /adminUpdateStorefrontContent\(content\)/);
   assert.match(editor, /normalizeStorefrontContent\(await fetchStorefrontContent\(\)\)/);
   assert.match(editor, /contentAnswerPortugal/);

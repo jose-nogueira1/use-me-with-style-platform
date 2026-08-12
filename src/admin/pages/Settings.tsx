@@ -67,6 +67,7 @@ import {
   type ShopAssociation,
 } from '../lib/instagramSpotlight';
 import { ProductTaxonomySettings } from './ProductSettings';
+import { Content } from './Content';
 import { t, type Lang } from '../i18n';
 import { imageOptimizationSummary, imageUploadGuidance, prepareImageUpload } from '../../lib/imageUpload';
 import { DEFAULT_ANGOLA_MUNICIPALITY_PRICES, LUANDA_MUNICIPALITIES } from '../../storefront/shipping';
@@ -110,6 +111,7 @@ const DEFAULTS: MarketSettings = {
 };
 
 const TABS = [
+  { key: 'content', labelKey: 'navContent' },
   { key: 'markets', labelKey: 'tabMarkets' },
   { key: 'policies', labelKey: 'tabPolicies' },
   { key: 'invoicing', labelKey: 'tabInvoicing' },
@@ -134,6 +136,7 @@ const TABS = [
 type SettingsTab = (typeof TABS)[number]['key'];
 
 const TAB_META: Record<SettingsTab, { titleKey: string; subtitleKey: string }> = {
+  content: { titleKey: 'contentTitle', subtitleKey: 'contentSubtitle' },
   markets: { titleKey: 'tabMarketsTitle', subtitleKey: 'tabMarketsSubtitle' },
   policies: { titleKey: 'tabPoliciesTitle', subtitleKey: 'tabPoliciesSubtitle' },
   invoicing: { titleKey: 'tabInvoicingTitle', subtitleKey: 'tabInvoicingSubtitle' },
@@ -231,6 +234,8 @@ export function Settings() {
 
       {showsMarketSettingsCta && error && <div style={{ margin: '16px 28px 0', fontSize: 13, color: '#B95545' }}>{error}</div>}
       {showsMarketSettingsCta && saved && <div style={{ margin: '16px 28px 0', fontSize: 13, color: '#3F754D' }}>{t('savedNotice', lang)}</div>}
+
+      {tab === 'content' && <Content embedded />}
 
       {tab === 'markets' && (
         <div style={{ padding: '20px 28px 0', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }} className="ump-admin-orders-grid">

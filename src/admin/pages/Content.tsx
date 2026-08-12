@@ -11,7 +11,7 @@ import { t, type Lang } from '../i18n';
 
 type ContentTab = 'home-seo' | 'about' | 'faq' | 'size-guide';
 
-export function Content() {
+export function Content({ embedded = false }: { embedded?: boolean }) {
   const { lang } = useApp();
   const [tab, setTab] = useState<ContentTab>('home-seo');
   const [content, setContent] = useState<NormalizedStorefrontContent | null>(null);
@@ -60,15 +60,29 @@ export function Content() {
 
   return (
     <div style={{ paddingBottom: 32 }}>
-      <PageHeader
-        eyebrow={t('contentEyebrow', lang)}
-        title={t('contentTitle', lang)}
-        subtitle={t('contentSubtitle', lang)}
-        cta={saving ? t('savingEllipsis', lang) : t('saveChanges', lang)}
-        onCta={() => void save()}
-        ctaBusy={saving}
-        ctaDisabled={!dirty || saving || !contentValid}
-      />
+      {!embedded && (
+        <PageHeader
+          eyebrow={t('contentEyebrow', lang)}
+          title={t('contentTitle', lang)}
+          subtitle={t('contentSubtitle', lang)}
+          cta={saving ? t('savingEllipsis', lang) : t('saveChanges', lang)}
+          onCta={() => void save()}
+          ctaBusy={saving}
+          ctaDisabled={!dirty || saving || !contentValid}
+        />
+      )}
+      {embedded && (
+        <div style={{ padding: '20px 28px 0', display: 'flex', justifyContent: 'flex-end' }}>
+          <button
+            type="button"
+            onClick={() => void save()}
+            disabled={!dirty || saving || !contentValid}
+            style={{ padding: '10px 16px', borderRadius: 7, background: !dirty || saving || !contentValid ? C.disabledBg : C.ctaBg, color: !dirty || saving || !contentValid ? C.disabledFg : C.onDarkGold, fontSize: 11, fontWeight: 800, cursor: !dirty || saving || !contentValid ? 'not-allowed' : 'pointer' }}
+          >
+            {saving ? t('savingEllipsis', lang) : t('saveChanges', lang)}
+          </button>
+        </div>
+      )}
       <div style={{ padding: '20px 28px 0', display: 'flex', flexWrap: 'wrap', gap: 8 }}>
         <TabButton active={tab === 'home-seo'} onClick={() => setTab('home-seo')}>{t('contentHomeSeoTab', lang)}</TabButton>
         <TabButton active={tab === 'about'} onClick={() => setTab('about')}>{t('contentAboutTab', lang)}</TabButton>

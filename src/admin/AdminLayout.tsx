@@ -95,7 +95,6 @@ export function AdminLayout() {
     { to: '/admin', label: t('navDashboard', lang), end: true, badge: undefined as number | null | undefined },
     { to: '/admin/encomendas', label: t('navOrders', lang), badge: ordersCount },
     { to: '/admin/produtos', label: t('navProducts', lang), badge: productsCount },
-    { to: '/admin/conteudo', label: t('navContent', lang), badge: undefined },
     { to: '/admin/artigos', label: t('navArticles', lang), badge: undefined },
     { to: '/admin/definicoes', label: t('navSettings', lang), badge: undefined },
   ];
