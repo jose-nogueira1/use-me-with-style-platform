@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { C, F } from '../../theme';
 import { useApp } from '../../state/AppContext';
-import { adminCreateReturn, adminGetInvoiceForOrder, adminGetOrder, adminInvoicePdfUrl, adminListReturns, adminUpdateOrder, adminUpdateOrderStatus, type ApiInvoice, type ApiOrder, type ApiReturn } from '../../lib/api';
+import { adminCreateReturn, adminGetInvoiceForOrder, adminGetOrder, adminInvoicePdfUrl, adminListProducts, adminListReturns, adminUpdateOrder, adminUpdateOrderStatus, type ApiInvoice, type ApiOrder, type ApiProduct, type ApiReturn } from '../../lib/api';
+import { orderItemImage } from '../lib/orderItemImage';
 
 // Phase 2: switch on only after the return workflow receives its robustness pass.
 const RETURNS_PHASE_2_ENABLED = false;
@@ -64,6 +65,7 @@ export function OrderDetail() {
   const { lang } = useApp();
   const { id } = useParams<{ id: string }>();
   const [order, setOrder] = useState<ApiOrder | null>(null);
+  const [products, setProducts] = useState<ApiProduct[]>([]);
   const [form, setForm] = useState<EditableFields | null>(null);
   // Snapshot of `form` exactly as loaded (or last saved), to disable the
   // fields Save until something actually changed (2026-07-31 admin report)
@@ -98,6 +100,7 @@ export function OrderDetail() {
     adminGetInvoiceForOrder(id)
       .then(setInvoice)
       .catch(() => {}); // Non-fatal: the order itself already loaded fine above.
+    adminListProducts().then(setProducts).catch(() => {}); // Images are optional/non-fatal.
     if (RETURNS_PHASE_2_ENABLED) adminListReturns({ order: id }).then(setReturns).catch(() => {});
   }, [id]);
 
@@ -419,10 +422,11 @@ export function OrderDetail() {
       <div style={{ padding: '18px 28px 0', display: 'grid', gridTemplateColumns: '1fr 300px', gap: 16, alignItems: 'flex-start' }} className="ump-admin-orders-grid">
         <div style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 16, minWidth: 0 }}>
           <div style={{ fontSize: 10, fontWeight: 800, color: C.goldDeep, marginBottom: 10 }}>{t('itemsOrdered', lang)}</div>
-          {order.items.map((item, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '10px 0', borderTop: i > 0 ? `1px solid ${C.ruleLight}` : 'none' }}>
+          {order.items.map((item, i) => {
+            const image = orderItemImage(item, products);
+            return <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '10px 0', borderTop: i > 0 ? `1px solid ${C.ruleLight}` : 'none' }}>
               <div style={{ width: 56, height: 68, flexShrink: 0, borderRadius: 6, background: C.subtleBg, border: `1px solid ${C.rule}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 800, color: C.goldDeep, textAlign: 'center' }}>
-                {t('photoPending', lang)}
+                {image.url ? <img src={image.url} alt={image.alt || item.productName} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 5 }} /> : t('photoPending', lang)}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 14, fontWeight: 800, color: C.ink }}>{item.productName}</div>
@@ -434,8 +438,8 @@ export function OrderDetail() {
               </div>
               <div style={{ fontSize: 12, fontWeight: 800, color: C.ink }}>{t('qtyWithValue', lang, { n: item.qty })}</div>
               <div style={{ fontSize: 12, fontWeight: 800, color: C.ink }}>{item.unitPrice.toLocaleString('en-US')} {order.currency}</div>
-            </div>
-          ))}
+            </div>;
+          })}
         </div>
 
         <div style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 16, minWidth: 0 }}>
