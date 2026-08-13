@@ -6,6 +6,7 @@ import { useApp } from '../../state/AppContext';
 import { lookupOrder, type PublicOrderStatus } from '../../lib/api';
 import { clearPendingOrderEmail, peekPendingOrderEmail } from '../../lib/pendingOrderEmail';
 import { loadManualWhatsappPayload } from '../../lib/manualWhatsapp';
+import { CustomerReturnForm } from '../components/CustomerReturnForm';
 
 // AppyPay's charge is async (see AppyPayWidget.tsx): the customer's browser
 // can land back here before the CMS webhook has verified/rejected the
@@ -63,6 +64,7 @@ export function ConfirmationLookup() {
   const [result, setResult] = useState<PublicOrderStatus | null | 'not_found' | 'service_error'>(null);
   const [loading, setLoading] = useState(false);
   const [autoPolling, setAutoPolling] = useState(Boolean(autoEmail));
+  const [returnRefresh, setReturnRefresh] = useState(0);
   const clearedAutoEmailRef = useRef(false);
 
   // Cart is cleared here, once we've actually landed on a real order
@@ -360,6 +362,7 @@ export function ConfirmationLookup() {
               </div>
             )}
             {!!result.returns?.length && <div style={{ marginTop:16,paddingTop:14,borderTop:`1px solid ${C.ruleLight}` }}><div style={{fontSize:10,color:C.goldDeep,fontWeight:800,textTransform:'uppercase'}}>{lang==='pt'?'Trocas e devoluções':'Returns & exchanges'}</div>{result.returns.map((entry)=><div key={entry.returnNumber} style={{display:'flex',justifyContent:'space-between',gap:12,marginTop:9,fontSize:12,color:C.ink}}><span><b>{entry.returnNumber}</b><br/><span style={{color:C.inkSoft}}>{entry.resolution.replaceAll('_',' ')}</span></span><span style={{fontWeight:800,textTransform:'uppercase',color:C.goldDeep}}>{entry.status.replaceAll('_',' ')}</span></div>)}</div>}
+            {result.status === 'delivered' && <CustomerReturnForm key={returnRefresh} orderNumber={result.orderNumber} email={email.trim()} lang={lang} onSubmitted={async()=>{const refreshed=await lookupOrder(result.orderNumber,email.trim());if(refreshed)setResult(refreshed);setReturnRefresh(x=>x+1)}} />}
           </div>
         )}
       </div>

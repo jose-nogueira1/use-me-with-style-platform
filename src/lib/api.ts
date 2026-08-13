@@ -483,7 +483,12 @@ export type ApiReturn = {
   refundStatus?: string; refundReference?: string; storeCreditCode?: string; replacementOrder?: string | ApiOrder;
   inventoryRestockedAt?: string; resolvedAt?: string; statusHistory?: Array<{ status: string; changedAt: string; changedBy?: string }>;
   createdAt: string; updatedAt: string;
+  origin?: 'admin' | 'customer'; evidence?: Array<{ filename: string; mimeType: string; data: string }>;
 };
+export type CustomerReturnSession = { eligible: boolean; reason?: string; sessionToken?: string; market?: 'AO'|'PT'; currency?: 'Kz'|'EUR'; policyWindowHours?: number; cancellableReturns?: Array<{returnNumber:string;createdAt:string}>; items?: Array<{orderItemId:string;productName:string;size?:string;color?:string;purchasedQuantity:number;availableQuantity:number;unitRefundable:number;returnEligible:boolean;variants:Array<{id:string;label:string}>}> };
+export async function createCustomerReturnSession(orderNumber:string,email:string):Promise<CustomerReturnSession>{return request('/customer-returns/session',{method:'POST',body:JSON.stringify({orderNumber,email})});}
+export async function submitCustomerReturn(input:{orderNumber:string;email:string;sessionToken:string;resolution:string;reason:string;customerNote?:string;items:Array<{orderItemId:string;quantity:number;replacementVariantId?:string}>;evidence?:Array<{filename:string;mimeType:string;data:string}>}):Promise<{returnNumber:string;status:string}>{return request('/customer-returns/request',{method:'POST',body:JSON.stringify(input)});}
+export async function cancelCustomerReturn(input:{orderNumber:string;email:string;sessionToken:string;returnNumber:string}):Promise<void>{await request('/customer-returns/cancel',{method:'POST',body:JSON.stringify(input)});}
 
 export type MarketSettings = {
   angolaPaymentLive: boolean;
