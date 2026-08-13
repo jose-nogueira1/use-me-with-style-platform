@@ -3,6 +3,9 @@ import { Link, useParams } from 'react-router-dom';
 import { C, F } from '../../theme';
 import { useApp } from '../../state/AppContext';
 import { adminCreateReturn, adminGetInvoiceForOrder, adminGetOrder, adminInvoicePdfUrl, adminListReturns, adminUpdateOrder, adminUpdateOrderStatus, type ApiInvoice, type ApiOrder, type ApiReturn } from '../../lib/api';
+
+// Phase 2: switch on only after the return workflow receives its robustness pass.
+const RETURNS_PHASE_2_ENABLED = false;
 import { PageHeader } from '../components/PageHeader';
 import { Badge, orderStatusBadgeProps, statusBadgeProps } from '../components/Badge';
 import { useDirty } from '../lib/useDirty';
@@ -95,7 +98,7 @@ export function OrderDetail() {
     adminGetInvoiceForOrder(id)
       .then(setInvoice)
       .catch(() => {}); // Non-fatal: the order itself already loaded fine above.
-    adminListReturns({ order: id }).then(setReturns).catch(() => {});
+    if (RETURNS_PHASE_2_ENABLED) adminListReturns({ order: id }).then(setReturns).catch(() => {});
   }, [id]);
 
   const handleStatusChange = async (status: string, extra?: Record<string, unknown>) => {
@@ -515,7 +518,7 @@ export function OrderDetail() {
         </div>
       </div>
 
-      {order.paymentStatus === 'paid' && ['processing','shipped','delivered'].includes(order.status) && <div style={{ padding: '18px 28px 0' }}><div style={{ background:C.paper,border:`1px solid ${C.ruleLight}`,borderRadius:8,padding:16 }}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,flexWrap:'wrap'}}><div><div style={{fontSize:10,fontWeight:800,color:C.goldDeep}}>{lang==='pt'?'TROCAS E DEVOLUÇÕES':'RETURNS & EXCHANGES'}</div><div style={{fontSize:11,color:C.inkSoft,marginTop:5}}>{lang==='pt'?'A encomenda permanece intacta; cada devolução tem o seu próprio histórico.':'The order remains intact; each return has its own audit history.'}</div></div><button disabled={creatingReturn} onClick={createReturn} style={{padding:'9px 14px',background:C.black,color:C.onDarkGold,borderRadius:6,fontWeight:800}}>{creatingReturn?'…':lang==='pt'?'Criar devolução':'Create return'}</button></div>{returns.map(r=><Link key={r.id} to={`/admin/devolucoes/${r.id}`} style={{display:'flex',justifyContent:'space-between',paddingTop:12,marginTop:12,borderTop:`1px solid ${C.ruleLight}`,color:C.ink}}><span>{r.returnNumber}</span><b>{r.status.replaceAll('_',' ')}</b></Link>)}</div></div>}
+      {RETURNS_PHASE_2_ENABLED && order.paymentStatus === 'paid' && ['processing','shipped','delivered'].includes(order.status) && <div style={{ padding: '18px 28px 0' }}><div style={{ background:C.paper,border:`1px solid ${C.ruleLight}`,borderRadius:8,padding:16 }}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,flexWrap:'wrap'}}><div><div style={{fontSize:10,fontWeight:800,color:C.goldDeep}}>{lang==='pt'?'TROCAS E DEVOLUÇÕES':'RETURNS & EXCHANGES'}</div><div style={{fontSize:11,color:C.inkSoft,marginTop:5}}>{lang==='pt'?'A encomenda permanece intacta; cada devolução tem o seu próprio histórico.':'The order remains intact; each return has its own audit history.'}</div></div><button disabled={creatingReturn} onClick={createReturn} style={{padding:'9px 14px',background:C.black,color:C.onDarkGold,borderRadius:6,fontWeight:800}}>{creatingReturn?'…':lang==='pt'?'Criar devolução':'Create return'}</button></div>{returns.map(r=><Link key={r.id} to={`/admin/devolucoes/${r.id}`} style={{display:'flex',justifyContent:'space-between',paddingTop:12,marginTop:12,borderTop:`1px solid ${C.ruleLight}`,color:C.ink}}><span>{r.returnNumber}</span><b>{r.status.replaceAll('_',' ')}</b></Link>)}</div></div>}
 
       <PaymentDiagnostics order={order} lang={lang} />
       <OrderHistory order={order} lang={lang} />

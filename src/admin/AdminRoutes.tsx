@@ -16,8 +16,7 @@ import { Media } from './pages/Media';
 import { Coupons } from './pages/Coupons';
 import { Roadmap } from './pages/Roadmap';
 import { Articles } from './pages/Articles';
-import { Returns } from './pages/Returns';
-import { ReturnDetail } from './pages/ReturnDetail';
+// Phase 2: import Returns and ReturnDetail when the workflow is ready for release.
 
 export function AdminRoutes() {
   return (
@@ -28,8 +27,7 @@ export function AdminRoutes() {
           <Route index element={<Dashboard />} />
           <Route path="encomendas" element={<Orders />} />
           <Route path="encomendas/:id" element={<OrderDetail />} />
-          <Route path="devolucoes" element={<Returns />} />
-          <Route path="devolucoes/:id" element={<ReturnDetail />} />
+          {/* Phase 2: restore the devolucoes list and detail routes. */}
           <Route path="produtos" element={<Products />} />
           <Route path="produtos/:id" element={<ProductEditor />} />
           <Route path="conteudo" element={<Navigate to="/admin/definicoes?tab=content" replace />} />

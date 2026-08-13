@@ -4,7 +4,7 @@ import { Menu, X } from 'lucide-react';
 import { C } from '../theme';
 import { useApp } from '../state/AppContext';
 import { useAdminAuth } from './AdminAuthContext';
-import { adminCountReturns, adminListMessages, adminListOrders, adminListProducts } from '../lib/api';
+import { adminListMessages, adminListOrders, adminListProducts } from '../lib/api';
 import { BrandLogo } from '../components/BrandLogo';
 import { RouteToast } from './components/Toast';
 import { AdminLanguageSwitch } from './AdminTranslation';
@@ -20,7 +20,7 @@ import { t } from './i18n';
 // Figma screen of their own, so they're kept as a secondary group beneath a
 // divider rather than promoted into the primary four.
 const SECONDARY_NAV = [
-  { to: '/admin/devolucoes', labelKey: 'navReturns' },
+  // Phase 2: { to: '/admin/devolucoes', labelKey: 'navReturns' },
   { to: '/admin/clientes', labelKey: 'navCustomers' },
   { to: '/admin/mensagens', labelKey: 'navMessages' },
   { to: '/admin/faturas', labelKey: 'navInvoices' },
@@ -34,7 +34,6 @@ export function AdminLayout() {
   const location = useLocation();
   const [ordersCount, setOrdersCount] = useState<number | null>(null);
   const [productsCount, setProductsCount] = useState<number | null>(null);
-  const [returnsCount, setReturnsCount] = useState<number | null>(null);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState<number | null>(null);
   // Mobile nav drawer (added 2026-07-24, admin responsive audit, Finding 1;
   // reworked same day into a standard hamburger + drawer after a real-device
@@ -67,9 +66,6 @@ export function AdminLayout() {
     adminListProducts()
       .then((rows) => setProductsCount(rows.length))
       .catch(() => setProductsCount(null));
-    adminCountReturns()
-      .then(setReturnsCount)
-      .catch(() => setReturnsCount(null));
     const loadUnread = () => adminListMessages()
       .then((rows) => setUnreadMessagesCount(rows.filter((message) => message.direction === 'inbound' && !message.adminReadAt).length))
       .catch(() => setUnreadMessagesCount(null));
@@ -168,7 +164,7 @@ export function AdminLayout() {
               secondary nav items below still render, just without the
               heading text above them. */}
           {SECONDARY_NAV.map((item) => (
-            <NavItem key={item.to} to={item.to} label={t(item.labelKey, lang)} badge={item.to === '/admin/mensagens' ? unreadMessagesCount : item.to === '/admin/devolucoes' ? returnsCount : undefined} onClick={closeNav} />
+            <NavItem key={item.to} to={item.to} label={t(item.labelKey, lang)} badge={item.to === '/admin/mensagens' ? unreadMessagesCount : undefined} onClick={closeNav} />
           ))}
         </div>
 
