@@ -1,7 +1,8 @@
-import { createContext, useContext, useEffect, useMemo, useState, useReducer, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useReducer, type ReactNode } from 'react';
 import { formatKz, type Lang } from '../theme';
 import { publicEnv } from '../config/env';
 import { cartReducer, type CartItem, type CartAction } from './cartReducer';
+import { applyCartActionToStorage, parseStoredCart } from './cartSync';
 import { marketFromHostname, siblingMarketUrl } from '../lib/market';
 
 export type Market = 'AO' | 'PT';
@@ -85,21 +86,9 @@ function cartStorageKey(market: Market) {
   return `${CART_STORAGE_PREFIX}:${market}`;
 }
 
-function isCartItem(value: unknown): value is CartItem {
-  if (!value || typeof value !== 'object') return false;
-  const item = value as Partial<CartItem>;
-  return typeof item.id === 'string'
-    && typeof item.size === 'string'
-    && typeof item.color === 'string'
-    && Number.isInteger(item.qty)
-    && Number(item.qty) > 0
-    && Number(item.qty) <= 20;
-}
-
 function readStoredCart(market: Market): CartItem[] {
   try {
-    const parsed = JSON.parse(localStorage.getItem(cartStorageKey(market)) || '[]') as unknown;
-    return Array.isArray(parsed) ? parsed.filter(isCartItem).slice(0, 50) : [];
+    return parseStoredCart(localStorage.getItem(cartStorageKey(market)));
   } catch {
     return [];
   }
@@ -122,8 +111,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>(() => readStoredLang() ?? 'pt');
   const [market, setMarketState] = useState<Market>(() => hostnameMarket() ?? readStoredMarket() ?? defaultMarket);
   const [themeMode, setThemeModeState] = useState<ThemeMode>(readInitialThemeMode);
-  const [cart, dispatchCart] = useReducer(cartReducer, market, readStoredCart);
+  const [cart, dispatchCartState] = useReducer(cartReducer, market, readStoredCart);
   const [favorites, setFavorites] = useState<Set<string>>(() => readStoredFavorites(market));
+  const cartChannel = useRef<BroadcastChannel | null>(null);
 
   // Phase 1 markets: Angola (Kz) and Portugal (EUR). Geo-detection only
   // matters when the hostname itself doesn't already lock the market (i.e.
@@ -184,13 +174,46 @@ export function AppProvider({ children }: { children: ReactNode }) {
     document.documentElement.lang = lang;
   }, [lang]);
 
+  // Synchronize external cart writes. The storage event covers every modern
+  // browser; BroadcastChannel makes updates immediate and also provides a
+  // clean path for browsers that coalesce rapid storage notifications.
   useEffect(() => {
-    try {
-      localStorage.setItem(cartStorageKey(market), JSON.stringify(cart));
-    } catch {
-      // Storage can be unavailable in private browsing; the in-memory cart still works.
+    const key = cartStorageKey(market);
+    const applyExternal = (items: CartItem[]) => dispatchCartState({ type: 'HYDRATE', items });
+    const onStorage = (event: StorageEvent) => {
+      if (event.storageArea === localStorage && event.key === key) applyExternal(parseStoredCart(event.newValue));
+    };
+    window.addEventListener('storage', onStorage);
+    if (typeof BroadcastChannel !== 'undefined') {
+      const channel = new BroadcastChannel(key);
+      channel.onmessage = (event: MessageEvent<unknown>) => applyExternal(parseStoredCart(JSON.stringify(event.data)));
+      cartChannel.current = channel;
     }
-  }, [cart, market]);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      cartChannel.current?.close();
+      cartChannel.current = null;
+    };
+  }, [market]);
+
+  const dispatchCart = useCallback((action: CartAction) => {
+    // HYDRATE is an internal state synchronization operation; persisting it
+    // would let a stale tab echo an old snapshot back over the authoritative
+    // cart. All user mutations instead start from the latest stored value.
+    if (action.type === 'HYDRATE') {
+      dispatchCartState(action);
+      return;
+    }
+    try {
+      const next = applyCartActionToStorage(localStorage, cartStorageKey(market), action);
+      dispatchCartState({ type: 'HYDRATE', items: next });
+      cartChannel.current?.postMessage(next);
+    } catch {
+      // Private browsing/storage restrictions: preserve fully functional
+      // single-tab behavior even when durable synchronization is unavailable.
+      dispatchCartState(action);
+    }
+  }, [market]);
 
   useEffect(() => {
     try {
@@ -214,7 +237,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return;
       }
     }
-    dispatchCart({ type: 'HYDRATE', items: readStoredCart(m) });
+    dispatchCartState({ type: 'HYDRATE', items: readStoredCart(m) });
     setFavorites(readStoredFavorites(m));
     setMarketState(m);
     try {
