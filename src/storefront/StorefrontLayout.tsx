@@ -12,6 +12,8 @@ import { useSeoDefaults } from '../lib/seo';
 import { buildSiteStructuredData } from '../lib/siteStructuredData';
 import { serializeJsonLd } from '../lib/jsonLd';
 import { BreadcrumbJsonLd } from './components/BreadcrumbJsonLd';
+import { MiniCartDrawer } from './components/MiniCartDrawer';
+import { OPEN_MINI_CART_EVENT } from './miniCart';
 
 // Matches the real Figma design (node 72:2, "Phase 1 Storefront -- High
 // Fidelity"): plain header (logo center, hamburger/back left). Market,
@@ -50,6 +52,7 @@ export function StorefrontLayout() {
   // container so a click on the toggle button itself doesn't immediately
   // re-close what it just opened.
   const [searchOpen, setSearchOpen] = useState(false);
+  const [miniCartOpen, setMiniCartOpen] = useState(false);
   const headerRef = useRef<HTMLDivElement>(null);
   const [categories, setCategories] = useState<ApiCategory[]>([]);
   const [tiktokUrl, setTikTokUrl] = useState('');
@@ -90,7 +93,18 @@ export function StorefrontLayout() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMobileMenuOpen(false);
     setSearchOpen(false);
+    setMiniCartOpen(false);
   }, [location.pathname, location.search]);
+
+  useEffect(() => {
+    const open = () => {
+      setSearchOpen(false);
+      setMobileMenuOpen(false);
+      setMiniCartOpen(true);
+    };
+    window.addEventListener(OPEN_MINI_CART_EVENT, open);
+    return () => window.removeEventListener(OPEN_MINI_CART_EVENT, open);
+  }, []);
 
   // Close the search panel on Escape or a click/tap outside the header
   // (which contains both the trigger button and the panel itself -- see
@@ -216,7 +230,7 @@ export function StorefrontLayout() {
               {searchOpen ? <X size={16} /> : <Search size={16} />}
             </IconButton>
             <div style={{ position: 'relative' }}>
-              <IconButton dark={isHome} onClick={() => navigate('/carrinho')} label={t('cart', lang)}>
+              <IconButton dark={isHome} onClick={() => { setSearchOpen(false); setMobileMenuOpen(false); setMiniCartOpen(true); }} label={t('cart', lang)}>
                 <ShoppingBag size={16} />
               </IconButton>
               {cartCount > 0 && (
@@ -280,6 +294,11 @@ export function StorefrontLayout() {
 
       <Footer />
       <AnalyticsConsentManager />
+      <MiniCartDrawer
+        open={miniCartOpen}
+        onClose={() => setMiniCartOpen(false)}
+        onViewCart={() => { setMiniCartOpen(false); navigate('/carrinho'); }}
+      />
 
       <div className="ump-bottom-nav">
         <BottomNav lang={lang} />

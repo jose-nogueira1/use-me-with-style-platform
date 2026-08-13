@@ -65,7 +65,7 @@ export function CartAddedDrawer({ open, onClose, onViewCart, lang, productName, 
             : `${cartCount} ${cartCount === 1 ? 'item' : 'items'} in your cart`}
         </div>
         <button type="button" className="ump-cart-added-primary" onClick={onViewCart}>
-          {lang === 'pt' ? 'Ver carrinho e finalizar' : 'View cart and checkout'}
+          {lang === 'pt' ? 'Ver carrinho' : 'View cart'}
         </button>
         <button type="button" className="ump-cart-added-secondary" onClick={onClose}>
           {lang === 'pt' ? 'Continuar a comprar' : 'Continue shopping'}

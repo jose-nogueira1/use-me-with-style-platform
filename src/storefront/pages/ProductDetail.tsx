@@ -17,6 +17,7 @@ import { serializeJsonLd } from '../../lib/jsonLd';
 import { SizeGuideTable } from '../components/SizeGuideTable';
 import { BreadcrumbJsonLd } from '../components/BreadcrumbJsonLd';
 import { CartAddedDrawer } from '../components/CartAddedDrawer';
+import { openMiniCart } from '../miniCart';
 
 // Category display names now come from the CMS categories collection (via
 // product.catLabel) instead of a hardcoded slug->i18n-key map (2026-07-25).
@@ -192,7 +193,7 @@ export function ProductDetail() {
       <CartAddedDrawer
         open={added}
         onClose={() => setAdded(false)}
-        onViewCart={() => { setAdded(false); navigate('/carrinho'); }}
+        onViewCart={() => { setAdded(false); openMiniCart(); }}
         lang={lang}
         productName={product.name}
         image={mainImage}
