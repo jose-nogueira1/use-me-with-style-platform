@@ -1220,6 +1220,10 @@ export async function adminListReturns(params: { order?: string } = {}): Promise
   const data = await request<{ docs: ApiReturn[] }>(`/returns?${search}`, {}, { auth: true });
   return data.docs;
 }
+export async function adminCountReturns(): Promise<number> {
+  const data = await request<{ totalDocs: number }>('/returns?limit=0', {}, { auth: true });
+  return data.totalDocs;
+}
 export async function adminGetReturn(id: string): Promise<ApiReturn> { return request<ApiReturn>(`/returns/${id}?depth=1`, {}, { auth: true }); }
 export async function adminCreateReturn(input: { order: string; resolution: ApiReturn['resolution']; reason: string; items: Array<{ orderItemId: string; quantity: number }>; customerNote?: string; internalNote?: string; returnShippingPayer?: 'customer' | 'use_me' }): Promise<ApiReturn> {
   const data = await request<{ doc: ApiReturn }>('/returns', { method: 'POST', body: JSON.stringify(input) }, { auth: true }); return data.doc;

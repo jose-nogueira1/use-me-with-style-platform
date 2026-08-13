@@ -178,6 +178,7 @@ export function OrderDetail() {
   const handleStatusPillClick = (status: string) => {
     if (!order) return;
     if (order.status === 'cancelled') return;
+    if (status === 'cancelled' && order.status !== 'new') return;
     const fromIdx = STATUSES.indexOf(order.status as (typeof STATUSES)[number]);
     const toIdx = STATUSES.indexOf(status as (typeof STATUSES)[number]);
     const isBackward = toIdx < fromIdx || status === 'cancelled';
@@ -285,7 +286,7 @@ export function OrderDetail() {
           // Locked once the order is cancelled -- see handleStatusPillClick's
           // comment above; this is a terminal state now, both here and
           // server-side.
-          const locked = order.status === 'cancelled' && !current;
+          const locked = (order.status === 'cancelled' && !current) || (s === 'cancelled' && order.status !== 'new');
           return (
             <button
               key={s}
