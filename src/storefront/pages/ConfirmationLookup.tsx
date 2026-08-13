@@ -359,6 +359,7 @@ export function ConfirmationLookup() {
                 </a>
               </div>
             )}
+            {!!result.returns?.length && <div style={{ marginTop:16,paddingTop:14,borderTop:`1px solid ${C.ruleLight}` }}><div style={{fontSize:10,color:C.goldDeep,fontWeight:800,textTransform:'uppercase'}}>{lang==='pt'?'Trocas e devoluções':'Returns & exchanges'}</div>{result.returns.map((entry)=><div key={entry.returnNumber} style={{display:'flex',justifyContent:'space-between',gap:12,marginTop:9,fontSize:12,color:C.ink}}><span><b>{entry.returnNumber}</b><br/><span style={{color:C.inkSoft}}>{entry.resolution.replaceAll('_',' ')}</span></span><span style={{fontWeight:800,textTransform:'uppercase',color:C.goldDeep}}>{entry.status.replaceAll('_',' ')}</span></div>)}</div>}
           </div>
         )}
       </div>

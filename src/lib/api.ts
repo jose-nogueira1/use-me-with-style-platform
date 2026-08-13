@@ -467,7 +467,23 @@ export type ApiOrder = CreateOrderInput & {
 export type PublicOrderStatus = Pick<
   ApiOrder,
   'orderNumber' | 'status' | 'paymentStatus' | 'total' | 'currency' | 'deliveryRegion' | 'cttTrackingCode' | 'updatedAt'
->;
+> & { returns?: Array<Pick<ApiReturn, 'returnNumber' | 'status' | 'resolution' | 'approvedAmount' | 'currency' | 'updatedAt'>> };
+
+export type ApiReturnItem = {
+  orderItemId: string; product: string | number; productName: string; variantId?: string; colorId?: string;
+  inventoryComponents?: Array<{ product: string | number; variantId: string; qty: number }>;
+  size?: string; color?: string; quantity: number; unitPrice: number; couponShare: number; refundableAmount: number;
+  inspection?: 'pending' | 'accepted' | 'rejected'; restockQuantity?: number; inspectionNote?: string; replacementVariantId?: string;
+};
+export type ApiReturn = {
+  id: string; returnNumber: string; order: string | ApiOrder; orderNumber: string; market: 'AO' | 'PT'; currency: 'Kz' | 'EUR';
+  customerName: string; customerEmail: string; customerPhone?: string; lang?: 'pt' | 'en'; status: string;
+  resolution: 'refund' | 'exchange' | 'store_credit'; reason: string; customerNote?: string; internalNote?: string;
+  returnShippingPayer: 'customer' | 'use_me'; items: ApiReturnItem[]; requestedAmount: number; approvedAmount?: number;
+  refundStatus?: string; refundReference?: string; storeCreditCode?: string; replacementOrder?: string | ApiOrder;
+  inventoryRestockedAt?: string; resolvedAt?: string; statusHistory?: Array<{ status: string; changedAt: string; changedBy?: string }>;
+  createdAt: string; updatedAt: string;
+};
 
 export type MarketSettings = {
   angolaPaymentLive: boolean;
@@ -1191,6 +1207,20 @@ export async function adminUpdateOrderStatus(id: string, status: string, extra?:
 
 export async function adminGetOrder(id: string): Promise<ApiOrder> {
   return request<ApiOrder>(`/orders/${id}`, {}, { auth: true });
+}
+
+export async function adminListReturns(params: { order?: string } = {}): Promise<ApiReturn[]> {
+  const search = new URLSearchParams({ limit: '500', sort: '-createdAt', depth: '1' });
+  if (params.order) search.set('where[order][equals]', params.order);
+  const data = await request<{ docs: ApiReturn[] }>(`/returns?${search}`, {}, { auth: true });
+  return data.docs;
+}
+export async function adminGetReturn(id: string): Promise<ApiReturn> { return request<ApiReturn>(`/returns/${id}?depth=1`, {}, { auth: true }); }
+export async function adminCreateReturn(input: { order: string; resolution: ApiReturn['resolution']; reason: string; items: Array<{ orderItemId: string; quantity: number }>; customerNote?: string; internalNote?: string; returnShippingPayer?: 'customer' | 'use_me' }): Promise<ApiReturn> {
+  const data = await request<{ doc: ApiReturn }>('/returns', { method: 'POST', body: JSON.stringify(input) }, { auth: true }); return data.doc;
+}
+export async function adminUpdateReturn(id: string, input: Partial<ApiReturn>): Promise<ApiReturn> {
+  const data = await request<{ doc: ApiReturn }>(`/returns/${id}`, { method: 'PATCH', body: JSON.stringify(input) }, { auth: true }); return data.doc;
 }
 
 export async function adminListCustomers(): Promise<ApiCustomer[]> {

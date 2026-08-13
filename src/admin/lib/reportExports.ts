@@ -1,4 +1,4 @@
-import type { ApiCustomer, ApiOrder, ApiProduct } from '../../lib/api.ts';
+import type { ApiCustomer, ApiOrder, ApiProduct, ApiReturn } from '../../lib/api.ts';
 import { isCountedOrder, isRecognizedRevenue } from './orderMetrics.ts';
 
 function populated<T extends object>(value: T | string | number | null | undefined): T | null {
@@ -124,6 +124,11 @@ export function customersCsv(customers: ApiCustomer[], orders: ApiOrder[]): stri
     ];
   });
   return csvDocument(headers, rows);
+}
+
+export function returnsCsv(returns: ApiReturn[]): string {
+  const headers = ['Return number','Order number','Created at','Updated at','Market','Customer','Email','Status','Resolution','Reason','Items','Requested amount','Approved amount','Currency','Refund status','Refund reference','Store credit code','Restocked at','Resolved at','Replacement order'];
+  return csvDocument(headers, returns.map((row) => [row.returnNumber,row.orderNumber,row.createdAt,row.updatedAt,row.market,row.customerName,row.customerEmail,row.status,row.resolution,row.reason,row.items.map((item)=>`${item.quantity}x ${item.productName} (${item.inspection||'pending'}; restock ${item.restockQuantity||0})`).join(' | '),row.requestedAmount,row.approvedAmount,row.currency,row.refundStatus,row.refundReference,row.storeCreditCode,row.inventoryRestockedAt,row.resolvedAt,typeof row.replacementOrder==='object'?row.replacementOrder.orderNumber:row.replacementOrder]));
 }
 
 export type DashboardReport = {

@@ -20,6 +20,7 @@ import { t } from './i18n';
 // Figma screen of their own, so they're kept as a secondary group beneath a
 // divider rather than promoted into the primary four.
 const SECONDARY_NAV = [
+  { to: '/admin/devolucoes', labelKey: 'navReturns' },
   { to: '/admin/clientes', labelKey: 'navCustomers' },
   { to: '/admin/mensagens', labelKey: 'navMessages' },
   { to: '/admin/faturas', labelKey: 'navInvoices' },

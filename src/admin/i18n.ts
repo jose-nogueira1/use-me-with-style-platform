@@ -13,6 +13,7 @@ export const T: Record<string, Record<Lang, string>> = {
   // ---- Nav / shell (AdminLayout) ----
   navDashboard: { en: 'Dashboard', pt: 'Painel' },
   navOrders: { en: 'Orders', pt: 'Encomendas' },
+  navReturns: { en: 'Returns', pt: 'Devoluções' },
   navProducts: { en: 'Products', pt: 'Produtos' },
   navContent: { en: 'Content', pt: 'Conteúdo' },
   navArticles: { en: 'Articles', pt: 'Artigos' },

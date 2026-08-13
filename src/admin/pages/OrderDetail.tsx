@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { C, F } from '../../theme';
 import { useApp } from '../../state/AppContext';
-import { adminGetInvoiceForOrder, adminGetOrder, adminInvoicePdfUrl, adminUpdateOrder, adminUpdateOrderStatus, type ApiInvoice, type ApiOrder } from '../../lib/api';
+import { adminCreateReturn, adminGetInvoiceForOrder, adminGetOrder, adminInvoicePdfUrl, adminListReturns, adminUpdateOrder, adminUpdateOrderStatus, type ApiInvoice, type ApiOrder, type ApiReturn } from '../../lib/api';
 import { PageHeader } from '../components/PageHeader';
 import { Badge, orderStatusBadgeProps, statusBadgeProps } from '../components/Badge';
 import { useDirty } from '../lib/useDirty';
@@ -79,6 +79,8 @@ export function OrderDetail() {
   // the order it belongs to, instead of only from the separate Invoices page
   // (which requires cross-referencing the order number by hand).
   const [invoice, setInvoice] = useState<ApiInvoice | null>(null);
+  const [returns, setReturns] = useState<ApiReturn[]>([]);
+  const [creatingReturn, setCreatingReturn] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -93,6 +95,7 @@ export function OrderDetail() {
     adminGetInvoiceForOrder(id)
       .then(setInvoice)
       .catch(() => {}); // Non-fatal: the order itself already loaded fine above.
+    adminListReturns({ order: id }).then(setReturns).catch(() => {});
   }, [id]);
 
   const handleStatusChange = async (status: string, extra?: Record<string, unknown>) => {
@@ -225,6 +228,15 @@ export function OrderDetail() {
 
   const activeIdx = STATUSES.indexOf(order.status as (typeof STATUSES)[number]);
   const b = orderStatusBadgeProps(order, lang);
+  const createReturn = async () => {
+    const selected = order.items.map((item, index) => ({ orderItemId: String((item as { id?: string }).id ?? index), quantity: Number(window.prompt(`${item.productName}: quantity to return (0-${item.qty})`, '0') || 0) })).filter((item) => item.quantity > 0);
+    if (!selected.length) return;
+    const resolution = window.prompt(lang === 'pt' ? 'Resolução: refund, exchange ou store_credit' : 'Resolution: refund, exchange or store_credit', order.market === 'AO' ? 'exchange' : 'refund');
+    if (!['refund','exchange','store_credit'].includes(resolution || '')) return;
+    setCreatingReturn(true);
+    try { const created = await adminCreateReturn({ order: order.id, resolution: resolution as ApiReturn['resolution'], reason: 'other', items: selected }); setReturns((rows) => [created, ...rows]); }
+    catch { setError(true); } finally { setCreatingReturn(false); }
+  };
 
   return (
     <div style={{ paddingBottom: 32 }}>
@@ -501,6 +513,8 @@ export function OrderDetail() {
           )}
         </div>
       </div>
+
+      {order.paymentStatus === 'paid' && ['processing','shipped','delivered'].includes(order.status) && <div style={{ padding: '18px 28px 0' }}><div style={{ background:C.paper,border:`1px solid ${C.ruleLight}`,borderRadius:8,padding:16 }}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,flexWrap:'wrap'}}><div><div style={{fontSize:10,fontWeight:800,color:C.goldDeep}}>{lang==='pt'?'TROCAS E DEVOLUÇÕES':'RETURNS & EXCHANGES'}</div><div style={{fontSize:11,color:C.inkSoft,marginTop:5}}>{lang==='pt'?'A encomenda permanece intacta; cada devolução tem o seu próprio histórico.':'The order remains intact; each return has its own audit history.'}</div></div><button disabled={creatingReturn} onClick={createReturn} style={{padding:'9px 14px',background:C.black,color:C.onDarkGold,borderRadius:6,fontWeight:800}}>{creatingReturn?'…':lang==='pt'?'Criar devolução':'Create return'}</button></div>{returns.map(r=><Link key={r.id} to={`/admin/devolucoes/${r.id}`} style={{display:'flex',justifyContent:'space-between',paddingTop:12,marginTop:12,borderTop:`1px solid ${C.ruleLight}`,color:C.ink}}><span>{r.returnNumber}</span><b>{r.status.replaceAll('_',' ')}</b></Link>)}</div></div>}
 
       <PaymentDiagnostics order={order} lang={lang} />
       <OrderHistory order={order} lang={lang} />
