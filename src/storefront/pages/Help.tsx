@@ -183,12 +183,12 @@ export function Help() {
         {t('helpBody', lang)}
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 12, textAlign: 'left' }}>
-        <Link to="/conta" style={{ padding: 16, border: `1px solid ${C.rule}`, borderRadius: 8, background: C.paper, color: C.ink, textDecoration: 'none' }}>
+        <Link to="/conta" style={{ padding: 16, border: `1px solid ${C.fieldBorder}`, borderRadius: 8, background: C.paper, color: C.ink, textDecoration: 'none' }}>
           <Search size={18} color={C.goldDeep} />
           <div style={{ marginTop: 10, fontFamily: F.display, fontWeight: 800 }}>{t('orderHelpHeading', lang)}</div>
           <div style={{ marginTop: 5, fontSize: 11.5, lineHeight: 1.55, color: C.inkSoft }}>{t('orderHelpBody', lang)}</div>
         </Link>
-        <a href="mailto:support@usemewithstyle.shop?subject=Order%20support%20%E2%80%94%20%5Border%20number%5D" style={{ padding: 16, border: `1px solid ${C.rule}`, borderRadius: 8, background: C.paper, color: C.ink, textDecoration: 'none' }}>
+        <a href="mailto:support@usemewithstyle.shop?subject=Order%20support%20%E2%80%94%20%5Border%20number%5D" style={{ padding: 16, border: `1px solid ${C.fieldBorder}`, borderRadius: 8, background: C.paper, color: C.ink, textDecoration: 'none' }}>
           <Mail size={18} color={C.goldDeep} />
           <div style={{ marginTop: 10, fontFamily: F.display, fontWeight: 800 }}>{t('supportEmailAction', lang)}</div>
           <div style={{ marginTop: 5, fontSize: 11.5, lineHeight: 1.55, color: C.inkSoft }}>support@usemewithstyle.shop</div>
