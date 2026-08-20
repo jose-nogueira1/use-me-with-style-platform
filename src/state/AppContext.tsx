@@ -276,7 +276,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(
     () => ({ lang, setLang, market, setMarket, themeMode, setThemeMode, cart, dispatchCart, favorites, toggleFavorite }),
-    [lang, market, themeMode, cart, favorites],
+    [lang, market, themeMode, cart, dispatchCart, favorites],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

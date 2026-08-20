@@ -86,7 +86,7 @@ export function Footer() {
           <InfoLine label={t('shipping', lang)} value={market === 'AO' ? t('localCourierDelivery', lang) : t('businessDays', lang)} />
           <InfoLine
             label={t('returns', lang)}
-            value={t('footerReturnsNote', lang, { days: t(market === 'AO' ? 'fortyEightHours' : 'fourteenDays', lang) })}
+            value={t('footerReturnsNote', lang, { days: t('fourteenDays', lang) })}
             to="/ajuda#devolucoes"
           />
           <InfoLine label={t('prices', lang)} value={t(market === 'AO' ? 'footerPricesNoteAo' : 'footerPricesNotePt', lang)} />

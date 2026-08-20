@@ -452,7 +452,7 @@ export function ProductDetail() {
             </div>
             <div style={{ padding: '10px 0 6px', marginTop: 4, borderTop: `1px solid ${C.ruleLight}` }}>
               <div style={{ color: C.ink, fontWeight: 700, fontSize: 12, marginBottom: 4 }}>{t('returns', lang)}</div>
-              <div style={{ color: C.inkSoft, fontSize: 12, lineHeight: 1.5 }}>{product.returnNote || (product.returnEligible ? t(market === 'AO' ? 'fortyEightHours' : 'fourteenDays', lang) : (lang === 'pt' ? 'Este artigo não é elegível para devolução.' : 'This item is not eligible for return.'))}</div>
+              <div style={{ color: C.inkSoft, fontSize: 12, lineHeight: 1.5 }}>{product.returnNote || (product.returnEligible ? t('fourteenDays', lang) : (lang === 'pt' ? 'Este artigo não é elegível para devolução.' : 'This item is not eligible for return.'))}</div>
             </div>
           </div>
         </div>

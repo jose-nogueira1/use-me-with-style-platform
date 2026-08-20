@@ -525,9 +525,8 @@ export type MarketSettings = {
   portugalHeavyMainlandShippingPrice: number;
   portugalHeavyIslandsShippingPrice: number;
   /** Client-provided legal copy (JOS-64, added 2026-07-23). Angola and
-   * Portugal/EU have materially different terms (48h exchange-only vs.
-   * 14-day statutory withdrawal with refund), so these are separate fields
-   * rather than a translation of one shared policy. Bilingual (JOS-64,
+   * Portugal/EU have separate business/legal terms, so these are separate
+   * fields rather than a translation of one shared policy. Bilingual (JOS-64,
    * added 2026-07-24): PT is client-provided, EN is our translation of it. */
   angolaReturnsPolicyTextPT?: string;
   angolaReturnsPolicyTextEN?: string;

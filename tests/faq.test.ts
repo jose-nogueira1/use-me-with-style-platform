@@ -19,6 +19,24 @@ test('FAQ content is market-aware and does not claim deferred Portugal payments 
   assert.ok(pt.some((entry) => entry.link?.to === '/guia-de-tamanhos'));
 });
 
+test('Angola return guidance consistently gives customers 14 days in Portuguese and English', () => {
+  for (const lang of ['pt', 'en'] as const) {
+    const entry = buildFaqEntries('AO', lang, null).find((candidate) => candidate.link?.to === '/ajuda#devolucoes');
+    assert.ok(entry);
+    assert.match(entry.answer, /14 (?:dias|days)/i);
+    assert.doesNotMatch(entry.answer, /48 (?:horas|hours)/i);
+  }
+
+  for (const path of [
+    'src/theme/i18n.ts',
+    'src/storefront/components/Footer.tsx',
+    'src/storefront/pages/ProductDetail.tsx',
+  ]) {
+    const source = readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
+    assert.doesNotMatch(source, /fortyEightHours|48 (?:horas|hours)|48h exchange/i, `${path} contains conflicting Angola returns copy`);
+  }
+});
+
 test('FAQPage structured data mirrors every visible question and answer', () => {
   const entries = buildFaqEntries('PT', 'en', null);
   const schema = buildFaqStructuredData(entries);

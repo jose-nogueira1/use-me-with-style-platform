@@ -97,8 +97,8 @@ export function buildFaqEntries(market: Market, lang: Lang, settings: MarketSett
       question: lang === 'pt' ? 'Posso trocar ou devolver um artigo?' : 'Can I exchange or return an item?',
       answer: market === 'AO'
         ? (lang === 'pt'
-          ? 'Em Angola, comunique qualquer pedido de troca no prazo máximo de 48 horas após receber a encomenda. A elegibilidade, o estado exigido do artigo, os custos e as exceções constam da política completa.'
-          : 'In Angola, tell us about an exchange request within 48 hours of receiving the order. Eligibility, required item condition, costs, and exceptions are explained in the full policy.')
+          ? 'Em Angola, comunique qualquer pedido de troca no prazo máximo de 14 dias após receber a encomenda. A elegibilidade, o estado exigido do artigo, os custos e as exceções constam da política completa.'
+          : 'In Angola, tell us about an exchange request within 14 days of receiving the order. Eligibility, required item condition, costs, and exceptions are explained in the full policy.')
         : (lang === 'pt'
           ? 'Em Portugal, as compras online dispõem do prazo legal indicado na nossa política para comunicar a intenção de devolução. O artigo deve cumprir as condições descritas na política completa.'
           : 'In Portugal, online purchases have the legal period stated in our policy to notify us of an intended return. The item must meet the conditions described in the full policy.'),
