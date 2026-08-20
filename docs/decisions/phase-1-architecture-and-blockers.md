@@ -1,7 +1,15 @@
 # Phase 1 — Architecture & Open-Blocker Decisions
 
-Status: recommendation draft · Last updated: 2026-06-11
+Status: superseded · Last updated: 2026-08-20
 Covers Linear: JOS-20 (architecture), JOS-57 (Appy Pay), JOS-52 (launch decisions)
+
+> **Superseded:** This June 2026 recommendation is retained as historical
+> context. It is no longer the controlling Phase 1 delivery or launch decision.
+> The current approved baseline is
+> [`phase-1-closeout-baseline-2026-08-20.md`](./phase-1-closeout-baseline-2026-08-20.md).
+> In particular, SWEG is not yet selected, the existing invoice implementation
+> is accepted for initial launch, and WhatsApp remains an administrator-enabled
+> payment fallback after AppyPay becomes the primary flow.
 
 This document moves the three overdue Phase 1 blockers forward by recording a
 recommended decision for each, what is already settled, and what is still
