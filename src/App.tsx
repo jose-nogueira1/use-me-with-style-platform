@@ -105,6 +105,21 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
            screens) -- just enough width to stop the page looking abandoned. */
         .ump-form-width { max-width: 480px; margin: 0 auto; width: 100%; box-sizing: border-box; }
         @media (min-width: 860px) { .ump-form-width { max-width: 640px; } }
+        .ump-size-guide-label-short { display: none; }
+        @media (max-width: 420px) {
+          .ump-size-guide-table { table-layout: fixed; }
+          .ump-size-guide-table th,
+          .ump-size-guide-table td { padding-inline-start: 4px !important; font-size: 10px !important; }
+          .ump-size-guide-table th:first-child,
+          .ump-size-guide-table td:first-child { padding-inline-start: 0 !important; }
+          .ump-size-guide-label-full { display: none; }
+          .ump-size-guide-label-short { display: inline; }
+        }
+        @media (max-width: 340px) {
+          .ump-size-guide-table th,
+          .ump-size-guide-table td { padding-inline-start: 2px !important; font-size: 9px !important; }
+          .ump-size-guide-table th { letter-spacing: 0.5px !important; }
+        }
         @media (max-width: 900px) { .ump-style-guide-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; } }
         @media (max-width: 620px) { .ump-style-guide-grid { grid-template-columns: 1fr !important; } }
 

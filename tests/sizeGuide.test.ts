@@ -27,7 +27,11 @@ test('size-guide route is linked and uses the shared product table', () => {
   const app = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8');
   const footer = readFileSync(new URL('../src/storefront/components/Footer.tsx', import.meta.url), 'utf8');
   const product = readFileSync(new URL('../src/storefront/pages/ProductDetail.tsx', import.meta.url), 'utf8');
+  const table = readFileSync(new URL('../src/storefront/components/SizeGuideTable.tsx', import.meta.url), 'utf8');
   assert.match(app, /path="guia-de-tamanhos" element={<SizeGuide \/>}/);
   assert.match(footer, /to: '\/guia-de-tamanhos'/);
   assert.match(product, /<SizeGuideTable rows={product\.sizeGuide}/);
+  assert.match(app, /\.ump-size-guide-table \{ table-layout: fixed; \}/);
+  assert.match(table, /ump-size-guide-label-short/);
+  assert.match(table, /aria-label={t\(columnLabel\[key\], lang\)}/);
 });

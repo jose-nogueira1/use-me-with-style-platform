@@ -4,17 +4,25 @@ import type { SizeGuideRow } from '../../types/product';
 export function SizeGuideTable({ rows, lang, fitNote }: { rows: SizeGuideRow[]; lang: Lang; fitNote?: string }) {
   const columns = (['bust', 'waist', 'hip', 'length'] as const).filter((key) => rows.some((row) => row[key] != null));
   const columnLabel = { bust: 'sgBust', waist: 'sgWaist', hip: 'sgHip', length: 'sgLength' } as const;
+  const compactColumnLabel = lang === 'pt'
+    ? { bust: 'Busto', waist: 'Cint.', hip: 'Anca', length: 'Comp.' }
+    : { bust: 'Bust', waist: 'Waist', hip: 'Hips', length: 'Length' };
+  const sizeLabel = t('size', lang);
 
   return (
     <>
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+      <div className="ump-size-guide-scroll" style={{ overflowX: 'auto' }}>
+        <table className="ump-size-guide-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
           <thead>
             <tr>
-              <th style={{ textAlign: 'left', padding: '9px 0', fontSize: 10, fontWeight: 800, letterSpacing: 1, color: C.goldDeep, textTransform: 'uppercase' }}>{t('size', lang)}</th>
+              <th aria-label={sizeLabel} style={{ textAlign: 'left', padding: '9px 0', fontSize: 10, fontWeight: 800, letterSpacing: 1, color: C.goldDeep, textTransform: 'uppercase' }}>
+                <span className="ump-size-guide-label-full">{sizeLabel}</span>
+                <span className="ump-size-guide-label-short" aria-hidden="true">{lang === 'pt' ? 'Tam.' : 'Size'}</span>
+              </th>
               {columns.map((key) => (
-                <th key={key} style={{ textAlign: 'right', padding: '9px 0 9px 16px', fontSize: 10, fontWeight: 800, letterSpacing: 1, color: C.goldDeep, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
-                  {t(columnLabel[key], lang)}
+                <th key={key} aria-label={t(columnLabel[key], lang)} style={{ textAlign: 'right', padding: '9px 0 9px 16px', fontSize: 10, fontWeight: 800, letterSpacing: 1, color: C.goldDeep, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
+                  <span className="ump-size-guide-label-full">{t(columnLabel[key], lang)}</span>
+                  <span className="ump-size-guide-label-short" aria-hidden="true">{compactColumnLabel[key]}</span>
                 </th>
               ))}
             </tr>
