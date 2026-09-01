@@ -33,5 +33,6 @@ test('crop editor remains usable for a tall mobile crop on a desktop viewport', 
   const modal = read('../src/admin/components/ImageCropModal.tsx');
   assert.match(modal, /maxHeight: 'calc\(100dvh - 32px\)'/);
   assert.match(modal, /aspect < 1 \? 'min\(58dvh, 520px\)'/);
+  assert.match(modal, /min=\{1\} max=\{5\}/);
   assert.doesNotMatch(modal, /aspectRatio: String\(aspect\)/);
 });

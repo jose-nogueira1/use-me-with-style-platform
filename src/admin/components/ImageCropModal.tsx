@@ -146,7 +146,7 @@ export function ImageCropModal({
         <div style={{ padding: '16px 20px 20px' }}>
           <label style={{ display: 'grid', gridTemplateColumns: '44px 1fr 38px', alignItems: 'center', gap: 10, color: C.inkSoft, fontSize: 10 }}>
             <span>{lang === 'pt' ? 'Zoom' : 'Zoom'}</span>
-            <input type="range" min={1} max={3} step={0.01} value={zoom} onChange={(event) => setZoom(Number(event.target.value))} />
+            <input type="range" min={1} max={5} step={0.01} value={zoom} onChange={(event) => setZoom(Number(event.target.value))} />
             <span style={{ textAlign: 'right' }}>{zoom.toFixed(1)}×</span>
           </label>
           {error && <div style={{ color: '#B95545', fontSize: 11, marginTop: 10 }}>{error}</div>}
