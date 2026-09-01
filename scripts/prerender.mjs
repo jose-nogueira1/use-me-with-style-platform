@@ -281,7 +281,7 @@ async function captureRoute(context, port, market, route) {
         return scripts.some((script) => script.textContent?.includes('"@type":"Product"'))
       }, undefined, { timeout: 30_000 })
     }
-    if (route.startsWith('/catalogo')) {
+    if (route === '/catalogo') {
       await page.waitForFunction(() => document.querySelectorAll('a[href^="/produto/"]').length > 0, undefined, { timeout: 30_000 })
     }
 
