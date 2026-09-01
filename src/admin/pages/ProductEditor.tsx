@@ -144,6 +144,7 @@ export function ProductEditor() {
   const [newImageAlt, setNewImageAlt] = useState('');
   const [cropSource, setCropSource] = useState<File | null>(null);
   const [cropQueue, setCropQueue] = useState<File[]>([]);
+  const [replaceImageIndex, setReplaceImageIndex] = useState<number | null>(null);
   const [pendingImages, setPendingImages] = useState<PendingProductImage[]>([]);
   const pendingImagesRef = useRef<PendingProductImage[]>([]);
 
@@ -432,7 +433,33 @@ export function ProductEditor() {
     });
   };
 
-  const stageCroppedImage = (file: File) => {
+  const stageCroppedImage = async (file: File) => {
+    if (replaceImageIndex !== null && existing) {
+      const index = replaceImageIndex;
+      const current = existing.images ?? [];
+      const row = current[index];
+      if (!row) return;
+      setSaving(true);
+      setError(null);
+      try {
+        const prepared = await prepareImageUpload(file, 'catalogue', lang);
+        const media = await adminUploadProductImage(prepared.file, newImageAlt.trim() || resolveProductImage(row.image).alt || suggestedImageAlt);
+        const images = current.map((entry, imageIndex) => imageIndex === index
+          ? { ...serializeImageRow(entry), image: media.id }
+          : serializeImageRow(entry));
+        const updated = await adminUpdateProduct(existing.id, { images });
+        setExisting(updated);
+        setUploadNotice(lang === 'pt' ? 'Imagem substituída.' : 'Image replaced.');
+        setNewImageAlt('');
+      } catch (err) {
+        setError(err instanceof Error ? err.message : t('couldntSaveBackend', lang));
+      } finally {
+        setSaving(false);
+        setReplaceImageIndex(null);
+        setCropSource(null);
+      }
+      return;
+    }
     const preview = URL.createObjectURL(file);
     setPendingImages((images) => [...images, {
       file,
@@ -443,6 +470,15 @@ export function ProductEditor() {
     setNewImageAlt('');
     setUploadNotice(lang === 'pt' ? 'Recorte preparado. Clique em Guardar alterações para publicar.' : 'Crop prepared. Click Save changes to publish.');
     advanceCropQueue();
+  };
+
+  const startImageReplacement = (index: number, file: File | undefined) => {
+    if (!existing || !file) return;
+    setError(null);
+    setUploadNotice(null);
+    setReplaceImageIndex(index);
+    setCropSource(file);
+    setCropQueue([]);
   };
 
   const removePendingImage = (index: number) => {
@@ -614,6 +650,23 @@ export function ProductEditor() {
                     >
                       <X size={12} />
                     </button>
+                    <label
+                      title={lang === 'pt' ? 'Substituir imagem' : 'Replace image'}
+                      style={{ position: 'absolute', top: 4, right: 28, width: 20, height: 20, borderRadius: 999, border: 'none', background: 'rgba(20,20,20,0.7)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: saving ? 'default' : 'pointer', fontSize: 10, fontWeight: 800 }}
+                    >
+                      ↻
+                      <input
+                        type="file"
+                        accept="image/*"
+                        hidden
+                        disabled={saving}
+                        aria-label={lang === 'pt' ? 'Substituir imagem' : 'Replace image'}
+                        onChange={(event) => {
+                          startImageReplacement(index, event.target.files?.[0]);
+                          event.target.value = '';
+                        }}
+                      />
+                    </label>
                     <div style={{ position: 'absolute', bottom: 4, left: 4, right: 4, display: 'flex', justifyContent: 'space-between' }}>
                       <button
                         type="button"
@@ -1000,7 +1053,7 @@ export function ProductEditor() {
           title={lang === 'pt' ? 'Ajustar fotografia do produto' : 'Adjust product photo'}
           description={lang === 'pt' ? 'Escolha o enquadramento vertical 3:4 usado no catálogo e na página do produto.' : 'Choose the 3:4 portrait framing used in the catalogue and product page.'}
           applyLabel={cropQueue.length > 0 ? (lang === 'pt' ? 'Aplicar e continuar' : 'Apply and continue') : undefined}
-          onCancel={() => { setCropSource(null); setCropQueue([]); }}
+          onCancel={() => { setCropSource(null); setCropQueue([]); setReplaceImageIndex(null); }}
           onApply={stageCroppedImage}
         />
       )}
