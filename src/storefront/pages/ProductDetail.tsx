@@ -204,7 +204,7 @@ export function ProductDetail() {
       />
       <div className="ump-product-layout">
         <div>
-        <div style={{ height: 440, borderRadius: 0, overflow: 'hidden', position: 'relative' }}>
+        <div style={{ aspectRatio: '3 / 4', borderRadius: 0, overflow: 'hidden', position: 'relative' }}>
           <ProductPhoto tone={product.tone} radius={0} image={mainImage} variant="full" priority />
           <button
             onClick={() => toggleFavorite(product.id)}

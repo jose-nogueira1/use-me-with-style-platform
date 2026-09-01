@@ -582,7 +582,7 @@ export function ProductEditor() {
         <div style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 16, minWidth: 0 }}>
           <div
             style={{
-              height: 220,
+              aspectRatio: '3 / 4',
               borderRadius: 8,
               border: `1px solid ${C.goldDeep}`,
               background: C.subtleBg,

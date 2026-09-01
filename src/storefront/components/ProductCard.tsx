@@ -41,7 +41,7 @@ export function ProductCard({ product, size = 'grid', priority = false }: { prod
         color: 'inherit',
       }}
     >
-      <div style={{ aspectRatio: '174 / 142', width: '100%' }}>
+      <div style={{ aspectRatio: '3 / 4', width: '100%' }}>
         <ProductPhoto tone={product.tone} radius={0} image={product.images[0]} variant="card" priority={priority} />
       </div>
       <div style={{ padding: '10px 8px 12px' }}>

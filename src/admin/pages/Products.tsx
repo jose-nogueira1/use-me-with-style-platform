@@ -82,7 +82,7 @@ export function Products() {
       <div style={{ padding: '20px 28px 0', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }} className="ump-admin-product-grid">
         {filtered.map((p) => (
           <Link key={p.id} to={`/admin/produtos/${p.id}`} style={{ textDecoration: 'none', display: 'block', background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 16 }}>
-            <div style={{ height: 110, borderRadius: 6, background: '#F1EADF', border: `1px solid ${C.rule}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ aspectRatio: '3 / 4', borderRadius: 6, background: '#F1EADF', border: `1px solid ${C.rule}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <span style={{ fontSize: 10, fontWeight: 800, color: C.goldDeep }}>{hasPhoto(p) ? '' : t('photoPending', lang)}</span>
               {hasPhoto(p) && <img src={resolveProductImage(p.images![0].image).url} alt={resolveProductImage(p.images![0].image).alt ?? p.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 6 }} />}
             </div>
