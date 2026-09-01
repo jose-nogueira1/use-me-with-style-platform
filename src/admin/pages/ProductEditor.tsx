@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Plus, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Crop, Plus, X } from 'lucide-react';
 import { C } from '../../theme';
 import { useApp } from '../../state/AppContext';
 import { hasSwatch, swatchBackground } from '../../lib/colorSwatch';
@@ -481,6 +481,26 @@ export function ProductEditor() {
     setCropQueue([]);
   };
 
+  const startImageCrop = async (index: number) => {
+    if (!existing || saving) return;
+    const row = existing.images?.[index];
+    const resolved = row ? resolveProductImage(row.image) : null;
+    if (!resolved?.url) return;
+    setError(null);
+    setUploadNotice(null);
+    try {
+      const response = await fetch(resolved.url);
+      if (!response.ok) throw new Error('Unable to read image');
+      const blob = await response.blob();
+      const fileName = resolved.url.split('/').pop()?.split('?')[0] || `product-image-${index}.webp`;
+      setReplaceImageIndex(index);
+      setCropSource(new File([blob], fileName, { type: blob.type || 'image/webp' }));
+      setCropQueue([]);
+    } catch {
+      setError(lang === 'pt' ? 'Não foi possível editar o recorte desta imagem.' : 'This image crop could not be edited.');
+    }
+  };
+
   const removePendingImage = (index: number) => {
     setPendingImages((images) => {
       URL.revokeObjectURL(images[index].preview);
@@ -667,6 +687,16 @@ export function ProductEditor() {
                         }}
                       />
                     </label>
+                    <button
+                      type="button"
+                      title={lang === 'pt' ? 'Editar recorte' : 'Edit crop'}
+                      aria-label={lang === 'pt' ? 'Editar recorte' : 'Edit crop'}
+                      disabled={saving}
+                      onClick={() => void startImageCrop(index)}
+                      style={{ position: 'absolute', top: 4, right: 52, width: 20, height: 20, borderRadius: 999, border: 'none', background: 'rgba(20,20,20,0.7)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: saving ? 'default' : 'pointer' }}
+                    >
+                      <Crop size={11} />
+                    </button>
                     <div style={{ position: 'absolute', bottom: 4, left: 4, right: 4, display: 'flex', justifyContent: 'space-between' }}>
                       <button
                         type="button"
