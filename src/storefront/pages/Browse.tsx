@@ -375,7 +375,7 @@ export function Browse() {
           allKey="all"
         />
         <FilterGroup label={t('size', lang)} options={allSizes.map((s) => ({ value: s, label: s }))} active={filterSizes} onSelect={toggleSize} />
-        <FilterGroup label={t('colour', lang)} options={allColors} active={filterColors} onSelect={toggleColor} />
+        <FilterGroup label={t('colour', lang)} options={allColors} active={filterColors} onSelect={toggleColor} collapsible />
         <SortControl sortBy={sortBy} setSortBy={setSortBy} lang={lang} />
       </div>
 
@@ -474,7 +474,7 @@ export function Browse() {
         {showFilters && (
           <div className="ump-slide-up ump-browse-filter-toggle" style={{ padding: '16px 20px', background: C.subtleBg, borderBottom: `1px solid ${C.ruleLight}` }}>
             <FilterGroup label={t('size', lang)} options={allSizes.map((s) => ({ value: s, label: s }))} active={filterSizes} onSelect={toggleSize} />
-            <FilterGroup label={t('colour', lang)} options={allColors} active={filterColors} onSelect={toggleColor} />
+            <FilterGroup label={t('colour', lang)} options={allColors} active={filterColors} onSelect={toggleColor} collapsible />
             {/* Bug fix, 2026-08-07: sort previously only existed in the
                 desktop sidebar (`.ump-browse-sidebar`, hidden below 720px),
                 so mobile shoppers had no way to sort by price at all -- this
@@ -658,6 +658,7 @@ function FilterGroup({
   active,
   onSelect,
   allKey,
+  collapsible = false,
 }: {
   label: string;
   options: FilterOption[];
@@ -667,7 +668,10 @@ function FilterGroup({
    * category group's "Tudo"/"All"). It reads as selected precisely when
    * nothing else is, and selecting it clears the group. */
   allKey?: string;
+  collapsible?: boolean;
 }) {
+  const [expanded, setExpanded] = useState(false);
+  const canCollapse = collapsible && options.length > 5;
   const multi = Array.isArray(active);
   const isActive = (value: string) => {
     if (allKey && value === allKey) return multi ? (active as string[]).length === 0 : active === null;
@@ -677,7 +681,17 @@ function FilterGroup({
   return (
     <div style={{ marginBottom: 16 }}>
       <FilterLabel>{label}</FilterLabel>
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }} role="group" aria-label={label}>
+      <div
+        style={{
+          display: 'flex',
+          gap: 6,
+          flexWrap: 'wrap',
+          maxHeight: canCollapse && !expanded ? 174 : undefined,
+          overflow: canCollapse && !expanded ? 'hidden' : undefined,
+        }}
+        role="group"
+        aria-label={label}
+      >
         {options.map((opt) => {
           const on = isActive(opt.value);
           return (
@@ -701,6 +715,8 @@ function FilterGroup({
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 6,
+                minHeight: 30,
+                lineHeight: '16px',
               }}
             >
               {hasSwatch(opt) && (
@@ -721,6 +737,16 @@ function FilterGroup({
           );
         })}
       </div>
+      {canCollapse && (
+        <button
+          type="button"
+          aria-expanded={expanded}
+          onClick={() => setExpanded((value) => !value)}
+          style={{ marginTop: 8, padding: 0, border: 0, background: 'transparent', color: C.goldDeep, fontSize: 10, fontWeight: 800, cursor: 'pointer' }}
+        >
+          {expanded ? (label === 'Cor' ? 'Mostrar menos' : 'Show less') : (label === 'Cor' ? 'Mostrar mais' : 'Show more')}
+        </button>
+      )}
     </div>
   );
 }
