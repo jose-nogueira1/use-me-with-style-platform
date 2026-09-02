@@ -239,6 +239,14 @@ async function createCaptureContext(browser) {
   // occasionally return transient 404s from Vercel build regions. Avoid
   // making a production release depend on that unrelated third party.
   await context.route(/\.(?:otf|ttf|woff2?)(?:\?.*)?$/i, (route) => route.abort())
+  // The Analytics component injects this client-side script, but the local
+  // prerender server has no Vercel edge endpoint. Without this stub, its
+  // SPA fallback returns index.html and Chromium reports "Unexpected token <".
+  await context.route(/\/_vercel\/insights\/script\.js(?:\?.*)?$/i, (route) => route.fulfill({
+    status: 200,
+    contentType: 'text/javascript; charset=utf-8',
+    body: '',
+  }))
   await context.route(/\.(?:avif|gif|jpe?g|png|svg|webp)(?:\?.*)?$/i, (route) => {
     const pathname = new URL(route.request().url()).pathname
     // Product media must finish loading so ProductPhoto keeps the real <img>

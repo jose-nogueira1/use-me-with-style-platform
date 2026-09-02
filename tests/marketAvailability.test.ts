@@ -8,6 +8,7 @@ const cardSource = readFileSync(new URL('../src/storefront/components/ProductCar
 const layoutSource = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8')
 const detailSource = readFileSync(new URL('../src/storefront/pages/ProductDetail.tsx', import.meta.url), 'utf8')
 const mainSource = readFileSync(new URL('../src/main.tsx', import.meta.url), 'utf8')
+const prerenderSource = readFileSync(new URL('../scripts/prerender.mjs', import.meta.url), 'utf8')
 const packageSource = readFileSync(resolve(process.cwd(), 'package.json'), 'utf8')
 
 test('market stock status is calculated independently for each market', () => {
@@ -85,4 +86,9 @@ test('Vercel Analytics is mounted once at the storefront root', () => {
   assert.match(packageSource, /"@vercel\/analytics"/)
   assert.match(mainSource, /from '@vercel\/analytics\/react'/)
   assert.match(mainSource, /<Analytics \/>/)
+})
+
+test('prerender server serves the Vercel Analytics client as JavaScript', () => {
+  assert.match(prerenderSource, /insights\\?\/script\\?\.js/)
+  assert.match(prerenderSource, /contentType: 'text\/javascript; charset=utf-8'/)
 })
