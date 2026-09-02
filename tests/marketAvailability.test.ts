@@ -88,7 +88,18 @@ test('Vercel Analytics is mounted once at the storefront root', () => {
   assert.match(mainSource, /<Analytics \/>/)
 })
 
+test('Vercel Speed Insights is mounted once at the storefront root', () => {
+  assert.match(packageSource, /"@vercel\/speed-insights"/)
+  assert.match(mainSource, /from '@vercel\/speed-insights\/react'/)
+  assert.match(mainSource, /<SpeedInsights \/>/)
+})
+
 test('prerender server serves the Vercel Analytics client as JavaScript', () => {
   assert.match(prerenderSource, /insights\\?\/script\\?\.js/)
+  assert.match(prerenderSource, /contentType: 'text\/javascript; charset=utf-8'/)
+})
+
+test('prerender server serves the Vercel Speed Insights client as JavaScript', () => {
+  assert.match(prerenderSource, /speed-insights\\?\/script\\?\.js/)
   assert.match(prerenderSource, /contentType: 'text\/javascript; charset=utf-8'/)
 })

@@ -247,6 +247,13 @@ async function createCaptureContext(browser) {
     contentType: 'text/javascript; charset=utf-8',
     body: '',
   }))
+  // Speed Insights uses a separate client endpoint with the same prerender
+  // constraint: serve an empty JavaScript response while capturing pages.
+  await context.route(/\/_vercel\/speed-insights\/script\.js(?:\?.*)?$/i, (route) => route.fulfill({
+    status: 200,
+    contentType: 'text/javascript; charset=utf-8',
+    body: '',
+  }))
   await context.route(/\.(?:avif|gif|jpe?g|png|svg|webp)(?:\?.*)?$/i, (route) => {
     const pathname = new URL(route.request().url()).pathname
     // Product media must finish loading so ProductPhoto keeps the real <img>
