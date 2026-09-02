@@ -336,6 +336,9 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
           .ump-home-product-card { width: 155.25px !important; }
           .ump-stock-image-badge-low { display: none; }
           .ump-stock-mobile-badge { display: inline-block !important; white-space: nowrap; }
+          .ump-product-colour-track { overflow-x: auto; overflow-y: hidden; scrollbar-width: none; -ms-overflow-style: none; padding-bottom: 3px; }
+          .ump-product-colour-track::-webkit-scrollbar { display: none; }
+          .ump-product-colour-option { flex: 0 0 auto; white-space: nowrap; }
         }
 
         /* Home: Instagram feed (2026-08-02 redesign) -- full-bleed,

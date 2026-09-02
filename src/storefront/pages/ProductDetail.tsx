@@ -350,10 +350,11 @@ export function ProductDetail() {
             <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1, color: C.goldDeep, textTransform: 'uppercase' }}>
               {t('colourLabel', lang)}: <span style={{ color: C.ink, fontWeight: 500, marginLeft: 4 }}>{activeColorLabel}</span>
             </div>
-            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+            <div className="ump-product-colour-track" style={{ display: 'flex', gap: 8, marginTop: 8 }}>
               {product.colors.map((co) => (
                 <button
                   key={co.id}
+                  className="ump-product-colour-option"
                   onClick={() => setColor(co.id)}
                   aria-pressed={activeColor === co.id}
                   style={{

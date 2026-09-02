@@ -70,3 +70,10 @@ test('mobile low-stock messaging moves below the image without covering photogra
   assert.match(layoutSource, /\.ump-stock-image-badge-low \{ display: none; \}/)
   assert.match(layoutSource, /\.ump-stock-mobile-badge \{ display: inline-block !important; white-space: nowrap;/)
 })
+
+test('mobile product colours use a single horizontal scroll track', () => {
+  assert.match(detailSource, /className="ump-product-colour-track"/)
+  assert.match(detailSource, /className="ump-product-colour-option"/)
+  assert.match(layoutSource, /\.ump-product-colour-track \{[^}]*overflow-x: auto;/s)
+  assert.match(layoutSource, /\.ump-product-colour-option \{[^}]*flex: 0 0 auto;/s)
+})
