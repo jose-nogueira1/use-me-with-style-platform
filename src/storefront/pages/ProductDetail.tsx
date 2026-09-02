@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Check, ChevronLeft, ChevronRight, Heart, Search, X } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, Search, X } from 'lucide-react';
 import { C, F, t } from '../../theme';
 import { useApp, useFormatOriginalPrice, useFormatPrice } from '../../state/AppContext';
 import { useProducts } from '../../hooks/useProducts';
@@ -26,7 +26,7 @@ export function ProductDetail() {
   const { slug } = useParams<{ slug: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { market, lang, cart, dispatchCart, favorites, toggleFavorite } = useApp();
+  const { market, lang, cart, dispatchCart } = useApp();
   const { products, loading } = useProducts(market, lang);
   const fmtPrice = useFormatPrice();
   const fmtOriginalPrice = useFormatOriginalPrice();
@@ -118,7 +118,7 @@ export function ProductDetail() {
   const stockForSize = activeVariant?.stock ?? 0;
   const isLowStock = stockForSize > 0 && stockForSize <= 3;
   const isOutOfStock = product.marketStatus === 'sold_out' || stockForSize === 0;
-  const isFav = favorites.has(product.id);
+  const isActiveColorSoldOut = Boolean(activeColor && !colorHasStock(product, activeColor));
   const recommendations = products.filter((p) => p.cat === product.cat && p.id !== product.id).slice(0, 4);
 
   // Already-in-cart quantity for this exact colour+size, so a repeated
@@ -205,31 +205,14 @@ export function ProductDetail() {
       <div className="ump-product-layout">
         <div>
         <div style={{ aspectRatio: '3 / 4', borderRadius: 0, overflow: 'hidden', position: 'relative' }}>
-          <ProductPhoto tone={product.tone} radius={0} image={mainImage} variant="full" priority />
-          <button
-            onClick={() => toggleFavorite(product.id)}
-            aria-label={isFav ? (lang === 'pt' ? `Remover ${product.name} dos favoritos` : `Remove ${product.name} from favorites`) : (lang === 'pt' ? `Adicionar ${product.name} aos favoritos` : `Add ${product.name} to favorites`)}
-            aria-pressed={isFav}
-            style={{
-              position: 'absolute',
-              top: 16,
-              right: 16,
-              width: 38,
-              height: 38,
-              background: C.photoChipBg,
-              borderRadius: 19,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              backdropFilter: 'blur(8px)',
-            }}
-          >
-            {/* photoChipFg, not C.ink (2026-07-30): C.ink flips to near-white
-                in dark mode and the icon disappeared against the chip at
-                1.06:1. goldDeep for the active state keeps the filled heart
-                above 3:1 on the chip in both themes (C.gold managed 2.2:1). */}
-            <Heart size={18} fill={isFav ? C.goldDeep : 'none'} color={isFav ? C.goldDeep : C.photoChipFg} />
-          </button>
+          <div style={{ width: '100%', height: '100%', opacity: isActiveColorSoldOut ? 0.55 : 1 }}>
+            <ProductPhoto tone={product.tone} radius={0} image={mainImage} variant="full" priority />
+          </div>
+          {isActiveColorSoldOut && (
+            <span aria-hidden style={{ position: 'absolute', left: '-33.35%', top: '50%', width: '166.7%', height: 3, zIndex: 2, background: C.dangerStrong, transform: 'rotate(-53.13deg)', pointerEvents: 'none' }} />
+          )}
+          {/* Favourite products is reserved for phase 2 once persistence and
+              account syncing are available. */}
           {galleryImages.length > 1 && (
             <>
               <button

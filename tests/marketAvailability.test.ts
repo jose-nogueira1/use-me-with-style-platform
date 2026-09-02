@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs'
 const source = readFileSync(new URL('../src/lib/productAdapters.ts', import.meta.url), 'utf8')
 const cardSource = readFileSync(new URL('../src/storefront/components/ProductCard.tsx', import.meta.url), 'utf8')
 const layoutSource = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8')
+const detailSource = readFileSync(new URL('../src/storefront/pages/ProductDetail.tsx', import.meta.url), 'utf8')
 
 test('market stock status is calculated independently for each market', () => {
   assert.match(source, /marketStockStatus\(/)
@@ -41,4 +42,16 @@ test('homepage cards get a further 15 percent size increase and the strike spans
   assert.match(cardSource, /left: '-33\.35%'/)
   assert.match(cardSource, /width: '166\.7%'/)
   assert.match(cardSource, /transform: 'rotate\(53\.13deg\)'/)
+})
+
+test('sold-out active colours are dimmed and struck across the product image', () => {
+  assert.match(detailSource, /colorHasStock\(product, activeColor\)/)
+  assert.match(detailSource, /activeColor && !colorHasStock\(product, activeColor\)/)
+  assert.match(detailSource, /rotate\(-53\.13deg\)/)
+  assert.match(detailSource, /opacity: isActiveColorSoldOut \? 0\.55 : 1/)
+})
+
+test('product detail favourite action stays disabled until phase two', () => {
+  assert.doesNotMatch(detailSource, /toggleFavorite\(product\.id\)/)
+  assert.match(detailSource, /favourite.*phase 2/i)
 })
