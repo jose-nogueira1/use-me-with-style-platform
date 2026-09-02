@@ -145,6 +145,7 @@ export function ProductEditor() {
   const [cropSource, setCropSource] = useState<File | null>(null);
   const [cropQueue, setCropQueue] = useState<File[]>([]);
   const [replaceImageIndex, setReplaceImageIndex] = useState<number | null>(null);
+  const [draggingImageIndex, setDraggingImageIndex] = useState<number | null>(null);
   const [pendingImages, setPendingImages] = useState<PendingProductImage[]>([]);
   const pendingImagesRef = useRef<PendingProductImage[]>([]);
 
@@ -250,6 +251,7 @@ export function ProductEditor() {
   const selectedCategoryLabel = (lang === 'en' ? selectedCategory?.nameEN : selectedCategory?.namePT)?.trim()
     || selectedCategory?.namePT
     || '';
+  const selectedProductColors = colors.filter((color) => form.colorIds.includes(String(color.id)));
   const suggestedImageAlt = buildProductImageAlt({
     productName: form.namePT || form.name,
     productType: selectedCategoryLabel,
@@ -554,6 +556,26 @@ export function ProductEditor() {
     }
   };
 
+  const handleImageDrop = async (fromIndex: number, toIndex: number) => {
+    if (!existing || fromIndex === toIndex) return;
+    const current = existing.images ?? [];
+    if (!current[fromIndex] || !current[toIndex]) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const reordered = [...current];
+      const [moved] = reordered.splice(fromIndex, 1);
+      reordered.splice(toIndex, 0, moved);
+      const updated = await adminUpdateProduct(existing.id, { images: reordered.map(serializeImageRow) });
+      setExisting(updated);
+    } catch {
+      setError(t('couldntReorderImages', lang));
+    } finally {
+      setSaving(false);
+      setDraggingImageIndex(null);
+    }
+  };
+
   // Per-colour photo tagging (2026-08-07): empty string clears the tag back
   // to "general" (shown for every colour) -- matches the same
   // empty-string-means-null convention the size/colour matrix elsewhere in
@@ -647,13 +669,23 @@ export function ProductEditor() {
               galleries) -- "General" (the default) means the photo shows
               for every colour; tagging it narrows it to just that one on
               the product page. */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginTop: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8, marginTop: 12 }}>
             {(existing?.images ?? []).map((row, index) => {
               const resolved = resolveProductImage(row.image);
               const count = existing?.images?.length ?? 0;
               const rowColorId = row.color ? String(refId(row.color)) : '';
               return (
-                <div key={row.id ?? index} style={{ display: 'flex', flexDirection: 'column', borderRadius: 6, overflow: 'hidden', border: `1px solid ${C.ruleLight}` }}>
+                <div
+                  key={row.id ?? index}
+                  draggable={true}
+                  onDragStart={() => setDraggingImageIndex(index)}
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={() => {
+                    if (draggingImageIndex !== null) void handleImageDrop(draggingImageIndex, index);
+                  }}
+                  onDragEnd={() => setDraggingImageIndex(null)}
+                  style={{ display: 'flex', flexDirection: 'column', minWidth: 0, borderRadius: 6, overflow: 'hidden', border: `1px solid ${draggingImageIndex === index ? C.goldDeep : C.ruleLight}`, opacity: draggingImageIndex === index ? 0.65 : 1 }}
+                >
                   <div style={{ position: 'relative', aspectRatio: '3 / 4', background: C.subtleBg }}>
                     <img src={resolved.url} alt={resolved.alt ?? form.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                     {index === 0 && (
@@ -726,7 +758,7 @@ export function ProductEditor() {
                       style={{ width: '100%', border: 'none', borderTop: `1px solid ${C.ruleLight}`, background: C.paper, color: C.ink, fontSize: 8, fontWeight: 700, padding: '3px 2px' }}
                     >
                       <option value="">{t('generalPhotoOption', lang)}</option>
-                      {colors.map((co) => (
+                      {selectedProductColors.map((co) => (
                         <option key={String(co.id)} value={String(co.id)}>{colorLabel(co)}</option>
                       ))}
                     </select>
@@ -755,7 +787,7 @@ export function ProductEditor() {
                     style={{ width: '100%', border: 'none', borderTop: `1px solid ${C.ruleLight}`, background: C.paper, color: C.ink, fontSize: 8, fontWeight: 700, padding: '3px 2px' }}
                   >
                     <option value="">{t('generalPhotoOption', lang)}</option>
-                    {colors.map((color) => <option key={String(color.id)} value={String(color.id)}>{colorLabel(color)}</option>)}
+                    {selectedProductColors.map((color) => <option key={String(color.id)} value={String(color.id)}>{colorLabel(color)}</option>)}
                   </select>
                 )}
                 <input
