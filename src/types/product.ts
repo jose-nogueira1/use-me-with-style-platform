@@ -72,6 +72,8 @@ export type ProductTag = {
   slug: string;
 };
 
+export type MarketStockStatus = 'in_stock' | 'low_stock' | 'sold_out' | 'hidden';
+
 /** One row of the shared measurement chart (cm, language-neutral --
  * labels are translated by the storefront). */
 export type SizeGuideRow = {
@@ -121,6 +123,9 @@ export type Product = {
   /** Merchandising badges (2026-07-31: multi-select, was a single tag).
    * Empty array means no tags. */
   tags: ProductTag[];
+  /** Stock/visibility status for the current storefront market. */
+  marketStatus: MarketStockStatus;
+  marketStock: number;
   /** True when ANY of the product's merch tags is a recognised "new
    * arrival" marker
    * (2026-07-25 navbar fix) -- checked against BOTH labelPT and labelEN on

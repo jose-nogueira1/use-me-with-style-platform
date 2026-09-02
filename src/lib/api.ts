@@ -154,6 +154,11 @@ export type ApiPost = {
 
 export type ApiCategoryRef = string | number | ApiCategory;
 export type ApiMerchTagRef = string | number | ApiMerchTag;
+export type ApiMarketTagAssignment = {
+  tag: ApiMerchTagRef;
+  market: 'AO' | 'PT';
+  id?: string | null;
+};
 export type ApiColorRef = string | number | ApiColor;
 export type ApiSizeGuideRef = string | number | ApiSizeGuide;
 
@@ -227,6 +232,8 @@ export type ApiProduct = {
    * once. Payload returns an array for hasMany relationships; an unpopulated
    * or empty product may still send null/undefined, so both are tolerated. */
   tag?: ApiMerchTagRef[] | null;
+  /** Optional tag assignments shown only in the named storefront. */
+  marketTags?: ApiMarketTagAssignment[] | null;
   // `color` (2026-08-07, per-colour galleries): optional, mirrors
   // variants[].color -- unset means "general", shown for every colour.
   images?: { id?: string | null; image: ApiProductImageRef; color?: ApiColorRef | null }[];

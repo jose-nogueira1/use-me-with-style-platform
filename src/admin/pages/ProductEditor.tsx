@@ -82,6 +82,8 @@ type FormState = {
    * report: "I can only select one merchandising tag per item") -- empty
    * array = no badges. */
   tagIds: string[];
+  /** Market-specific merchandising tag ids. Shared tags remain in tagIds. */
+  marketTagIds: { AO: string[]; PT: string[] };
   /** Colours this piece comes in (matrix rows, in display order). */
   colorIds: string[];
   /** Sizes this piece comes in (matrix columns). */
@@ -102,7 +104,7 @@ type FormState = {
   availablePT: boolean;
 };
 
-const EMPTY: FormState = { productType: 'standard', name: '', namePT: '', nameEN: '', slug: '', category: '', description: '', descriptionPT: '', descriptionEN: '', sizeGuide: '', fitNotePT: '', fitNoteEN: '', hasColor: true, hasOption: true, optionLabelPT: 'Tamanho', optionLabelEN: 'Size', optionValuesEN: { S: 'S', M: 'M', L: 'L' }, specifications: [], returnEligible: true, returnNotePT: '', returnNoteEN: '', bundleComponents: [], tagIds: [], colorIds: [], sizes: ['S', 'M', 'L'], stock: {}, priceAOKz: '', pricePTEur: '', shippingWeightGrams: '500', saleAOKz: '', salePTEur: '', saleStartDate: '', saleEndDate: '', active: false, availableAO: true, availablePT: true };
+const EMPTY: FormState = { productType: 'standard', name: '', namePT: '', nameEN: '', slug: '', category: '', description: '', descriptionPT: '', descriptionEN: '', sizeGuide: '', fitNotePT: '', fitNoteEN: '', hasColor: true, hasOption: true, optionLabelPT: 'Tamanho', optionLabelEN: 'Size', optionValuesEN: { S: 'S', M: 'M', L: 'L' }, specifications: [], returnEligible: true, returnNotePT: '', returnNoteEN: '', bundleComponents: [], tagIds: [], marketTagIds: { AO: [], PT: [] }, colorIds: [], sizes: ['S', 'M', 'L'], stock: {}, priceAOKz: '', pricePTEur: '', shippingWeightGrams: '500', saleAOKz: '', salePTEur: '', saleStartDate: '', saleEndDate: '', active: false, availableAO: true, availablePT: true };
 
 /** Payload date fields round-trip as full ISO datetimes; the admin form uses
  * a plain <input type="date">, which needs just the YYYY-MM-DD portion. */
@@ -211,6 +213,12 @@ export function ProductEditor() {
           returnNoteEN: p.returnNoteEN ?? '',
           bundleComponents: (p.bundleComponents ?? []).map((component) => ({ productId: refId(component.product), variantId: component.variantId, qty: component.qty })),
           tagIds: (p.tag ?? []).map((ref) => refId(ref)).filter(Boolean),
+          marketTagIds: (p.marketTags ?? []).reduce((result, assignment) => {
+            const market = assignment.market === 'PT' ? 'PT' : 'AO';
+            const tagId = refId(assignment.tag);
+            if (tagId) result[market].push(tagId);
+            return result;
+          }, { AO: [], PT: [] } as { AO: string[]; PT: string[] }),
           ...formFromVariants(p.variants ?? []),
           priceAOKz: String(p.priceAOKz),
           pricePTEur: String(p.pricePTEur),
@@ -268,6 +276,19 @@ export function ProductEditor() {
       ...f,
       tagIds: f.tagIds.includes(tagId) ? f.tagIds.filter((t) => t !== tagId) : [...f.tagIds, tagId],
     }));
+
+  const toggleMarketTag = (market: 'AO' | 'PT', tagId: string) =>
+    setForm((f) => ({
+      ...f,
+      marketTagIds: {
+        ...f.marketTagIds,
+        [market]: f.marketTagIds[market].includes(tagId)
+          ? f.marketTagIds[market].filter((tag) => tag !== tagId)
+          : [...f.marketTagIds[market], tagId],
+      },
+    }));
+
+  const stockTotals = Object.values(form.stock).reduce((totals, cell) => ({ ao: totals.ao + Math.max(0, cell.ao || 0), pt: totals.pt + Math.max(0, cell.pt || 0) }), { ao: 0, pt: 0 });
 
   const toggleSize = (size: string) =>
     setForm((f) => {
@@ -348,6 +369,7 @@ export function ProductEditor() {
       // Empty array (not undefined) so removing every badge actually clears
       // them -- hasMany since 2026-07-31.
       tag: form.tagIds.map((tagId) => originalId(tags, tagId)),
+      marketTags: (['AO', 'PT'] as const).flatMap((market) => form.marketTagIds[market].map((tagId) => ({ tag: originalId(tags, tagId), market }))),
       variants,
       priceAOKz: Number(form.priceAOKz) || 0,
       pricePTEur: Number(form.pricePTEur) || 0,
@@ -885,6 +907,25 @@ export function ProductEditor() {
                 })}
               </div>
             </div>
+            <div style={{ display: 'grid', gap: 10 }}>
+              <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep }}>Tags específicas por loja / Storefront-specific tags</div>
+              {(['AO', 'PT'] as const).map((market) => (
+                <div key={market}>
+                  <div style={{ fontSize: 10, fontWeight: 800, color: C.ink, marginBottom: 5 }}>{market === 'AO' ? 'Angola' : 'Portugal'}</div>
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    {tags.map((tg) => {
+                      const tid = String(tg.id);
+                      const selected = form.marketTagIds[market].includes(tid);
+                      return <button key={`${market}-${tid}`} type="button" onClick={() => toggleMarketTag(market, tid)} aria-pressed={selected} style={{ padding: '6px 10px', fontSize: 11, fontWeight: 700, borderRadius: 20, border: `1.5px solid ${selected ? C.gold : C.rule}`, background: selected ? C.tagBg : C.paper, color: selected ? C.goldDeep : C.ink, cursor: 'pointer' }}>
+                        {tg.labelPT}{tg.labelEN && tg.labelEN !== tg.labelPT ? ` / ${tg.labelEN}` : ''}
+                      </button>;
+                    })}
+                    {tags.length === 0 && <span style={{ fontSize: 11, color: C.inkSoft }}>{t('noneOption', lang)}</span>}
+                  </div>
+                </div>
+              ))}
+              <div style={{ fontSize: 10, color: C.inkSoft }}>Use the shared tags for both markets; use these rows when a badge applies to only one storefront.</div>
+            </div>
             {form.productType === 'standard' && form.hasOption && <label style={{ display: 'block' }}>
               <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>{t('sizeGuideLabel', lang)}</div>
               <select value={form.sizeGuide} onChange={(e) => set('sizeGuide', e.target.value)} style={selectStyle}>
@@ -1027,9 +1068,13 @@ export function ProductEditor() {
 
           <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
             <CheckField label={t('publishedLabel', lang)} checked={form.active} onChange={(v) => set('active', v)} />
-            <CheckField label={t('availableAngola', lang)} checked={form.availableAO} onChange={(v) => set('availableAO', v)} />
-            <CheckField label={t('availablePortugal', lang)} checked={form.availablePT} onChange={(v) => set('availablePT', v)} />
+            <CheckField label={lang === 'pt' ? 'Mostrar na loja de Angola' : 'Show in Angola store'} checked={form.availableAO} onChange={(v) => set('availableAO', v)} />
+            <CheckField label={lang === 'pt' ? 'Mostrar na loja de Portugal' : 'Show in Portugal store'} checked={form.availablePT} onChange={(v) => set('availablePT', v)} />
             <CheckField label={lang === 'pt' ? 'Elegível para devolução normal' : 'Eligible for normal returns'} checked={form.returnEligible} onChange={(v) => set('returnEligible', v)} />
+          </div>
+          <div style={{ display: 'grid', gap: 5, padding: '10px 12px', border: `1px solid ${C.ruleLight}`, borderRadius: 8, background: C.subtleBg, fontSize: 10, color: C.inkSoft }}>
+            <div><strong style={{ color: C.ink }}>Angola:</strong> {form.availableAO ? `${stockTotals.ao} em stock` : 'hidden from storefront'}{!form.availableAO && stockTotals.ao > 0 ? ' — stock saved but not shown until enabled.' : ''}</div>
+            <div><strong style={{ color: C.ink }}>Portugal:</strong> {form.availablePT ? `${stockTotals.pt} in stock` : 'hidden from storefront'}{!form.availablePT && stockTotals.pt > 0 ? ' — stock saved but not shown until enabled.' : ''}</div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }} className="ump-admin-fields-grid">

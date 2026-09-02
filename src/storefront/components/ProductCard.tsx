@@ -47,8 +47,10 @@ export function ProductCard({ product, size = 'grid', priority = false }: { prod
       <div style={{ padding: '10px 8px 12px' }}>
         {/* Multi-select since 2026-07-31 -- a product can carry more than
             one badge (e.g. both "Novidade" and "Bestseller") at once. */}
-        {product.tags.length > 0 && (
+        {(product.tags.length > 0 || product.marketStatus === 'sold_out' || product.marketStatus === 'low_stock') && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 6 }}>
+            {product.marketStatus === 'sold_out' && <div style={{ display: 'inline-block', background: C.danger, color: C.paper, fontSize: 9, fontWeight: 800, padding: '4px 8px', borderRadius: 6, border: `1px solid ${C.danger}` }}>{t('outOfStock', lang)}</div>}
+            {product.marketStatus === 'low_stock' && <div style={{ display: 'inline-block', background: C.tagBg, color: C.dangerStrong, fontSize: 9, fontWeight: 800, padding: '4px 8px', borderRadius: 6, border: `1px solid ${C.rule}` }}>{t('fewLeftStock', lang, { n: product.marketStock })}</div>}
             {product.tags.map((tag) => {
               const tagStyle = TAG_STYLE[tag.label] ?? DEFAULT_TAG_STYLE;
               return (

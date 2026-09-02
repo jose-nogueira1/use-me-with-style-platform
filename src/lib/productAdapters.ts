@@ -1,5 +1,5 @@
 import { refId, resolveRef, type ApiProduct } from './api';
-import type { Product, ProductBundleComponent, ProductColor, ProductVariant, SizeGuideRow } from '../types/product';
+import type { MarketStockStatus, Product, ProductBundleComponent, ProductColor, ProductVariant, SizeGuideRow } from '../types/product';
 
 const SIZE_ORDER = ['XS', 'S', 'M', 'L', 'XL'];
 import { TONE_CYCLE } from '../components/ProductPhoto';
@@ -12,6 +12,19 @@ import { buildProductImageAlt } from './productImageAlt';
 // filters correctly no matter which language a shopper (or the admin who
 // named the tag) is using.
 const NEW_ARRIVAL_TAG_LABELS = new Set(['novidade', 'novidades', 'new', 'new arrival', 'new arrivals']);
+
+export function marketStockStatus(
+  product: Pick<ApiProduct, 'availableAO' | 'availablePT' | 'productType' | 'variants'>,
+  market: 'AO' | 'PT',
+): { visible: boolean; status: MarketStockStatus; stock: number } {
+  const visible = market === 'AO' ? product.availableAO !== false : product.availablePT !== false;
+  const stock = (product.variants ?? []).reduce((total, variant) => total + Math.max(0, Number(market === 'AO' ? variant.stockAO : variant.stockPT) || 0), 0);
+  return {
+    visible,
+    status: !visible ? 'hidden' : stock === 0 ? 'sold_out' : stock <= 3 ? 'low_stock' : 'in_stock',
+    stock,
+  };
+}
 
 // Discounts phase 1 (2026-07-25) -- mirrors use-me-with-style-cms's
 // lib/salePricing.ts by hand (separate repos/deploys, no shared package).
@@ -90,7 +103,13 @@ export function adaptApiProduct(api: ApiProduct, market: 'AO' | 'PT', lang: 'pt'
   });
   // tag is hasMany since 2026-07-31 -- Payload returns an array; resolveRef
   // unwraps each entry the same way it always has for a single ref.
-  const tagDocs = (api.tag ?? []).map((ref) => resolveRef(ref)).filter((doc): doc is NonNullable<typeof doc> => doc !== null);
+  const scopedTagDocs = (api.marketTags ?? [])
+    .filter((assignment) => assignment.market === market)
+    .map((assignment) => resolveRef(assignment.tag))
+    .filter((doc): doc is NonNullable<typeof doc> => doc !== null);
+  const tagDocs = [...(api.tag ?? []).map((ref) => resolveRef(ref)), ...scopedTagDocs]
+    .filter((doc): doc is NonNullable<typeof doc> => doc !== null)
+    .filter((doc, i, docs) => docs.findIndex((candidate) => String(candidate.id) === String(doc.id)) === i);
   const tags = tagDocs.filter((doc) => Boolean(doc.slug)).map((doc) => ({
     label: (lang === 'en' ? doc.labelEN : doc.labelPT)?.trim() || doc.labelPT,
     slug: String(doc.slug),
@@ -173,6 +192,9 @@ export function adaptApiProduct(api: ApiProduct, market: 'AO' | 'PT', lang: 'pt'
   const onSale = isProductOnSale(api);
   const effectivePriceKz = onSale ? (api.saleAOKz ?? api.priceAOKz) : api.priceAOKz;
   const effectivePriceEur = onSale ? (api.salePTEur ?? api.pricePTEur) : api.pricePTEur;
+  const marketStock = variants.reduce((total, variant) => total + Math.max(0, Number(variant.stock) || 0), 0);
+  const visible = market === 'AO' ? api.availableAO !== false : api.availablePT !== false;
+  const marketStatus = !visible ? 'hidden' : marketStock === 0 ? 'sold_out' : marketStock <= 3 ? 'low_stock' : 'in_stock';
 
   const guide = resolveRef(api.sizeGuide);
   const sizeGuide: SizeGuideRow[] | undefined = guide
@@ -204,6 +226,8 @@ export function adaptApiProduct(api: ApiProduct, market: 'AO' | 'PT', lang: 'pt'
     variants,
     colors,
     tags,
+    marketStatus,
+    marketStock,
     isNewArrival,
     description: localizedDescription,
     sizeGuide,

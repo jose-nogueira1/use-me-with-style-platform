@@ -117,7 +117,7 @@ export function ProductDetail() {
       ) ?? product.variants[0];
   const stockForSize = activeVariant?.stock ?? 0;
   const isLowStock = stockForSize > 0 && stockForSize <= 3;
-  const isOutOfStock = stockForSize === 0;
+  const isOutOfStock = product.marketStatus === 'sold_out' || stockForSize === 0;
   const isFav = favorites.has(product.id);
   const recommendations = products.filter((p) => p.cat === product.cat && p.id !== product.id).slice(0, 4);
 
