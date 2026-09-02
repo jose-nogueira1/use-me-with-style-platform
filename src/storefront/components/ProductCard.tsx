@@ -27,7 +27,7 @@ export function ProductCard({ product, size = 'grid', priority = false, homepage
   return (
     <Link
       to={`/produto/${product.slug}`}
-      className="ump-hover-lift"
+      className={`ump-hover-lift${homepage ? ' ump-home-product-card' : ''}`}
       style={{
         flexShrink: isSmall ? 0 : undefined,
         width: isSmall ? (homepage ? 215.625 : 187.5) : undefined,

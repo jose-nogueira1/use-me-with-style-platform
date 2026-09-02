@@ -331,6 +331,10 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
         @media (min-width: 1800px) { .ump-grid-auto { grid-template-columns: repeat(auto-fill, minmax(min(273.125px, 100%), 1fr)); } }
         .ump-home-product-grid { grid-template-columns: repeat(auto-fill, minmax(min(215.625px, 100%), 1fr)); }
         @media (min-width: 1800px) { .ump-home-product-grid { grid-template-columns: repeat(auto-fill, minmax(min(273.125px, 100%), 1fr)); } }
+        @media (max-width: 620px) {
+          .ump-grid-auto, .ump-home-product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+          .ump-home-product-card { width: 129.375px !important; }
+        }
 
         /* Home: Instagram feed (2026-08-02 redesign) -- full-bleed,
            auto-scrolling/draggable strip instead of a fixed-column grid, so
