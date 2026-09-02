@@ -33,12 +33,13 @@ test('only sold-out cards are dimmed and struck across the card', () => {
 test('catalogue and homepage product grids use the enlarged card scale', () => {
   assert.match(layoutSource, /\.ump-grid-auto \{ display: grid; grid-template-columns: repeat\(auto-fill, minmax\(min\(215\.625px, 100%\), 1fr\)\)/)
   assert.match(layoutSource, /@media \(min-width: 1800px\) \{ \.ump-grid-auto \{ grid-template-columns: repeat\(auto-fill, minmax\(min\(273\.125px, 100%\), 1fr\)\)/)
-  assert.match(cardSource, /homepage \? 215\.625 : 187\.5/)
+  assert.match(cardSource, /homepage \? 258\.75 : 215\.625/)
 })
 
 test('homepage cards get a further 15 percent size increase and the strike spans the image corners', () => {
   assert.match(cardSource, /homepage\?: boolean/)
-  assert.match(cardSource, /width: isSmall \? \(homepage \? 215\.625 : 187\.5\) : undefined/)
+  assert.match(cardSource, /width: isSmall \? \(homepage \? 258\.75 : 215\.625\) : undefined/)
+  assert.match(layoutSource, /\.ump-home-product-grid \{ grid-template-columns: repeat\(auto-fill, minmax\(min\(327\.75px, 100%\), 1fr\)\)/)
   assert.match(cardSource, /left: '-33\.35%'/)
   assert.match(cardSource, /width: '166\.7%'/)
   assert.match(cardSource, /transform: 'rotate\(53\.13deg\)'/)
@@ -59,5 +60,5 @@ test('product detail favourite action stays disabled until phase two', () => {
 test('mobile catalogue and homepage cards use a compact two-column layout', () => {
   assert.match(layoutSource, /@media \(max-width: 620px\) \{\s*\.ump-grid-auto, \.ump-home-product-grid \{ grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/)
   assert.match(cardSource, /className=\{`ump-hover-lift\$\{homepage \? ' ump-home-product-card' : ''\}`\}/)
-  assert.match(layoutSource, /\.ump-home-product-card \{ width: 129\.375px !important; \}/)
+  assert.match(layoutSource, /\.ump-home-product-card \{ width: 155\.25px !important; \}/)
 })

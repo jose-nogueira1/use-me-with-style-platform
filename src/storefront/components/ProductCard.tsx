@@ -30,7 +30,7 @@ export function ProductCard({ product, size = 'grid', priority = false, homepage
       className={`ump-hover-lift${homepage ? ' ump-home-product-card' : ''}`}
       style={{
         flexShrink: isSmall ? 0 : undefined,
-        width: isSmall ? (homepage ? 215.625 : 187.5) : undefined,
+        width: isSmall ? (homepage ? 258.75 : 215.625) : undefined,
         display: 'block',
         background: C.paper,
         borderRadius: 8,
