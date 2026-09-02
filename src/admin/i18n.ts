@@ -994,6 +994,9 @@ export const T: Record<string, Record<Lang, string>> = {
   },
   namePortugueseLabel: { en: 'Name — Portuguese', pt: 'Nome — Português' },
   nameEnglishOptionalLabel: { en: 'Name — English (optional)', pt: 'Nome — Inglês (opcional)' },
+  categoryIntroPortugueseLabel: { en: 'Catalogue introduction — Portuguese', pt: 'Introdução do catálogo — Português' },
+  categoryIntroEnglishLabel: { en: 'Catalogue introduction — English (optional)', pt: 'Introdução do catálogo — Inglês (opcional)' },
+  categoryIntroHint: { en: 'Shown below the filters when this is the only selected category. Keep it concise (max 300 characters).', pt: 'Mostrada abaixo dos filtros quando esta for a única categoria selecionada. Mantenha-a curta (máx. 300 caracteres).'},
   merchTagsTitle: { en: 'Merchandising tags', pt: 'Etiquetas comerciais' },
   merchTagsHint: {
     en: 'Optional badge on product cards (Novidade, Bestseller…). Also usable as a home hero "collection" link -- see the slug shown after each entry, and /catalogo?tag=<slug> in Settings > Home page.',

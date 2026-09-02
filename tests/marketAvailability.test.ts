@@ -10,6 +10,8 @@ const detailSource = readFileSync(new URL('../src/storefront/pages/ProductDetail
 const mainSource = readFileSync(new URL('../src/main.tsx', import.meta.url), 'utf8')
 const prerenderSource = readFileSync(new URL('../scripts/prerender.mjs', import.meta.url), 'utf8')
 const packageSource = readFileSync(resolve(process.cwd(), 'package.json'), 'utf8')
+const apiSource = readFileSync(new URL('../src/lib/api.ts', import.meta.url), 'utf8')
+const productSettingsSource = readFileSync(new URL('../src/admin/pages/ProductSettings.tsx', import.meta.url), 'utf8')
 
 test('market stock status is calculated independently for each market', () => {
   assert.match(source, /marketStockStatus\(/)
@@ -80,6 +82,16 @@ test('mobile product colours use a single horizontal scroll track', () => {
   assert.match(detailSource, /className="ump-product-colour-option"/)
   assert.match(layoutSource, /\.ump-product-colour-track \{[^}]*overflow-x: auto;/s)
   assert.match(layoutSource, /\.ump-product-colour-option \{[^}]*flex: 0 0 auto;/s)
+})
+
+test('category catalogue introductions are editable in Storefront Admin', () => {
+  assert.match(apiSource, /introPT\?: string \| null/)
+  assert.match(apiSource, /introEN\?: string \| null/)
+  assert.match(apiSource, /input: \{ namePT\?: string; nameEN\?: string; introPT\?: string; introEN\?: string; image\?:/)
+  assert.match(productSettingsSource, /categoryIntroPortugueseLabel/)
+  assert.match(productSettingsSource, /categoryIntroEnglishLabel/)
+  assert.match(productSettingsSource, /descriptionPrimary/)
+  assert.match(productSettingsSource, /descriptionSecondary/)
 })
 
 test('Vercel Analytics is mounted once at the storefront root', () => {

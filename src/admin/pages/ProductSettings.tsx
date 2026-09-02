@@ -110,17 +110,20 @@ export function ProductTaxonomySettings() {
             id: String(c.id),
             primary: c.namePT,
             secondary: c.nameEN ?? '',
+            descriptionPrimary: c.introPT ?? '',
+            descriptionSecondary: c.introEN ?? '',
             meta: c.slug ?? '',
             imageUrl: absoluteMediaUrl(resolveRef(c.image)?.url),
           }))}
           usage={usage.byCategory}
           labels={{ primary: t('namePortugueseLabel', lang), secondary: t('nameEnglishOptionalLabel', lang) }}
-          onCreate={async (primary, secondary) => {
-            const created = await adminCreateCategory({ namePT: primary, nameEN: secondary || undefined });
+          descriptionLabels={{ primary: t('categoryIntroPortugueseLabel', lang), secondary: t('categoryIntroEnglishLabel', lang) }}
+          onCreate={async (primary, secondary, descriptions) => {
+            const created = await adminCreateCategory({ namePT: primary, nameEN: secondary || undefined, introPT: descriptions?.primary || undefined, introEN: descriptions?.secondary || undefined });
             setCategories((prev) => [...prev, created]);
           }}
-          onSave={async (id, primary, secondary) => {
-            const updated = await adminUpdateCategory(id, { namePT: primary, nameEN: secondary || undefined });
+          onSave={async (id, primary, secondary, descriptions) => {
+            const updated = await adminUpdateCategory(id, { namePT: primary, nameEN: secondary || undefined, introPT: descriptions?.primary || '', introEN: descriptions?.secondary || '' });
             setCategories((prev) => prev.map((c) => (String(c.id) === id ? updated : c)));
           }}
           onDelete={async (id) => {
@@ -228,7 +231,7 @@ const inputStyle: React.CSSProperties = { padding: '8px 10px', fontSize: 11, bor
 // Categories / tags: same two-text-field shape, one shared panel
 // ---------------------------------------------------------------------------
 
-type TaxonomyEntry = { id: string; primary: string; secondary: string; meta?: string; imageUrl?: string };
+type TaxonomyEntry = { id: string; primary: string; secondary: string; descriptionPrimary?: string; descriptionSecondary?: string; meta?: string; imageUrl?: string };
 type PendingTaxonomyImage = { id: string; file: File; preview: string };
 
 function TaxonomyPanel({
@@ -237,6 +240,7 @@ function TaxonomyPanel({
   entries,
   usage,
   labels,
+  descriptionLabels,
   onCreate,
   onSave,
   onDelete,
@@ -250,8 +254,9 @@ function TaxonomyPanel({
   entries: TaxonomyEntry[];
   usage: Map<string, number>;
   labels: { primary: string; secondary: string };
-  onCreate: (primary: string, secondary: string) => Promise<void>;
-  onSave: (id: string, primary: string, secondary: string) => Promise<void>;
+  descriptionLabels?: { primary: string; secondary: string };
+  onCreate: (primary: string, secondary: string, descriptions?: { primary: string; secondary: string }) => Promise<void>;
+  onSave: (id: string, primary: string, secondary: string, descriptions?: { primary: string; secondary: string }) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   /** Optional image upload/remove (2026-07-25 admin request, Categories
    * only) -- happens as its own save, separate from onSave's name/slug PATCH,
@@ -262,8 +267,8 @@ function TaxonomyPanel({
   lang: Lang;
 }) {
   const [editing, setEditing] = useState<string | null>(null);
-  const [draft, setDraft] = useState<{ primary: string; secondary: string }>({ primary: '', secondary: '' });
-  const [newDraft, setNewDraft] = useState<{ primary: string; secondary: string }>({ primary: '', secondary: '' });
+  const [draft, setDraft] = useState<{ primary: string; secondary: string; descriptionPrimary: string; descriptionSecondary: string }>({ primary: '', secondary: '', descriptionPrimary: '', descriptionSecondary: '' });
+  const [newDraft, setNewDraft] = useState<{ primary: string; secondary: string; descriptionPrimary: string; descriptionSecondary: string }>({ primary: '', secondary: '', descriptionPrimary: '', descriptionSecondary: '' });
   const [busy, setBusy] = useState(false);
   const [uploadingImageId, setUploadingImageId] = useState<string | null>(null);
   const [uploadNotice, setUploadNotice] = useState<string | null>(null);
@@ -330,7 +335,12 @@ function TaxonomyPanel({
                 <>
                   <input aria-label={labels.primary} value={draft.primary} onChange={(e) => setDraft((d) => ({ ...d, primary: e.target.value }))} style={{ ...inputStyle, flex: 1 }} />
                   <input aria-label={labels.secondary} value={draft.secondary} onChange={(e) => setDraft((d) => ({ ...d, secondary: e.target.value }))} style={{ ...inputStyle, flex: 1 }} />
-                  <SmallButton label={t('saveAction', lang)} disabled={busy || !draft.primary.trim()} onClick={() => void run(async () => { await onSave(entry.id, draft.primary.trim(), draft.secondary.trim()); setEditing(null); }, t('couldntSaveChange', lang))} />
+                  {descriptionLabels && <>
+                    <textarea aria-label={descriptionLabels.primary} maxLength={300} value={draft.descriptionPrimary} onChange={(e) => setDraft((d) => ({ ...d, descriptionPrimary: e.target.value }))} placeholder={descriptionLabels.primary} style={{ ...inputStyle, flex: '1 1 100%', minHeight: 64, resize: 'vertical' }} />
+                    <textarea aria-label={descriptionLabels.secondary} maxLength={300} value={draft.descriptionSecondary} onChange={(e) => setDraft((d) => ({ ...d, descriptionSecondary: e.target.value }))} placeholder={descriptionLabels.secondary} style={{ ...inputStyle, flex: '1 1 100%', minHeight: 64, resize: 'vertical' }} />
+                    <div style={{ flex: '1 1 100%', fontSize: 9, color: C.inkSoft }}>{t('categoryIntroHint', lang)}</div>
+                  </>}
+                  <SmallButton label={t('saveAction', lang)} disabled={busy || !draft.primary.trim()} onClick={() => void run(async () => { await onSave(entry.id, draft.primary.trim(), draft.secondary.trim(), descriptionLabels ? { primary: draft.descriptionPrimary.trim(), secondary: draft.descriptionSecondary.trim() } : undefined); setEditing(null); }, t('couldntSaveChange', lang))} />
                   <SmallButton label={t('cancelAction', lang)} onClick={() => setEditing(null)} />
                 </>
               ) : (
@@ -402,7 +412,7 @@ function TaxonomyPanel({
                       )}
                     </>
                   )}
-                  <SmallButton label={t('editAction', lang)} disabled={busy} onClick={() => { setEditing(entry.id); setDraft({ primary: entry.primary, secondary: entry.secondary }); }} />
+                  <SmallButton label={t('editAction', lang)} disabled={busy} onClick={() => { setEditing(entry.id); setDraft({ primary: entry.primary, secondary: entry.secondary, descriptionPrimary: entry.descriptionPrimary ?? '', descriptionSecondary: entry.descriptionSecondary ?? '' }); }} />
                   <SmallButton
                     label={t('deleteAction', lang)}
                     danger
@@ -418,10 +428,14 @@ function TaxonomyPanel({
         {onUploadImage && <div style={{ fontSize: 9, color: C.inkSoft }}>{imageUploadGuidance('catalogue', lang)}</div>}
         {uploadNotice && <div style={{ fontSize: 10, color: '#3F754D' }}>{uploadNotice}</div>}
       </div>
-      <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+      <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
         <input placeholder={labels.primary} value={newDraft.primary} onChange={(e) => setNewDraft((d) => ({ ...d, primary: e.target.value }))} style={{ ...inputStyle, flex: 1 }} />
         <input placeholder={labels.secondary} value={newDraft.secondary} onChange={(e) => setNewDraft((d) => ({ ...d, secondary: e.target.value }))} style={{ ...inputStyle, flex: 1 }} />
-        <SmallButton label={t('addAction', lang)} disabled={busy || !newDraft.primary.trim()} onClick={() => void run(async () => { await onCreate(newDraft.primary.trim(), newDraft.secondary.trim()); setNewDraft({ primary: '', secondary: '' }); }, t('couldntCreateEntry', lang))} />
+        {descriptionLabels && <>
+          <textarea aria-label={descriptionLabels.primary} maxLength={300} value={newDraft.descriptionPrimary} onChange={(e) => setNewDraft((d) => ({ ...d, descriptionPrimary: e.target.value }))} placeholder={descriptionLabels.primary} style={{ ...inputStyle, flex: '1 1 100%', minHeight: 64, resize: 'vertical' }} />
+          <textarea aria-label={descriptionLabels.secondary} maxLength={300} value={newDraft.descriptionSecondary} onChange={(e) => setNewDraft((d) => ({ ...d, descriptionSecondary: e.target.value }))} placeholder={descriptionLabels.secondary} style={{ ...inputStyle, flex: '1 1 100%', minHeight: 64, resize: 'vertical' }} />
+        </>}
+        <SmallButton label={t('addAction', lang)} disabled={busy || !newDraft.primary.trim()} onClick={() => void run(async () => { await onCreate(newDraft.primary.trim(), newDraft.secondary.trim(), descriptionLabels ? { primary: newDraft.descriptionPrimary.trim(), secondary: newDraft.descriptionSecondary.trim() } : undefined); setNewDraft({ primary: '', secondary: '', descriptionPrimary: '', descriptionSecondary: '' }); }, t('couldntCreateEntry', lang))} />
       </div>
       {onUploadImage && <div style={{ fontSize: 9, color: C.inkSoft, marginTop: 8 }}>{t('newEntriesImageNote', lang)}</div>}
       {cropTarget && (

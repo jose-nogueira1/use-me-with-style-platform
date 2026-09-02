@@ -1406,7 +1406,7 @@ export async function adminListCategories(): Promise<ApiCategory[]> {
   return data.docs;
 }
 
-export async function adminCreateCategory(input: { namePT: string; nameEN?: string }): Promise<ApiCategory> {
+export async function adminCreateCategory(input: { namePT: string; nameEN?: string; introPT?: string; introEN?: string }): Promise<ApiCategory> {
   const data = await request<{ doc: ApiCategory }>(
     '/categories',
     { method: 'POST', body: JSON.stringify(input) },
@@ -1431,7 +1431,7 @@ export async function adminCreateMerchTag(input: { labelPT: string; labelEN?: st
 
 export async function adminUpdateCategory(
   id: string | number,
-  input: { namePT?: string; nameEN?: string; image?: string | number | null },
+  input: { namePT?: string; nameEN?: string; introPT?: string; introEN?: string; image?: string | number | null },
 ): Promise<ApiCategory> {
   const data = await request<{ doc: ApiCategory }>(
     `/categories/${id}?depth=1`,
