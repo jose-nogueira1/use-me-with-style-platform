@@ -302,7 +302,7 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
           .ump-hero-shade { display: none; }
         }
 
-        .ump-grid-auto { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(187.5px, 100%), 1fr)); gap: 10px; }
+        .ump-grid-auto { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(215.625px, 100%), 1fr)); gap: 10px; }
         /* Product grid (Browse, Home featured, recommendations): 150px is
            the target card width, but minmax(min(150px, 100%), 1fr) -- not
            minmax(150px, 1fr) -- is what actually keeps this safe.
@@ -328,7 +328,7 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
            light safeguard against cards getting too small/cramped on a
            genuine ultra-wide monitor (2026-07-24, responsive audit,
            Finding 7). */
-        @media (min-width: 1800px) { .ump-grid-auto { grid-template-columns: repeat(auto-fill, minmax(min(237.5px, 100%), 1fr)); } }
+        @media (min-width: 1800px) { .ump-grid-auto { grid-template-columns: repeat(auto-fill, minmax(min(273.125px, 100%), 1fr)); } }
         .ump-home-product-grid { grid-template-columns: repeat(auto-fill, minmax(min(215.625px, 100%), 1fr)); }
         @media (min-width: 1800px) { .ump-home-product-grid { grid-template-columns: repeat(auto-fill, minmax(min(273.125px, 100%), 1fr)); } }
 

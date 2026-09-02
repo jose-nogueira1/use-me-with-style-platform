@@ -30,8 +30,8 @@ test('only sold-out cards are dimmed and struck across the card', () => {
 })
 
 test('catalogue and homepage product grids use the enlarged card scale', () => {
-  assert.match(layoutSource, /minmax\(min\(187\.5px, 100%\), 1fr\)/)
-  assert.match(layoutSource, /minmax\(min\(237\.5px, 100%\), 1fr\)/)
+  assert.match(layoutSource, /\.ump-grid-auto \{ display: grid; grid-template-columns: repeat\(auto-fill, minmax\(min\(215\.625px, 100%\), 1fr\)\)/)
+  assert.match(layoutSource, /@media \(min-width: 1800px\) \{ \.ump-grid-auto \{ grid-template-columns: repeat\(auto-fill, minmax\(min\(273\.125px, 100%\), 1fr\)\)/)
   assert.match(cardSource, /homepage \? 215\.625 : 187\.5/)
 })
 
