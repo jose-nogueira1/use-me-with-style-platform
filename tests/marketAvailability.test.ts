@@ -62,3 +62,11 @@ test('mobile catalogue and homepage cards use a compact two-column layout', () =
   assert.match(cardSource, /className=\{`ump-hover-lift\$\{homepage \? ' ump-home-product-card' : ''\}`\}/)
   assert.match(layoutSource, /\.ump-home-product-card \{ width: 155\.25px !important; \}/)
 })
+
+test('mobile low-stock messaging moves below the image without covering photography', () => {
+  assert.match(cardSource, /className=\{product\.marketStatus === 'low_stock' \? 'ump-stock-image-badge-low' : undefined\}/)
+  assert.match(cardSource, /className="ump-stock-mobile-badge"/)
+  assert.match(cardSource, /Só \$\{product\.marketStock\} restantes/)
+  assert.match(layoutSource, /\.ump-stock-image-badge-low \{ display: none; \}/)
+  assert.match(layoutSource, /\.ump-stock-mobile-badge \{ display: inline-block !important; white-space: nowrap;/)
+})

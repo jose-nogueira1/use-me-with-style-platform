@@ -334,6 +334,8 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
         @media (max-width: 620px) {
           .ump-grid-auto, .ump-home-product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
           .ump-home-product-card { width: 155.25px !important; }
+          .ump-stock-image-badge-low { display: none; }
+          .ump-stock-mobile-badge { display: inline-block !important; white-space: nowrap; }
         }
 
         /* Home: Instagram feed (2026-08-02 redesign) -- full-bleed,

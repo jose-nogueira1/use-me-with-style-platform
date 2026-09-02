@@ -48,6 +48,7 @@ export function ProductCard({ product, size = 'grid', priority = false, homepage
         </div>
         {(product.marketStatus === 'sold_out' || product.marketStatus === 'low_stock') && (
           <div
+            className={product.marketStatus === 'low_stock' ? 'ump-stock-image-badge-low' : undefined}
             aria-label={product.marketStatus === 'sold_out' ? t('outOfStock', lang) : t('fewLeftStock', lang, { n: product.marketStock })}
             style={{
               position: 'absolute',
@@ -73,6 +74,11 @@ export function ProductCard({ product, size = 'grid', priority = false, homepage
         )}
       </div>
       <div style={{ padding: '10px 8px 12px', opacity: product.marketStatus === 'sold_out' ? 0.55 : 1 }}>
+        {product.marketStatus === 'low_stock' && (
+          <div className="ump-stock-mobile-badge" style={{ display: 'none', background: C.tagBg, color: C.dangerStrong, fontSize: 9, fontWeight: 800, padding: '5px 7px', borderRadius: 5, border: `1px solid ${C.rule}`, whiteSpace: 'nowrap', marginBottom: 6 }}>
+            {lang === 'pt' ? `Só ${product.marketStock} restantes` : `Only ${product.marketStock} left`}
+          </div>
+        )}
         {/* Multi-select since 2026-07-31 -- a product can carry more than
             one badge (e.g. both "Novidade" and "Bestseller") at once. */}
         {product.tags.length > 0 && (
