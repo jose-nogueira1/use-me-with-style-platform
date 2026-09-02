@@ -17,11 +17,13 @@ test('market stock status distinguishes hidden markets from sold-out markets', (
   assert.match(source, /'hidden'/)
 })
 
-test('stock status is presented as a dimmed image-corner overlay with a strike', () => {
+test('only sold-out cards are dimmed and struck across the card', () => {
   assert.match(cardSource, /position: 'relative'/)
   assert.match(cardSource, /position: 'absolute'/)
   assert.match(cardSource, /top: 10/)
   assert.match(cardSource, /right: 10/)
-  assert.match(cardSource, /textDecoration: 'line-through'/)
-  assert.match(cardSource, /opacity: product\.marketStatus === 'in_stock' \? 1 : 0\.55/)
+  assert.match(cardSource, /opacity: product\.marketStatus === 'sold_out' \? 0\.55 : 1/)
+  assert.match(cardSource, /product\.marketStatus === 'sold_out' && \(/)
+  assert.match(cardSource, /width: '116%'/)
+  assert.match(cardSource, /background: C\.dangerStrong/)
 })

@@ -43,7 +43,7 @@ export function ProductCard({ product, size = 'grid', priority = false }: { prod
       }}
     >
       <div style={{ aspectRatio: '3 / 4', width: '100%', position: 'relative', background: C.subtleBg }}>
-        <div style={{ width: '100%', height: '100%', opacity: product.marketStatus === 'in_stock' ? 1 : 0.55 }}>
+        <div style={{ width: '100%', height: '100%', opacity: product.marketStatus === 'sold_out' ? 0.55 : 1 }}>
           <ProductPhoto tone={product.tone} radius={0} image={product.images[0]} variant="card" priority={priority} />
         </div>
         {(product.marketStatus === 'sold_out' || product.marketStatus === 'low_stock') && (
@@ -53,7 +53,7 @@ export function ProductCard({ product, size = 'grid', priority = false }: { prod
               position: 'absolute',
               top: 10,
               right: 10,
-              zIndex: 1,
+              zIndex: 3,
               background: product.marketStatus === 'sold_out' ? C.danger : C.tagBg,
               color: product.marketStatus === 'sold_out' ? C.paper : C.dangerStrong,
               fontSize: 9,
@@ -62,15 +62,13 @@ export function ProductCard({ product, size = 'grid', priority = false }: { prod
               borderRadius: 6,
               border: `1px solid ${product.marketStatus === 'sold_out' ? C.danger : C.rule}`,
               boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
-              overflow: 'hidden',
             }}
           >
             {product.marketStatus === 'sold_out' ? t('outOfStock', lang) : t('fewLeftStock', lang, { n: product.marketStock })}
-            <span aria-hidden style={{ position: 'absolute', left: -4, right: -4, top: '50%', height: 2, background: product.marketStatus === 'sold_out' ? C.paper : C.dangerStrong, transform: 'rotate(-18deg)' }} />
           </div>
         )}
       </div>
-      <div style={{ padding: '10px 8px 12px', opacity: product.marketStatus === 'in_stock' ? 1 : 0.55 }}>
+      <div style={{ padding: '10px 8px 12px', opacity: product.marketStatus === 'sold_out' ? 0.55 : 1 }}>
         {/* Multi-select since 2026-07-31 -- a product can carry more than
             one badge (e.g. both "Novidade" and "Bestseller") at once. */}
         {product.tags.length > 0 && (
@@ -153,6 +151,9 @@ export function ProductCard({ product, size = 'grid', priority = false }: { prod
           </div>
         )}
       </div>
+      {product.marketStatus === 'sold_out' && (
+        <span aria-hidden style={{ position: 'absolute', left: '-8%', top: '50%', width: '116%', height: 3, zIndex: 2, background: C.dangerStrong, transform: 'rotate(-16deg)', pointerEvents: 'none' }} />
+      )}
     </Link>
   );
 }
