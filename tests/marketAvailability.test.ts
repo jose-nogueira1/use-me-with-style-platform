@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 
 const source = readFileSync(new URL('../src/lib/productAdapters.ts', import.meta.url), 'utf8')
+const cardSource = readFileSync(new URL('../src/storefront/components/ProductCard.tsx', import.meta.url), 'utf8')
 
 test('market stock status is calculated independently for each market', () => {
   assert.match(source, /marketStockStatus\(/)
@@ -14,4 +15,13 @@ test('market stock status distinguishes hidden markets from sold-out markets', (
   assert.match(source, /availableAO !== false/)
   assert.match(source, /availablePT !== false/)
   assert.match(source, /'hidden'/)
+})
+
+test('stock status is presented as a dimmed image-corner overlay with a strike', () => {
+  assert.match(cardSource, /position: 'relative'/)
+  assert.match(cardSource, /position: 'absolute'/)
+  assert.match(cardSource, /top: 10/)
+  assert.match(cardSource, /right: 10/)
+  assert.match(cardSource, /textDecoration: 'line-through'/)
+  assert.match(cardSource, /opacity: product\.marketStatus === 'in_stock' \? 1 : 0\.55/)
 })

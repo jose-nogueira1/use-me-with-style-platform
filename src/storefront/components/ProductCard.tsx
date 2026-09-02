@@ -39,18 +39,42 @@ export function ProductCard({ product, size = 'grid', priority = false }: { prod
         border: `1px solid ${C.ruleLight}`,
         textDecoration: 'none',
         color: 'inherit',
+        position: 'relative',
       }}
     >
-      <div style={{ aspectRatio: '3 / 4', width: '100%' }}>
-        <ProductPhoto tone={product.tone} radius={0} image={product.images[0]} variant="card" priority={priority} />
+      <div style={{ aspectRatio: '3 / 4', width: '100%', position: 'relative', background: C.subtleBg }}>
+        <div style={{ width: '100%', height: '100%', opacity: product.marketStatus === 'in_stock' ? 1 : 0.55 }}>
+          <ProductPhoto tone={product.tone} radius={0} image={product.images[0]} variant="card" priority={priority} />
+        </div>
+        {(product.marketStatus === 'sold_out' || product.marketStatus === 'low_stock') && (
+          <div
+            aria-label={product.marketStatus === 'sold_out' ? t('outOfStock', lang) : t('fewLeftStock', lang, { n: product.marketStock })}
+            style={{
+              position: 'absolute',
+              top: 10,
+              right: 10,
+              zIndex: 1,
+              background: product.marketStatus === 'sold_out' ? C.danger : C.tagBg,
+              color: product.marketStatus === 'sold_out' ? C.paper : C.dangerStrong,
+              fontSize: 9,
+              fontWeight: 800,
+              padding: '6px 9px',
+              borderRadius: 6,
+              border: `1px solid ${product.marketStatus === 'sold_out' ? C.danger : C.rule}`,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+              overflow: 'hidden',
+            }}
+          >
+            {product.marketStatus === 'sold_out' ? t('outOfStock', lang) : t('fewLeftStock', lang, { n: product.marketStock })}
+            <span aria-hidden style={{ position: 'absolute', left: -4, right: -4, top: '50%', height: 2, background: product.marketStatus === 'sold_out' ? C.paper : C.dangerStrong, transform: 'rotate(-18deg)' }} />
+          </div>
+        )}
       </div>
-      <div style={{ padding: '10px 8px 12px' }}>
+      <div style={{ padding: '10px 8px 12px', opacity: product.marketStatus === 'in_stock' ? 1 : 0.55 }}>
         {/* Multi-select since 2026-07-31 -- a product can carry more than
             one badge (e.g. both "Novidade" and "Bestseller") at once. */}
-        {(product.tags.length > 0 || product.marketStatus === 'sold_out' || product.marketStatus === 'low_stock') && (
+        {product.tags.length > 0 && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 6 }}>
-            {product.marketStatus === 'sold_out' && <div style={{ display: 'inline-block', background: C.danger, color: C.paper, fontSize: 9, fontWeight: 800, padding: '4px 8px', borderRadius: 6, border: `1px solid ${C.danger}` }}>{t('outOfStock', lang)}</div>}
-            {product.marketStatus === 'low_stock' && <div style={{ display: 'inline-block', background: C.tagBg, color: C.dangerStrong, fontSize: 9, fontWeight: 800, padding: '4px 8px', borderRadius: 6, border: `1px solid ${C.rule}` }}>{t('fewLeftStock', lang, { n: product.marketStock })}</div>}
             {product.tags.map((tag) => {
               const tagStyle = TAG_STYLE[tag.label] ?? DEFAULT_TAG_STYLE;
               return (
