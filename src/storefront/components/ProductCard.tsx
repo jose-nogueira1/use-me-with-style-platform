@@ -30,7 +30,7 @@ export function ProductCard({ product, size = 'grid', priority = false }: { prod
       className="ump-hover-lift"
       style={{
         flexShrink: isSmall ? 0 : undefined,
-        width: isSmall ? 150 : undefined,
+        width: isSmall ? 187.5 : undefined,
         display: 'block',
         background: C.paper,
         borderRadius: 8,
@@ -51,8 +51,8 @@ export function ProductCard({ product, size = 'grid', priority = false }: { prod
             aria-label={product.marketStatus === 'sold_out' ? t('outOfStock', lang) : t('fewLeftStock', lang, { n: product.marketStock })}
             style={{
               position: 'absolute',
-              top: 10,
-              right: 10,
+              top: 0,
+              right: 0,
               zIndex: 3,
               background: product.marketStatus === 'sold_out' ? C.danger : C.tagBg,
               color: product.marketStatus === 'sold_out' ? C.paper : C.dangerStrong,
@@ -61,6 +61,7 @@ export function ProductCard({ product, size = 'grid', priority = false }: { prod
               padding: '6px 9px',
               borderRadius: 6,
               border: `1px solid ${product.marketStatus === 'sold_out' ? C.danger : C.rule}`,
+              borderRadius: '0 0 0 6px',
               boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
             }}
           >
