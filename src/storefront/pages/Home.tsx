@@ -437,7 +437,7 @@ export function Home() {
             </div>
             <div style={{ display: 'flex', gap: 10, overflowX: 'auto' }}>
               {shelf.items.map((p) => (
-                <ProductCard key={p.id} product={p} size="small" />
+                <ProductCard key={p.id} product={p} size="small" homepage />
               ))}
             </div>
           </div>
@@ -457,7 +457,7 @@ export function Home() {
               </div>
               <div style={{ display: 'flex', gap: 10, overflowX: 'auto' }}>
                 {newArrivals.map((p) => (
-                  <ProductCard key={p.id} product={p} size="small" />
+                  <ProductCard key={p.id} product={p} size="small" homepage />
                 ))}
               </div>
             </div>
@@ -469,9 +469,9 @@ export function Home() {
               <div style={{ fontSize: 10, letterSpacing: 3, color: C.goldDeep, fontWeight: 800, textTransform: 'uppercase', marginBottom: 12 }}>
                 {t('featured', lang)}
               </div>
-              <div className="ump-grid-auto">
+              <div className="ump-grid-auto ump-home-product-grid">
                 {featured.map((p) => (
-                  <ProductCard key={p.id} product={p} />
+                  <ProductCard key={p.id} product={p} homepage />
                 ))}
               </div>
             </div>

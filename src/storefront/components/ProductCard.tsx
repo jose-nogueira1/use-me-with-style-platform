@@ -18,7 +18,7 @@ const TAG_STYLE: Record<string, { bg: string; text: string }> = {
 const DEFAULT_TAG_STYLE = { bg: C.tagBg, text: C.goldDeep };
 const TAG_KEY: Record<string, string> = { New: 'tagNew', 'Few left': 'tagFewLeft', Bestseller: 'tagBestseller', 'In stock': 'tagInStock' };
 
-export function ProductCard({ product, size = 'grid', priority = false }: { product: Product; size?: 'small' | 'grid'; priority?: boolean }) {
+export function ProductCard({ product, size = 'grid', priority = false, homepage = false }: { product: Product; size?: 'small' | 'grid'; priority?: boolean; homepage?: boolean }) {
   const { lang } = useApp();
   const fmtPrice = useFormatPrice();
   const fmtOriginalPrice = useFormatOriginalPrice();
@@ -30,7 +30,7 @@ export function ProductCard({ product, size = 'grid', priority = false }: { prod
       className="ump-hover-lift"
       style={{
         flexShrink: isSmall ? 0 : undefined,
-        width: isSmall ? 187.5 : undefined,
+        width: isSmall ? (homepage ? 215.625 : 187.5) : undefined,
         display: 'block',
         background: C.paper,
         borderRadius: 8,
@@ -67,6 +67,9 @@ export function ProductCard({ product, size = 'grid', priority = false }: { prod
           >
             {product.marketStatus === 'sold_out' ? t('outOfStock', lang) : t('fewLeftStock', lang, { n: product.marketStock })}
           </div>
+        )}
+        {product.marketStatus === 'sold_out' && (
+          <span aria-hidden style={{ position: 'absolute', left: '-33.35%', top: '50%', width: '166.7%', height: 3, zIndex: 2, background: C.dangerStrong, transform: 'rotate(53.13deg)', pointerEvents: 'none' }} />
         )}
       </div>
       <div style={{ padding: '10px 8px 12px', opacity: product.marketStatus === 'sold_out' ? 0.55 : 1 }}>
@@ -152,9 +155,6 @@ export function ProductCard({ product, size = 'grid', priority = false }: { prod
           </div>
         )}
       </div>
-      {product.marketStatus === 'sold_out' && (
-        <span aria-hidden style={{ position: 'absolute', left: '-8%', top: '50%', width: '116%', height: 3, zIndex: 2, background: C.dangerStrong, transform: 'rotate(-16deg)', pointerEvents: 'none' }} />
-      )}
     </Link>
   );
 }

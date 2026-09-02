@@ -329,6 +329,8 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
            genuine ultra-wide monitor (2026-07-24, responsive audit,
            Finding 7). */
         @media (min-width: 1800px) { .ump-grid-auto { grid-template-columns: repeat(auto-fill, minmax(min(237.5px, 100%), 1fr)); } }
+        .ump-home-product-grid { grid-template-columns: repeat(auto-fill, minmax(min(215.625px, 100%), 1fr)); }
+        @media (min-width: 1800px) { .ump-home-product-grid { grid-template-columns: repeat(auto-fill, minmax(min(273.125px, 100%), 1fr)); } }
 
         /* Home: Instagram feed (2026-08-02 redesign) -- full-bleed,
            auto-scrolling/draggable strip instead of a fixed-column grid, so

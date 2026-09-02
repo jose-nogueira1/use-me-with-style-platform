@@ -25,12 +25,20 @@ test('only sold-out cards are dimmed and struck across the card', () => {
   assert.match(cardSource, /right: 0/)
   assert.match(cardSource, /opacity: product\.marketStatus === 'sold_out' \? 0\.55 : 1/)
   assert.match(cardSource, /product\.marketStatus === 'sold_out' && \(/)
-  assert.match(cardSource, /width: '116%'/)
+  assert.match(cardSource, /width: '166\.7%'/)
   assert.match(cardSource, /background: C\.dangerStrong/)
 })
 
 test('catalogue and homepage product grids use the enlarged card scale', () => {
   assert.match(layoutSource, /minmax\(min\(187\.5px, 100%\), 1fr\)/)
   assert.match(layoutSource, /minmax\(min\(237\.5px, 100%\), 1fr\)/)
-  assert.match(cardSource, /width: isSmall \? 187\.5 : undefined/)
+  assert.match(cardSource, /homepage \? 215\.625 : 187\.5/)
+})
+
+test('homepage cards get a further 15 percent size increase and the strike spans the image corners', () => {
+  assert.match(cardSource, /homepage\?: boolean/)
+  assert.match(cardSource, /width: isSmall \? \(homepage \? 215\.625 : 187\.5\) : undefined/)
+  assert.match(cardSource, /left: '-33\.35%'/)
+  assert.match(cardSource, /width: '166\.7%'/)
+  assert.match(cardSource, /transform: 'rotate\(53\.13deg\)'/)
 })
