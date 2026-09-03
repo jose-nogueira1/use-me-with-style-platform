@@ -50,6 +50,7 @@ test('catalogue filters use a bottom sheet on mobile and a side drawer on deskto
   assert.match(browseSource, /className="ump-filter-drawer-handle"/);
   assert.match(appSource, /@media \(max-width: 719px\)[\s\S]*\.ump-filter-drawer\s*\{[\s\S]*align-self:\s*flex-end/);
   assert.match(appSource, /@media \(max-width: 719px\)[\s\S]*border-radius:\s*18px\s+18px\s+0\s+0/);
+  assert.match(appSource, /@media \(max-width: 719px\)[\s\S]*height:\s*min\(75vh/);
 });
 
 test('active catalogue filters put clear filters before the active pills', () => {

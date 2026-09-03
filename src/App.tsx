@@ -735,7 +735,7 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
         @media (max-width: 719px) {
           .ump-filter-drawer-backdrop { align-items: flex-end; }
           .ump-filter-drawer {
-            align-self: flex-end; width: 100%; height: min(90vh, 760px); border-radius: 18px 18px 0 0;
+            align-self: flex-end; width: 100%; height: min(75vh, 680px); border-radius: 18px 18px 0 0;
             box-shadow: 0 -16px 40px rgba(22, 18, 12, .18);
           }
           .ump-filter-drawer-handle {
