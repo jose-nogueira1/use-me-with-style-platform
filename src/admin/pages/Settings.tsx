@@ -2138,12 +2138,21 @@ function InstagramSpotlightSection() {
     }
   };
 
+  const associationItemCount = (association: ShopAssociation | null) =>
+    (association?.products ?? []).reduce((total, product) => {
+      const id = productRelationshipKey(product);
+      const selectedColours = association?.variantSelections?.[id];
+      return total + (Array.isArray(selectedColours) ? selectedColours.length : selectedColours ? 1 : 1);
+    }, 0);
+
   const toggleProduct = (post: ApiInstagramPost, product: ApiProduct) => {
-    const existingIds = (associationFor(post)?.products ?? []).map(productRelationshipKey).filter(Boolean);
+    const association = associationFor(post);
+    const existingIds = (association?.products ?? []).map(productRelationshipKey).filter(Boolean);
     const productId = productRelationshipId(product);
     const productKey = productRelationshipKey(product);
     if (productId === null) return;
-    if (!existingIds.includes(productKey) && existingIds.length >= 6) {
+    const existingCount = associationItemCount(association);
+    if (!existingIds.includes(productKey) && existingCount >= 6) {
       setPickerError(lang === 'pt' ? 'Pode associar no máximo seis produtos a cada publicação.' : 'You can associate up to six products with each post.');
       return;
     }
@@ -2158,10 +2167,22 @@ function InstagramSpotlightSection() {
     });
   };
 
-  const selectColour = (post: ApiInstagramPost, productId: string, colourId: string) => {
+  const toggleColour = (post: ApiInstagramPost, productId: string, colourId: string) => {
+    const association = associationFor(post);
+    const current = association?.variantSelections?.[productId];
+    const selected = Array.isArray(current) ? current : current ? [current] : [];
+    if (!selected.includes(colourId) && associationItemCount(association) >= 6) {
+      setPickerError(lang === 'pt' ? 'Pode associar no máximo seis itens a cada publicação.' : 'You can associate up to six tagged items with each post.');
+      return;
+    }
     updateAssociation(post, (entry) => {
       const selections = { ...(entry.variantSelections ?? {}) };
-      if (colourId) selections[productId] = colourId;
+      const entryCurrent = selections[productId];
+      const entrySelected = Array.isArray(entryCurrent) ? entryCurrent : entryCurrent ? [entryCurrent] : [];
+      const next = entrySelected.includes(colourId)
+        ? entrySelected.filter((candidate) => candidate !== colourId)
+        : [...entrySelected, colourId];
+      if (next.length > 0) selections[productId] = [...new Set(next)];
       else delete selections[productId];
       return { ...entry, variantSelections: selections };
     });
@@ -2170,6 +2191,7 @@ function InstagramSpotlightSection() {
   const editingPost = posts.find((post) => post.id === editingPostId) ?? null;
   const editingAssociation = editingPost ? associationFor(editingPost) : null;
   const taggedProductIds = (editingAssociation?.products ?? []).map(productRelationshipKey).filter(Boolean);
+  const selectedColourCount = associationItemCount(editingAssociation);
   const filteredProducts = products.filter((product) => {
     const needle = productSearch.trim().toLowerCase();
     return !needle || [product.name, product.namePT, product.nameEN, product.slug].some((value) => value?.toLowerCase().includes(needle));
@@ -2241,7 +2263,7 @@ function InstagramSpotlightSection() {
               <img src={editingPost.imageUrl} alt="" style={{ width: 54, height: 68, objectFit: 'cover', borderRadius: 6 }} />
               <div style={{ minWidth: 0, flex: 1 }}>
                 <div id="shop-look-picker-title" style={{ fontFamily: F.display, fontSize: 20, fontWeight: 800, color: C.ink }}>{lang === 'pt' ? 'Produtos neste look' : 'Products in this look'}</div>
-                <div style={{ marginTop: 3, fontSize: 10, color: C.inkSoft }}>{taggedProductIds.length}/6 {lang === 'pt' ? 'produtos associados' : 'products associated'}</div>
+                <div style={{ marginTop: 3, fontSize: 10, color: C.inkSoft }}>{selectedColourCount}/6 {lang === 'pt' ? 'itens associados' : 'tagged items'}</div>
               </div>
               <button type="button" aria-label={lang === 'pt' ? 'Fechar' : 'Close'} onClick={() => setEditingPostId(null)} style={{ width: 34, height: 34, borderRadius: 999, background: C.subtleBg, color: C.ink, fontSize: 18 }}>×</button>
             </div>
@@ -2254,7 +2276,8 @@ function InstagramSpotlightSection() {
                 const id = String(product.id);
                 const selected = taggedProductIds.includes(id);
                 const colours = coloursFor(product);
-                const selection = editingAssociation?.variantSelections?.[id] ?? '';
+                const selection = editingAssociation?.variantSelections?.[id];
+                const selectedColours = Array.isArray(selection) ? selection : selection ? [selection] : [];
                 const image = resolveProductImage(product.images?.[0]?.image);
                 const imageUrl = absoluteMediaUrl(image.url) || image.url;
                 return (
@@ -2263,7 +2286,7 @@ function InstagramSpotlightSection() {
                     <div style={{ minWidth: 0 }}>
                       <div style={{ fontSize: 12, fontWeight: 800, color: C.ink }}>{(lang === 'en' ? product.nameEN : product.namePT)?.trim() || product.name}</div>
                       <div style={{ marginTop: 3, display: 'flex', gap: 5, flexWrap: 'wrap', fontSize: 8.5, color: C.inkSoft }}><span>{product.active ? (lang === 'pt' ? 'Ativo' : 'Active') : (lang === 'pt' ? 'Rascunho' : 'Draft')}</span><span>· AO {product.availableAO ? '✓' : '—'}</span><span>· PT {product.availablePT ? '✓' : '—'}</span></div>
-                      {selected && colours.length > 1 && <select aria-label={`${product.name} — ${lang === 'pt' ? 'cor no look' : 'colour in look'}`} value={selection} onChange={(event) => selectColour(editingPost, id, event.target.value)} style={{ width: '100%', maxWidth: 250, marginTop: 7, padding: '7px 9px', border: `1px solid ${C.fieldBorder}`, borderRadius: 6, background: C.paper, color: C.ink, fontSize: 10 }}><option value="">{lang === 'pt' ? 'Qualquer cor / não especificar' : 'Any colour / not specified'}</option>{colours.map((colour) => <option key={colour.id} value={colour.id}>{colour.label}</option>)}</select>}
+                      {selected && colours.length > 0 && <div aria-label={`${product.name} — ${lang === 'pt' ? 'cores no look' : 'colours in look'}`} style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 7 }}>{colours.map((colour) => { const active = selectedColours.includes(colour.id); return <button key={colour.id} type="button" aria-pressed={active} onClick={() => toggleColour(editingPost, id, colour.id)} style={{ padding: '5px 8px', border: `1px solid ${active ? C.goldDeep : C.fieldBorder}`, borderRadius: 999, background: active ? C.goldDeep : C.paper, color: active ? C.onDarkGold : C.ink, fontSize: 9, fontWeight: 750 }}>{colour.label}</button>; })}</div>}
                     </div>
                     <button type="button" aria-pressed={selected} onClick={() => toggleProduct(editingPost, product)} style={{ padding: '8px 11px', borderRadius: 6, background: selected ? C.goldDeep : C.black, color: C.onDarkGold, fontSize: 9, fontWeight: 850 }}>{selected ? (lang === 'pt' ? 'Remover' : 'Remove') : (lang === 'pt' ? 'Adicionar' : 'Add')}</button>
                   </div>
