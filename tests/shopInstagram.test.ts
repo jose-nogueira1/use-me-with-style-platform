@@ -37,6 +37,10 @@ test('homepage and dedicated page render shoppable product cards', () => {
   assert.match(productCardSource, /ShopTheLookProductClick/);
   assert.match(productCardSource, /Sold out — view similar/);
   assert.match(productCardSource, /product\.imageAlt\?\.trim\(\) \|\| name/);
+  assert.match(productCardSource, /product\.inStock \? 1 : 0\.55/);
+  assert.match(productCardSource, /Esgotado/);
+  assert.match(productCardSource, /width: '166\.7%'/);
+  assert.match(productCardSource, /background: C\.dangerStrong/);
   assert.match(shopPageSource, /key=\{`\$\{product\.id\}-\$\{product\.selectedColorId/);
   assert.match(feedSource, /key=\{`\$\{product\.id\}-\$\{product\.selectedColorId/);
 });
