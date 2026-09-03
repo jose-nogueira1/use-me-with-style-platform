@@ -2079,11 +2079,13 @@ function InstagramSpotlightSection() {
     Promise.all([
       fetchInstagramFeed(12, market).then((result) => setPosts(result.posts)).catch(() => setPostsError(t('couldntLoadInstagramFeed', lang))),
       adminFetchInstagramSpotlight(),
-      adminListProducts().then(setProducts),
+      adminListProducts(),
     ])
-      .then(([, data]) => {
+      .then(([, data, productDocs]) => {
+        setProducts(productDocs);
         const loadedHighlight = data.highlightedPermalink ?? '';
-        const loadedTags = normalizeShopAssociations(data.productTags);
+        const validProductIds = new Set(productDocs.map((product) => String(product.id)));
+        const loadedTags = normalizeShopAssociations(data.productTags, validProductIds);
         setHighlightedPermalink(loadedHighlight);
         setProductTags(loadedTags);
         setBaseline({ highlightedPermalink: loadedHighlight, productTags: loadedTags });
@@ -2141,8 +2143,8 @@ function InstagramSpotlightSection() {
     const productId = productRelationshipId(product);
     const productKey = productRelationshipKey(product);
     if (productId === null) return;
-    if (!existingIds.includes(productKey) && existingIds.length >= 4) {
-      setPickerError(lang === 'pt' ? 'Pode associar no máximo quatro produtos a cada publicação.' : 'You can associate up to four products with each post.');
+    if (!existingIds.includes(productKey) && existingIds.length >= 6) {
+      setPickerError(lang === 'pt' ? 'Pode associar no máximo seis produtos a cada publicação.' : 'You can associate up to six products with each post.');
       return;
     }
     updateAssociation(post, (entry) => {
@@ -2188,8 +2190,8 @@ function InstagramSpotlightSection() {
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'center', marginBottom: 14 }}>
         <div style={{ fontSize: 11, color: C.inkSoft, maxWidth: 660 }}>
           {lang === 'pt'
-            ? 'Escolha uma publicação para destacar e associe até quatro produtos reais a cada look. Preços, stock e links são sempre resolvidos a partir do catálogo atual.'
-            : 'Choose one highlighted post and associate up to four real products with each look. Prices, stock and links always resolve from the current catalogue.'}
+            ? 'Escolha uma publicação para destacar e associe até seis produtos reais a cada look. Preços, stock e links são sempre resolvidos a partir do catálogo atual.'
+            : 'Choose one highlighted post and associate up to six real products with each look. Prices, stock and links always resolve from the current catalogue.'}
         </div>
         <button
           onClick={() => void handleSave()}
@@ -2239,7 +2241,7 @@ function InstagramSpotlightSection() {
               <img src={editingPost.imageUrl} alt="" style={{ width: 54, height: 68, objectFit: 'cover', borderRadius: 6 }} />
               <div style={{ minWidth: 0, flex: 1 }}>
                 <div id="shop-look-picker-title" style={{ fontFamily: F.display, fontSize: 20, fontWeight: 800, color: C.ink }}>{lang === 'pt' ? 'Produtos neste look' : 'Products in this look'}</div>
-                <div style={{ marginTop: 3, fontSize: 10, color: C.inkSoft }}>{taggedProductIds.length}/4 {lang === 'pt' ? 'produtos associados' : 'products associated'}</div>
+                <div style={{ marginTop: 3, fontSize: 10, color: C.inkSoft }}>{taggedProductIds.length}/6 {lang === 'pt' ? 'produtos associados' : 'products associated'}</div>
               </div>
               <button type="button" aria-label={lang === 'pt' ? 'Fechar' : 'Close'} onClick={() => setEditingPostId(null)} style={{ width: 34, height: 34, borderRadius: 999, background: C.subtleBg, color: C.ink, fontSize: 18 }}>×</button>
             </div>
