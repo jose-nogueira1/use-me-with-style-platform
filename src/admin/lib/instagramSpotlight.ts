@@ -25,12 +25,14 @@ export function productRelationshipKey(
 
 export function normalizeShopAssociations(
   value: InstagramSpotlight['productTags'],
+  validProductIds?: Set<string>,
 ): ShopAssociation[] {
   return (value ?? []).flatMap((entry) => {
     const productIds = (entry.products ?? [])
       .map(productRelationshipId)
       .filter((id): id is ProductRelationshipId => id !== null)
-      .slice(0, 4);
+      .filter((id) => !validProductIds || validProductIds.has(String(id)))
+      .slice(0, 6);
     if (!entry.permalink || productIds.length === 0) return [];
 
     const productKeys = new Set(productIds.map(String));

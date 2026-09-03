@@ -27,3 +27,19 @@ test('relationship helpers compare IDs consistently without changing their API t
   assert.equal(productRelationshipId('12'), '12');
   assert.equal(productRelationshipKey({ id: 12 } as never), '12');
 });
+
+test('Instagram spotlight normalization drops deleted product references', () => {
+  const normalized = normalizeShopAssociations([{
+    mediaId: 'post-1',
+    permalink: 'https://www.instagram.com/p/post-1/',
+    products: [12, 99],
+    variantSelections: { '12': 'blue', '99': 'red' },
+  }], new Set(['12']));
+
+  assert.deepEqual(normalized, [{
+    mediaId: 'post-1',
+    permalink: 'https://www.instagram.com/p/post-1/',
+    products: [12],
+    variantSelections: { '12': 'blue' },
+  }]);
+});

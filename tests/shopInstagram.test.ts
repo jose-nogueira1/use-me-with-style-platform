@@ -19,9 +19,9 @@ test('Instagram feed requests are market-aware and expose resolved catalogue fac
   assert.match(apiSource, /regularPrice: number/);
 });
 
-test('Instagram feed settings manage up to four products and exact colours per post', () => {
+test('Instagram feed settings manage up to six products and exact colours per post', () => {
   assert.match(settingsSource, /Products in this look|Produtos neste look/);
-  assert.match(settingsSource, /up to four products|máximo quatro produtos/);
+  assert.match(settingsSource, /up to six products|máximo seis produtos/);
   assert.match(settingsSource, /variantSelections/);
   assert.match(settingsSource, /selectColour/);
   assert.match(settingsSource, /adminListProducts/);
