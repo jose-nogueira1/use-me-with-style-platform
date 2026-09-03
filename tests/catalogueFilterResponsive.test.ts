@@ -30,3 +30,31 @@ test('sidebar category filters omit the redundant all option while top navigatio
   assert.match(browseSource, /ump-browse-catpills[\s\S]*cats\.map/);
   assert.match(browseSource, /label=\{t\('category', lang\)\}[\s\S]*options=\{cats\.filter\(\(c\) => c\.key !== 'all'\)\.map/);
 });
+
+test('catalogue filter drawer is opened from the search row and replaces the lower trigger', () => {
+  assert.match(browseSource, /className="ump-browse-filter-trigger"/);
+  assert.match(browseSource, /className="ump-filter-drawer-backdrop"/);
+  assert.match(browseSource, /className="ump-filter-drawer(?:\s|"|')/);
+  assert.doesNotMatch(browseSource, /className="ump-browse-filter-toggle"[\s\S]*t\('filters', lang\)/);
+  assert.match(appSource, /\.ump-filter-drawer\s*\{[\s\S]*position:\s*fixed/);
+  assert.match(appSource, /\.ump-filter-drawer-backdrop\s*\{[\s\S]*position:\s*fixed/);
+});
+
+test('catalogue filter drawer applies filters and only expands groups that exceed three rows', () => {
+  assert.match(browseSource, /Apply Filters/);
+  assert.match(browseSource, /scrollHeight\s*>\s*102/);
+  assert.match(browseSource, /hasMore/);
+});
+
+test('catalogue filters use a bottom sheet on mobile and a side drawer on desktop', () => {
+  assert.match(browseSource, /className="ump-filter-drawer-handle"/);
+  assert.match(appSource, /@media \(max-width: 719px\)[\s\S]*\.ump-filter-drawer\s*\{[\s\S]*align-self:\s*flex-end/);
+  assert.match(appSource, /@media \(max-width: 719px\)[\s\S]*border-radius:\s*18px\s+18px\s+0\s+0/);
+});
+
+test('active catalogue filters put clear filters before the active pills', () => {
+  const activeStart = browseSource.indexOf('className="ump-browse-active-filters"');
+  const clearIndex = browseSource.indexOf('activeFilterBadges.length > 1 && <ClearFiltersButton', activeStart);
+  const pillsIndex = browseSource.indexOf('activeFilterBadges.map', activeStart);
+  assert.ok(activeStart >= 0 && clearIndex > activeStart && clearIndex < pillsIndex);
+});

@@ -651,8 +651,47 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
         @media (min-width: 900px) { .ump-cat-tile { flex: 0 0 250px; } }
         @media (min-width: 1400px) { .ump-cat-tile { flex: 0 0 280px; } }
 
-        /* Browse: sidebar filter panel on desktop (per "D02. Desktop Browse
-           and Filter"), inline pills + slide-down panel on mobile. Breakpoint
+        .ump-browse-filter-trigger {
+          display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+          flex: 0 0 auto; min-height: 40px; padding: 0 12px; border: 1px solid ${C.fieldBorder};
+          border-radius: 8px; background: ${C.paper}; color: ${C.goldDeep}; font-size: 11px;
+          font-weight: 800; cursor: pointer; white-space: nowrap;
+        }
+        .ump-browse-filter-trigger span {
+          display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px;
+          padding: 0 5px; border-radius: 99px; background: ${C.ctaBg}; color: ${C.onDarkGold}; font-size: 10px;
+        }
+        .ump-filter-drawer-backdrop {
+          position: fixed; inset: 0; z-index: 1100; display: flex; align-items: stretch;
+          background: rgba(22, 18, 12, .34);
+        }
+        .ump-filter-drawer {
+          position: relative; display: flex; flex-direction: column; width: min(420px, calc(100vw - 20px));
+          height: 100%; overflow: hidden; background: ${C.paper}; box-shadow: 16px 0 40px rgba(22, 18, 12, .18);
+        }
+        .ump-filter-drawer-header {
+          display: flex; align-items: center; justify-content: space-between; flex: 0 0 auto;
+          padding: 18px 20px; border-bottom: 1px solid ${C.ruleLight}; background: ${C.paper};
+        }
+        .ump-filter-drawer-header button {
+          display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px;
+          border: 1px solid ${C.fieldBorder}; border-radius: 50%; background: ${C.paper}; color: ${C.ink}; cursor: pointer;
+        }
+        .ump-filter-drawer-content { flex: 1 1 auto; overflow-y: auto; padding: 20px; }
+        .ump-filter-drawer-handle { display: none; }
+        .ump-filter-drawer-content .ump-browse-filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
+        .ump-filter-drawer-content .ump-filter-full { grid-column: 1 / -1; }
+        .ump-filter-drawer-footer {
+          display: flex; align-items: center; justify-content: flex-end; gap: 12px; flex: 0 0 auto;
+          padding: 14px 20px; border-top: 1px solid ${C.ruleLight}; background: ${C.paper};
+        }
+        .ump-filter-drawer-footer > button:last-child {
+          min-height: 40px; padding: 0 16px; border: 1px solid ${C.ctaBg}; border-radius: 8px;
+          background: ${C.ctaBg}; color: ${C.onDarkGold}; font-size: 11px; font-weight: 800; cursor: pointer;
+        }
+
+        /* Browse: filter drawer on desktop and mobile, with inline category
+           pills kept as a lightweight shortcut above the results. Breakpoint
            lowered from 860px to 720px 2026-07-24 (responsive audit, Finding
            3): 720px is where the header/footer/nav chrome already switches
            to its desktop form (.ump-desktop-nav, .ump-footer-grid, etc), so
@@ -683,8 +722,8 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
           .ump-filter-options > button { flex: 0 0 auto; }
         }
         @media (min-width: 720px) {
-          .ump-browse-layout { display: grid; grid-template-columns: 260px 1fr; gap: 0; max-width: 1240px; margin: 0 auto; }
-          .ump-browse-sidebar { display: block; padding: 20px; border-right: 1px solid ${C.ruleLight}; }
+          .ump-browse-layout { display: block; max-width: 1240px; margin: 0 auto; }
+          .ump-browse-sidebar { display: none; }
           .ump-browse-filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
           .ump-filter-options-collapsed { max-height: 102px; overflow: hidden; }
           .ump-sort-options { flex-direction: row !important; }
@@ -692,7 +731,21 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
           .ump-browse-active-filters { overflow: visible; flex-wrap: wrap; }
           .ump-filter-options { flex-wrap: wrap; overflow: visible; }
           .ump-browse-catpills { display: none !important; }
-          .ump-browse-filter-toggle { display: none !important; }
+        }
+        @media (max-width: 719px) {
+          .ump-filter-drawer-backdrop { align-items: flex-end; }
+          .ump-filter-drawer {
+            align-self: flex-end; width: 100%; height: min(90vh, 760px); border-radius: 18px 18px 0 0;
+            box-shadow: 0 -16px 40px rgba(22, 18, 12, .18);
+          }
+          .ump-filter-drawer-handle {
+            display: block; width: 38px; height: 4px; margin: 9px auto 0; border-radius: 99px;
+            background: ${C.fieldBorder}; flex: 0 0 auto;
+          }
+          .ump-filter-drawer-header { padding-top: 12px; }
+          .ump-filter-drawer-content .ump-browse-filter-grid { grid-template-columns: 1fr; }
+          .ump-filter-drawer-content .ump-filter-half,
+          .ump-filter-drawer-content .ump-filter-full { grid-column: 1 / -1; }
         }
         @media (min-width: 1400px) { .ump-browse-layout { max-width: 1600px; } }
         @media (min-width: 1800px) { .ump-browse-layout { max-width: 1900px; } }

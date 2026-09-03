@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Filter, Search, X } from 'lucide-react';
 import { C, t } from '../../theme';
@@ -398,6 +398,15 @@ export function Browse() {
       ? `/catalogo?tag=${encodeURIComponent(activeTag)}`
       : null;
 
+  useEffect(() => {
+    if (!showFilters) return undefined;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setShowFilters(false);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [showFilters]);
+
   return (
     <div className="ump-browse-layout" style={{ background: C.paper }}>
       <Seo title={seoTitle} description={seoDescription} />
@@ -437,8 +446,19 @@ export function Browse() {
 
       <div className="ump-browse-main">
         {!categoryIntro && <h1 className="ump-sr-only">{t('shopAll', lang)}</h1>}
-        <div style={{ padding: '12px 20px', borderBottom: `1px solid ${C.ruleLight}` }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: C.paper, borderRadius: 8, border: `1px solid ${C.fieldBorder}` }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 20px', borderBottom: `1px solid ${C.ruleLight}` }}>
+          <button
+            type="button"
+            className="ump-browse-filter-trigger"
+            onClick={() => setShowFilters(true)}
+            aria-expanded={showFilters}
+            aria-controls="catalogue-filter-drawer"
+          >
+            <Filter size={14} />
+            {t('filters', lang)}
+            {activeFilterBadges.length > 0 && <span aria-label={`${activeFilterBadges.length} active`}>{activeFilterBadges.length}</span>}
+          </button>
+          <div style={{ display: 'flex', flex: 1, alignItems: 'center', gap: 10, minWidth: 0, padding: '10px 14px', background: C.paper, borderRadius: 8, border: `1px solid ${C.fieldBorder}` }}>
             <Search size={16} color={C.inkSoft} />
             <input
               type="text"
@@ -499,9 +519,10 @@ export function Browse() {
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '8px 20px', borderBottom: `1px solid ${C.ruleLight}`, flexWrap: 'wrap' }}>
           <div className="ump-browse-active-filters">
-            <div style={{ fontSize: 11, color: C.inkSoft, flexShrink: 0 }}>
-              {loading ? '…' : `${filtered.length} ${t(filtered.length === 1 ? 'productSingular' : 'productPlural', lang)}`}
-            </div>
+              <div style={{ fontSize: 11, color: C.inkSoft, flexShrink: 0 }}>
+                {loading ? '…' : `${filtered.length} ${t(filtered.length === 1 ? 'productSingular' : 'productPlural', lang)}`}
+              </div>
+            {activeFilterBadges.length > 1 && <ClearFiltersButton onClick={clearAllFilters} lang={lang} />}
             {activeFilterBadges.map((b) => (
               <FilterBadge key={b.key} label={b.label} onRemove={b.onRemove} lang={lang} />
             ))}
@@ -512,37 +533,47 @@ export function Browse() {
                 alongside two or more badges -- with a single filter active
                 its badge already clears everything, so both controls would
                 do exactly the same thing. */}
-            {activeFilterBadges.length > 1 && <ClearFiltersButton onClick={clearAllFilters} lang={lang} />}
           </div>
-          <button
-            className="ump-browse-filter-toggle"
-            onClick={() => setShowFilters(!showFilters)}
-            style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 700, color: C.goldDeep, padding: '4px 8px', borderRadius: 6, background: showFilters ? C.tagBg : 'transparent' }}
-          >
-            <Filter size={12} />
-            {t('filters', lang)}
-          </button>
         </div>
 
         {showFilters && (
-          <div className="ump-slide-up ump-browse-filter-toggle" style={{ padding: '16px 20px', background: C.subtleBg, borderBottom: `1px solid ${C.ruleLight}` }}>
-            <FilterGroup label={t('size', lang)} options={allSizes.map((s) => ({ value: s, label: s }))} active={filterSizes} onSelect={toggleSize} />
-            <FilterGroup label={t('colour', lang)} options={allColors} active={filterColors} onSelect={toggleColor} />
-            <AvailabilityToggle checked={availableOnly} onChange={setAvailableOnly} lang={lang} />
-            <PriceRangeFilter min={minPrice} max={maxPrice} setMin={setMinPrice} setMax={setMaxPrice} market={market} lang={lang} />
-            <FilterToggle label={t('onSale', lang)} checked={onSale} onChange={setOnSale} />
-            <FilterGroup label={t('productType', lang)} options={allProductTypes} active={filterProductTypes} onSelect={toggleProductType} />
-            <FilterGroup label={t('collection', lang)} options={allCollections} active={activeCollections} onSelect={toggleCollection} />
-            {/* Bug fix, 2026-08-07: sort previously only existed in the
-                desktop sidebar (`.ump-browse-sidebar`, hidden below 720px),
-                so mobile shoppers had no way to sort by price at all -- this
-                mobile filter panel had size/colour but no sort control. */}
-            <SortControl sortBy={sortBy} setSortBy={setSortBy} lang={lang} />
-            {hasActiveFilters && (
-              <div style={{ paddingTop: 4 }}>
-                <ClearFiltersButton onClick={clearAllFilters} lang={lang} />
+          <div className="ump-filter-drawer-backdrop" role="presentation" onClick={() => setShowFilters(false)}>
+            <aside
+              id="catalogue-filter-drawer"
+              className="ump-filter-drawer ump-slide-up"
+              role="dialog"
+              aria-modal="true"
+              aria-label={t('filters', lang)}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="ump-filter-drawer-handle" aria-hidden="true" />
+              <div className="ump-filter-drawer-header">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: C.goldDeep, fontWeight: 800, letterSpacing: 1.5, textTransform: 'uppercase' }}>
+                  <Filter size={16} />
+                  {t('filters', lang)}
+                </div>
+                <button type="button" aria-label={lang === 'pt' ? 'Fechar filtros' : 'Close filters'} onClick={() => setShowFilters(false)}>
+                  <X size={18} />
+                </button>
               </div>
-            )}
+              <div className="ump-filter-drawer-content">
+                <div className="ump-browse-filter-grid">
+                  <FilterGroup className="ump-filter-full" label={t('category', lang)} options={cats.filter((c) => c.key !== 'all').map((c) => ({ value: c.key, label: c.label }))} active={activeCats} onSelect={toggleCat} lang={lang} collapsibleDesktop />
+                  <FilterGroup className="ump-filter-half" label={t('size', lang)} options={allSizes.map((s) => ({ value: s, label: s }))} active={filterSizes} onSelect={toggleSize} lang={lang} />
+                  <FilterGroup className="ump-filter-full" label={t('colour', lang)} options={allColors} active={filterColors} onSelect={toggleColor} collapsibleDesktop lang={lang} />
+                  <AvailabilityToggle className="ump-filter-half" checked={availableOnly} onChange={setAvailableOnly} lang={lang} />
+                  <FilterToggle className="ump-filter-half" label={t('onSale', lang)} checked={onSale} onChange={setOnSale} />
+                  <PriceRangeFilter className="ump-filter-full" min={minPrice} max={maxPrice} setMin={setMinPrice} setMax={setMaxPrice} market={market} lang={lang} />
+                  <FilterGroup className="ump-filter-half" label={t('productType', lang)} options={allProductTypes} active={filterProductTypes} onSelect={toggleProductType} lang={lang} />
+                  <FilterGroup className="ump-filter-half" label={t('collection', lang)} options={allCollections} active={activeCollections} onSelect={toggleCollection} collapsibleDesktop lang={lang} />
+                  <SortControl className="ump-filter-full" sortBy={sortBy} setSortBy={setSortBy} lang={lang} />
+                </div>
+              </div>
+              <div className="ump-filter-drawer-footer">
+                {hasActiveFilters && <ClearFiltersButton onClick={clearAllFilters} lang={lang} />}
+                <button type="button" onClick={() => setShowFilters(false)}>{lang === 'pt' ? 'Aplicar filtros' : 'Apply Filters'}</button>
+              </div>
+            </aside>
           </div>
         )}
 
@@ -790,7 +821,23 @@ function FilterGroup({
   lang?: 'pt' | 'en';
 }) {
   const [expanded, setExpanded] = useState(false);
+  const optionsRef = useRef<HTMLDivElement>(null);
+  const [hasMore, setHasMore] = useState(false);
   const canCollapse = collapsibleDesktop ? options.length > 3 : collapsible && options.length > 5;
+  const shouldCollapse = canCollapse && hasMore && !expanded;
+
+  useEffect(() => {
+    if (!canCollapse || !optionsRef.current) {
+      setHasMore(false);
+      return undefined;
+    }
+    const element = optionsRef.current;
+    const measure = () => setHasMore(element.scrollHeight > 102);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [canCollapse, options.length]);
   const multi = Array.isArray(active);
   const isActive = (value: string) => {
     if (allKey && value === allKey) return multi ? (active as string[]).length === 0 : active === null;
@@ -801,7 +848,8 @@ function FilterGroup({
     <div className={className} style={{ marginBottom: 16 }}>
       <FilterLabel>{label}</FilterLabel>
       <div
-        className={`ump-filter-options${canCollapse && !expanded ? ' ump-filter-options-collapsed' : ''}`}
+        ref={optionsRef}
+        className={`ump-filter-options${shouldCollapse ? ' ump-filter-options-collapsed' : ''}`}
         style={{
           display: 'flex',
           gap: 6,
@@ -809,8 +857,8 @@ function FilterGroup({
           // Legacy five-row clipping remains available for the older
           // collapsible mode; desktop accordions are clipped by the
           // responsive stylesheet so mobile keeps its full chip track.
-          maxHeight: canCollapse && !expanded && !collapsibleDesktop ? 174 : undefined,
-          overflow: canCollapse && !expanded ? 'hidden' : undefined,
+          maxHeight: shouldCollapse && !collapsibleDesktop ? 174 : undefined,
+          overflow: shouldCollapse ? 'hidden' : undefined,
         }}
         role="group"
         aria-label={label}
@@ -860,7 +908,7 @@ function FilterGroup({
           );
         })}
       </div>
-      {canCollapse && (
+      {canCollapse && hasMore && (
         <button
           type="button"
           aria-expanded={expanded}
