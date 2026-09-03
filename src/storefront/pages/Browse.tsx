@@ -158,6 +158,25 @@ export function Browse() {
     : null;
 
   const [showFilters, setShowFilters] = useState(false);
+  const [sheetOffset, setSheetOffset] = useState(0);
+  const sheetDrag = useRef({ startY: 0, offset: 0, active: false });
+  const startSheetDrag = (event: React.PointerEvent<HTMLDivElement>) => {
+    sheetDrag.current = { startY: event.clientY, offset: 0, active: true };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+  const moveSheetDrag = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!sheetDrag.current.active) return;
+    const offset = Math.max(0, event.clientY - sheetDrag.current.startY);
+    sheetDrag.current.offset = offset;
+    setSheetOffset(offset);
+  };
+  const endSheetDrag = () => {
+    if (!sheetDrag.current.active) return;
+    const shouldClose = sheetDrag.current.offset > 100;
+    sheetDrag.current.active = false;
+    setSheetOffset(0);
+    if (shouldClose) setShowFilters(false);
+  };
   // ?q=<term> (2026-08-08): the header's search overlay (SearchOverlay.tsx)
   // hands off to this page via /catalogo?q=..., so its "see all N results"
   // link actually lands pre-filtered instead of on an empty search box. Same
@@ -544,9 +563,17 @@ export function Browse() {
               role="dialog"
               aria-modal="true"
               aria-label={t('filters', lang)}
+              style={{ transform: sheetOffset ? `translateY(${sheetOffset}px)` : undefined, transition: sheetOffset ? 'none' : 'transform 180ms ease' }}
               onClick={(event) => event.stopPropagation()}
             >
-              <div className="ump-filter-drawer-handle" aria-hidden="true" />
+              <div
+                className="ump-filter-drawer-handle"
+                aria-hidden="true"
+                onPointerDown={startSheetDrag}
+                onPointerMove={moveSheetDrag}
+                onPointerUp={endSheetDrag}
+                onPointerCancel={endSheetDrag}
+              />
               <div className="ump-filter-drawer-header">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: C.goldDeep, fontWeight: 800, letterSpacing: 1.5, textTransform: 'uppercase' }}>
                   <Filter size={16} />

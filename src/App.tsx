@@ -740,7 +740,7 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
           }
           .ump-filter-drawer-handle {
             display: block; width: 38px; height: 4px; margin: 9px auto 0; border-radius: 99px;
-            background: ${C.fieldBorder}; flex: 0 0 auto;
+            background: ${C.fieldBorder}; flex: 0 0 auto; touch-action: none; cursor: grab;
           }
           .ump-filter-drawer-header { padding-top: 12px; }
           .ump-filter-drawer-content .ump-browse-filter-grid { grid-template-columns: 1fr; }

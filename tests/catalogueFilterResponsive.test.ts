@@ -59,3 +59,10 @@ test('active catalogue filters put clear filters before the active pills', () =>
   const pillsIndex = browseSource.indexOf('activeFilterBadges.map', activeStart);
   assert.ok(activeStart >= 0 && clearIndex > activeStart && clearIndex < pillsIndex);
 });
+
+test('mobile filter sheet handle supports a downward dismiss gesture', () => {
+  assert.match(browseSource, /onPointerDown=\{startSheetDrag\}/);
+  assert.match(browseSource, /onPointerMove=\{moveSheetDrag\}/);
+  assert.match(browseSource, /onPointerUp=\{endSheetDrag\}/);
+  assert.match(browseSource, /setShowFilters\(false\)/);
+});
