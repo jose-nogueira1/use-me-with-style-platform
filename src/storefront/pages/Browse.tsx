@@ -164,11 +164,21 @@ export function Browse() {
     sheetDrag.current = { startY: event.clientY, offset: 0, active: true };
     event.currentTarget.setPointerCapture(event.pointerId);
   };
+  const startSheetTouch = (event: React.TouchEvent<HTMLDivElement>) => {
+    sheetDrag.current = { startY: event.touches[0]?.clientY ?? 0, offset: 0, active: true };
+  };
   const moveSheetDrag = (event: React.PointerEvent<HTMLDivElement>) => {
     if (!sheetDrag.current.active) return;
     const offset = Math.max(0, event.clientY - sheetDrag.current.startY);
     sheetDrag.current.offset = offset;
     setSheetOffset(offset);
+  };
+  const moveSheetTouch = (event: React.TouchEvent<HTMLDivElement>) => {
+    if (!sheetDrag.current.active) return;
+    const offset = Math.max(0, (event.touches[0]?.clientY ?? sheetDrag.current.startY) - sheetDrag.current.startY);
+    sheetDrag.current.offset = offset;
+    setSheetOffset(offset);
+    event.preventDefault();
   };
   const endSheetDrag = () => {
     if (!sheetDrag.current.active) return;
@@ -573,6 +583,10 @@ export function Browse() {
                 onPointerMove={moveSheetDrag}
                 onPointerUp={endSheetDrag}
                 onPointerCancel={endSheetDrag}
+                onTouchStart={startSheetTouch}
+                onTouchMove={moveSheetTouch}
+                onTouchEnd={endSheetDrag}
+                onTouchCancel={endSheetDrag}
               />
               <div className="ump-filter-drawer-header">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: C.goldDeep, fontWeight: 800, letterSpacing: 1.5, textTransform: 'uppercase' }}>

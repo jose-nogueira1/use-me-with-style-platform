@@ -65,4 +65,7 @@ test('mobile filter sheet handle supports a downward dismiss gesture', () => {
   assert.match(browseSource, /onPointerMove=\{moveSheetDrag\}/);
   assert.match(browseSource, /onPointerUp=\{endSheetDrag\}/);
   assert.match(browseSource, /setShowFilters\(false\)/);
+  assert.match(browseSource, /onTouchStart=\{startSheetTouch\}/);
+  assert.match(browseSource, /onTouchMove=\{moveSheetTouch\}/);
+  assert.match(browseSource, /onTouchEnd=\{endSheetDrag\}/);
 });
