@@ -37,7 +37,12 @@ export function normalizeShopAssociations(
 
     const productKeys = new Set(productIds.map(String));
     const selections = Object.fromEntries(
-      Object.entries(entry.variantSelections ?? {}).filter(([productId]) => productKeys.has(productId)),
+      Object.entries(entry.variantSelections ?? {}).flatMap(([productId, value]) => {
+        if (!productKeys.has(productId)) return [];
+        const values = Array.isArray(value) ? value : [value];
+        const colourIds = values.filter((colourId): colourId is string | number => typeof colourId === 'string' || typeof colourId === 'number').map(String);
+        return colourIds.length > 0 ? [[productId, [...new Set(colourIds)]]] : [];
+      }),
     );
 
     return [{

@@ -519,7 +519,7 @@ export function InstagramFeed() {
               <div className="ump-instagram-lightbox-picker">
                 <div className="ump-instagram-lightbox-picker-scroll">
                   {selectedProducts.map((product) => (
-                    <InstagramProductCard key={product.id} product={product} lookId={selectedPost.id} compact />
+                    <InstagramProductCard key={`${product.id}-${product.selectedColorId ?? 'any'}`} product={product} lookId={selectedPost.id} compact />
                   ))}
                 </div>
                 {/* Cards are tall enough now that 3+ of them routinely need

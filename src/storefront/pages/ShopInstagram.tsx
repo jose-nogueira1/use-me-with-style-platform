@@ -132,7 +132,7 @@ function LookDetail({ post, lang }: { post: ApiInstagramPost; lang: 'pt' | 'en' 
         <div>
           <h2 style={{ margin: '0 0 14px', fontFamily: F.display, fontSize: 26, color: C.ink }}>{lang === 'pt' ? 'Comprar este look' : 'Shop this look'}</h2>
           <div className="ump-shop-instagram-products">
-            {post.products?.map((product) => <InstagramProductCard key={product.id} product={product} lookId={post.id} />)}
+            {post.products?.map((product) => <InstagramProductCard key={`${product.id}-${product.selectedColorId ?? 'any'}`} product={product} lookId={post.id} />)}
           </div>
         </div>
       </div>

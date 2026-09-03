@@ -1041,7 +1041,7 @@ export type InstagramSpotlight = {
     mediaId?: string | null;
     permalink: string;
     products?: Array<string | number | ApiProduct> | null;
-    variantSelections?: Record<string, string> | null;
+    variantSelections?: Record<string, string | string[]> | null;
     id?: string | null;
   }> | null;
 };

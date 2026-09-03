@@ -15,6 +15,7 @@ const footerSource = readFileSync(new URL('../src/storefront/components/Footer.t
 test('Instagram feed requests are market-aware and expose resolved catalogue facts', () => {
   assert.match(apiSource, /instagram-feed\?limit=\$\{limit\}&market=\$\{market\}/);
   assert.match(apiSource, /availableSizes: string\[\]/);
+  assert.match(apiSource, /variantSelections\?: Record<string, string \| string\[\]>/);
   assert.match(apiSource, /selectedColorId: string \| null/);
   assert.match(apiSource, /regularPrice: number/);
 });
@@ -23,7 +24,8 @@ test('Instagram feed settings manage up to six products and exact colours per po
   assert.match(settingsSource, /Products in this look|Produtos neste look/);
   assert.match(settingsSource, /up to six products|máximo seis produtos/);
   assert.match(settingsSource, /variantSelections/);
-  assert.match(settingsSource, /selectColour/);
+  assert.match(settingsSource, /toggleColour/);
+  assert.match(settingsSource, /selectedColourCount/);
   assert.match(settingsSource, /adminListProducts/);
 });
 
@@ -35,6 +37,8 @@ test('homepage and dedicated page render shoppable product cards', () => {
   assert.match(productCardSource, /ShopTheLookProductClick/);
   assert.match(productCardSource, /Sold out — view similar/);
   assert.match(productCardSource, /product\.imageAlt\?\.trim\(\) \|\| name/);
+  assert.match(shopPageSource, /key=\{`\$\{product\.id\}-\$\{product\.selectedColorId/);
+  assert.match(feedSource, /key=\{`\$\{product\.id\}-\$\{product\.selectedColorId/);
 });
 
 // 2026-08-08 redesign: the homepage feed no longer links to /shop-instagram
