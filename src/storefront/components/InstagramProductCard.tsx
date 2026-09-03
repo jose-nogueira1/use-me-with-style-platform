@@ -38,12 +38,16 @@ export function InstagramProductCard({ product, lookId, compact = false }: { pro
         flexShrink: 0,
       }}
     >
-      <div style={{ aspectRatio: compact ? undefined : '4 / 5', height: compact ? 108 : undefined, minHeight: 0, overflow: 'hidden', background: C.subtleBg }}>
-        <ProductPhoto
-          tone="gold"
-          radius={0}
-          image={product.imageUrl ? { url: absoluteMediaUrl(product.imageUrl) || product.imageUrl, alt: product.imageAlt?.trim() || name } : undefined}
-        />
+      <div style={{ aspectRatio: compact ? undefined : '4 / 5', height: compact ? 108 : undefined, minHeight: 0, overflow: 'hidden', position: 'relative', background: C.subtleBg }}>
+        <div style={{ width: '100%', height: '100%', opacity: product.inStock ? 1 : 0.55 }}>
+          <ProductPhoto
+            tone="gold"
+            radius={0}
+            image={product.imageUrl ? { url: absoluteMediaUrl(product.imageUrl) || product.imageUrl, alt: product.imageAlt?.trim() || name } : undefined}
+          />
+        </div>
+        {!product.inStock && <div aria-label={lang === 'pt' ? 'Esgotado' : 'Sold out'} style={{ position: 'absolute', top: 0, right: 0, zIndex: 3, padding: '7px 10px', borderRadius: '0 0 0 7px', background: C.danger, color: C.paper, fontSize: 9, fontWeight: 850, boxShadow: '0 1px 3px rgba(0,0,0,0.14)' }}>{lang === 'pt' ? 'Esgotado' : 'Sold out'}</div>}
+        {!product.inStock && <span aria-hidden style={{ position: 'absolute', left: '-33.35%', top: '50%', width: '166.7%', height: 3, zIndex: 2, background: C.dangerStrong, transform: 'rotate(53.13deg)', pointerEvents: 'none' }} />}
       </div>
       <div style={{ padding: compact ? '12px' : 11, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: C.goldDeep, fontSize: 9, fontWeight: 850, letterSpacing: 0.7, textTransform: 'uppercase' }}>
