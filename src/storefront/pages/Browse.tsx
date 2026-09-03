@@ -10,6 +10,7 @@ import { hasSwatch, swatchBackground } from '../../lib/colorSwatch';
 import { Seo, SITE_TITLE } from '../../lib/seo';
 import { getSingleCategoryIntro } from '../../lib/categoryIntro';
 import { BreadcrumbJsonLd } from '../components/BreadcrumbJsonLd';
+import { filterCatalogueProducts } from '../../lib/catalogueFilters';
 
 // Categories became admin-managed CMS data on 2026-07-25 (previously a
 // hardcoded enum), so the pills/sidebar are built from the API. This
@@ -181,6 +182,12 @@ export function Browse() {
   // dimensions, so "dresses or sets" AND "S or M" AND "black or navy".
   const [filterSizes, setFilterSizes] = useState<string[]>([]);
   const [filterColors, setFilterColors] = useState<string[]>([]);
+  const [availableOnly, setAvailableOnly] = useState(false);
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  const [onSale, setOnSale] = useState(false);
+  const [filterProductTypes, setFilterProductTypes] = useState<string[]>([]);
+  const [filterCollections, setFilterCollections] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<'default' | 'price-asc' | 'price-desc'>('default');
 
   const toggleInList = (setter: React.Dispatch<React.SetStateAction<string[]>>) => (value: string | null) => {
@@ -192,6 +199,20 @@ export function Browse() {
   };
   const toggleSize = toggleInList(setFilterSizes);
   const toggleColor = toggleInList(setFilterColors);
+  const toggleProductType = toggleInList(setFilterProductTypes);
+
+  const toggleCollection = (value: string | null) => {
+    if (value === null) {
+      setFilterCollections([]);
+      clearTagParam();
+      return;
+    }
+    if (value === activeTag) {
+      clearTagParam();
+      return;
+    }
+    setFilterCollections((prev) => (prev.includes(value) ? prev.filter((item) => item !== value) : [...prev, value]));
+  };
 
   // Category writes straight to ?cat=, keeping the filtered view shareable
   // and bookmarkable. `replace` so that toggling chips doesn't stack up
@@ -223,16 +244,21 @@ export function Browse() {
     if (activeCats.length) {
       list = list.filter((p) => activeCats.some((c) => (c === 'new' ? p.isNewArrival : p.cat === c)));
     }
-    // Multi-select tags since 2026-07-31: a product qualifies for the
-    // collection if ANY of its tags match, not just a single one.
-    if (activeTag) list = list.filter((p) => p.tags.some((tg) => tg.slug === activeTag));
     if (searchTerm) list = list.filter((p) => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
-    if (filterSizes.length) list = list.filter((p) => filterSizes.some((s) => p.sizes.includes(s)));
-    if (filterColors.length) list = list.filter((p) => p.colors.some((c) => filterColors.includes(c.id)));
+    list = filterCatalogueProducts(list, {
+      availableOnly,
+      minPrice: minPrice === '' ? null : Number(minPrice),
+      maxPrice: maxPrice === '' ? null : Number(maxPrice),
+      onSale,
+      sizes: filterSizes,
+      colors: filterColors,
+      collectionTags: [...new Set([...(activeTag ? [activeTag] : []), ...filterCollections])],
+      productTypes: filterProductTypes,
+    }, market);
     if (sortBy === 'price-asc') list = [...list].sort((a, b) => (market === 'AO' ? a.priceKz - b.priceKz : a.priceEur - b.priceEur));
     if (sortBy === 'price-desc') list = [...list].sort((a, b) => (market === 'AO' ? b.priceKz - a.priceKz : b.priceEur - a.priceEur));
     return list;
-  }, [products, activeCats, activeTag, searchTerm, filterSizes, filterColors, sortBy, market]);
+  }, [products, activeCats, activeTag, searchTerm, filterSizes, filterColors, availableOnly, minPrice, maxPrice, onSale, filterProductTypes, filterCollections, sortBy, market]);
 
   // Clear-all-filters (2026-07-30, user request). Six independent filter
   // dimensions had accumulated -- category, collection tag, search, size,
@@ -243,13 +269,19 @@ export function Browse() {
   // `activeTag` lives in the URL rather than in component state, so resetting
   // it means removing the query param; everything else is local state.
   const hasActiveFilters =
-    activeCats.length > 0 || Boolean(activeTag) || Boolean(searchTerm) ||
-    filterSizes.length > 0 || filterColors.length > 0 || sortBy !== 'default';
+    activeCats.length > 0 || Boolean(activeTag) || Boolean(searchTerm) || availableOnly || minPrice !== '' || maxPrice !== '' || onSale ||
+    filterSizes.length > 0 || filterColors.length > 0 || filterProductTypes.length > 0 || filterCollections.length > 0 || sortBy !== 'default';
 
   const clearAllFilters = () => {
     setSearchTerm('');
     setFilterSizes([]);
     setFilterColors([]);
+    setAvailableOnly(false);
+    setMinPrice('');
+    setMaxPrice('');
+    setOnSale(false);
+    setFilterProductTypes([]);
+    setFilterCollections([]);
     setSortBy('default');
     setSearchParams((prev) => {
       const p = new URLSearchParams(prev);
@@ -270,6 +302,15 @@ export function Browse() {
     }
     return Array.from(byId.values());
   }, [products]);
+  const allCollections = useMemo(() => [
+    { value: 'new', label: t('newArrivalsNav', lang) },
+    ...tags.map((tag) => ({ value: tag.slug, label: (lang === 'en' ? tag.labelEN : tag.labelPT)?.trim() || tag.labelPT })),
+  ].filter((option, index, options) => options.findIndex((item) => item.value === option.value) === index), [tags, lang]);
+  const allProductTypes = [
+    { value: 'standard', label: t('productTypeStandard', lang) },
+    { value: 'bundle', label: t('productTypeBundle', lang) },
+  ];
+  const activeCollections = [...new Set([...(activeTag ? [activeTag] : []), ...filterCollections])];
 
   // One badge per active filter, each individually removable (2026-07-30).
   // Derived from exactly the same state that clearAllFilters resets, so the
@@ -321,6 +362,11 @@ export function Browse() {
       onRemove: () => toggleColor(id),
     });
   }
+  if (availableOnly) activeFilterBadges.push({ key: 'available', label: t('availableOnly', lang), onRemove: () => setAvailableOnly(false) });
+  if (onSale) activeFilterBadges.push({ key: 'sale', label: t('onSale', lang), onRemove: () => setOnSale(false) });
+  if (minPrice !== '' || maxPrice !== '') activeFilterBadges.push({ key: 'price', label: `${t('priceRange', lang)}: ${minPrice || '0'}–${maxPrice || '∞'}`, onRemove: () => { setMinPrice(''); setMaxPrice(''); } });
+  for (const type of filterProductTypes) activeFilterBadges.push({ key: `type:${type}`, label: `${t('productType', lang)}: ${allProductTypes.find((item) => item.value === type)?.label ?? type}`, onRemove: () => toggleProductType(type) });
+  for (const collection of filterCollections) activeFilterBadges.push({ key: `collection:${collection}`, label: `${t('collection', lang)}: ${allCollections.find((item) => item.value === collection)?.label ?? collection}`, onRemove: () => toggleCollection(collection) });
   if (sortBy !== 'default') {
     activeFilterBadges.push({
       key: 'sort',
@@ -367,16 +413,26 @@ export function Browse() {
           </div>
           {hasActiveFilters && <ClearFiltersButton onClick={clearAllFilters} lang={lang} />}
         </div>
-        <FilterGroup
-          label={t('category', lang)}
-          options={cats.map((c) => ({ value: c.key, label: c.label }))}
-          active={activeCats}
-          onSelect={toggleCat}
-          allKey="all"
-        />
-        <FilterGroup label={t('size', lang)} options={allSizes.map((s) => ({ value: s, label: s }))} active={filterSizes} onSelect={toggleSize} />
-        <FilterGroup label={t('colour', lang)} options={allColors} active={filterColors} onSelect={toggleColor} collapsible />
-        <SortControl sortBy={sortBy} setSortBy={setSortBy} lang={lang} />
+        <div className="ump-browse-filter-grid">
+          <FilterGroup
+            className="ump-filter-half"
+            label={t('category', lang)}
+            options={cats.filter((c) => c.key !== 'all').map((c) => ({ value: c.key, label: c.label }))}
+            active={activeCats}
+            onSelect={toggleCat}
+            allKey="all"
+            lang={lang}
+            collapsibleDesktop
+          />
+          <FilterGroup className="ump-filter-half" label={t('size', lang)} options={allSizes.map((s) => ({ value: s, label: s }))} active={filterSizes} onSelect={toggleSize} lang={lang} />
+          <FilterGroup className="ump-filter-full" label={t('colour', lang)} options={allColors} active={filterColors} onSelect={toggleColor} collapsibleDesktop lang={lang} />
+          <AvailabilityToggle className="ump-filter-half" checked={availableOnly} onChange={setAvailableOnly} lang={lang} />
+          <FilterToggle className="ump-filter-half" label={t('onSale', lang)} checked={onSale} onChange={setOnSale} />
+          <PriceRangeFilter className="ump-filter-full" min={minPrice} max={maxPrice} setMin={setMinPrice} setMax={setMaxPrice} market={market} lang={lang} />
+          <FilterGroup className="ump-filter-half" label={t('productType', lang)} options={allProductTypes} active={filterProductTypes} onSelect={toggleProductType} lang={lang} />
+          <FilterGroup className="ump-filter-half" label={t('collection', lang)} options={allCollections} active={activeCollections} onSelect={toggleCollection} collapsibleDesktop lang={lang} />
+          <SortControl className="ump-filter-full" sortBy={sortBy} setSortBy={setSortBy} lang={lang} />
+        </div>
       </div>
 
       <div className="ump-browse-main">
@@ -442,10 +498,7 @@ export function Browse() {
             adjacent rows, which reads as a bug rather than emphasis. */}
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '8px 20px', borderBottom: `1px solid ${C.ruleLight}`, flexWrap: 'wrap' }}>
-          {/* Wraps rather than scrolls: six filters can be active at once and
-              a horizontally-scrolled row would hide some of them off-screen,
-              which defeats the point of showing what's applied. */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, rowGap: 6, flexWrap: 'wrap', minWidth: 0 }}>
+          <div className="ump-browse-active-filters">
             <div style={{ fontSize: 11, color: C.inkSoft, flexShrink: 0 }}>
               {loading ? '…' : `${filtered.length} ${t(filtered.length === 1 ? 'productSingular' : 'productPlural', lang)}`}
             </div>
@@ -474,7 +527,12 @@ export function Browse() {
         {showFilters && (
           <div className="ump-slide-up ump-browse-filter-toggle" style={{ padding: '16px 20px', background: C.subtleBg, borderBottom: `1px solid ${C.ruleLight}` }}>
             <FilterGroup label={t('size', lang)} options={allSizes.map((s) => ({ value: s, label: s }))} active={filterSizes} onSelect={toggleSize} />
-            <FilterGroup label={t('colour', lang)} options={allColors} active={filterColors} onSelect={toggleColor} collapsible />
+            <FilterGroup label={t('colour', lang)} options={allColors} active={filterColors} onSelect={toggleColor} />
+            <AvailabilityToggle checked={availableOnly} onChange={setAvailableOnly} lang={lang} />
+            <PriceRangeFilter min={minPrice} max={maxPrice} setMin={setMinPrice} setMax={setMaxPrice} market={market} lang={lang} />
+            <FilterToggle label={t('onSale', lang)} checked={onSale} onChange={setOnSale} />
+            <FilterGroup label={t('productType', lang)} options={allProductTypes} active={filterProductTypes} onSelect={toggleProductType} />
+            <FilterGroup label={t('collection', lang)} options={allCollections} active={activeCollections} onSelect={toggleCollection} />
             {/* Bug fix, 2026-08-07: sort previously only existed in the
                 desktop sidebar (`.ump-browse-sidebar`, hidden below 720px),
                 so mobile shoppers had no way to sort by price at all -- this
@@ -586,6 +644,59 @@ function FilterLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
+function FilterToggle({ label, checked, onChange, className }: { label: string; checked: boolean; onChange: (value: boolean) => void; className?: string }) {
+  return (
+    <label className={className} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, fontSize: 12, fontWeight: 700, color: C.ink, cursor: 'pointer' }}>
+      <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} style={{ accentColor: C.goldDeep, width: 16, height: 16 }} />
+      {label}
+    </label>
+  );
+}
+
+function AvailabilityToggle({ checked, onChange, lang, className }: { checked: boolean; onChange: (value: boolean) => void; lang: 'pt' | 'en'; className?: string }) {
+  return <FilterToggle className={className} label={t('availableOnly', lang)} checked={checked} onChange={onChange} />;
+}
+
+function PriceRangeFilter({
+  min,
+  max,
+  setMin,
+  setMax,
+  market,
+  lang,
+  className,
+}: {
+  min: string;
+  max: string;
+  setMin: (value: string) => void;
+  setMax: (value: string) => void;
+  market: 'AO' | 'PT';
+  lang: 'pt' | 'en';
+  className?: string;
+}) {
+  const currency = market === 'AO' ? 'Kz' : '€';
+  return (
+    <div className={className} style={{ marginBottom: 16 }}>
+      <FilterLabel>{t('priceRange', lang)} ({currency})</FilterLabel>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+        <input aria-label={t('minPrice', lang)} type="number" min="0" value={min} onChange={(event) => setMin(event.target.value)} placeholder={t('minPrice', lang)} style={priceInputStyle} />
+        <input aria-label={t('maxPrice', lang)} type="number" min="0" value={max} onChange={(event) => setMax(event.target.value)} placeholder={t('maxPrice', lang)} style={priceInputStyle} />
+      </div>
+    </div>
+  );
+}
+
+const priceInputStyle = {
+  width: '100%',
+  boxSizing: 'border-box' as const,
+  padding: '8px 9px',
+  border: `1px solid ${C.fieldBorder}`,
+  borderRadius: 6,
+  background: C.paper,
+  color: C.ink,
+  fontSize: 11,
+};
+
 /** Shared between the desktop sidebar and the mobile filter panel (2026-08-07
  * bug fix: sort used to live only in the desktop sidebar markup, so it was
  * simply absent on mobile rather than just hard-to-find). Not built on
@@ -597,15 +708,17 @@ function SortControl({
   sortBy,
   setSortBy,
   lang,
+  className,
 }: {
   sortBy: 'default' | 'price-asc' | 'price-desc';
   setSortBy: (value: 'default' | 'price-asc' | 'price-desc') => void;
   lang: 'pt' | 'en';
+  className?: string;
 }) {
   return (
-    <div>
+    <div className={className}>
       <FilterLabel>{t('sort', lang)}</FilterLabel>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <div className="ump-sort-options" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {([
           { key: 'default' as const, labelKey: 'sortDefault' },
           { key: 'price-asc' as const, labelKey: 'sortPriceAsc' },
@@ -659,6 +772,9 @@ function FilterGroup({
   onSelect,
   allKey,
   collapsible = false,
+  collapsibleDesktop = false,
+  className,
+  lang,
 }: {
   label: string;
   options: FilterOption[];
@@ -669,9 +785,12 @@ function FilterGroup({
    * nothing else is, and selecting it clears the group. */
   allKey?: string;
   collapsible?: boolean;
+  collapsibleDesktop?: boolean;
+  className?: string;
+  lang?: 'pt' | 'en';
 }) {
   const [expanded, setExpanded] = useState(false);
-  const canCollapse = collapsible && options.length > 5;
+  const canCollapse = collapsibleDesktop ? options.length > 3 : collapsible && options.length > 5;
   const multi = Array.isArray(active);
   const isActive = (value: string) => {
     if (allKey && value === allKey) return multi ? (active as string[]).length === 0 : active === null;
@@ -679,14 +798,18 @@ function FilterGroup({
   };
 
   return (
-    <div style={{ marginBottom: 16 }}>
+    <div className={className} style={{ marginBottom: 16 }}>
       <FilterLabel>{label}</FilterLabel>
       <div
+        className={`ump-filter-options${canCollapse && !expanded ? ' ump-filter-options-collapsed' : ''}`}
         style={{
           display: 'flex',
           gap: 6,
           flexWrap: 'wrap',
-          maxHeight: canCollapse && !expanded ? 174 : undefined,
+          // Legacy five-row clipping remains available for the older
+          // collapsible mode; desktop accordions are clipped by the
+          // responsive stylesheet so mobile keeps its full chip track.
+          maxHeight: canCollapse && !expanded && !collapsibleDesktop ? 174 : undefined,
           overflow: canCollapse && !expanded ? 'hidden' : undefined,
         }}
         role="group"
@@ -742,9 +865,10 @@ function FilterGroup({
           type="button"
           aria-expanded={expanded}
           onClick={() => setExpanded((value) => !value)}
+          className={collapsibleDesktop ? 'ump-filter-expand' : undefined}
           style={{ marginTop: 8, padding: 0, border: 0, background: 'transparent', color: C.goldDeep, fontSize: 10, fontWeight: 800, cursor: 'pointer' }}
         >
-          {expanded ? (label === 'Cor' ? 'Mostrar menos' : 'Show less') : (label === 'Cor' ? 'Mostrar mais' : 'Show more')}
+          {expanded ? (lang === 'en' ? 'Show less' : 'Mostrar menos') : (lang === 'en' ? 'Show more' : 'Mostrar mais')}
         </button>
       )}
     </div>

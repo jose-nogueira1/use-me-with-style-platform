@@ -664,9 +664,33 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
            + auto-fill product grid both fit comfortably at that width. */
         .ump-browse-layout { display: block; }
         .ump-browse-sidebar { display: none; }
+        .ump-browse-filter-grid { display: grid; grid-template-columns: 1fr; gap: 0 14px; }
+        .ump-filter-full { grid-column: 1 / -1; min-width: 0; }
+        .ump-filter-half { min-width: 0; }
+        .ump-browse-active-filters {
+          display: flex; align-items: center; gap: 8px; min-width: 0; max-width: 100%;
+          overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none;
+        }
+        .ump-browse-active-filters::-webkit-scrollbar { display: none; }
+        .ump-browse-active-filters > * { flex: 0 0 auto; }
+        .ump-filter-options { min-width: 0; }
+        @media (max-width: 719px) {
+          .ump-filter-options {
+            flex-wrap: nowrap !important; overflow-x: auto; overflow-y: hidden;
+            scrollbar-width: none; padding-bottom: 2px; touch-action: pan-x;
+          }
+          .ump-filter-options::-webkit-scrollbar { display: none; }
+          .ump-filter-options > button { flex: 0 0 auto; }
+        }
         @media (min-width: 720px) {
-          .ump-browse-layout { display: grid; grid-template-columns: 220px 1fr; gap: 0; max-width: 1240px; margin: 0 auto; }
+          .ump-browse-layout { display: grid; grid-template-columns: 260px 1fr; gap: 0; max-width: 1240px; margin: 0 auto; }
           .ump-browse-sidebar { display: block; padding: 20px; border-right: 1px solid ${C.ruleLight}; }
+          .ump-browse-filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+          .ump-filter-options-collapsed { max-height: 102px; overflow: hidden; }
+          .ump-sort-options { flex-direction: row !important; }
+          .ump-sort-options > button { flex: 1 1 0; text-align: center !important; }
+          .ump-browse-active-filters { overflow: visible; flex-wrap: wrap; }
+          .ump-filter-options { flex-wrap: wrap; overflow: visible; }
           .ump-browse-catpills { display: none !important; }
           .ump-browse-filter-toggle { display: none !important; }
         }
