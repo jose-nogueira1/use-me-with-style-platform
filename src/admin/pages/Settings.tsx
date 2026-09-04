@@ -2116,7 +2116,7 @@ function FeaturedProductPicker({
       <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginTop: 6 }}>
         {selectedIds.length === 0 && <div style={{ fontSize: 10, color: C.inkSoft }}>{lang === 'pt' ? 'Nenhum produto selecionado' : 'No products selected'}</div>}
         {selectedIds.map((id, index) => {
-          const product = products.find((item) => String(item.id) === id);
+          const product = products.find((item) => String(item.id) === String(id));
           return (
             <div
               key={id}

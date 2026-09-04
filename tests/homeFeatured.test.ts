@@ -31,3 +31,7 @@ test('featured product relationships serialize numeric CMS ids as numbers', () =
   assert.match(apiSource, /Number\(id\)/);
   assert.match(settingsSource, /normalizeRelationshipIds/);
 });
+
+test('featured product picker resolves labels for numeric selected ids', () => {
+  assert.match(settingsSource, /String\(item\.id\) === String\(id\)/);
+});
