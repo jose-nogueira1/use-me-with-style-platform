@@ -67,6 +67,7 @@ export function StorefrontLayout() {
   }, []);
   const navItems = [
     { to: '/catalogo?cat=new', label: t('newArrivalsNav', lang) },
+    { to: '/catalogo?sale=1', label: t('onSaleNav', lang) },
     ...categories.slice(0, 6).map((category) => ({ to: `/catalogo?cat=${encodeURIComponent(category.slug || '')}`, label: (lang === 'en' ? category.nameEN : category.namePT) || category.namePT })),
     { to: '/conta', label: t('orderLookupNav', lang) },
   ];
@@ -203,7 +204,7 @@ export function StorefrontLayout() {
                 style={{
                   fontSize: 12,
                   fontWeight: 800,
-                  color: location.pathname === item.to ? C.ink : C.inkSoft,
+                  color: item.to.includes('sale=1') ? C.dangerStrong : (location.pathname === item.to ? C.ink : C.inkSoft),
                   textDecoration: 'none',
                 }}
               >
@@ -274,7 +275,7 @@ export function StorefrontLayout() {
                   padding: '12px 4px',
                   fontSize: 14,
                   fontWeight: 800,
-                  color: isHome ? C.heroText : C.ink,
+                  color: item.to.includes('sale=1') ? C.dangerStrong : (isHome ? C.heroText : C.ink),
                   textDecoration: 'none',
                   borderBottom: `1px solid ${isHome ? 'rgba(255,255,255,0.08)' : C.ruleLight}`,
                 }}

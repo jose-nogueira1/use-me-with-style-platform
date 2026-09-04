@@ -1014,6 +1014,8 @@ export type ApiInstagramLookProduct = {
   regularPrice: number;
   currency: 'AOA' | 'EUR';
   onSale: boolean;
+  saleEndDate?: string | null;
+  marketStock: number;
   inStock: boolean;
   availableSizes: string[];
   selectedColorId: string | null;

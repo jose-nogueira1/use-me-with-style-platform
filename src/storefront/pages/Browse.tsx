@@ -210,7 +210,13 @@ export function Browse() {
   const [availableOnly, setAvailableOnly] = useState(false);
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
-  const [onSale, setOnSale] = useState(false);
+  const urlSale = searchParams.get('sale') === '1';
+  const [onSale, setOnSale] = useState(urlSale);
+  const [syncedUrlSale, setSyncedUrlSale] = useState(urlSale);
+  if (urlSale !== syncedUrlSale) {
+    setSyncedUrlSale(urlSale);
+    setOnSale(urlSale);
+  }
   const [filterProductTypes, setFilterProductTypes] = useState<string[]>([]);
   const [filterCollections, setFilterCollections] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<'default' | 'price-asc' | 'price-desc'>('default');
@@ -237,6 +243,16 @@ export function Browse() {
       return;
     }
     setFilterCollections((prev) => (prev.includes(value) ? prev.filter((item) => item !== value) : [...prev, value]));
+  };
+
+  const setSaleFilter = (next: boolean) => {
+    setOnSale(next);
+    setSearchParams((prev) => {
+      const p = new URLSearchParams(prev);
+      if (next) p.set('sale', '1');
+      else p.delete('sale');
+      return p;
+    }, { replace: true });
   };
 
   // Category writes straight to ?cat=, keeping the filtered view shareable
@@ -305,7 +321,7 @@ export function Browse() {
     setAvailableOnly(false);
     setMinPrice('');
     setMaxPrice('');
-    setOnSale(false);
+    setSaleFilter(false);
     setFilterProductTypes([]);
     setFilterCollections([]);
     setSortBy('default');
@@ -389,7 +405,7 @@ export function Browse() {
     });
   }
   if (availableOnly) activeFilterBadges.push({ key: 'available', label: t('availableOnly', lang), onRemove: () => setAvailableOnly(false) });
-  if (onSale) activeFilterBadges.push({ key: 'sale', label: t('onSale', lang), onRemove: () => setOnSale(false) });
+  if (onSale) activeFilterBadges.push({ key: 'sale', label: t('onSale', lang), onRemove: () => setSaleFilter(false) });
   if (minPrice !== '' || maxPrice !== '') activeFilterBadges.push({ key: 'price', label: `${t('priceRange', lang)}: ${minPrice || '0'}–${maxPrice || '∞'}`, onRemove: () => { setMinPrice(''); setMaxPrice(''); } });
   for (const type of filterProductTypes) activeFilterBadges.push({ key: `type:${type}`, label: `${t('productType', lang)}: ${allProductTypes.find((item) => item.value === type)?.label ?? type}`, onRemove: () => toggleProductType(type) });
   for (const collection of filterCollections) activeFilterBadges.push({ key: `collection:${collection}`, label: `${t('collection', lang)}: ${allCollections.find((item) => item.value === collection)?.label ?? collection}`, onRemove: () => toggleCollection(collection) });
@@ -462,7 +478,7 @@ export function Browse() {
           <FilterGroup className="ump-filter-half" label={t('size', lang)} options={allSizes.map((s) => ({ value: s, label: s }))} active={filterSizes} onSelect={toggleSize} lang={lang} />
           <FilterGroup className="ump-filter-full" label={t('colour', lang)} options={allColors} active={filterColors} onSelect={toggleColor} collapsibleDesktop lang={lang} />
           <AvailabilityToggle className="ump-filter-half" checked={availableOnly} onChange={setAvailableOnly} lang={lang} />
-          <FilterToggle className="ump-filter-half" label={t('onSale', lang)} checked={onSale} onChange={setOnSale} />
+          <FilterToggle className="ump-filter-half" label={t('onSale', lang)} checked={onSale} onChange={setSaleFilter} />
           <PriceRangeFilter className="ump-filter-full" min={minPrice} max={maxPrice} setMin={setMinPrice} setMax={setMaxPrice} market={market} lang={lang} />
           <FilterGroup className="ump-filter-half" label={t('productType', lang)} options={allProductTypes} active={filterProductTypes} onSelect={toggleProductType} lang={lang} />
           <FilterGroup className="ump-filter-half" label={t('collection', lang)} options={allCollections} active={activeCollections} onSelect={toggleCollection} collapsibleDesktop lang={lang} />
@@ -600,7 +616,7 @@ export function Browse() {
                   <FilterGroup className="ump-filter-half" label={t('size', lang)} options={allSizes.map((s) => ({ value: s, label: s }))} active={filterSizes} onSelect={toggleSize} lang={lang} />
                   <FilterGroup className="ump-filter-full" label={t('colour', lang)} options={allColors} active={filterColors} onSelect={toggleColor} collapsibleDesktop lang={lang} />
                   <AvailabilityToggle className="ump-filter-half" checked={availableOnly} onChange={setAvailableOnly} lang={lang} />
-                  <FilterToggle className="ump-filter-half" label={t('onSale', lang)} checked={onSale} onChange={setOnSale} />
+                  <FilterToggle className="ump-filter-half" label={t('onSale', lang)} checked={onSale} onChange={setSaleFilter} />
                   <PriceRangeFilter className="ump-filter-full" min={minPrice} max={maxPrice} setMin={setMinPrice} setMax={setMaxPrice} market={market} lang={lang} />
                   <FilterGroup className="ump-filter-half" label={t('productType', lang)} options={allProductTypes} active={filterProductTypes} onSelect={toggleProductType} lang={lang} />
                   <FilterGroup className="ump-filter-half" label={t('collection', lang)} options={allCollections} active={activeCollections} onSelect={toggleCollection} collapsibleDesktop lang={lang} />

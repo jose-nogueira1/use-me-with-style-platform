@@ -10,6 +10,7 @@ export const T: Record<string, Record<Lang, string>> = {
   // Nav
   shopAll: { pt: 'Ver tudo', en: 'Shop all' },
   newArrivalsNav: { pt: 'Novidades', en: 'New arrivals' },
+  onSaleNav: { pt: 'Em promoção', en: 'On sale' },
   orderLookupNav: { pt: 'Consultar encomenda', en: 'Order lookup' },
   navShop: { pt: 'Loja', en: 'Shop' },
   navSearch: { pt: 'Pesquisar', en: 'Search' },

@@ -217,6 +217,7 @@ export function adaptApiProduct(api: ApiProduct, market: 'AO' | 'PT', lang: 'pt'
     priceKz: api.priceAOKz,
     priceEur: api.pricePTEur,
     onSale,
+    saleEndDate: api.saleEndDate,
     effectivePriceKz,
     effectivePriceEur,
     shippingWeightGrams: Math.max(1, Number(api.shippingWeightGrams ?? 500)),

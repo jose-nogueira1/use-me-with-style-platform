@@ -1,10 +1,11 @@
-import { ArrowRight, ShoppingBag } from 'lucide-react';
+import { ArrowRight, Clock, ShoppingBag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ProductPhoto } from '../../components/ProductPhoto';
 import { absoluteMediaUrl } from '../../lib/productAdapters';
 import { trackMetaCustomEvent } from '../../lib/metaAnalytics';
 import { useApp } from '../../state/AppContext';
 import { C, F, formatKz } from '../../theme';
+import { saleDiscountPercent, saleUrgencyLabel } from '../../lib/salePresentation';
 import type { ApiInstagramLookProduct } from '../../lib/api';
 
 export function InstagramProductCard({ product, lookId, compact = false }: { product: ApiInstagramLookProduct; lookId: string; compact?: boolean }) {
@@ -13,6 +14,11 @@ export function InstagramProductCard({ product, lookId, compact = false }: { pro
   const colour = (lang === 'en' ? product.selectedColorNameEN : product.selectedColorNamePT)?.trim();
   const price = product.currency === 'AOA' ? `${formatKz(product.price, lang)} Kz` : `€${product.price.toFixed(2)}`;
   const regularPrice = product.currency === 'AOA' ? `${formatKz(product.regularPrice, lang)} Kz` : `€${product.regularPrice.toFixed(2)}`;
+  const saleDiscount = product.onSale ? saleDiscountPercent(product.regularPrice, product.price) : null;
+  const saleUrgency = product.onSale ? saleUrgencyLabel(product.saleEndDate, lang) : null;
+  const saleBadge = lang === 'pt' ? 'PROMOÇÃO' : 'SALE';
+  const lowStock = product.inStock && product.marketStock <= 3;
+  const stockLabel = lang === 'pt' ? `Só ${product.marketStock} restantes` : `Only ${product.marketStock} left`;
   const colourQuery = product.selectedColorId ? `?cor=${encodeURIComponent(product.selectedColorId)}` : '';
   const href = `/produto/${encodeURIComponent(product.slug)}${colourQuery}`;
 
@@ -46,7 +52,8 @@ export function InstagramProductCard({ product, lookId, compact = false }: { pro
             image={product.imageUrl ? { url: absoluteMediaUrl(product.imageUrl) || product.imageUrl, alt: product.imageAlt?.trim() || name } : undefined}
           />
         </div>
-        {!product.inStock && <div aria-label={lang === 'pt' ? 'Esgotado' : 'Sold out'} style={{ position: 'absolute', top: 0, right: 0, zIndex: 3, padding: '7px 10px', borderRadius: '0 0 0 7px', background: C.danger, color: C.paper, fontSize: 9, fontWeight: 850, boxShadow: '0 1px 3px rgba(0,0,0,0.14)' }}>{lang === 'pt' ? 'Esgotado' : 'Sold out'}</div>}
+        {(!product.inStock || (lowStock && !product.onSale)) && <div aria-label={!product.inStock ? (lang === 'pt' ? 'Esgotado' : 'Sold out') : stockLabel} style={{ position: 'absolute', top: 0, right: 0, zIndex: 3, padding: '7px 10px', borderRadius: '0 0 0 7px', background: !product.inStock ? C.danger : C.tagBg, color: !product.inStock ? C.paper : C.dangerStrong, fontSize: 9, fontWeight: 850, boxShadow: '0 1px 3px rgba(0,0,0,0.14)' }}>{!product.inStock ? (lang === 'pt' ? 'Esgotado' : 'Sold out') : stockLabel}</div>}
+        {product.onSale && product.inStock && <div aria-label={`${saleBadge} · ${saleDiscount ?? ''}%`} style={{ position: 'absolute', top: 20, right: -42, width: 160, zIndex: 3, padding: '7px 8px', background: 'linear-gradient(135deg, #B95545, #A6483A)', color: C.paper, fontSize: 10, fontWeight: 900, letterSpacing: 0.3, textAlign: 'center', whiteSpace: 'nowrap', transform: 'rotate(45deg)', boxShadow: '0 1px 3px rgba(0,0,0,0.16)' }}>{saleBadge}{saleDiscount !== null ? ` · −${saleDiscount}%` : ''}</div>}
         {!product.inStock && <span aria-hidden style={{ position: 'absolute', left: '-33.35%', top: '50%', width: '166.7%', height: 3, zIndex: 2, background: C.dangerStrong, transform: 'rotate(53.13deg)', pointerEvents: 'none' }} />}
       </div>
       <div style={{ padding: compact ? '12px' : 11, minWidth: 0 }}>
@@ -55,10 +62,15 @@ export function InstagramProductCard({ product, lookId, compact = false }: { pro
         </div>
         <div style={{ marginTop: 5, fontFamily: F.display, fontSize: compact ? 15.5 : 16, fontWeight: 800, lineHeight: 1.25, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
         {colour && <div style={{ marginTop: 4, fontSize: 10.5, color: C.inkSoft }}>{lang === 'pt' ? 'Cor' : 'Colour'}: {colour}</div>}
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 7, marginTop: 6, fontSize: 12.5, fontWeight: 800 }}>
+        {(product.onSale || (lowStock && product.onSale)) && <div style={{ marginTop: 6, padding: compact ? '7px 8px' : '8px 9px', borderRadius: 6, background: product.onSale ? C.dangerBg : 'transparent' }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 7, fontSize: 12.5, fontWeight: 800, flexWrap: 'wrap' }}>
           {product.onSale && <span style={{ color: C.inkSoft, textDecoration: 'line-through', fontWeight: 600 }}>{regularPrice}</span>}
           <span style={{ color: product.onSale ? C.dangerStrong : C.ink }}>{price}</span>
+          {saleDiscount !== null && <span style={{ color: C.dangerStrong, fontWeight: 900 }}>−{saleDiscount}%</span>}
         </div>
+        {lowStock && product.onSale && <div style={{ marginTop: 4, color: C.dangerStrong, fontSize: 10.5, fontWeight: 800 }}>{stockLabel}</div>}
+        {saleUrgency && <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 4, color: C.dangerStrong, fontSize: 10.5, fontWeight: 800 }}><Clock size={11} aria-hidden /> {saleUrgency}</div>}
+        </div>}
         <div style={{ marginTop: 6, fontSize: 10.5, color: product.inStock ? C.successText : C.danger, fontWeight: 700 }}>
           {product.inStock
             ? product.availableSizes.length > 0

@@ -18,6 +18,8 @@ test('Instagram feed requests are market-aware and expose resolved catalogue fac
   assert.match(apiSource, /variantSelections\?: Record<string, string \| string\[\]>/);
   assert.match(apiSource, /selectedColorId: string \| null/);
   assert.match(apiSource, /regularPrice: number/);
+  assert.match(apiSource, /saleEndDate\?: string \| null/);
+  assert.match(apiSource, /marketStock: number/);
 });
 
 test('Instagram feed settings manage up to six products and exact colours per post', () => {
@@ -41,6 +43,10 @@ test('homepage and dedicated page render shoppable product cards', () => {
   assert.match(productCardSource, /Esgotado/);
   assert.match(productCardSource, /width: '166\.7%'/);
   assert.match(productCardSource, /background: C\.dangerStrong/);
+  assert.match(productCardSource, /saleDiscountPercent/);
+  assert.match(productCardSource, /saleUrgencyLabel/);
+  assert.match(productCardSource, /marketStock <= 3/);
+  assert.match(productCardSource, /transform: 'rotate\(45deg\)'/);
   assert.match(shopPageSource, /key=\{`\$\{product\.id\}-\$\{product\.selectedColorId/);
   assert.match(feedSource, /key=\{`\$\{product\.id\}-\$\{product\.selectedColorId/);
 });

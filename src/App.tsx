@@ -342,7 +342,6 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
           .ump-browse-product-grid { padding: 16px 14px !important; gap: 6px; }
           .ump-home-product-card { width: 170.75px !important; }
           .ump-stock-image-badge-low { display: none; }
-          .ump-stock-mobile-badge { display: inline-block !important; white-space: nowrap; }
           .ump-product-colour-track { overflow-x: auto; overflow-y: hidden; scrollbar-width: none; -ms-overflow-style: none; padding-bottom: 3px; }
           .ump-product-colour-track::-webkit-scrollbar { display: none; }
           .ump-product-colour-option { flex: 0 0 auto; white-space: nowrap; }

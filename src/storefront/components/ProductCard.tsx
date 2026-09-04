@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom';
+import { Clock } from 'lucide-react';
 import { C, F, t } from '../../theme';
 import { useApp, useFormatOriginalPrice, useFormatPrice } from '../../state/AppContext';
 import { ProductPhoto } from '../../components/ProductPhoto';
 import { hasSwatch, swatchBackground } from '../../lib/colorSwatch';
 import { colorHasStock } from '../../lib/productAdapters';
+import { saleDiscountLabel, saleDiscountPercent, saleUrgencyLabel } from '../../lib/salePresentation';
 import type { Product } from '../../types/product';
 
 // How many colour dots to show before collapsing into a "+N" overflow chip
@@ -19,10 +21,21 @@ const DEFAULT_TAG_STYLE = { bg: C.tagBg, text: C.goldDeep };
 const TAG_KEY: Record<string, string> = { New: 'tagNew', 'Few left': 'tagFewLeft', Bestseller: 'tagBestseller', 'In stock': 'tagInStock' };
 
 export function ProductCard({ product, size = 'grid', priority = false, homepage = false }: { product: Product; size?: 'small' | 'grid'; priority?: boolean; homepage?: boolean }) {
-  const { lang } = useApp();
+  const { lang, market } = useApp();
   const fmtPrice = useFormatPrice();
   const fmtOriginalPrice = useFormatOriginalPrice();
   const isSmall = size === 'small';
+  const saleLabel = product.onSale ? saleDiscountLabel(
+    market === 'AO' ? product.priceKz : product.priceEur,
+    market === 'AO' ? product.effectivePriceKz : product.effectivePriceEur,
+    lang,
+  ) : null;
+  const saleUrgency = product.onSale ? saleUrgencyLabel(product.saleEndDate, lang) : null;
+  const saleDiscount = product.onSale ? saleDiscountPercent(
+    market === 'AO' ? product.priceKz : product.priceEur,
+    market === 'AO' ? product.effectivePriceKz : product.effectivePriceEur,
+  ) : null;
+  const saleBadge = lang === 'pt' ? 'PROMOÇÃO' : 'SALE';
 
   return (
     <Link
@@ -46,7 +59,7 @@ export function ProductCard({ product, size = 'grid', priority = false, homepage
         <div style={{ width: '100%', height: '100%', opacity: product.marketStatus === 'sold_out' ? 0.55 : 1 }}>
           <ProductPhoto tone={product.tone} radius={0} image={product.images[0]} variant="card" priority={priority} />
         </div>
-        {(product.marketStatus === 'sold_out' || product.marketStatus === 'low_stock') && (
+        {(product.marketStatus === 'sold_out' || (product.marketStatus === 'low_stock' && !saleLabel)) && (
           <div
             className={product.marketStatus === 'low_stock' ? 'ump-stock-image-badge-low' : undefined}
             aria-label={product.marketStatus === 'sold_out' ? t('outOfStock', lang) : t('fewLeftStock', lang, { n: product.marketStock })}
@@ -69,20 +82,28 @@ export function ProductCard({ product, size = 'grid', priority = false, homepage
             {product.marketStatus === 'sold_out' ? t('outOfStock', lang) : t('fewLeftStock', lang, { n: product.marketStock })}
           </div>
         )}
+        {saleLabel && product.marketStatus !== 'sold_out' && (
+          <div
+            aria-label={saleLabel}
+            style={{ position: 'absolute', top: 20, right: -42, width: 160, zIndex: 3, background: 'linear-gradient(135deg, #B95545, #A6483A)', color: C.paper, fontSize: 10, fontWeight: 900, letterSpacing: 0.3, padding: '7px 8px', textAlign: 'center', whiteSpace: 'nowrap', transform: 'rotate(45deg)', boxShadow: '0 1px 3px rgba(0,0,0,0.16)' }}
+          >
+            {saleBadge} · {saleLabel}
+          </div>
+        )}
         {product.marketStatus === 'sold_out' && (
           <span aria-hidden style={{ position: 'absolute', left: '-33.35%', top: '50%', width: '166.7%', height: 3, zIndex: 2, background: C.dangerStrong, transform: 'rotate(53.13deg)', pointerEvents: 'none' }} />
         )}
       </div>
       <div style={{ padding: '10px 8px 12px', opacity: product.marketStatus === 'sold_out' ? 0.55 : 1 }}>
-        {product.marketStatus === 'low_stock' && (
-          <div className="ump-stock-mobile-badge" style={{ display: 'none', background: C.tagBg, color: C.dangerStrong, fontSize: 9, fontWeight: 800, padding: '5px 7px', borderRadius: 5, border: `1px solid ${C.rule}`, whiteSpace: 'nowrap', marginBottom: 6 }}>
-            {lang === 'pt' ? `Só ${product.marketStock} restantes` : `Only ${product.marketStock} left`}
-          </div>
-        )}
         {/* Multi-select since 2026-07-31 -- a product can carry more than
             one badge (e.g. both "Novidade" and "Bestseller") at once. */}
-        {product.tags.length > 0 && (
+        {(product.tags.length > 0 || (product.marketStatus === 'low_stock' && product.onSale)) && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 6 }}>
+            {product.marketStatus === 'low_stock' && product.onSale && (
+              <div style={{ display: 'inline-block', background: C.tagBg, color: C.dangerStrong, fontSize: 9, fontWeight: 800, padding: '5px 7px', borderRadius: 5, border: `1px solid ${C.rule}`, whiteSpace: 'nowrap' }}>
+                {lang === 'pt' ? `Só ${product.marketStock} restantes` : `Only ${product.marketStock} left`}
+              </div>
+            )}
             {product.tags.map((tag) => {
               const tagStyle = TAG_STYLE[tag.label] ?? DEFAULT_TAG_STYLE;
               return (
@@ -106,13 +127,21 @@ export function ProductCard({ product, size = 'grid', priority = false, homepage
           </div>
         )}
         <div style={{ fontFamily: F.sans, fontSize: 12, fontWeight: 800, color: C.ink }}>{product.name}</div>
-        <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ marginTop: 6, padding: product.onSale ? '7px 8px' : 0, borderRadius: 6, background: product.onSale ? C.dangerBg : 'transparent' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
           {product.onSale && (
             <span style={{ fontSize: 10, fontWeight: 700, color: C.inkSoft, textDecoration: 'line-through' }}>
               {fmtOriginalPrice(product)}
             </span>
           )}
           <span style={{ fontSize: 11, fontWeight: 800, color: product.onSale ? C.dangerStrong : C.ink }}>{fmtPrice(product)}</span>
+          {saleDiscount !== null && <span style={{ fontSize: 11, fontWeight: 900, color: C.dangerStrong }}>−{saleDiscount}%</span>}
+          </div>
+          {saleUrgency && (
+            <div style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 4, fontSize: 9, fontWeight: 800, color: C.dangerStrong }}>
+              <Clock size={11} aria-hidden /> {saleUrgency}
+            </div>
+          )}
         </div>
         {/* Colour availability at a glance (2026-08-07): a diagonal strike
             reuses the exact same "sold out in this colour" rule as the

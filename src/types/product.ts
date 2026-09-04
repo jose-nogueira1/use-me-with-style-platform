@@ -104,6 +104,8 @@ export type Product = {
   /** True when a sale price is currently active (2026-07-25, discounts
    * phase 1) -- see productAdapters.ts's isProductOnSale. */
   onSale: boolean;
+  /** Sale end date, when configured, for honest urgency cues. */
+  saleEndDate?: string | null;
   /** The price actually charged: the sale price while onSale, otherwise
    * identical to priceKz/priceEur. Everything that computes money
    * (cart/checkout totals, Meta conversion value) should read these, not

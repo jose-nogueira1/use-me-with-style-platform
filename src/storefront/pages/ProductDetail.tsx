@@ -18,6 +18,7 @@ import { SizeGuideTable } from '../components/SizeGuideTable';
 import { BreadcrumbJsonLd } from '../components/BreadcrumbJsonLd';
 import { CartAddedDrawer } from '../components/CartAddedDrawer';
 import { openMiniCart } from '../miniCart';
+import { saleDiscountLabel, saleUrgencyLabel } from '../../lib/salePresentation';
 
 // Category display names now come from the CMS categories collection (via
 // product.catLabel) instead of a hardcoded slug->i18n-key map (2026-07-25).
@@ -32,6 +33,12 @@ export function ProductDetail() {
   const fmtOriginalPrice = useFormatOriginalPrice();
 
   const product = products.find((p) => p.slug === slug);
+  const saleLabel = product?.onSale ? saleDiscountLabel(
+    market === 'AO' ? product.priceKz : product.priceEur,
+    market === 'AO' ? product.effectivePriceKz : product.effectivePriceEur,
+    lang,
+  ) : null;
+  const saleUrgency = product?.onSale ? saleUrgencyLabel(product.saleEndDate, lang) : null;
 
   useEffect(() => {
     if (!product) return;
@@ -343,6 +350,12 @@ export function ProductDetail() {
             )}
             <span style={{ fontSize: 20, fontWeight: 800, color: product.onSale ? C.dangerStrong : C.ink }}>{fmtPrice(product)}</span>
           </div>
+          {product.onSale && (saleLabel || saleUrgency) && (
+            <div style={{ marginTop: 7, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, color: C.dangerStrong, fontSize: 12, fontWeight: 900 }}>
+              {saleLabel && <span style={{ background: C.dangerStrong, color: C.paper, padding: '5px 8px', borderRadius: 5 }}>{saleLabel}</span>}
+              {saleUrgency && <span>{saleUrgency}</span>}
+            </div>
+          )}
 
           <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
             {isOutOfStock ? (
