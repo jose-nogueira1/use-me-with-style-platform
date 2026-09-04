@@ -13,6 +13,7 @@ import {
   fetchHomeCategories,
   fetchHomeCollections,
   fetchStorefrontContent,
+  refId,
   resolveRef,
   type ApiCategory,
   type HomeHero,
@@ -46,7 +47,7 @@ export function Home() {
   // isNewArrival is resolved once in productAdapters.ts from the merch
   // tag's raw labelPT/labelEN, independent of the current UI language.
   const newArrivals = products.filter((p) => p.isNewArrival).slice(0, 4);
-  const featured = products.slice(0, 8);
+  const fallbackFeatured = products.slice(0, 8);
 
   // Home page content (2026-07-25 admin request): previously hardcoded via
   // i18n.ts translation keys with no admin-editable source. Fetched from
@@ -153,6 +154,15 @@ export function Home() {
       };
     })
     .filter((shelf) => shelf.items.length > 0);
+  const featuredSelection = market === 'AO' ? homeCollections?.featuredProductsAO : homeCollections?.featuredProductsPT;
+  const featuredProductsForMarket = (featuredSelection ?? [])
+    .map((ref) => products.find((product) => String(product.id) === refId(ref)))
+    .filter((product): product is (typeof products)[number] => product !== undefined)
+    .slice(0, Math.max(1, Math.min(24, homeCollections?.featuredItemLimit ?? 8)));
+  const featuredShelf = featuredProductsForMarket.length > 0 ? {
+    title: (lang === 'en' ? homeCollections?.featuredTitleEN : homeCollections?.featuredTitlePT)?.trim() || t('featured', lang),
+    items: featuredProductsForMarket,
+  } : null;
 
   const [categories, setCategories] = useState<ApiCategory[]>(FALLBACK_CATEGORIES);
   useEffect(() => {
@@ -419,6 +429,18 @@ export function Home() {
 
       {loading && <div style={{ padding: 20, textAlign: 'center', fontSize: 12, color: C.inkSoft }}>{t('loadingProducts', lang)}</div>}
 
+      {featuredShelf && (
+        <div className="ump-content-width" style={{ padding: '20px 20px 0' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
+            <div style={{ fontSize: 10, letterSpacing: 3, color: C.goldDeep, fontWeight: 800, textTransform: 'uppercase' }}>{featuredShelf.title}</div>
+            <Link to="/catalogo" style={{ fontSize: 11, color: C.goldDeep, fontWeight: 800, textDecoration: 'none' }}>{t('viewAll', lang)} →</Link>
+          </div>
+          <div style={{ display: 'flex', gap: 10, overflowX: 'auto' }}>
+            {featuredShelf.items.map((p) => <ProductCard key={p.id} product={p} size="small" homepage />)}
+          </div>
+        </div>
+      )}
+
       {customCollections.length > 0 ? (
         // Admin-curated shelves (2026-08-04) -- any number of tag-driven
         // collections configured in Settings, in the order the admin set.
@@ -464,13 +486,13 @@ export function Home() {
           )}
 
           {/* Featured grid */}
-          {featured.length > 0 && (
+          {!featuredShelf && fallbackFeatured.length > 0 && (
             <div className="ump-content-width" style={{ padding: '20px 20px 24px' }}>
               <div style={{ fontSize: 10, letterSpacing: 3, color: C.goldDeep, fontWeight: 800, textTransform: 'uppercase', marginBottom: 12 }}>
                 {t('featured', lang)}
               </div>
               <div className="ump-grid-auto ump-home-product-grid">
-                {featured.map((p) => (
+                {fallbackFeatured.map((p) => (
                   <ProductCard key={p.id} product={p} homepage />
                 ))}
               </div>

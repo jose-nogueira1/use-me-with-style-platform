@@ -710,6 +710,11 @@ export type HomeCategories = {
 
 export type HomeCollections = {
   collections?: { id?: string; tagSlug: string; titlePT: string; titleEN: string; itemLimit?: number | null }[];
+  featuredTitlePT?: string | null;
+  featuredTitleEN?: string | null;
+  featuredItemLimit?: number | null;
+  featuredProductsAO?: (string | number | { id?: string | number })[] | null;
+  featuredProductsPT?: (string | number | { id?: string | number })[] | null;
 };
 
 /** One auto-saved snapshot of a home-page global (2026-07-25 follow-up:

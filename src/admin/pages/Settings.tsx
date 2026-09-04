@@ -1859,6 +1859,7 @@ function HomeCollectionsSection() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const [tags, setTags] = useState<ApiMerchTag[]>([]);
+  const [products, setProducts] = useState<ApiProduct[]>([]);
 
   const loadVersions = () => {
     adminListHomeCollectionsVersions()
@@ -1875,7 +1876,10 @@ function HomeCollectionsSection() {
       .catch(() => setError(t('couldntLoadHomeCollections', lang)))
       .finally(() => setLoading(false));
     loadVersions();
-    adminListMerchTags().then(setTags);
+    Promise.all([adminListMerchTags(), adminListProducts()]).then(([loadedTags, loadedProducts]) => {
+      setTags(loadedTags);
+      setProducts(loadedProducts);
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang]);
 
@@ -1884,7 +1888,7 @@ function HomeCollectionsSection() {
     setError(null);
     setSaved(false);
     try {
-      const updated = await adminUpdateHomeCollections({ collections: content.collections ?? [] });
+      const updated = await adminUpdateHomeCollections(content);
       setContent(updated);
       setOriginalContent(updated);
       setSaved(true);
@@ -1956,6 +1960,40 @@ function HomeCollectionsSection() {
         <div style={{ fontSize: 12, color: C.inkSoft, marginTop: 10 }}>{t('loadingEllipsis', lang)}</div>
       ) : (
         <>
+          <div style={{ marginTop: 18, padding: '14px 12px', borderRadius: 6, background: C.subtleBg, border: `1px solid ${C.ruleLight}` }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: C.ink }}>{lang === 'pt' ? 'Produtos em destaque' : 'Featured products'}</div>
+            <div style={{ fontSize: 10, color: C.inkSoft, marginTop: 2, maxWidth: 560 }}>
+              {lang === 'pt' ? 'Escolha e ordene produtos diferentes para cada mercado. Se deixar vazio, o destaque automático mantém-se.' : 'Choose and order different products for each market. Leave empty to keep the automatic fallback.'}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 14, marginTop: 14 }}>
+              <div>
+                <SettingsField label={lang === 'pt' ? 'Título AO' : 'AO title'} value={content.featuredTitlePT ?? ''} onChange={(v) => setContent((c) => ({ ...c, featuredTitlePT: v }))} />
+                <FeaturedProductPicker
+                  market="AO"
+                  products={products}
+                  selected={content.featuredProductsAO ?? []}
+                  onChange={(ids) => setContent((c) => ({ ...c, featuredProductsAO: ids }))}
+                  lang={lang}
+                />
+              </div>
+              <div>
+                <SettingsField label={lang === 'pt' ? 'Título PT' : 'PT title'} value={content.featuredTitleEN ?? ''} onChange={(v) => setContent((c) => ({ ...c, featuredTitleEN: v }))} />
+                <FeaturedProductPicker
+                  market="PT"
+                  products={products}
+                  selected={content.featuredProductsPT ?? []}
+                  onChange={(ids) => setContent((c) => ({ ...c, featuredProductsPT: ids }))}
+                  lang={lang}
+                />
+              </div>
+            </div>
+            <SettingsField
+              label={lang === 'pt' ? 'Limite de produtos em destaque' : 'Featured product limit'}
+              type="number"
+              value={String(content.featuredItemLimit ?? 8)}
+              onChange={(v) => setContent((c) => ({ ...c, featuredItemLimit: Number(v) || 8 }))}
+            />
+          </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 10, marginBottom: 10 }}>
             {(content.collections ?? []).map((row, index) => {
               const list = content.collections ?? [];
@@ -2034,6 +2072,79 @@ function HomeCollectionsSection() {
           />
         </>
       )}
+    </div>
+  );
+}
+
+function FeaturedProductPicker({
+  market,
+  products,
+  selected,
+  onChange,
+  lang,
+}: {
+  market: 'AO' | 'PT';
+  products: ApiProduct[];
+  selected: (string | number | { id?: string | number })[];
+  onChange: (ids: string[]) => void;
+  lang: 'pt' | 'en';
+}) {
+  const selectedIds = selected.map((item) => refId(item));
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const labelFor = (product: ApiProduct) => (lang === 'pt' ? product.namePT : product.nameEN)?.trim() || product.name;
+  const move = (index: number, delta: number) => {
+    const next = [...selectedIds];
+    const target = index + delta;
+    if (target < 0 || target >= next.length) return;
+    [next[index], next[target]] = [next[target], next[index]];
+    onChange(next);
+  };
+  const add = (id: string) => onChange([...selectedIds, id]);
+  const remove = (id: string) => onChange(selectedIds.filter((selectedId) => selectedId !== id));
+
+  return (
+    <div style={{ marginTop: 12 }}>
+      <div style={{ fontSize: 10, color: C.goldDeep, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase' }}>{market} · {lang === 'pt' ? 'ordem' : 'order'}</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginTop: 6 }}>
+        {selectedIds.length === 0 && <div style={{ fontSize: 10, color: C.inkSoft }}>{lang === 'pt' ? 'Nenhum produto selecionado' : 'No products selected'}</div>}
+        {selectedIds.map((id, index) => {
+          const product = products.find((item) => String(item.id) === id);
+          return (
+            <div
+              key={id}
+              draggable
+              onDragStart={() => setDraggedIndex(index)}
+              onDragOver={(event) => event.preventDefault()}
+              onDrop={() => {
+                if (draggedIndex === null || draggedIndex === index) return;
+                const next = [...selectedIds];
+                const [moved] = next.splice(draggedIndex, 1);
+                next.splice(index, 0, moved);
+                onChange(next);
+                setDraggedIndex(null);
+              }}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 8px', border: `1px solid ${C.ruleLight}`, borderRadius: 5, background: C.paper, cursor: 'grab' }}
+            >
+              <span style={{ color: C.inkSoft, fontSize: 10 }}>☰</span>
+              <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 11, color: C.ink }}>{product ? labelFor(product) : `#${id}`}</span>
+              <button type="button" aria-label={lang === 'pt' ? 'Mover para cima' : 'Move up'} disabled={index === 0} onClick={() => move(index, -1)} style={{ border: 0, background: 'transparent', color: C.goldDeep, cursor: index === 0 ? 'default' : 'pointer' }}>↑</button>
+              <button type="button" aria-label={lang === 'pt' ? 'Mover para baixo' : 'Move down'} disabled={index === selectedIds.length - 1} onClick={() => move(index, 1)} style={{ border: 0, background: 'transparent', color: C.goldDeep, cursor: index === selectedIds.length - 1 ? 'default' : 'pointer' }}>↓</button>
+              <button type="button" aria-label={lang === 'pt' ? 'Remover produto' : 'Remove product'} onClick={() => remove(id)} style={{ border: 0, background: 'transparent', color: '#B95545', cursor: 'pointer' }}>×</button>
+            </div>
+          );
+        })}
+      </div>
+      <select
+        aria-label={lang === 'pt' ? `Adicionar produto em ${market}` : `Add ${market} product`}
+        value=""
+        onChange={(event) => {
+          if (event.target.value) add(event.target.value);
+        }}
+        style={{ width: '100%', marginTop: 7, padding: '7px 8px', border: `1px solid ${C.fieldBorder}`, borderRadius: 5, background: C.paper, color: C.ink, fontSize: 10 }}
+      >
+        <option value="">{lang === 'pt' ? '+ Adicionar produto' : '+ Add product'}</option>
+        {products.filter((product) => !selectedIds.includes(String(product.id))).map((product) => <option key={product.id} value={String(product.id)}>{labelFor(product)}</option>)}
+      </select>
     </div>
   );
 }
