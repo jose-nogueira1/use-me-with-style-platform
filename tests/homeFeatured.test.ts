@@ -48,3 +48,8 @@ test('featured no longer needs a separate catalogue loading path', () => {
   assert.doesNotMatch(browseSource, /activeFeatured/);
   assert.doesNotMatch(browseSource, /homeCollectionsLoading/);
 });
+
+test('catalogue tag labels follow the URL immediately without stale state flicker', () => {
+  assert.match(browseSource, /const activeTag = urlTag;/);
+  assert.doesNotMatch(browseSource, /const \[activeTag, setActiveTag\]/);
+});

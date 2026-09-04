@@ -140,20 +140,12 @@ export function Browse() {
      filter intentionally remains documented here, but Featured now uses the
      same `?tag=featured` path as every other merchandising shelf. */
 
-  // ?tag=<slug> "collection" filter (2026-07-25 follow-up): the home hero
-  // button can now point at a merchandising tag instead of just a category
-  // (e.g. /catalogo?tag=ss26). Same render-time URL-sync pattern as
-  // activeCat/syncedUrlCat above, for the same reason -- a same-route nav
-  // (clicking the hero button while already on /catalogo) doesn't remount
-  // this component. null means "no tag filter", distinct from activeCat's
-  // 'all' since the two filters are independent and both can apply at once.
+  // ?tag=<slug> "collection" filter (2026-07-25 follow-up): the home page
+  // can point at any merchandising tag (e.g. /catalogo?tag=featured).
+  // Read directly from the URL so same-route navigation cannot briefly show
+  // the previous collection label before React catches up.
   const urlTag = searchParams.get('tag');
-  const [activeTag, setActiveTag] = useState(urlTag);
-  const [syncedUrlTag, setSyncedUrlTag] = useState(urlTag);
-  if (urlTag !== syncedUrlTag) {
-    setSyncedUrlTag(urlTag);
-    setActiveTag(urlTag);
-  }
+  const activeTag = urlTag;
   const activeTagLabel = activeTag
     ? (() => {
         const doc = tags.find((tg) => tg.slug === activeTag);
@@ -285,13 +277,13 @@ export function Browse() {
       onSale,
       sizes: filterSizes,
       colors: filterColors,
-      collectionTags: [...new Set([...(activeTag ? [activeTag] : []), ...filterCollections])],
+      collectionTags: [...new Set([...(searchParams.get('tag') ? [searchParams.get('tag') as string] : []), ...filterCollections])],
       productTypes: filterProductTypes,
     }, market);
     if (sortBy === 'price-asc') list = [...list].sort((a, b) => (market === 'AO' ? a.priceKz - b.priceKz : a.priceEur - b.priceEur));
     if (sortBy === 'price-desc') list = [...list].sort((a, b) => (market === 'AO' ? b.priceKz - a.priceKz : b.priceEur - a.priceEur));
     return list;
-  }, [products, activeCats, activeTag, searchTerm, filterSizes, filterColors, availableOnly, minPrice, maxPrice, onSale, filterProductTypes, filterCollections, sortBy, market]);
+  }, [products, activeCats, searchParams, searchTerm, filterSizes, filterColors, availableOnly, minPrice, maxPrice, onSale, filterProductTypes, filterCollections, sortBy, market]);
   const catalogueLoading = loading;
 
   // Clear-all-filters (2026-07-30, user request). Six independent filter
