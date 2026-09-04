@@ -61,37 +61,43 @@ export function Footer() {
           </div>
         </div>
 
-        <FooterCol heading={t('footerShopHeading', lang)} links={shopLinks} />
-        <FooterCol heading={t('footerSupportHeading', lang)} links={SUPPORT_LINKS.map((link) => ({ to: link.to, label: t(link.labelKey, lang) }))} />
+        <div className="ump-footer-links-grid">
+          <FooterCol heading={t('footerShopHeading', lang)} links={shopLinks} />
+          <FooterCol heading={t('footerSupportHeading', lang)} links={SUPPORT_LINKS.map((link) => ({ to: link.to, label: t(link.labelKey, lang) }))} />
 
-        <div className="ump-footer-col">
-          <FooterHeading>{t('footerInfoHeading', lang)}</FooterHeading>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
-            <Link to="/sobre" style={{ display: 'flex', alignItems: 'center', minHeight: 24, color: C.ink, fontSize: 11, fontWeight: 800, textDecoration: 'none' }}>
-              {t('aboutNav', lang)}
-            </Link>
-            <Link to="/estilo" style={{ display: 'flex', alignItems: 'center', minHeight: 24, color: C.ink, fontSize: 11, fontWeight: 800, textDecoration: 'none' }}>
-              {t('styleGuideNav', lang)}
-            </Link>
-            <Link to="/politica-privacidade" style={{ display: 'flex', alignItems: 'center', minHeight: 24, color: C.ink, fontSize: 11, fontWeight: 800, textDecoration: 'none' }}>
-              {t('privacyPolicyNav', lang)}
-            </Link>
-            <Link to="/termos-condicoes" style={{ display: 'flex', alignItems: 'center', minHeight: 24, color: C.ink, fontSize: 11, fontWeight: 800, textDecoration: 'none' }}>
-              {t('termsNav', lang)}
-            </Link>
-            <Link to="/eliminacao-de-dados" style={{ display: 'flex', alignItems: 'center', minHeight: 24, color: C.ink, fontSize: 11, fontWeight: 800, textDecoration: 'none' }}>
-              {t('dataDeletionNav', lang)}
-            </Link>
+          <div className="ump-footer-col">
+            <FooterHeading>{t('footerInfoHeading', lang)}</FooterHeading>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <Link to="/sobre" style={{ display: 'flex', alignItems: 'center', minHeight: 24, color: C.ink, fontSize: 11, fontWeight: 800, textDecoration: 'none' }}>
+                {t('aboutNav', lang)}
+              </Link>
+              <Link to="/estilo" style={{ display: 'flex', alignItems: 'center', minHeight: 24, color: C.ink, fontSize: 11, fontWeight: 800, textDecoration: 'none' }}>
+                {t('styleGuideNav', lang)}
+              </Link>
+              <Link to="/politica-privacidade" style={{ display: 'flex', alignItems: 'center', minHeight: 24, color: C.ink, fontSize: 11, fontWeight: 800, textDecoration: 'none' }}>
+                {t('privacyPolicyNav', lang)}
+              </Link>
+              <Link to="/termos-condicoes" style={{ display: 'flex', alignItems: 'center', minHeight: 24, color: C.ink, fontSize: 11, fontWeight: 800, textDecoration: 'none' }}>
+                {t('termsNav', lang)}
+              </Link>
+              <Link to="/eliminacao-de-dados" style={{ display: 'flex', alignItems: 'center', minHeight: 24, color: C.ink, fontSize: 11, fontWeight: 800, textDecoration: 'none' }}>
+                {t('dataDeletionNav', lang)}
+              </Link>
+            </div>
           </div>
-          <InfoLine label={t('shipping', lang)} value={market === 'AO' ? t('localCourierDelivery', lang) : t('businessDays', lang)} />
-          <InfoLine
-            label={t('returns', lang)}
-            value={t('footerReturnsNote', lang, { days: t('fourteenDays', lang) })}
-            to="/ajuda#devolucoes"
-          />
-          <InfoLine label={t('prices', lang)} value={t(market === 'AO' ? 'footerPricesNoteAo' : 'footerPricesNotePt', lang)} />
-          <div style={{ marginTop: 4, fontSize: 9, letterSpacing: 2, color: C.inkSoft, textTransform: 'uppercase' }}>
-            {t(market === 'AO' ? 'angola' : 'portugal', lang)}
+
+          <div className="ump-footer-col">
+            <FooterHeading>{lang === 'pt' ? 'Envio, devoluções e preços' : 'Shipping, returns & prices'}</FooterHeading>
+            <InfoLine label={t('shipping', lang)} value={market === 'AO' ? t('localCourierDelivery', lang) : t('businessDays', lang)} />
+            <InfoLine
+              label={t('returns', lang)}
+              value={t('footerReturnsNote', lang, { days: t('fourteenDays', lang) })}
+              to="/ajuda#devolucoes"
+            />
+            <InfoLine label={t('prices', lang)} value={t(market === 'AO' ? 'footerPricesNoteAo' : 'footerPricesNotePt', lang)} />
+            <div style={{ marginTop: 4, fontSize: 9, letterSpacing: 2, color: C.inkSoft, textTransform: 'uppercase' }}>
+              {t(market === 'AO' ? 'angola' : 'portugal', lang)}
+            </div>
           </div>
         </div>
       </div>

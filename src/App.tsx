@@ -259,8 +259,10 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
         .ump-footer { padding-bottom: 84px; }
         @media (min-width: 720px) { .ump-footer { padding-bottom: 0; } }
         .ump-footer-grid { display: flex; flex-direction: column; gap: 28px; padding: 32px 20px 24px; }
+        .ump-footer-links-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 20px; }
         @media (min-width: 720px) {
-          .ump-footer-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 32px; padding: 44px 20px 28px; }
+          .ump-footer-grid { display: grid; grid-template-columns: 1.4fr 3fr; gap: 32px; padding: 44px 20px 28px; }
+          .ump-footer-links-grid { grid-template-columns: repeat(3, 1fr); gap: 32px; }
         }
         .ump-footer-bottom { padding: 16px 20px 22px; border-top: 1px solid ${C.ruleLight}; }
 
