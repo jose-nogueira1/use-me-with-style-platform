@@ -13,6 +13,7 @@ import {
 import { PageHeader } from '../components/PageHeader';
 import { useDirty } from '../lib/useDirty';
 import { t, type Lang } from '../i18n';
+import { MoneyField } from '../components/MoneyField';
 
 // Discounts phase 2 (2026-07-25): admin CRUD for coupon codes, standalone
 // page + route (same pattern as Invoices/Media) rather than a Settings tab,
@@ -320,16 +321,16 @@ function CouponForm({
         </div>
       ) : draft.type === 'fixed' ? (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginTop: 12 }}>
-          <NumberField label={t('fixedOffAngolaKz', lang)} value={draft.fixedOffAOKz} onChange={(v) => setDraft({ ...draft, fixedOffAOKz: v })} />
-          <NumberField label={t('fixedOffPortugalEur', lang)} value={draft.fixedOffPTEur} onChange={(v) => setDraft({ ...draft, fixedOffPTEur: v })} />
+          <MoneyField label={t('fixedOffAngolaKz', lang)} value={draft.fixedOffAOKz} currency="AO" lang={lang} compact onChange={(v) => setDraft({ ...draft, fixedOffAOKz: v === '' ? null : Number(v) })} />
+          <MoneyField label={t('fixedOffPortugalEur', lang)} value={draft.fixedOffPTEur} currency="EUR" lang={lang} compact onChange={(v) => setDraft({ ...draft, fixedOffPTEur: v === '' ? null : Number(v) })} />
         </div>
       ) : (
         <div style={{ marginTop: 12, fontSize: 11, color: C.inkSoft }}>{t('freeShippingNote', lang)}</div>
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginTop: 12 }}>
-        <NumberField label={t('minOrderAngolaKz', lang)} value={draft.minOrderValueAOKz} onChange={(v) => setDraft({ ...draft, minOrderValueAOKz: v })} />
-        <NumberField label={t('minOrderPortugalEur', lang)} value={draft.minOrderValuePTEur} onChange={(v) => setDraft({ ...draft, minOrderValuePTEur: v })} />
+        <MoneyField label={t('minOrderAngolaKz', lang)} value={draft.minOrderValueAOKz} currency="AO" lang={lang} compact onChange={(v) => setDraft({ ...draft, minOrderValueAOKz: v === '' ? null : Number(v) })} />
+        <MoneyField label={t('minOrderPortugalEur', lang)} value={draft.minOrderValuePTEur} currency="EUR" lang={lang} compact onChange={(v) => setDraft({ ...draft, minOrderValuePTEur: v === '' ? null : Number(v) })} />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginTop: 12 }}>

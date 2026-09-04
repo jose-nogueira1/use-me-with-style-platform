@@ -72,6 +72,7 @@ import { Content } from './Content';
 import { t, type Lang } from '../i18n';
 import { imageOptimizationSummary, imageUploadGuidance, prepareImageUpload } from '../../lib/imageUpload';
 import { DEFAULT_ANGOLA_MUNICIPALITY_PRICES, LUANDA_MUNICIPALITIES } from '../../storefront/shipping';
+import { MoneyField } from '../components/MoneyField';
 
 const DEFAULTS: MarketSettings = {
   angolaPaymentLive: false,
@@ -295,15 +296,17 @@ export function Settings() {
                   </summary>
                   <div style={{ display: 'grid', gap: 8, padding: '4px 12px 12px', borderTop: `1px solid ${C.ruleLight}` }}>
                     {LUANDA_MUNICIPALITIES.map((municipality) => (
-                      <NumberSetting
+                      <MoneyField
                         key={municipality}
                         label={`${municipality} (Kz)`}
                         value={Number(settings.angolaMunicipalityPrices[municipality] ?? 0)}
-                        step={100}
-                        onChange={(value) => setSettings((s) => ({ ...s, angolaMunicipalityPrices: { ...s.angolaMunicipalityPrices, [municipality]: value } }))}
+                        currency="AO"
+                        lang={lang}
+                        compact
+                        onChange={(value) => setSettings((s) => ({ ...s, angolaMunicipalityPrices: { ...s.angolaMunicipalityPrices, [municipality]: Number(value) || 0 } }))}
                       />
                     ))}
-                    <NumberSetting label={t('freeShippingThresholdKz', lang)} value={settings.angolaFreeShippingThreshold} step={1000} onChange={(value) => setSettings((s) => ({ ...s, angolaFreeShippingThreshold: value }))} />
+                    <MoneyField label={t('freeShippingThresholdKz', lang)} value={settings.angolaFreeShippingThreshold} currency="AO" lang={lang} compact onChange={(value) => setSettings((s) => ({ ...s, angolaFreeShippingThreshold: Number(value) || 0 }))} />
                   </div>
                 </details>
               }
@@ -363,12 +366,12 @@ export function Settings() {
               label={t('portugalShippingPrices', lang)}
               value={
                 <div style={{ display: 'grid', gap: 8 }}>
-                  <NumberSetting label={t('cttStandardPrice', lang)} value={settings.portugalStandardShippingPrice} onChange={(value) => setSettings((s) => ({ ...s, portugalStandardShippingPrice: value }))} />
-                  <NumberSetting label={t('cttTrackedPrice', lang)} value={settings.portugalTrackedShippingPrice} onChange={(value) => setSettings((s) => ({ ...s, portugalTrackedShippingPrice: value }))} />
-                  <NumberSetting label={t('freeShippingThreshold', lang)} value={settings.portugalFreeShippingThreshold} onChange={(value) => setSettings((s) => ({ ...s, portugalFreeShippingThreshold: value }))} />
+                  <MoneyField label={t('cttStandardPrice', lang)} value={settings.portugalStandardShippingPrice} currency="EUR" lang={lang} compact onChange={(value) => setSettings((s) => ({ ...s, portugalStandardShippingPrice: Number(value) || 0 }))} />
+                  <MoneyField label={t('cttTrackedPrice', lang)} value={settings.portugalTrackedShippingPrice} currency="EUR" lang={lang} compact onChange={(value) => setSettings((s) => ({ ...s, portugalTrackedShippingPrice: Number(value) || 0 }))} />
+                  <MoneyField label={t('freeShippingThreshold', lang)} value={settings.portugalFreeShippingThreshold} currency="EUR" lang={lang} compact onChange={(value) => setSettings((s) => ({ ...s, portugalFreeShippingThreshold: Number(value) || 0 }))} />
                   <NumberSetting label={t('standardWeightLimit', lang)} value={settings.portugalStandardWeightLimitGrams} step={100} onChange={(value) => setSettings((s) => ({ ...s, portugalStandardWeightLimitGrams: value }))} />
-                  <NumberSetting label={t('heavyMainlandPrice', lang)} value={settings.portugalHeavyMainlandShippingPrice} onChange={(value) => setSettings((s) => ({ ...s, portugalHeavyMainlandShippingPrice: value }))} />
-                  <NumberSetting label={t('heavyIslandsPrice', lang)} value={settings.portugalHeavyIslandsShippingPrice} onChange={(value) => setSettings((s) => ({ ...s, portugalHeavyIslandsShippingPrice: value }))} />
+                  <MoneyField label={t('heavyMainlandPrice', lang)} value={settings.portugalHeavyMainlandShippingPrice} currency="EUR" lang={lang} compact onChange={(value) => setSettings((s) => ({ ...s, portugalHeavyMainlandShippingPrice: Number(value) || 0 }))} />
+                  <MoneyField label={t('heavyIslandsPrice', lang)} value={settings.portugalHeavyIslandsShippingPrice} currency="EUR" lang={lang} compact onChange={(value) => setSettings((s) => ({ ...s, portugalHeavyIslandsShippingPrice: Number(value) || 0 }))} />
                 </div>
               }
             />
@@ -671,7 +674,7 @@ function AiMessagingSettingsSection() {
         <div style={{ display: 'grid', gap: 10 }}>
           <NumberSetting label={lang === 'pt' ? 'Respostas automáticas por conversa / 24h' : 'Automatic replies per conversation / 24h'} value={settings.maxAutoRepliesPerConversation} step={1} onChange={(value) => setSettings((current) => ({ ...current, maxAutoRepliesPerConversation: Math.min(20, Math.max(1, Math.round(value))) }))} />
           <NumberSetting label={lang === 'pt' ? 'Respostas automáticas totais / hora' : 'Total automatic replies / hour'} value={settings.maxAutoRepliesPerHour} step={1} onChange={(value) => setSettings((current) => ({ ...current, maxAutoRepliesPerHour: Math.min(200, Math.max(1, Math.round(value))) }))} />
-          <NumberSetting label={lang === 'pt' ? 'Orçamento mensal (USD)' : 'Monthly budget (USD)'} value={settings.monthlyBudgetUsd} step={1} onChange={(value) => setSettings((current) => ({ ...current, monthlyBudgetUsd: Math.min(10_000, Math.max(0, value)) }))} />
+        <MoneyField label={lang === 'pt' ? 'Orçamento mensal (USD)' : 'Monthly budget (USD)'} value={settings.monthlyBudgetUsd} currency="USD" lang={lang} compact onChange={(value) => setSettings((current) => ({ ...current, monthlyBudgetUsd: Math.min(10_000, Math.max(0, Number(value) || 0)) }))} />
         </div>
         <div style={{ marginTop: 12, fontSize: 10, color: C.inkSoft, lineHeight: 1.45 }}>{lang === 'pt' ? 'Ao atingir um limite, a conversa fica para aprovação humana. O orçamento é uma proteção da aplicação e não substitui os limites da conta OpenAI.' : 'When a limit is reached, the conversation stays for human approval. This application guardrail does not replace the OpenAI account limits.'}</div>
       </Card>

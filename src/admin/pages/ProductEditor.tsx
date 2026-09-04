@@ -32,6 +32,8 @@ import { t } from '../i18n';
 import { buildProductImageAlt } from '../../lib/productImageAlt';
 import { imageUploadGuidance, prepareImageUpload } from '../../lib/imageUpload';
 import { ImageCropModal } from '../components/ImageCropModal';
+import { MoneyField } from '../components/MoneyField';
+import { calculateSalePrice } from '../lib/salePricing';
 
 // Catalogue taxonomies are managed in the Product settings page
 // (/admin/definicoes-produto) since 2026-07-25; this editor only PICKS
@@ -95,8 +97,11 @@ type FormState = {
   shippingWeightGrams: string;
   /** Sale pricing (2026-07-25, discounts phase 1) -- all optional; blank
    * means "no sale price for this market" / "no start/end restriction". */
+  salePricingMode: 'fixed' | 'percent';
   saleAOKz: string;
   salePTEur: string;
+  salePercentAOKz: string;
+  salePercentPTEur: string;
   saleStartDate: string;
   saleEndDate: string;
   active: boolean;
@@ -104,7 +109,7 @@ type FormState = {
   availablePT: boolean;
 };
 
-const EMPTY: FormState = { productType: 'standard', name: '', namePT: '', nameEN: '', slug: '', category: '', description: '', descriptionPT: '', descriptionEN: '', sizeGuide: '', fitNotePT: '', fitNoteEN: '', hasColor: true, hasOption: true, optionLabelPT: 'Tamanho', optionLabelEN: 'Size', optionValuesEN: { S: 'S', M: 'M', L: 'L' }, specifications: [], returnEligible: true, returnNotePT: '', returnNoteEN: '', bundleComponents: [], tagIds: [], marketTagIds: { AO: [], PT: [] }, colorIds: [], sizes: ['S', 'M', 'L'], stock: {}, priceAOKz: '', pricePTEur: '', shippingWeightGrams: '500', saleAOKz: '', salePTEur: '', saleStartDate: '', saleEndDate: '', active: false, availableAO: true, availablePT: true };
+const EMPTY: FormState = { productType: 'standard', name: '', namePT: '', nameEN: '', slug: '', category: '', description: '', descriptionPT: '', descriptionEN: '', sizeGuide: '', fitNotePT: '', fitNoteEN: '', hasColor: true, hasOption: true, optionLabelPT: 'Tamanho', optionLabelEN: 'Size', optionValuesEN: { S: 'S', M: 'M', L: 'L' }, specifications: [], returnEligible: true, returnNotePT: '', returnNoteEN: '', bundleComponents: [], tagIds: [], marketTagIds: { AO: [], PT: [] }, colorIds: [], sizes: ['S', 'M', 'L'], stock: {}, priceAOKz: '', pricePTEur: '', shippingWeightGrams: '500', salePricingMode: 'fixed', saleAOKz: '', salePTEur: '', salePercentAOKz: '', salePercentPTEur: '', saleStartDate: '', saleEndDate: '', active: false, availableAO: true, availablePT: true };
 
 /** Payload date fields round-trip as full ISO datetimes; the admin form uses
  * a plain <input type="date">, which needs just the YYYY-MM-DD portion. */
@@ -223,8 +228,11 @@ export function ProductEditor() {
           priceAOKz: String(p.priceAOKz),
           pricePTEur: String(p.pricePTEur),
           shippingWeightGrams: String(p.shippingWeightGrams ?? 500),
+          salePricingMode: 'fixed',
           saleAOKz: p.saleAOKz != null ? String(p.saleAOKz) : '',
           salePTEur: p.salePTEur != null ? String(p.salePTEur) : '',
+          salePercentAOKz: '',
+          salePercentPTEur: '',
           saleStartDate: toDateInputValue(p.saleStartDate),
           saleEndDate: toDateInputValue(p.saleEndDate),
           active: p.active,
@@ -264,6 +272,12 @@ export function ProductEditor() {
     productName: form.namePT || form.name,
     productType: selectedCategoryLabel,
   });
+  const displayedSaleAOKz = form.salePricingMode === 'percent'
+    ? calculateSalePrice(form.priceAOKz, form.salePercentAOKz, 'AO')
+    : form.saleAOKz;
+  const displayedSalePTEur = form.salePricingMode === 'percent'
+    ? calculateSalePrice(form.pricePTEur, form.salePercentPTEur, 'EUR')
+    : form.salePTEur;
 
   const toggleColor = (colorId: string) =>
     setForm((f) => ({
@@ -325,6 +339,30 @@ export function ProductEditor() {
       setError(lang === 'pt' ? 'Adicione pelo menos um produto ao kit.' : 'Add at least one product to the kit.');
       return;
     }
+    const priceAOKz = Number(form.priceAOKz);
+    const pricePTEur = Number(form.pricePTEur);
+    const salePercentAOKz = form.salePercentAOKz.trim() ? Number(form.salePercentAOKz) : null;
+    const salePercentPTEur = form.salePercentPTEur.trim() ? Number(form.salePercentPTEur) : null;
+    const percentageModeInvalid = form.salePricingMode === 'percent'
+      && [salePercentAOKz, salePercentPTEur].some((value) => value !== null && (!Number.isFinite(value) || value <= 0 || value >= 100));
+    const saleAOKz = form.salePricingMode === 'percent'
+      ? calculateSalePrice(form.priceAOKz, form.salePercentAOKz, 'AO')
+      : form.saleAOKz.trim() ? Number(form.saleAOKz) : null;
+    const salePTEur = form.salePricingMode === 'percent'
+      ? calculateSalePrice(form.pricePTEur, form.salePercentPTEur, 'EUR')
+      : form.salePTEur.trim() ? Number(form.salePTEur) : null;
+    if (!form.priceAOKz.trim() || !form.pricePTEur.trim() || !Number.isFinite(priceAOKz) || !Number.isFinite(pricePTEur)) {
+      setError(lang === 'pt' ? 'Introduza preços válidos para Angola e Portugal.' : 'Enter valid prices for Angola and Portugal.');
+      return;
+    }
+    if (percentageModeInvalid) {
+      setError(lang === 'pt' ? 'A percentagem deve estar entre 0 e 100.' : 'The percentage must be between 0 and 100.');
+      return;
+    }
+    if ((saleAOKz !== null && saleAOKz >= priceAOKz) || (salePTEur !== null && salePTEur >= pricePTEur)) {
+      setError(lang === 'pt' ? 'O preço promocional deve ser inferior ao preço normal.' : 'Sale prices must be lower than regular prices.');
+      return;
+    }
     setSaving(true);
     setError(null);
     const colorAxis = form.hasColor ? form.colorIds : [''];
@@ -371,15 +409,15 @@ export function ProductEditor() {
       tag: form.tagIds.map((tagId) => originalId(tags, tagId)),
       marketTags: (['AO', 'PT'] as const).flatMap((market) => form.marketTagIds[market].map((tagId) => ({ tag: originalId(tags, tagId), market }))),
       variants,
-      priceAOKz: Number(form.priceAOKz) || 0,
-      pricePTEur: Number(form.pricePTEur) || 0,
+      priceAOKz,
+      pricePTEur,
       shippingWeightGrams: Math.max(1, Number(form.shippingWeightGrams) || 500),
       // null (not undefined) so clearing a sale price actually removes it --
       // same pattern as sizeGuide/tag above.
-      saleAOKz: form.saleAOKz.trim() ? Number(form.saleAOKz) : null,
-      salePTEur: form.salePTEur.trim() ? Number(form.salePTEur) : null,
-      saleStartDate: form.saleStartDate || null,
-      saleEndDate: form.saleEndDate || null,
+      saleAOKz,
+      salePTEur,
+      saleStartDate: saleAOKz !== null || salePTEur !== null ? form.saleStartDate || null : null,
+      saleEndDate: saleAOKz !== null || salePTEur !== null ? form.saleEndDate || null : null,
       active: form.active,
       availableAO: form.availableAO,
       availablePT: form.availablePT,
@@ -944,8 +982,8 @@ export function ProductEditor() {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }} className="ump-admin-fields-grid">
             <ReadOnlyField label={t('slugLabel', lang)} value={form.slug || (isNew ? t('generatedAutomatically', lang) : '')} />
-            <FieldInput label={t('angolaPriceKz', lang)} value={form.priceAOKz} onChange={(v) => set('priceAOKz', v)} type="number" />
-            <FieldInput label={t('portugalPriceEur', lang)} value={form.pricePTEur} onChange={(v) => set('pricePTEur', v)} type="number" />
+            <MoneyField label={t('angolaPriceKz', lang)} value={form.priceAOKz} currency="AO" lang={lang} onChange={(v) => set('priceAOKz', v)} />
+            <MoneyField label={t('portugalPriceEur', lang)} value={form.pricePTEur} currency="EUR" lang={lang} onChange={(v) => set('pricePTEur', v)} />
             <FieldInput label={t('shippingWeightGrams', lang)} value={form.shippingWeightGrams} onChange={(v) => set('shippingWeightGrams', v)} type="number" />
           </div>
 
@@ -954,10 +992,36 @@ export function ProductEditor() {
               not discount that market; leave both dates blank for the sale
               to run indefinitely as soon as a sale price is set. */}
           <div style={{ marginTop: -4 }}>
-            <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 6 }}>{t('salePricingOptional', lang)}</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 6 }}>
+              <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep }}>{t('salePricingOptional', lang)}</div>
+              {(form.saleAOKz || form.salePTEur || form.salePercentAOKz || form.salePercentPTEur || form.saleStartDate || form.saleEndDate) && (
+                <button
+                  type="button"
+                  onClick={() => setForm((current) => ({ ...current, salePricingMode: 'fixed', saleAOKz: '', salePTEur: '', salePercentAOKz: '', salePercentPTEur: '', saleStartDate: '', saleEndDate: '' }))}
+                  style={{ border: 0, background: 'transparent', color: C.dangerStrong, fontSize: 10, fontWeight: 800, cursor: 'pointer', padding: 0 }}
+                >
+                  {lang === 'pt' ? 'Remover promoção' : 'Remove sale'}
+                </button>
+              )}
+            </div>
+            <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+              {(['fixed', 'percent'] as const).map((mode) => {
+                const selected = form.salePricingMode === mode;
+                return <button key={mode} type="button" aria-pressed={selected} onClick={() => set('salePricingMode', mode)} style={{ padding: '6px 10px', borderRadius: 6, border: `1px solid ${selected ? C.gold : C.rule}`, background: selected ? C.tagBg : C.paper, color: selected ? C.goldDeep : C.ink, fontSize: 10, fontWeight: 800, cursor: 'pointer' }}>
+                  {mode === 'fixed' ? (lang === 'pt' ? 'Preço fixo' : 'Fixed price') : (lang === 'pt' ? 'Percentagem' : 'Percentage')}
+                </button>;
+              })}
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }} className="ump-admin-fields-grid">
-              <FieldInput label={t('saleAngolaKz', lang)} value={form.saleAOKz} onChange={(v) => set('saleAOKz', v)} type="number" />
-              <FieldInput label={t('salePortugalEur', lang)} value={form.salePTEur} onChange={(v) => set('salePTEur', v)} type="number" />
+              {form.salePricingMode === 'fixed' ? <>
+                <MoneyField label={t('saleAngolaKz', lang)} value={form.saleAOKz} currency="AO" lang={lang} onChange={(v) => set('saleAOKz', v)} />
+                <MoneyField label={t('salePortugalEur', lang)} value={form.salePTEur} currency="EUR" lang={lang} onChange={(v) => set('salePTEur', v)} />
+              </> : <>
+                <FieldInput label={lang === 'pt' ? 'Desconto Angola (%)' : 'Angola discount (%)'} value={form.salePercentAOKz} onChange={(v) => { if (/^\d*(\.\d{0,2})?$/.test(v)) set('salePercentAOKz', v); }} type="number" />
+                <FieldInput label={lang === 'pt' ? 'Desconto Portugal (%)' : 'Portugal discount (%)'} value={form.salePercentPTEur} onChange={(v) => { if (/^\d*(\.\d{0,2})?$/.test(v)) set('salePercentPTEur', v); }} type="number" />
+                <MoneyField label={t('saleAngolaKz', lang)} value={displayedSaleAOKz} currency="AO" lang={lang} readOnly onChange={() => undefined} />
+                <MoneyField label={t('salePortugalEur', lang)} value={displayedSalePTEur} currency="EUR" lang={lang} readOnly onChange={() => undefined} />
+              </>}
               <FieldInput label={t('saleStart', lang)} value={form.saleStartDate} onChange={(v) => set('saleStartDate', v)} type="date" />
               <FieldInput label={t('saleEnd', lang)} value={form.saleEndDate} onChange={(v) => set('saleEndDate', v)} type="date" />
             </div>
