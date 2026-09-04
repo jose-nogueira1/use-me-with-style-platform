@@ -2151,7 +2151,7 @@ function FeaturedProductPicker({
         style={{ width: '100%', marginTop: 7, padding: '7px 8px', border: `1px solid ${C.fieldBorder}`, borderRadius: 5, background: C.paper, color: C.ink, fontSize: 10 }}
       >
         <option value="">{lang === 'pt' ? '+ Adicionar produto' : '+ Add product'}</option>
-        {products.filter((product) => !selectedIds.includes(String(product.id))).map((product) => <option key={product.id} value={String(product.id)}>{labelFor(product)}</option>)}
+        {products.filter((product) => !selectedIds.includes(normalizeRelationshipIds([product.id])[0])).map((product) => <option key={product.id} value={String(product.id)}>{labelFor(product)}</option>)}
       </select>
     </div>
   );
