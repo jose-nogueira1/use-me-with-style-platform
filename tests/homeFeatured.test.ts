@@ -25,3 +25,9 @@ test('home collections API shape carries market-specific featured selections', (
   assert.match(apiSource, /featuredProductsAO/);
   assert.match(apiSource, /featuredProductsPT/);
 });
+
+test('featured product relationships serialize numeric CMS ids as numbers', () => {
+  assert.match(apiSource, /export function normalizeRelationshipIds/);
+  assert.match(apiSource, /Number\(id\)/);
+  assert.match(settingsSource, /normalizeRelationshipIds/);
+});

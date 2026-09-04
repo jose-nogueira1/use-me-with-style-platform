@@ -205,6 +205,16 @@ export function refId(ref: string | number | { id?: string | number } | null | u
   return String(ref);
 }
 
+/** Payload's PostgreSQL relationship validator expects numeric IDs as numbers.
+ * Keep non-numeric IDs intact so this remains compatible with string-ID
+ * environments. */
+export function normalizeRelationshipIds(refs: (string | number | { id?: string | number })[]): (string | number)[] {
+  return refs.map((ref) => {
+    const id = refId(ref);
+    return /^\d+$/.test(id) ? Number(id) : id;
+  });
+}
+
 export type ApiProduct = {
   // Payload returns numeric IDs with the local SQLite adapter and string IDs
   // with PostgreSQL. Treat both as valid so admin routes work in every env.

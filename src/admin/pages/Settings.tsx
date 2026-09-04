@@ -28,12 +28,14 @@ import {
   adminUpdateLegalContent,
   adminUpdateMarketSettings,
   adminUploadMedia,
+  ApiError,
   fetchHomeHero,
   fetchHomeCategories,
   fetchHomeCollections,
   fetchInstagramFeed,
   fetchLegalContent,
   fetchMarketSettings,
+  normalizeRelationshipIds,
   refId,
   resolveProductImage,
   resolveRef,
@@ -1045,8 +1047,14 @@ function LegalPagesSection() {
       setContent(updated);
       setOriginalContent(updated);
       setSaved(true);
-    } catch {
-      setError(t('couldntSaveLoggedIn', lang));
+    } catch (error) {
+      if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
+        setError(t('couldntSaveLoggedIn', lang));
+      } else if (error instanceof ApiError) {
+        setError(lang === 'pt' ? `Não foi possível guardar (erro ${error.status}). Verifique os produtos selecionados.` : `Couldn't save (error ${error.status}). Check the selected products.`);
+      } else {
+        setError(t('couldntSaveBackend', lang));
+      }
     } finally {
       setSaving(false);
     }
@@ -2086,10 +2094,10 @@ function FeaturedProductPicker({
   market: 'AO' | 'PT';
   products: ApiProduct[];
   selected: (string | number | { id?: string | number })[];
-  onChange: (ids: string[]) => void;
+  onChange: (ids: (string | number)[]) => void;
   lang: 'pt' | 'en';
 }) {
-  const selectedIds = selected.map((item) => refId(item));
+  const selectedIds = normalizeRelationshipIds(selected);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const labelFor = (product: ApiProduct) => (lang === 'pt' ? product.namePT : product.nameEN)?.trim() || product.name;
   const move = (index: number, delta: number) => {
@@ -2099,8 +2107,8 @@ function FeaturedProductPicker({
     [next[index], next[target]] = [next[target], next[index]];
     onChange(next);
   };
-  const add = (id: string) => onChange([...selectedIds, id]);
-  const remove = (id: string) => onChange(selectedIds.filter((selectedId) => selectedId !== id));
+  const add = (id: string) => onChange([...selectedIds, normalizeRelationshipIds([id])[0]]);
+  const remove = (id: string | number) => onChange(selectedIds.filter((selectedId) => selectedId !== id));
 
   return (
     <div style={{ marginTop: 12 }}>
