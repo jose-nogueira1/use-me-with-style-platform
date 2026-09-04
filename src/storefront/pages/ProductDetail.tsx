@@ -179,6 +179,53 @@ export function ProductDetail() {
     `${lang === 'pt' ? 'Quantidade' : 'Quantity'}: 1`,
   ].filter(Boolean).join(' · ');
 
+  const productActionButtons = () => (
+    <>
+      <button
+        onClick={() => navigate('/catalogo')}
+        aria-label={lang === 'pt' ? 'Explorar catálogo' : 'Browse catalogue'}
+        style={{ width: 44, height: 44, flexShrink: 0, borderRadius: 8, border: `1px solid ${C.fieldBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.ink }}
+      >
+        <Search size={16} />
+      </button>
+      <button
+        onClick={handleAdd}
+        disabled={isOutOfStock || atCartMax}
+        style={{
+          flex: 1,
+          padding: 14,
+          background: added ? C.successText : isOutOfStock || atCartMax ? C.disabledBg : C.ctaBg,
+          border: `1px solid ${added ? C.successText : isOutOfStock || atCartMax ? C.disabledBg : C.ctaBorder}`,
+          color: added ? C.onDark : isOutOfStock || atCartMax ? C.disabledFg : C.onDarkGold,
+          fontSize: 12,
+          fontWeight: 800,
+          letterSpacing: 1.5,
+          textTransform: 'uppercase',
+          borderRadius: 8,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
+          cursor: isOutOfStock || atCartMax ? 'not-allowed' : 'pointer',
+        }}
+      >
+        {added ? (
+          <>
+            <Check size={14} /> {t('added', lang)}
+          </>
+        ) : isOutOfStock ? (
+          t('outOfStock', lang)
+        ) : atCartMax ? (
+          t('allInCart', lang)
+        ) : (
+          <>
+            {t('addToCart', lang)} · {fmtPrice(product)}
+          </>
+        )}
+      </button>
+    </>
+  );
+
   return (
     <div style={{ background: C.paper, position: 'relative' }}>
       <Seo title={seoTitle} description={seoDescription} image={seoImage} />
@@ -283,7 +330,7 @@ export function ProductDetail() {
         )}
         </div>
 
-        <div style={{ padding: '20px 24px' }}>
+        <div className="ump-product-info" style={{ padding: '20px 24px' }}>
           <div style={{ fontSize: 9, letterSpacing: 2, color: C.goldDeep, fontWeight: 800, textTransform: 'uppercase' }}>
             {product.catLabel || product.cat}
           </div>
@@ -467,6 +514,10 @@ export function ProductDetail() {
               ) : null}
             </div>
           </div>
+
+          <div className="ump-pd-desktop-actions">
+            {productActionButtons()}
+          </div>
         </div>
       </div>
 
@@ -493,49 +544,8 @@ export function ProductDetail() {
         </div>
       )}
 
-      <div className="ump-sticky-cta ump-pd-width" style={{ background: C.paper, padding: '14px 20px', borderTop: `1px solid ${C.ruleLight}`, boxShadow: '0 -4px 12px rgba(0,0,0,0.04)', display: 'flex', gap: 10 }}>
-        <button
-          onClick={() => navigate('/catalogo')}
-          aria-label={lang === 'pt' ? 'Explorar catálogo' : 'Browse catalogue'}
-          style={{ width: 44, height: 44, flexShrink: 0, borderRadius: 8, border: `1px solid ${C.fieldBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.ink }}
-        >
-          <Search size={16} />
-        </button>
-        <button
-          onClick={handleAdd}
-          disabled={isOutOfStock || atCartMax}
-          style={{
-            flex: 1,
-            padding: 14,
-            background: added ? C.successText : isOutOfStock || atCartMax ? C.disabledBg : C.ctaBg,
-            border: `1px solid ${added ? C.successText : isOutOfStock || atCartMax ? C.disabledBg : C.ctaBorder}`,
-            color: added ? C.onDark : isOutOfStock || atCartMax ? C.disabledFg : C.onDarkGold,
-            fontSize: 12,
-            fontWeight: 800,
-            letterSpacing: 1.5,
-            textTransform: 'uppercase',
-            borderRadius: 8,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 8,
-            cursor: isOutOfStock || atCartMax ? 'not-allowed' : 'pointer',
-          }}
-        >
-          {added ? (
-            <>
-              <Check size={14} /> {t('added', lang)}
-            </>
-          ) : isOutOfStock ? (
-            t('outOfStock', lang)
-          ) : atCartMax ? (
-            t('allInCart', lang)
-          ) : (
-            <>
-              {t('addToCart', lang)} · {fmtPrice(product)}
-            </>
-          )}
-        </button>
+      <div className="ump-sticky-cta ump-pd-mobile-actions ump-pd-width" style={{ background: C.paper, padding: '14px 20px', borderTop: `1px solid ${C.ruleLight}`, boxShadow: '0 -4px 12px rgba(0,0,0,0.04)', display: 'flex', gap: 10 }}>
+        {productActionButtons()}
       </div>
 
       {recommendations.length > 0 && (

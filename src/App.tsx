@@ -767,8 +767,12 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
            it with no gap at all -- same 20px the browse sidebar already
            uses for its own top breathing room. */
         .ump-product-layout { display: block; padding-top: 20px; }
+        .ump-pd-desktop-actions { display: none; }
         @media (min-width: 720px) {
-          .ump-product-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: flex-start; max-width: 1000px; margin: 0 auto; }
+          .ump-product-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: stretch; max-width: 1000px; margin: 0 auto; }
+          .ump-product-info { display: flex; flex-direction: column; padding-bottom: 0 !important; }
+          .ump-pd-desktop-actions { display: flex; gap: 10px; margin-top: auto; padding-top: 24px; }
+          .ump-pd-mobile-actions { display: none !important; }
         }
         /* Bottom offset clears the fixed bottom tab bar (~58px tall) on true
            mobile widths, where both this CTA and the tab bar are visible at
