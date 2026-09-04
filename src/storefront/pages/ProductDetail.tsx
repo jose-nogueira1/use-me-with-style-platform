@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Check, ChevronLeft, ChevronRight, Search, X } from 'lucide-react';
+import { Check, ChevronDown, ChevronLeft, ChevronRight, Search, X } from 'lucide-react';
 import { C, F, t } from '../../theme';
 import { useApp, useFormatOriginalPrice, useFormatPrice } from '../../state/AppContext';
 import { useProducts } from '../../hooks/useProducts';
@@ -48,6 +48,8 @@ export function ProductDetail() {
   const [color, setColor] = useState<string | null>(null);
   const [added, setAdded] = useState(false);
   const [showSizeGuide, setShowSizeGuide] = useState(false);
+  const [shippingOpen, setShippingOpen] = useState(true);
+  const [returnsOpen, setReturnsOpen] = useState(false);
   // Gallery (2026-08-07, per-colour photo galleries): tracks the shopper's
   // manual thumbnail pick by URL rather than by index. That sidesteps
   // needing an effect to reset the selection when the colour-filtered
@@ -430,13 +432,39 @@ export function ProductDetail() {
           )}
 
           <div style={{ background: C.subtleBg, borderRadius: 8, padding: 14, marginTop: 4 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 12, padding: '6px 0' }}>
-              <span style={{ color: C.ink, fontWeight: 700, flexShrink: 0 }}>{t('shipping', lang)}</span>
-              <span style={{ color: C.inkSoft, textAlign: 'right' }}>{market === 'AO' ? t('localCourierDelivery', lang) : t('businessDays', lang)}</span>
+            <div>
+              <button
+                type="button"
+                onClick={() => setShippingOpen((open) => !open)}
+                aria-expanded={shippingOpen}
+                aria-controls="product-shipping-details"
+                style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '6px 0', color: C.ink, fontSize: 12, fontWeight: 700, textAlign: 'left' }}
+              >
+                <span>{t('shipping', lang)}</span>
+                <ChevronDown size={16} style={{ flexShrink: 0, transform: shippingOpen ? 'rotate(180deg)' : undefined }} />
+              </button>
+              {shippingOpen ? (
+                <div id="product-shipping-details" style={{ padding: '0 0 8px', color: C.inkSoft, fontSize: 12, lineHeight: 1.5 }}>
+                  {market === 'AO' ? t('localCourierDelivery', lang) : t('businessDays', lang)}
+                </div>
+              ) : null}
             </div>
-            <div style={{ padding: '10px 0 6px', marginTop: 4, borderTop: `1px solid ${C.ruleLight}` }}>
-              <div style={{ color: C.ink, fontWeight: 700, fontSize: 12, marginBottom: 4 }}>{t('returns', lang)}</div>
-              <div style={{ color: C.inkSoft, fontSize: 12, lineHeight: 1.5 }}>{product.returnNote || (product.returnEligible ? t('fourteenDays', lang) : (lang === 'pt' ? 'Este artigo não é elegível para devolução.' : 'This item is not eligible for return.'))}</div>
+            <div style={{ borderTop: `1px solid ${C.ruleLight}` }}>
+              <button
+                type="button"
+                onClick={() => setReturnsOpen((open) => !open)}
+                aria-expanded={returnsOpen}
+                aria-controls="product-returns-details"
+                style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '12px 0 6px', color: C.ink, fontSize: 12, fontWeight: 700, textAlign: 'left' }}
+              >
+                <span>{t('returns', lang)}</span>
+                <ChevronDown size={16} style={{ flexShrink: 0, transform: returnsOpen ? 'rotate(180deg)' : undefined }} />
+              </button>
+              {returnsOpen ? (
+                <div id="product-returns-details" style={{ padding: '0 0 2px', color: C.inkSoft, fontSize: 12, lineHeight: 1.5 }}>
+                  {product.returnNote || (product.returnEligible ? t('fourteenDays', lang) : (lang === 'pt' ? 'Este artigo não é elegível para devolução.' : 'This item is not eligible for return.'))}
+                </div>
+              ) : null}
             </div>
           </div>
         </div>

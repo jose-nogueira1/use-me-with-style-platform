@@ -1,6 +1,6 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Minus, Plus, ShoppingBag, X } from 'lucide-react';
-import { C, F, formatKz } from '../../theme';
+import { C, F, formatKz, t } from '../../theme';
 import { useApp, useFormatPrice } from '../../state/AppContext';
 import { useProducts } from '../../hooks/useProducts';
 import { ProductPhoto } from '../../components/ProductPhoto';
@@ -17,6 +17,7 @@ export function MiniCartDrawer({ open, onClose, onViewCart }: Props) {
   const { products, loading } = useProducts(market, lang);
   const fmtPrice = useFormatPrice();
   const panelRef = useRef<HTMLDivElement>(null);
+  const [confirmingClear, setConfirmingClear] = useState(false);
   const cartCount = cart.reduce((sum, item) => sum + item.qty, 0);
   const subtotal = cart.reduce((sum, item) => {
     const product = products.find((candidate) => candidate.id === item.id);
@@ -58,6 +59,36 @@ export function MiniCartDrawer({ open, onClose, onViewCart }: Props) {
                 ? `${cartCount} ${cartCount === 1 ? 'artigo' : 'artigos'}`
                 : `${cartCount} ${cartCount === 1 ? 'item' : 'items'}`}
             </div>
+            {!confirmingClear ? (
+              <button
+                type="button"
+                onClick={() => setConfirmingClear(true)}
+                style={{ marginTop: 8, padding: 0, fontSize: 11, fontWeight: 700, color: C.inkSoft, textDecoration: 'underline', whiteSpace: 'nowrap' }}
+              >
+                {t('clearCart', lang)}
+              </button>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+                <span style={{ fontSize: 10, color: C.inkSoft }}>{t('clearCartConfirmQuestion', lang)}</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    dispatchCart({ type: 'CLEAR' });
+                    setConfirmingClear(false);
+                  }}
+                  style={{ padding: 0, fontSize: 10, fontWeight: 800, color: C.dangerStrong, textDecoration: 'underline', whiteSpace: 'nowrap' }}
+                >
+                  {t('clearCartConfirmYes', lang)}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmingClear(false)}
+                  style={{ padding: 0, fontSize: 10, fontWeight: 700, color: C.inkSoft, textDecoration: 'underline', whiteSpace: 'nowrap' }}
+                >
+                  {t('clearCartConfirmCancel', lang)}
+                </button>
+              </div>
+            )}
           </div>
           <button type="button" className="ump-mini-cart-close" onClick={onClose} aria-label={lang === 'pt' ? 'Fechar carrinho' : 'Close cart'}><X size={20} /></button>
         </div>

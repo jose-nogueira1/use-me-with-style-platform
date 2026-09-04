@@ -42,3 +42,15 @@ test('the header cart opens a responsive mini-cart with editable lines and a che
   assert.match(miniCart, /onViewCart/);
   assert.match(app, /\.ump-mini-cart-overlay/);
 });
+
+test('the mini cart can clear every item with an inline confirmation', () => {
+  assert.match(miniCart, /confirmingClear/);
+  assert.match(miniCart, /type: 'CLEAR'/);
+  assert.match(miniCart, /clearCartConfirmQuestion/);
+  assert.match(miniCart, /clearCartConfirmYes/);
+  assert.match(miniCart, /clearCartConfirmCancel/);
+});
+
+test('the mini cart imports the state hook used by clear confirmation', () => {
+  assert.match(miniCart, /import \{ useEffect, useRef, useState \} from 'react'/);
+});

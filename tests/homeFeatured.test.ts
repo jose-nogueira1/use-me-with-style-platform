@@ -48,3 +48,9 @@ test('homepage shelf view-all links preserve their catalogue filters', () => {
   assert.match(browseSource, /searchParams\.get\('featured'\)/);
   assert.match(browseSource, /featuredProductsForMarket/);
 });
+
+test('featured catalogue navigation does not show a false empty state while curation loads', () => {
+  assert.match(browseSource, /homeCollectionsLoading/);
+  assert.match(browseSource, /catalogueLoading/);
+  assert.match(browseSource, /activeFeatured && homeCollectionsLoading/);
+});

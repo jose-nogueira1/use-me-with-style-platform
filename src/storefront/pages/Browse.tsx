@@ -86,6 +86,7 @@ export function Browse() {
   }, []);
 
   const [homeCollections, setHomeCollections] = useState<HomeCollections | null>(null);
+  const [homeCollectionsLoading, setHomeCollectionsLoading] = useState(true);
   useEffect(() => {
     let cancelled = false;
     fetchHomeCollections()
@@ -94,6 +95,9 @@ export function Browse() {
       })
       .catch(() => {
         /* featured filter falls back to an empty result if unavailable */
+      })
+      .finally(() => {
+        if (!cancelled) setHomeCollectionsLoading(false);
       });
     return () => {
       cancelled = true;
@@ -294,7 +298,10 @@ export function Browse() {
     if (activeCats.length) {
       list = list.filter((p) => activeCats.some((c) => (c === 'new' ? p.isNewArrival : p.cat === c)));
     }
-    if (activeFeatured) list = list.filter((p) => featuredProductsForMarket.has(String(p.id)));
+    if (activeFeatured) {
+      if (homeCollectionsLoading) return [];
+      list = list.filter((p) => featuredProductsForMarket.has(String(p.id)));
+    }
     if (searchTerm) list = list.filter((p) => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
     list = filterCatalogueProducts(list, {
       availableOnly,
@@ -309,7 +316,8 @@ export function Browse() {
     if (sortBy === 'price-asc') list = [...list].sort((a, b) => (market === 'AO' ? a.priceKz - b.priceKz : a.priceEur - b.priceEur));
     if (sortBy === 'price-desc') list = [...list].sort((a, b) => (market === 'AO' ? b.priceKz - a.priceKz : b.priceEur - a.priceEur));
     return list;
-  }, [products, activeCats, activeFeatured, featuredProductsForMarket, activeTag, searchTerm, filterSizes, filterColors, availableOnly, minPrice, maxPrice, onSale, filterProductTypes, filterCollections, sortBy, market]);
+  }, [products, activeCats, activeFeatured, homeCollectionsLoading, featuredProductsForMarket, activeTag, searchTerm, filterSizes, filterColors, availableOnly, minPrice, maxPrice, onSale, filterProductTypes, filterCollections, sortBy, market]);
+  const catalogueLoading = loading || (activeFeatured && homeCollectionsLoading);
 
   // Clear-all-filters (2026-07-30, user request). Six independent filter
   // dimensions had accumulated -- category, collection tag, search, size,
@@ -583,7 +591,7 @@ export function Browse() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '8px 20px', borderBottom: `1px solid ${C.ruleLight}`, flexWrap: 'wrap' }}>
           <div className="ump-browse-active-filters">
               <div style={{ fontSize: 11, color: C.inkSoft, flexShrink: 0 }}>
-                {loading ? '…' : `${filtered.length} ${t(filtered.length === 1 ? 'productSingular' : 'productPlural', lang)}`}
+                {catalogueLoading ? '…' : `${filtered.length} ${t(filtered.length === 1 ? 'productSingular' : 'productPlural', lang)}`}
               </div>
             {activeFilterBadges.length > 1 && <ClearFiltersButton onClick={clearAllFilters} lang={lang} />}
             {activeFilterBadges.map((b) => (
@@ -653,7 +661,7 @@ export function Browse() {
         )}
 
         <div className="ump-grid-auto" style={{ padding: '16px 20px', minHeight: 200 }}>
-          {!loading && filtered.length === 0 && (
+          {!catalogueLoading && filtered.length === 0 && (
             <div style={{ gridColumn: '1/-1', padding: '40px 20px', textAlign: 'center', color: C.inkSoft, fontSize: 13 }}>
               {hasActiveFilters ? t('noProductsFoundFiltered', lang) : t('noProductsFound', lang)}
               {hasActiveFilters && (
