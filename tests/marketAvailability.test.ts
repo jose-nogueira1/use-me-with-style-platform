@@ -6,6 +6,7 @@ import { resolve } from 'node:path'
 const source = readFileSync(new URL('../src/lib/productAdapters.ts', import.meta.url), 'utf8')
 const cardSource = readFileSync(new URL('../src/storefront/components/ProductCard.tsx', import.meta.url), 'utf8')
 const layoutSource = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8')
+const browseSource = readFileSync(new URL('../src/storefront/pages/Browse.tsx', import.meta.url), 'utf8')
 const detailSource = readFileSync(new URL('../src/storefront/pages/ProductDetail.tsx', import.meta.url), 'utf8')
 const mainSource = readFileSync(new URL('../src/main.tsx', import.meta.url), 'utf8')
 const prerenderSource = readFileSync(new URL('../scripts/prerender.mjs', import.meta.url), 'utf8')
@@ -66,7 +67,17 @@ test('product detail favourite action stays disabled until phase two', () => {
 test('mobile catalogue and homepage cards use a compact two-column layout', () => {
   assert.match(layoutSource, /@media \(max-width: 620px\) \{\s*\.ump-grid-auto, \.ump-home-product-grid \{ grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/)
   assert.match(cardSource, /className=\{`ump-hover-lift\$\{homepage \? ' ump-home-product-card' : ''\}`\}/)
-  assert.match(layoutSource, /\.ump-home-product-card \{ width: 155\.25px !important; \}/)
+  assert.match(layoutSource, /\.ump-home-product-card \{ width: 170\.75px !important; \}/)
+})
+
+test('mobile catalogue cards use the reclaimed grid space without changing homepage cards', () => {
+  assert.match(browseSource, /className="ump-grid-auto ump-browse-product-grid"/)
+  assert.match(layoutSource, /@media \(max-width: 620px\)[\s\S]*\.ump-browse-product-grid \{ padding: 16px 14px !important; gap: 6px; \}/)
+})
+
+test('mobile homepage categories and product cards get a modest size increase', () => {
+  assert.match(layoutSource, /\.ump-cat-tile \{ flex: 0 0 46%; \}/)
+  assert.match(layoutSource, /\.ump-home-product-card \{ width: 170\.75px !important; \}/)
 })
 
 test('mobile low-stock messaging moves below the image without covering photography', () => {

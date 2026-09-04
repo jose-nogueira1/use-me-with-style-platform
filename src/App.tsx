@@ -333,7 +333,8 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
         @media (min-width: 1800px) { .ump-home-product-grid { grid-template-columns: repeat(auto-fill, minmax(min(327.75px, 100%), 1fr)); } }
         @media (max-width: 620px) {
           .ump-grid-auto, .ump-home-product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-          .ump-home-product-card { width: 155.25px !important; }
+          .ump-browse-product-grid { padding: 16px 14px !important; gap: 6px; }
+          .ump-home-product-card { width: 170.75px !important; }
           .ump-stock-image-badge-low { display: none; }
           .ump-stock-mobile-badge { display: inline-block !important; white-space: nowrap; }
           .ump-product-colour-track { overflow-x: auto; overflow-y: hidden; scrollbar-width: none; -ms-overflow-style: none; padding-bottom: 3px; }
@@ -646,7 +647,7 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
            fit the screen), fixed pixel widths above that (a percentage of a
            1400px+ desktop row would make each tile enormous), same scaling
            approach InstagramFeed's tiles already use. */
-        .ump-cat-tile { flex: 0 0 42%; }
+        .ump-cat-tile { flex: 0 0 46%; }
         @media (min-width: 560px) { .ump-cat-tile { flex: 0 0 220px; } }
         @media (min-width: 900px) { .ump-cat-tile { flex: 0 0 250px; } }
         @media (min-width: 1400px) { .ump-cat-tile { flex: 0 0 280px; } }

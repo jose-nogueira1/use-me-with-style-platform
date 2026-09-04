@@ -615,7 +615,7 @@ export function Browse() {
           </div>
         )}
 
-        <div className="ump-grid-auto" style={{ padding: '16px 20px', minHeight: 200 }}>
+        <div className="ump-grid-auto ump-browse-product-grid" style={{ padding: '16px 20px', minHeight: 200 }}>
           {!catalogueLoading && filtered.length === 0 && (
             <div style={{ gridColumn: '1/-1', padding: '40px 20px', textAlign: 'center', color: C.inkSoft, fontSize: 13 }}>
               {hasActiveFilters ? t('noProductsFoundFiltered', lang) : t('noProductsFound', lang)}
