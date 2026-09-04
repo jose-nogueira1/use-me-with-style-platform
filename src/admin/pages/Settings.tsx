@@ -35,7 +35,6 @@ import {
   fetchInstagramFeed,
   fetchLegalContent,
   fetchMarketSettings,
-  normalizeRelationshipIds,
   refId,
   resolveProductImage,
   resolveRef,
@@ -1867,7 +1866,6 @@ function HomeCollectionsSection() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const [tags, setTags] = useState<ApiMerchTag[]>([]);
-  const [products, setProducts] = useState<ApiProduct[]>([]);
 
   const loadVersions = () => {
     adminListHomeCollectionsVersions()
@@ -1884,9 +1882,8 @@ function HomeCollectionsSection() {
       .catch(() => setError(t('couldntLoadHomeCollections', lang)))
       .finally(() => setLoading(false));
     loadVersions();
-    Promise.all([adminListMerchTags(), adminListProducts()]).then(([loadedTags, loadedProducts]) => {
+    adminListMerchTags().then((loadedTags) => {
       setTags(loadedTags);
-      setProducts(loadedProducts);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang]);
@@ -1968,6 +1965,11 @@ function HomeCollectionsSection() {
         <div style={{ fontSize: 12, color: C.inkSoft, marginTop: 10 }}>{t('loadingEllipsis', lang)}</div>
       ) : (
         <>
+          {/* Future featured product picker: keep the former market-specific
+              selection controls in source for a possible later phase. The
+              active Featured workflow is the merchandising-tag collection
+              row below, shared with New Arrivals and other collections. */}
+          {/*
           <div style={{ marginTop: 18, padding: '14px 12px', borderRadius: 6, background: C.subtleBg, border: `1px solid ${C.ruleLight}` }}>
             <div style={{ fontSize: 12, fontWeight: 800, color: C.ink }}>{lang === 'pt' ? 'Produtos em destaque' : 'Featured products'}</div>
             <div style={{ fontSize: 10, color: C.inkSoft, marginTop: 2, maxWidth: 560 }}>
@@ -2002,6 +2004,7 @@ function HomeCollectionsSection() {
               onChange={(v) => setContent((c) => ({ ...c, featuredItemLimit: Number(v) || 8 }))}
             />
           </div>
+          */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 10, marginBottom: 10 }}>
             {(content.collections ?? []).map((row, index) => {
               const list = content.collections ?? [];
@@ -2084,6 +2087,8 @@ function HomeCollectionsSection() {
   );
 }
 
+/* Future featured product picker implementation. The active workflow uses
+   merchandising tags instead; keep this implementation for a later phase.
 function FeaturedProductPicker({
   market,
   products,
@@ -2156,6 +2161,7 @@ function FeaturedProductPicker({
     </div>
   );
 }
+*/
 
 // Instagram feed highlight (2026-08-02, simplified same day from an
 // ordered/labelled curation-list version -- Jay-P: "I actually don't like

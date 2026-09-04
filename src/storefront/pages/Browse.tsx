@@ -5,7 +5,7 @@ import { C, t } from '../../theme';
 import { useApp } from '../../state/AppContext';
 import { useProducts } from '../../hooks/useProducts';
 import { ProductCard } from '../components/ProductCard';
-import { fetchCategories, fetchHomeCollections, fetchMerchTags, refId, type ApiCategory, type ApiMerchTag, type HomeCollections } from '../../lib/api';
+import { fetchCategories, fetchMerchTags, type ApiCategory, type ApiMerchTag } from '../../lib/api';
 import { hasSwatch, swatchBackground } from '../../lib/colorSwatch';
 import { Seo, SITE_TITLE } from '../../lib/seo';
 import { getSingleCategoryIntro } from '../../lib/categoryIntro';
@@ -85,25 +85,6 @@ export function Browse() {
     };
   }, []);
 
-  const [homeCollections, setHomeCollections] = useState<HomeCollections | null>(null);
-  const [homeCollectionsLoading, setHomeCollectionsLoading] = useState(true);
-  useEffect(() => {
-    let cancelled = false;
-    fetchHomeCollections()
-      .then((content) => {
-        if (!cancelled) setHomeCollections(content);
-      })
-      .catch(() => {
-        /* featured filter falls back to an empty result if unavailable */
-      })
-      .finally(() => {
-        if (!cancelled) setHomeCollectionsLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
   const cats = useMemo(
     () => [
       { key: 'all', label: t('all', lang) },
@@ -155,11 +136,9 @@ export function Browse() {
     [searchParams],
   );
 
-  const activeFeatured = searchParams.get('featured') === '1';
-  const featuredProductsForMarket = useMemo(() => {
-    const selection = market === 'AO' ? homeCollections?.featuredProductsAO : homeCollections?.featuredProductsPT;
-    return new Set((selection ?? []).map((ref) => refId(ref)));
-  }, [homeCollections, market]);
+  /* FUTURE_FEATURED_CURATED: the former `featured=1` market-specific ID
+     filter intentionally remains documented here, but Featured now uses the
+     same `?tag=featured` path as every other merchandising shelf. */
 
   // ?tag=<slug> "collection" filter (2026-07-25 follow-up): the home hero
   // button can now point at a merchandising tag instead of just a category
@@ -298,10 +277,6 @@ export function Browse() {
     if (activeCats.length) {
       list = list.filter((p) => activeCats.some((c) => (c === 'new' ? p.isNewArrival : p.cat === c)));
     }
-    if (activeFeatured) {
-      if (homeCollectionsLoading) return [];
-      list = list.filter((p) => featuredProductsForMarket.has(String(p.id)));
-    }
     if (searchTerm) list = list.filter((p) => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
     list = filterCatalogueProducts(list, {
       availableOnly,
@@ -316,8 +291,8 @@ export function Browse() {
     if (sortBy === 'price-asc') list = [...list].sort((a, b) => (market === 'AO' ? a.priceKz - b.priceKz : a.priceEur - b.priceEur));
     if (sortBy === 'price-desc') list = [...list].sort((a, b) => (market === 'AO' ? b.priceKz - a.priceKz : b.priceEur - a.priceEur));
     return list;
-  }, [products, activeCats, activeFeatured, homeCollectionsLoading, featuredProductsForMarket, activeTag, searchTerm, filterSizes, filterColors, availableOnly, minPrice, maxPrice, onSale, filterProductTypes, filterCollections, sortBy, market]);
-  const catalogueLoading = loading || (activeFeatured && homeCollectionsLoading);
+  }, [products, activeCats, activeTag, searchTerm, filterSizes, filterColors, availableOnly, minPrice, maxPrice, onSale, filterProductTypes, filterCollections, sortBy, market]);
+  const catalogueLoading = loading;
 
   // Clear-all-filters (2026-07-30, user request). Six independent filter
   // dimensions had accumulated -- category, collection tag, search, size,
@@ -328,7 +303,7 @@ export function Browse() {
   // `activeTag` lives in the URL rather than in component state, so resetting
   // it means removing the query param; everything else is local state.
   const hasActiveFilters =
-    activeCats.length > 0 || activeFeatured || Boolean(activeTag) || Boolean(searchTerm) || availableOnly || minPrice !== '' || maxPrice !== '' || onSale ||
+    activeCats.length > 0 || Boolean(activeTag) || Boolean(searchTerm) || availableOnly || minPrice !== '' || maxPrice !== '' || onSale ||
     filterSizes.length > 0 || filterColors.length > 0 || filterProductTypes.length > 0 || filterCollections.length > 0 || sortBy !== 'default';
 
   const clearAllFilters = () => {
@@ -346,7 +321,6 @@ export function Browse() {
       const p = new URLSearchParams(prev);
       p.delete('tag');
       p.delete('cat');
-      p.delete('featured');
       return p;
     });
   };
@@ -397,17 +371,6 @@ export function Browse() {
       key: 'tag',
       label: `${t('collection', lang)}: ${activeTagLabel ?? activeTag}`,
       onRemove: clearTagParam,
-    });
-  }
-  if (activeFeatured) {
-    activeFilterBadges.push({
-      key: 'featured',
-      label: t('featured', lang),
-      onRemove: () => setSearchParams((prev) => {
-        const p = new URLSearchParams(prev);
-        p.delete('featured');
-        return p;
-      }),
     });
   }
   if (searchTerm) {
