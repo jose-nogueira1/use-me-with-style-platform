@@ -47,6 +47,11 @@ test('homepage and dedicated page render shoppable product cards', () => {
   assert.match(productCardSource, /saleUrgencyLabel/);
   assert.match(productCardSource, /marketStock <= 3/);
   assert.match(productCardSource, /transform: 'rotate\(45deg\)'/);
+  assert.match(productCardSource, /className="ump-instagram-compact-badge"/);
+  assert.match(productCardSource, /!compact && product\.onSale/);
+  assert.match(productCardSource, /!compact && !product\.inStock/);
+  assert.match(productCardSource, /height: compact \? 'auto' : undefined/);
+  assert.match(productCardSource, /alignSelf: 'stretch'/);
   assert.match(shopPageSource, /key=\{`\$\{product\.id\}-\$\{product\.selectedColorId/);
   assert.match(feedSource, /key=\{`\$\{product\.id\}-\$\{product\.selectedColorId/);
 });

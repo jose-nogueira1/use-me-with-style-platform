@@ -44,7 +44,7 @@ export function InstagramProductCard({ product, lookId, compact = false }: { pro
         flexShrink: 0,
       }}
     >
-      <div style={{ aspectRatio: compact ? undefined : '4 / 5', height: compact ? 108 : undefined, minHeight: 0, overflow: 'hidden', position: 'relative', background: C.subtleBg }}>
+      <div style={{ aspectRatio: compact ? undefined : '4 / 5', height: compact ? 'auto' : undefined, minHeight: compact ? 108 : 0, alignSelf: 'stretch', overflow: 'hidden', position: 'relative', background: C.subtleBg }}>
         <div style={{ width: '100%', height: '100%', opacity: product.inStock ? 1 : 0.55 }}>
           <ProductPhoto
             tone="gold"
@@ -52,11 +52,18 @@ export function InstagramProductCard({ product, lookId, compact = false }: { pro
             image={product.imageUrl ? { url: absoluteMediaUrl(product.imageUrl) || product.imageUrl, alt: product.imageAlt?.trim() || name } : undefined}
           />
         </div>
-        {(!product.inStock || (lowStock && !product.onSale)) && <div aria-label={!product.inStock ? (lang === 'pt' ? 'Esgotado' : 'Sold out') : stockLabel} style={{ position: 'absolute', top: 0, right: 0, zIndex: 3, padding: '7px 10px', borderRadius: '0 0 0 7px', background: !product.inStock ? C.danger : C.tagBg, color: !product.inStock ? C.paper : C.dangerStrong, fontSize: 9, fontWeight: 850, boxShadow: '0 1px 3px rgba(0,0,0,0.14)' }}>{!product.inStock ? (lang === 'pt' ? 'Esgotado' : 'Sold out') : stockLabel}</div>}
-        {product.onSale && product.inStock && <div aria-label={`${saleBadge} · ${saleDiscount ?? ''}%`} style={{ position: 'absolute', top: 20, right: -42, width: 160, zIndex: 3, padding: '7px 8px', background: 'linear-gradient(135deg, #B95545, #A6483A)', color: C.paper, fontSize: 10, fontWeight: 900, letterSpacing: 0.3, textAlign: 'center', whiteSpace: 'nowrap', transform: 'rotate(45deg)', boxShadow: '0 1px 3px rgba(0,0,0,0.16)' }}>{saleBadge}{saleDiscount !== null ? ` · −${saleDiscount}%` : ''}</div>}
-        {!product.inStock && <span aria-hidden style={{ position: 'absolute', left: '-33.35%', top: '50%', width: '166.7%', height: 3, zIndex: 2, background: C.dangerStrong, transform: 'rotate(53.13deg)', pointerEvents: 'none' }} />}
+        {!compact && (!product.inStock || (lowStock && !product.onSale)) && <div aria-label={!product.inStock ? (lang === 'pt' ? 'Esgotado' : 'Sold out') : stockLabel} style={{ position: 'absolute', top: 0, right: 0, zIndex: 3, padding: '7px 10px', borderRadius: '0 0 0 7px', background: !product.inStock ? C.danger : C.tagBg, color: !product.inStock ? C.paper : C.dangerStrong, fontSize: 9, fontWeight: 850, boxShadow: '0 1px 3px rgba(0,0,0,0.14)' }}>{!product.inStock ? (lang === 'pt' ? 'Esgotado' : 'Sold out') : stockLabel}</div>}
+        {!compact && product.onSale && product.inStock && <div aria-label={`${saleBadge} · ${saleDiscount ?? ''}%`} style={{ position: 'absolute', top: 20, right: -42, width: 160, zIndex: 3, padding: '7px 8px', background: 'linear-gradient(135deg, #B95545, #A6483A)', color: C.paper, fontSize: 10, fontWeight: 900, letterSpacing: 0.3, textAlign: 'center', whiteSpace: 'nowrap', transform: 'rotate(45deg)', boxShadow: '0 1px 3px rgba(0,0,0,0.16)' }}>{saleBadge}{saleDiscount !== null ? ` · −${saleDiscount}%` : ''}</div>}
+        {!compact && !product.inStock && <span aria-hidden style={{ position: 'absolute', left: '-33.35%', top: '50%', width: '166.7%', height: 3, zIndex: 2, background: C.dangerStrong, transform: 'rotate(53.13deg)', pointerEvents: 'none' }} />}
       </div>
       <div style={{ padding: compact ? '12px' : 11, minWidth: 0 }}>
+        {compact && (product.onSale || !product.inStock || lowStock) && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 6 }}>
+            {!product.inStock && <div className="ump-instagram-compact-badge" style={{ background: C.danger, color: C.paper, fontSize: 9, fontWeight: 850, padding: '5px 7px', borderRadius: 5 }}>{lang === 'pt' ? 'Esgotado' : 'Sold out'}</div>}
+            {product.onSale && product.inStock && <div className="ump-instagram-compact-badge" style={{ background: C.dangerStrong, color: C.paper, fontSize: 9, fontWeight: 900, padding: '5px 7px', borderRadius: 5 }}>{saleBadge}{saleDiscount !== null ? ` · −${saleDiscount}%` : ''}</div>}
+            {lowStock && product.inStock && <div className="ump-instagram-compact-badge" style={{ background: C.tagBg, color: C.dangerStrong, fontSize: 9, fontWeight: 850, padding: '5px 7px', borderRadius: 5, border: `1px solid ${C.rule}` }}>{stockLabel}</div>}
+          </div>
+        )}
         <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: C.goldDeep, fontSize: 9, fontWeight: 850, letterSpacing: 0.7, textTransform: 'uppercase' }}>
           <ShoppingBag size={11} /> {lang === 'pt' ? 'Comprar o look' : 'Shop the look'}
         </div>
