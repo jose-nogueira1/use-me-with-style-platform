@@ -22,7 +22,7 @@ test('sale urgency uses the end date without inventing a countdown', () => {
 });
 
 test('sale cues and navbar link use the shared sale filter', () => {
-  assert.match(cardSource, /\{saleBadge\} · \{saleLabel\}/);
+  assert.match(cardSource, /\{saleLabel\}/);
   assert.match(cardSource, /saleUrgency/);
   assert.match(detailSource, /saleDiscountLabel/);
   assert.match(detailSource, /saleUrgency/);
@@ -56,4 +56,6 @@ test('sale cards use the ribbon treatment without the rejected glow', () => {
   assert.match(cardSource, /top: 20, right: -42/);
   assert.match(cardSource, /width: 160/);
   assert.match(cardSource, /fontSize: 10/);
+  assert.match(cardSource, /aria-label=\{lang === 'pt' \? `Promoção: \$\{saleLabel\}` : `Sale: \$\{saleLabel\}`\}/);
+  assert.match(cardSource, /\{saleLabel\}/);
 });

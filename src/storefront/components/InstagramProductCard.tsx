@@ -5,7 +5,7 @@ import { absoluteMediaUrl } from '../../lib/productAdapters';
 import { trackMetaCustomEvent } from '../../lib/metaAnalytics';
 import { useApp } from '../../state/AppContext';
 import { C, F, formatKz } from '../../theme';
-import { saleDiscountPercent, saleUrgencyLabel } from '../../lib/salePresentation';
+import { saleDiscountLabel, saleDiscountPercent, saleUrgencyLabel } from '../../lib/salePresentation';
 import type { ApiInstagramLookProduct } from '../../lib/api';
 
 export function InstagramProductCard({ product, lookId, compact = false }: { product: ApiInstagramLookProduct; lookId: string; compact?: boolean }) {
@@ -15,8 +15,8 @@ export function InstagramProductCard({ product, lookId, compact = false }: { pro
   const price = product.currency === 'AOA' ? `${formatKz(product.price, lang)} Kz` : `€${product.price.toFixed(2)}`;
   const regularPrice = product.currency === 'AOA' ? `${formatKz(product.regularPrice, lang)} Kz` : `€${product.regularPrice.toFixed(2)}`;
   const saleDiscount = product.onSale ? saleDiscountPercent(product.regularPrice, product.price) : null;
+  const saleLabel = product.onSale ? saleDiscountLabel(product.regularPrice, product.price, lang) : null;
   const saleUrgency = product.onSale ? saleUrgencyLabel(product.saleEndDate, lang) : null;
-  const saleBadge = lang === 'pt' ? 'PROMOÇÃO' : 'SALE';
   const lowStock = product.inStock && product.marketStock <= 3;
   const stockLabel = lang === 'pt' ? `Só ${product.marketStock} restantes` : `Only ${product.marketStock} left`;
   const colourQuery = product.selectedColorId ? `?cor=${encodeURIComponent(product.selectedColorId)}` : '';
@@ -53,14 +53,14 @@ export function InstagramProductCard({ product, lookId, compact = false }: { pro
           />
         </div>
         {!compact && (!product.inStock || (lowStock && !product.onSale)) && <div aria-label={!product.inStock ? (lang === 'pt' ? 'Esgotado' : 'Sold out') : stockLabel} style={{ position: 'absolute', top: 0, right: 0, zIndex: 3, padding: '7px 10px', borderRadius: '0 0 0 7px', background: !product.inStock ? C.danger : C.tagBg, color: !product.inStock ? C.paper : C.dangerStrong, fontSize: 9, fontWeight: 850, boxShadow: '0 1px 3px rgba(0,0,0,0.14)' }}>{!product.inStock ? (lang === 'pt' ? 'Esgotado' : 'Sold out') : stockLabel}</div>}
-        {!compact && product.onSale && product.inStock && <div aria-label={`${saleBadge} · ${saleDiscount ?? ''}%`} style={{ position: 'absolute', top: 20, right: -42, width: 160, zIndex: 3, padding: '7px 8px', background: 'linear-gradient(135deg, #B95545, #A6483A)', color: C.paper, fontSize: 10, fontWeight: 900, letterSpacing: 0.3, textAlign: 'center', whiteSpace: 'nowrap', transform: 'rotate(45deg)', boxShadow: '0 1px 3px rgba(0,0,0,0.16)' }}>{saleBadge}{saleDiscount !== null ? ` · −${saleDiscount}%` : ''}</div>}
+        {!compact && product.onSale && product.inStock && <div aria-label={lang === 'pt' ? `Promoção: ${saleLabel}` : `Sale: ${saleLabel}`} style={{ position: 'absolute', top: 20, right: -42, width: 160, zIndex: 3, padding: '7px 8px', background: 'linear-gradient(135deg, #B95545, #A6483A)', color: C.paper, fontSize: 10, fontWeight: 900, letterSpacing: 0.3, textAlign: 'center', whiteSpace: 'nowrap', transform: 'rotate(45deg)', boxShadow: '0 1px 3px rgba(0,0,0,0.16)' }}>{saleLabel}</div>}
         {!compact && !product.inStock && <span aria-hidden style={{ position: 'absolute', left: '-33.35%', top: '50%', width: '166.7%', height: 3, zIndex: 2, background: C.dangerStrong, transform: 'rotate(53.13deg)', pointerEvents: 'none' }} />}
       </div>
       <div style={{ padding: compact ? '12px' : 11, minWidth: 0 }}>
         {compact && (product.onSale || !product.inStock || lowStock) && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 6 }}>
             {!product.inStock && <div className="ump-instagram-compact-badge" style={{ background: C.danger, color: C.paper, fontSize: 9, fontWeight: 850, padding: '5px 7px', borderRadius: 5 }}>{lang === 'pt' ? 'Esgotado' : 'Sold out'}</div>}
-            {product.onSale && product.inStock && <div className="ump-instagram-compact-badge" style={{ background: C.dangerStrong, color: C.paper, fontSize: 9, fontWeight: 900, padding: '5px 7px', borderRadius: 5 }}>{saleBadge}{saleDiscount !== null ? ` · −${saleDiscount}%` : ''}</div>}
+            {product.onSale && product.inStock && <div className="ump-instagram-compact-badge" aria-label={lang === 'pt' ? `Promoção: ${saleLabel}` : `Sale: ${saleLabel}`} style={{ background: C.dangerStrong, color: C.paper, fontSize: 9, fontWeight: 900, padding: '5px 7px', borderRadius: 5 }}>{saleLabel}</div>}
             {lowStock && product.inStock && <div className="ump-instagram-compact-badge" style={{ background: C.tagBg, color: C.dangerStrong, fontSize: 9, fontWeight: 850, padding: '5px 7px', borderRadius: 5, border: `1px solid ${C.rule}` }}>{stockLabel}</div>}
           </div>
         )}

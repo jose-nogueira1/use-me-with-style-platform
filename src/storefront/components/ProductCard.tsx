@@ -35,7 +35,6 @@ export function ProductCard({ product, size = 'grid', priority = false, homepage
     market === 'AO' ? product.priceKz : product.priceEur,
     market === 'AO' ? product.effectivePriceKz : product.effectivePriceEur,
   ) : null;
-  const saleBadge = lang === 'pt' ? 'PROMOÇÃO' : 'SALE';
 
   return (
     <Link
@@ -84,10 +83,10 @@ export function ProductCard({ product, size = 'grid', priority = false, homepage
         )}
         {saleLabel && product.marketStatus !== 'sold_out' && (
           <div
-            aria-label={saleLabel}
+            aria-label={lang === 'pt' ? `Promoção: ${saleLabel}` : `Sale: ${saleLabel}`}
             style={{ position: 'absolute', top: 20, right: -42, width: 160, zIndex: 3, background: 'linear-gradient(135deg, #B95545, #A6483A)', color: C.paper, fontSize: 10, fontWeight: 900, letterSpacing: 0.3, padding: '7px 8px', textAlign: 'center', whiteSpace: 'nowrap', transform: 'rotate(45deg)', boxShadow: '0 1px 3px rgba(0,0,0,0.16)' }}
           >
-            {saleBadge} · {saleLabel}
+            {saleLabel}
           </div>
         )}
         {product.marketStatus === 'sold_out' && (

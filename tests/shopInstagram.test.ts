@@ -47,6 +47,7 @@ test('homepage and dedicated page render shoppable product cards', () => {
   assert.match(productCardSource, /saleUrgencyLabel/);
   assert.match(productCardSource, /marketStock <= 3/);
   assert.match(productCardSource, /transform: 'rotate\(45deg\)'/);
+  assert.match(productCardSource, /aria-label=\{lang === 'pt' \? `Promoção: \$\{saleLabel\}` : `Sale: \$\{saleLabel\}`\}/);
   assert.match(productCardSource, /className="ump-instagram-compact-badge"/);
   assert.match(productCardSource, /!compact && product\.onSale/);
   assert.match(productCardSource, /!compact && !product\.inStock/);
