@@ -3,6 +3,7 @@ import test from 'node:test';
 import { readFileSync } from 'node:fs';
 
 const homeSource = readFileSync(new URL('../src/storefront/pages/Home.tsx', import.meta.url), 'utf8');
+const browseSource = readFileSync(new URL('../src/storefront/pages/Browse.tsx', import.meta.url), 'utf8');
 const settingsSource = readFileSync(new URL('../src/admin/pages/Settings.tsx', import.meta.url), 'utf8');
 const apiSource = readFileSync(new URL('../src/lib/api.ts', import.meta.url), 'utf8');
 
@@ -38,4 +39,12 @@ test('featured product picker resolves labels for numeric selected ids', () => {
 
 test('featured product picker hides products already selected', () => {
   assert.match(settingsSource, /!selectedIds\.includes\(normalizeRelationshipIds\(\[product\.id\]\)\[0\]\)/);
+});
+
+test('homepage shelf view-all links preserve their catalogue filters', () => {
+  assert.match(homeSource, /to="\/catalogo\?featured=1"/);
+  assert.match(homeSource, /to="\/catalogo\?cat=new"/);
+  assert.match(homeSource, /to=\{`\/catalogo\?tag=\$\{encodeURIComponent\(shelf\.tagSlug\)\}`\}/);
+  assert.match(browseSource, /searchParams\.get\('featured'\)/);
+  assert.match(browseSource, /featuredProductsForMarket/);
 });

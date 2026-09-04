@@ -149,6 +149,7 @@ export function Home() {
       const limit = Math.max(1, Math.min(24, c.itemLimit ?? 8));
       return {
         key: c.id ?? c.tagSlug,
+        tagSlug: c.tagSlug,
         title: (lang === 'en' ? c.titleEN : c.titlePT)?.trim() || c.titleEN?.trim() || c.titlePT?.trim() || c.tagSlug,
         items: products.filter((p) => p.tags.some((tag) => tag.slug === c.tagSlug)).slice(0, limit),
       };
@@ -433,7 +434,7 @@ export function Home() {
         <div className="ump-content-width" style={{ padding: '20px 20px 0' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
             <div style={{ fontSize: 10, letterSpacing: 3, color: C.goldDeep, fontWeight: 800, textTransform: 'uppercase' }}>{featuredShelf.title}</div>
-            <Link to="/catalogo" style={{ fontSize: 11, color: C.goldDeep, fontWeight: 800, textDecoration: 'none' }}>{t('viewAll', lang)} →</Link>
+            <Link to="/catalogo?featured=1" style={{ fontSize: 11, color: C.goldDeep, fontWeight: 800, textDecoration: 'none' }}>{t('viewAll', lang)} →</Link>
           </div>
           <div style={{ display: 'flex', gap: 10, overflowX: 'auto' }}>
             {featuredShelf.items.map((p) => <ProductCard key={p.id} product={p} size="small" homepage />)}
@@ -453,7 +454,7 @@ export function Home() {
               <div style={{ fontSize: 10, letterSpacing: 3, color: C.goldDeep, fontWeight: 800, textTransform: 'uppercase' }}>
                 {shelf.title}
               </div>
-              <Link to="/catalogo" style={{ fontSize: 11, color: C.goldDeep, fontWeight: 800, textDecoration: 'none' }}>
+              <Link to={`/catalogo?tag=${encodeURIComponent(shelf.tagSlug)}`} style={{ fontSize: 11, color: C.goldDeep, fontWeight: 800, textDecoration: 'none' }}>
                 {t('viewAll', lang)} →
               </Link>
             </div>
@@ -473,7 +474,7 @@ export function Home() {
                 <div style={{ fontSize: 10, letterSpacing: 3, color: C.goldDeep, fontWeight: 800, textTransform: 'uppercase' }}>
                   {t('newArrivals', lang)}
                 </div>
-                <Link to="/catalogo" style={{ fontSize: 11, color: C.goldDeep, fontWeight: 800, textDecoration: 'none' }}>
+                <Link to="/catalogo?cat=new" style={{ fontSize: 11, color: C.goldDeep, fontWeight: 800, textDecoration: 'none' }}>
                   {t('viewAll', lang)} →
                 </Link>
               </div>
