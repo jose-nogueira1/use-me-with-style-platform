@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { C, F, t } from '../../theme';
@@ -24,6 +24,7 @@ import { absoluteMediaUrl } from '../../lib/productAdapters';
 import { Seo } from '../../lib/seo';
 import { homeSeoMetadata } from '../../lib/storefrontContent';
 import pictorialWhite from '../../assets/brand/pictorial-white.png';
+import type { Product } from '../../types/product';
 
 // Category tiles were a hardcoded list with no admin-editable image
 // (2026-07-25 admin request: "I want the admin to be able to change the
@@ -37,6 +38,57 @@ const FALLBACK_CATEGORIES: ApiCategory[] = [
   { id: 'conjuntos', namePT: 'Conjuntos', nameEN: 'Sets', slug: 'conjuntos' },
 ];
 const CATEGORY_TONE_CYCLE: ProductTone[] = ['rose', 'dark', 'blue', 'gold'];
+
+function HomeProductShelf({ products }: { products: Product[] }) {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [activeDot, setActiveDot] = useState(0);
+
+  const updateActiveDot = useCallback(() => {
+    const track = trackRef.current;
+    const firstCard = track?.firstElementChild as HTMLElement | null;
+    if (!track || !firstCard) return;
+    const maxScrollLeft = Math.max(0, track.scrollWidth - track.clientWidth);
+    if (track.scrollLeft >= maxScrollLeft - 1) {
+      setActiveDot(products.length - 1);
+      return;
+    }
+    const step = firstCard.offsetWidth + 10;
+    setActiveDot(Math.max(0, Math.min(products.length - 1, Math.round(track.scrollLeft / step))));
+  }, [products.length]);
+
+  useEffect(() => {
+    updateActiveDot();
+    window.addEventListener('resize', updateActiveDot);
+    return () => window.removeEventListener('resize', updateActiveDot);
+  }, [products.length, updateActiveDot]);
+
+  const scrollToProduct = (index: number) => {
+    setActiveDot(index);
+    trackRef.current?.children[index]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+  };
+
+  return (
+    <>
+      <div ref={trackRef} className="ump-home-shelf-track" onScroll={updateActiveDot} style={{ display: 'flex', gap: 10, overflowX: 'auto' }}>
+        {products.map((product) => <ProductCard key={product.id} product={product} size="small" homepage />)}
+      </div>
+      {products.length > 2 && (
+        <div className="ump-home-shelf-dots" aria-label="Shelf pagination">
+          {products.map((product, index) => (
+            <button
+              key={product.id}
+              type="button"
+              className={`ump-home-shelf-dot${index === activeDot ? ' ump-home-shelf-dot-active' : ''}`}
+              aria-label={`Show product ${index + 1}`}
+              aria-current={index === activeDot ? 'true' : undefined}
+              onClick={() => scrollToProduct(index)}
+            />
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
 
 export function Home() {
   const { market, lang } = useApp();
@@ -439,11 +491,7 @@ export function Home() {
                 {t('viewAll', lang)} →
               </Link>
             </div>
-            <div style={{ display: 'flex', gap: 10, overflowX: 'auto' }}>
-              {shelf.items.map((p) => (
-                <ProductCard key={p.id} product={p} size="small" homepage />
-              ))}
-            </div>
+            <HomeProductShelf products={shelf.items} />
           </div>
         ))
       ) : (
@@ -459,11 +507,7 @@ export function Home() {
                   {t('viewAll', lang)} →
                 </Link>
               </div>
-              <div style={{ display: 'flex', gap: 10, overflowX: 'auto' }}>
-                {newArrivals.map((p) => (
-                  <ProductCard key={p.id} product={p} size="small" homepage />
-                ))}
-              </div>
+              <HomeProductShelf products={newArrivals} />
             </div>
           )}
 
@@ -473,11 +517,7 @@ export function Home() {
               <div style={{ fontSize: 10, letterSpacing: 3, color: C.goldDeep, fontWeight: 800, textTransform: 'uppercase', marginBottom: 12 }}>
                 {t('featured', lang)}
               </div>
-              <div className="ump-grid-auto ump-home-product-grid">
-                {fallbackFeatured.map((p) => (
-                  <ProductCard key={p.id} product={p} homepage />
-                ))}
-              </div>
+              <HomeProductShelf products={fallbackFeatured} />
             </div>
           )}
         </>

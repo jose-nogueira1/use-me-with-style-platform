@@ -342,6 +342,13 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
           .ump-product-colour-option { flex: 0 0 auto; white-space: nowrap; }
         }
 
+        .ump-home-shelf-track { scrollbar-width: none; -ms-overflow-style: none; scroll-snap-type: x mandatory; }
+        .ump-home-shelf-track::-webkit-scrollbar { display: none; }
+        .ump-home-shelf-track > * { scroll-snap-align: start; }
+        .ump-home-shelf-dots { display: flex; justify-content: center; align-items: center; gap: 5px; padding: 9px 0 1px; }
+        .ump-home-shelf-dot { width: 5px; height: 5px; padding: 0; border: 0; border-radius: 50%; background: ${C.fieldBorder}; cursor: pointer; }
+        .ump-home-shelf-dot-active { width: 7px; height: 7px; background: ${C.goldDeep}; }
+
         /* Home: Instagram feed (2026-08-02 redesign) -- full-bleed,
            auto-scrolling/draggable strip instead of a fixed-column grid, so
            tiles can be meaningfully larger than the old 6-column layout

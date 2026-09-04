@@ -6,6 +6,7 @@ const homeSource = readFileSync(new URL('../src/storefront/pages/Home.tsx', impo
 const browseSource = readFileSync(new URL('../src/storefront/pages/Browse.tsx', import.meta.url), 'utf8');
 const settingsSource = readFileSync(new URL('../src/admin/pages/Settings.tsx', import.meta.url), 'utf8');
 const apiSource = readFileSync(new URL('../src/lib/api.ts', import.meta.url), 'utf8');
+const layoutSource = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8');
 
 test('featured uses the same merchandising-tag shelf flow as other homepage collections', () => {
   assert.match(homeSource, /customCollections/);
@@ -47,6 +48,17 @@ test('homepage shelf view-all links preserve their catalogue filters', () => {
 test('featured no longer needs a separate catalogue loading path', () => {
   assert.doesNotMatch(browseSource, /activeFeatured/);
   assert.doesNotMatch(browseSource, /homeCollectionsLoading/);
+});
+
+test('homepage collection shelves hide scrollbars, snap, and update an active dot', () => {
+  assert.match(homeSource, /function HomeProductShelf/);
+  assert.match(homeSource, /className="ump-home-shelf-track"/);
+  assert.match(homeSource, /onScroll=\{updateActiveDot\}/);
+  assert.match(homeSource, /ump-home-shelf-dot-active/);
+  assert.match(homeSource, /products\.length > 2/);
+  assert.match(homeSource, /track\.scrollWidth - track\.clientWidth/);
+  assert.match(layoutSource, /\.ump-home-shelf-track[\s\S]*scroll-snap-type: x mandatory/);
+  assert.match(layoutSource, /\.ump-home-shelf-track::-webkit-scrollbar \{ display: none; \}/);
 });
 
 test('catalogue tag labels follow the URL immediately without stale state flicker', () => {
