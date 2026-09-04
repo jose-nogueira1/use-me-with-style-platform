@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { PointerEvent as ReactPointerEvent } from 'react';
+import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react';
 import { Link } from 'react-router-dom';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { C, F, t } from '../../theme';
 import { useApp } from '../../state/AppContext';
 import { useProducts } from '../../hooks/useProducts';
@@ -41,12 +42,29 @@ const CATEGORY_TONE_CYCLE: ProductTone[] = ['rose', 'dark', 'blue', 'gold'];
 
 function HomeProductShelf({ products }: { products: Product[] }) {
   const trackRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef<{ startX: number; startScrollLeft: number; pointerId: number } | null>(null);
+  const paginationDragRef = useRef<{ startX: number; pointerId: number } | null>(null);
+  const suppressClickRef = useRef(false);
+  const suppressPaginationClickRef = useRef(false);
   const [activeDot, setActiveDot] = useState(0);
+  const [hasOverflow, setHasOverflow] = useState(false);
+  const [canScrollPrev, setCanScrollPrev] = useState(false);
+  const [canScrollNext, setCanScrollNext] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isPaginationDragging, setIsPaginationDragging] = useState(false);
 
   const updateActiveDot = useCallback(() => {
     const track = trackRef.current;
     const firstCard = track?.firstElementChild as HTMLElement | null;
     if (!track || !firstCard) return;
+    const overflowing = track.scrollWidth > track.clientWidth;
+    setHasOverflow(overflowing);
+    setCanScrollPrev(track.scrollLeft > 1);
+    setCanScrollNext(track.scrollLeft < track.scrollWidth - track.clientWidth - 1);
+    if (!overflowing) {
+      setActiveDot(0);
+      return;
+    }
     const maxScrollLeft = Math.max(0, track.scrollWidth - track.clientWidth);
     if (track.scrollLeft >= maxScrollLeft - 1) {
       setActiveDot(products.length - 1);
@@ -62,18 +80,148 @@ function HomeProductShelf({ products }: { products: Product[] }) {
     return () => window.removeEventListener('resize', updateActiveDot);
   }, [products.length, updateActiveDot]);
 
+  const handleShelfPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.pointerType !== 'mouse' || event.button !== 0) return;
+    dragRef.current = {
+      startX: event.clientX,
+      startScrollLeft: event.currentTarget.scrollLeft,
+      pointerId: event.pointerId,
+    };
+    suppressClickRef.current = false;
+  };
+
+  const handleShelfPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    const distance = event.clientX - drag.startX;
+    if (Math.abs(distance) < 4) return;
+    suppressClickRef.current = true;
+    setIsDragging(true);
+    if (!event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
+    event.currentTarget.scrollLeft = drag.startScrollLeft - distance;
+  };
+
+  const finishShelfDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (dragRef.current?.pointerId !== event.pointerId) return;
+    dragRef.current = null;
+    setIsDragging(false);
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  };
+
+  const handleShelfClickCapture = (event: ReactMouseEvent<HTMLDivElement>) => {
+    if (!suppressClickRef.current) return;
+    event.preventDefault();
+    event.stopPropagation();
+    suppressClickRef.current = false;
+  };
+
   const scrollToProduct = (index: number) => {
     setActiveDot(index);
     trackRef.current?.children[index]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
   };
 
+  const scrollShelf = (direction: -1 | 1) => {
+    const track = trackRef.current;
+    const firstCard = track?.firstElementChild as HTMLElement | null;
+    if (!track || !firstCard) return;
+    track.scrollBy({ left: direction * (firstCard.offsetWidth + 10), behavior: 'smooth' });
+  };
+
+  const handlePaginationPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.pointerType !== 'mouse' || event.button !== 0) return;
+    paginationDragRef.current = { startX: event.clientX, pointerId: event.pointerId };
+    suppressPaginationClickRef.current = false;
+  };
+
+  const handlePaginationPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const drag = paginationDragRef.current;
+    const track = trackRef.current;
+    if (!drag || drag.pointerId !== event.pointerId || !track) return;
+    const distance = event.clientX - drag.startX;
+    if (Math.abs(distance) < 4) return;
+    suppressPaginationClickRef.current = true;
+    setIsPaginationDragging(true);
+    if (!event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const progress = Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width));
+    track.scrollLeft = progress * (track.scrollWidth - track.clientWidth);
+  };
+
+  const finishPaginationDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (paginationDragRef.current?.pointerId !== event.pointerId) return;
+    paginationDragRef.current = null;
+    setIsPaginationDragging(false);
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  };
+
+  const handlePaginationClickCapture = (event: ReactMouseEvent<HTMLDivElement>) => {
+    if (!suppressPaginationClickRef.current) return;
+    event.preventDefault();
+    event.stopPropagation();
+    suppressPaginationClickRef.current = false;
+  };
+
   return (
     <>
-      <div ref={trackRef} className="ump-home-shelf-track" onScroll={updateActiveDot} style={{ display: 'flex', gap: 10, overflowX: 'auto' }}>
-        {products.map((product) => <ProductCard key={product.id} product={product} size="small" homepage />)}
+      <div className="ump-home-shelf-wrap">
+        <div
+          ref={trackRef}
+          className={`ump-home-shelf-track${isDragging ? ' ump-home-shelf-track-dragging' : ''}`}
+          onScroll={updateActiveDot}
+          onPointerDown={handleShelfPointerDown}
+          onPointerMove={handleShelfPointerMove}
+          onPointerUp={finishShelfDrag}
+          onPointerCancel={finishShelfDrag}
+          onClickCapture={handleShelfClickCapture}
+          onDragStart={(event) => event.preventDefault()}
+          style={{ display: 'flex', gap: 10, overflowX: 'auto' }}
+        >
+          {products.map((product) => <ProductCard key={product.id} product={product} size="small" homepage />)}
+        </div>
+        {hasOverflow && (
+          <>
+            {canScrollPrev && (
+              <button
+                type="button"
+                className="ump-home-shelf-arrow ump-home-shelf-arrow-prev"
+                aria-label="Previous products"
+                onClick={() => scrollShelf(-1)}
+              >
+                <ChevronLeft size={47} strokeWidth={2.25} aria-hidden="true" />
+              </button>
+            )}
+            {canScrollNext && (
+              <button
+                type="button"
+                className="ump-home-shelf-arrow ump-home-shelf-arrow-next"
+                aria-label="Next products"
+                onClick={() => scrollShelf(1)}
+              >
+                <ChevronRight size={47} strokeWidth={2.25} aria-hidden="true" />
+              </button>
+            )}
+          </>
+        )}
       </div>
-      {products.length > 2 && (
-        <div className="ump-home-shelf-dots" aria-label="Shelf pagination">
+      {hasOverflow && products.length > 1 && (
+        <div
+          className="ump-home-shelf-dots"
+          data-dragging={isPaginationDragging || isDragging ? 'true' : undefined}
+          aria-label="Shelf pagination"
+          onPointerDown={handlePaginationPointerDown}
+          onPointerMove={handlePaginationPointerMove}
+          onPointerUp={finishPaginationDrag}
+          onPointerCancel={finishPaginationDrag}
+          onClickCapture={handlePaginationClickCapture}
+        >
           {products.map((product, index) => (
             <button
               key={product.id}

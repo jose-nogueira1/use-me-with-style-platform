@@ -52,10 +52,25 @@ test('featured no longer needs a separate catalogue loading path', () => {
 
 test('homepage collection shelves hide scrollbars, snap, and update an active dot', () => {
   assert.match(homeSource, /function HomeProductShelf/);
-  assert.match(homeSource, /className="ump-home-shelf-track"/);
+  assert.match(homeSource, /ump-home-shelf-track/);
   assert.match(homeSource, /onScroll=\{updateActiveDot\}/);
   assert.match(homeSource, /ump-home-shelf-dot-active/);
-  assert.match(homeSource, /products\.length > 2/);
+  assert.match(homeSource, /hasOverflow/);
+  assert.match(homeSource, /track\.scrollWidth > track\.clientWidth/);
+  assert.match(homeSource, /hasOverflow && products\.length > 1/);
+  assert.match(homeSource, /onPointerDown=\{handleShelfPointerDown\}/);
+  assert.match(homeSource, /onPointerMove=\{handleShelfPointerMove\}/);
+  assert.match(homeSource, /onClickCapture=\{handleShelfClickCapture\}/);
+  assert.match(homeSource, /handlePaginationPointerDown/);
+  assert.match(homeSource, /handlePaginationPointerMove/);
+  assert.match(homeSource, /onDragStart=\{\(event\) => event\.preventDefault\(\)\}/);
+  assert.match(homeSource, /ump-home-shelf-arrow-prev/);
+  assert.match(homeSource, /canScrollPrev && \(/);
+  assert.match(homeSource, /canScrollNext && \(/);
+  assert.match(homeSource, /scrollShelf\(-1\)/);
+  assert.match(homeSource, /scrollShelf\(1\)/);
+  assert.match(layoutSource, /\.ump-home-shelf-track[\s\S]*touch-action: pan-y/);
+  assert.match(layoutSource, /\.ump-home-shelf-arrow[\s\S]*display: none/);
   assert.match(homeSource, /track\.scrollWidth - track\.clientWidth/);
   assert.match(layoutSource, /\.ump-home-shelf-track[\s\S]*scroll-snap-type: x mandatory/);
   assert.match(layoutSource, /\.ump-home-shelf-track::-webkit-scrollbar \{ display: none; \}/);

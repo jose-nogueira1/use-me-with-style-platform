@@ -349,11 +349,31 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
         }
 
         .ump-home-shelf-track { scrollbar-width: none; -ms-overflow-style: none; scroll-snap-type: x mandatory; }
+        .ump-home-shelf-wrap { position: relative; }
+        .ump-home-shelf-arrow { display: none; }
+        @media (min-width: 621px) {
+          .ump-home-shelf-track { cursor: grab; touch-action: pan-y; user-select: none; }
+          .ump-home-shelf-track-dragging { cursor: grabbing; scroll-snap-type: none; }
+          .ump-home-shelf-arrow { display: flex; position: absolute; top: 50%; z-index: 1; align-items: center; justify-content: center; width: 60px; height: 78px; padding: 0; border: 0; background: transparent; color: #D7B54C; opacity: 0.78; transform: translateY(-50%); cursor: pointer; }
+          .ump-home-shelf-arrow:hover { opacity: 1; }
+          .ump-home-shelf-arrow svg { transition: transform 140ms ease; }
+          .ump-home-shelf-arrow:hover svg, .ump-home-shelf-arrow:active svg { transform: scale(1.15); }
+          .ump-home-shelf-arrow-prev { left: 2px; }
+          .ump-home-shelf-arrow-next { right: 2px; }
+        }
         .ump-home-shelf-track::-webkit-scrollbar { display: none; }
         .ump-home-shelf-track > * { scroll-snap-align: start; }
-        .ump-home-shelf-dots { display: flex; justify-content: center; align-items: center; gap: 5px; padding: 9px 0 1px; }
-        .ump-home-shelf-dot { width: 5px; height: 5px; padding: 0; border: 0; border-radius: 50%; background: ${C.fieldBorder}; cursor: pointer; }
-        .ump-home-shelf-dot-active { width: 7px; height: 7px; background: ${C.goldDeep}; }
+        .ump-home-shelf-dots { display: flex; justify-content: center; align-items: center; gap: 5px; min-height: 20px; padding: 9px 0 1px; cursor: grab; touch-action: none; user-select: none; }
+        @media (min-width: 621px) { .ump-home-shelf-dots { gap: clamp(4px, 0.5vw, 8px); } }
+        .ump-home-shelf-dots:active { cursor: grabbing; }
+        .ump-home-shelf-dot { display: grid; place-items: center; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 50%; background: transparent; cursor: pointer; }
+        .ump-home-shelf-dot::before { content: ''; display: block; width: 6.5px; height: 6.5px; border-radius: 50%; background: ${C.fieldBorder}; transition: transform 140ms ease; }
+        .ump-home-shelf-dots:hover .ump-home-shelf-dot::before, .ump-home-shelf-dots[data-dragging="true"] .ump-home-shelf-dot::before { transform: scale(1.3); }
+        .ump-home-shelf-dot-active::before { width: 9.1px; height: 9.1px; background: ${C.goldDeep}; }
+        @media (max-width: 620px) {
+          .ump-home-shelf-dot::before { width: 7.8px; height: 7.8px; }
+          .ump-home-shelf-dot-active::before { width: 10.9px; height: 10.9px; }
+        }
 
         /* Home: Instagram feed (2026-08-02 redesign) -- full-bleed,
            auto-scrolling/draggable strip instead of a fixed-column grid, so
