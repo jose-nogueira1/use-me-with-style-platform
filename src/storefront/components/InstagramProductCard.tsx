@@ -4,7 +4,7 @@ import { ProductPhoto } from '../../components/ProductPhoto';
 import { absoluteMediaUrl } from '../../lib/productAdapters';
 import { trackMetaCustomEvent } from '../../lib/metaAnalytics';
 import { useApp } from '../../state/AppContext';
-import { C, F, formatKz } from '../../theme';
+import { C, F, formatMoney } from '../../theme';
 import { saleDiscountLabel, saleDiscountPercent, saleUrgencyLabel } from '../../lib/salePresentation';
 import type { ApiInstagramLookProduct } from '../../lib/api';
 
@@ -12,8 +12,8 @@ export function InstagramProductCard({ product, lookId, compact = false }: { pro
   const { lang, market } = useApp();
   const name = (lang === 'en' ? product.nameEN : product.namePT)?.trim() || product.name;
   const colour = (lang === 'en' ? product.selectedColorNameEN : product.selectedColorNamePT)?.trim();
-  const price = product.currency === 'AOA' ? `${formatKz(product.price, lang)} Kz` : `€${product.price.toFixed(2)}`;
-  const regularPrice = product.currency === 'AOA' ? `${formatKz(product.regularPrice, lang)} Kz` : `€${product.regularPrice.toFixed(2)}`;
+  const price = formatMoney(product.price, product.currency === 'AOA' ? 'AO' : 'PT', lang);
+  const regularPrice = formatMoney(product.regularPrice, product.currency === 'AOA' ? 'AO' : 'PT', lang);
   const saleDiscount = product.onSale ? saleDiscountPercent(product.regularPrice, product.price) : null;
   const saleLabel = product.onSale ? saleDiscountLabel(product.regularPrice, product.price, lang) : null;
   const saleUrgency = product.onSale ? saleUrgencyLabel(product.saleEndDate, lang) : null;

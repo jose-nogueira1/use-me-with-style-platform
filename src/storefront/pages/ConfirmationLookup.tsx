@@ -296,26 +296,34 @@ export function ConfirmationLookup() {
         {routeOrderNumber ? (
           <h2 style={{ fontFamily: F.display, fontSize: 22, color: C.ink, fontWeight: 800, margin: '0 0 4px' }}>{t('trackAnotherOrder', lang)}</h2>
         ) : (
-          <h1 style={{ fontFamily: F.display, fontSize: 22, color: C.ink, fontWeight: 800, margin: '0 0 4px' }}>{t('trackAnotherOrder', lang)}</h1>
+          <h1 style={{ fontFamily: F.display, fontSize: 22, color: C.ink, fontWeight: 800, margin: '0 0 4px' }}>{t('trackOrderInitial', lang)}</h1>
         )}
         <div style={{ fontSize: 12, color: C.inkSoft, marginBottom: 20 }}>{t('lookupOrderStatus', lang)}</div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <input
+          <label style={{ display: 'grid', gap: 5, textAlign: 'left', color: C.inkSoft, fontSize: 11 }}>
+            <span>{t('orderNumber', lang)}</span>
+            <input className="ump-form-control"
             value={orderNumber}
             onChange={(e) => setOrderNumber(e.target.value)}
             placeholder={t('orderNumber', lang)}
             required
             style={{ padding: '10px 12px', fontSize: 13, border: `1px solid ${C.fieldBorder}`, borderRadius: 6, background: C.paper }}
-          />
-          <input
+              aria-label={t('orderNumber', lang)}
+            />
+          </label>
+          <label style={{ display: 'grid', gap: 5, textAlign: 'left', color: C.inkSoft, fontSize: 11 }}>
+            <span>{t('email', lang)}</span>
+            <input className="ump-form-control"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder={t('email', lang)}
             type="email"
             required
             style={{ padding: '10px 12px', fontSize: 13, border: `1px solid ${C.fieldBorder}`, borderRadius: 6, background: C.paper }}
-          />
+              aria-label={t('email', lang)}
+            />
+          </label>
           <button
             type="submit"
             disabled={loading}

@@ -498,7 +498,7 @@ export function Browse() {
           >
             <Filter size={14} />
             {t('filters', lang)}
-            {activeFilterBadges.length > 0 && <span aria-label={`${activeFilterBadges.length} active`}>{activeFilterBadges.length}</span>}
+            {activeFilterBadges.length > 0 && <span aria-label={t(activeFilterBadges.length === 1 ? 'activeFilterCount' : 'activeFiltersCount', lang, { count: activeFilterBadges.length })}>{activeFilterBadges.length}</span>}
           </button>
           <div style={{ display: 'flex', flex: 1, alignItems: 'center', gap: 10, minWidth: 0, padding: '10px 14px', background: C.paper, borderRadius: 8, border: `1px solid ${C.fieldBorder}` }}>
             <Search size={16} color={C.inkSoft} />

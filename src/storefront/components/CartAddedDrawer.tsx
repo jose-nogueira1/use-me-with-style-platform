@@ -8,6 +8,7 @@ type Props = {
   open: boolean;
   onClose: () => void;
   onViewCart: () => void;
+  onCheckout: () => void;
   lang: Lang;
   productName: string;
   image?: ProductImage;
@@ -17,7 +18,7 @@ type Props = {
   cartCount: number;
 };
 
-export function CartAddedDrawer({ open, onClose, onViewCart, lang, productName, image, tone, details, price, cartCount }: Props) {
+export function CartAddedDrawer({ open, onClose, onViewCart, onCheckout, lang, productName, image, tone, details, price, cartCount }: Props) {
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -64,8 +65,11 @@ export function CartAddedDrawer({ open, onClose, onViewCart, lang, productName, 
             ? `${cartCount} ${cartCount === 1 ? 'artigo' : 'artigos'} no carrinho`
             : `${cartCount} ${cartCount === 1 ? 'item' : 'items'} in your cart`}
         </div>
-        <button type="button" className="ump-cart-added-primary" onClick={onViewCart}>
-          {lang === 'pt' ? 'Ver carrinho' : 'View cart'}
+        <button type="button" className="ump-cart-added-primary" onClick={onCheckout}>
+          {lang === 'pt' ? 'Finalizar compra' : 'Checkout'}
+        </button>
+        <button type="button" className="ump-cart-added-secondary" onClick={onViewCart}>
+          {lang === 'pt' ? 'Rever carrinho' : 'Review cart'}
         </button>
         <button type="button" className="ump-cart-added-secondary" onClick={onClose}>
           {lang === 'pt' ? 'Continuar a comprar' : 'Continue shopping'}

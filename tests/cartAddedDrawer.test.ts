@@ -14,7 +14,8 @@ test('adding a product opens a localized cart decision drawer with variant detai
   assert.match(productDetail, /activeSize/);
   assert.match(drawer, /Adicionado ao carrinho/);
   assert.match(drawer, /Added to cart/);
-  assert.match(drawer, /Ver carrinho/);
+  assert.match(drawer, /Rever carrinho/);
+  assert.match(drawer, /onCheckout/);
   assert.match(drawer, /Continuar a comprar/);
 });
 
@@ -27,9 +28,11 @@ test('the cart decision UI is modal, dismissible and responsive', () => {
   assert.match(app, /justify-content: flex-end/);
 });
 
-test('the primary action hands the shopper off to the cart', () => {
-  assert.match(productDetail, /openMiniCart\(\)/);
+test('the drawer offers direct checkout and a distinct cart-review action', () => {
+  assert.match(productDetail, /navigate\('\/carrinho'\)/);
+  assert.match(productDetail, /navigate\('\/checkout'\)/);
   assert.match(drawer, /onViewCart/);
+  assert.match(drawer, /onCheckout/);
 });
 
 test('the header cart opens a responsive mini-cart with editable lines and a checkout handoff', () => {

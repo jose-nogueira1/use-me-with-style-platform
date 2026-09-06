@@ -105,6 +105,17 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
            screens) -- just enough width to stop the page looking abandoned. */
         .ump-form-width { max-width: 480px; margin: 0 auto; width: 100%; box-sizing: border-box; }
         @media (min-width: 860px) { .ump-form-width { max-width: 640px; } }
+        .ump-reading-width { max-width: 760px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+        .ump-listing-width { max-width: 1240px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+        .ump-page-header { max-width: 760px; margin: 0 auto 32px; text-align: left; }
+        .ump-form-label { display: grid; gap: 5px; color: ${C.inkSoft}; font-size: 12px; font-weight: 650; text-align: left; }
+        .ump-form-control { font-size: 16px !important; min-width: 0; }
+        .ump-disclosure-button { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 4px; color: ${C.ink}; font-family: ${F.display}; font-size: 15px; font-weight: 800; line-height: 1.45; text-align: left; }
+        .ump-disclosure-icon { flex-shrink: 0; transition: transform .2s ease; }
+        .ump-disclosure-button[aria-expanded='true'] .ump-disclosure-icon,
+        details[open] > .ump-disclosure-button .ump-disclosure-icon { transform: rotate(180deg); }
+        summary.ump-disclosure-button { cursor: pointer; list-style: none; }
+        summary.ump-disclosure-button::-webkit-details-marker { display: none; }
         .ump-size-guide-label-short { display: none; }
         @media (max-width: 420px) {
           .ump-size-guide-table { table-layout: fixed; }
@@ -214,8 +225,14 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
         @media (min-width: 520px) {
           .ump-confirmation-actions { flex-direction: row; justify-content: center; gap: 20px; }
         }
-        @media (max-width: 340px) {
-          .ump-theme-toggle { display: none !important; }
+        @media (max-width: 420px) {
+          .ump-header-row { padding-inline: max(10px, env(safe-area-inset-left)) max(10px, env(safe-area-inset-right)) !important; gap: 5px !important; }
+          .ump-header-logo { min-width: 0; }
+          .ump-header-logo img { max-width: 94px; height: auto !important; }
+          .ump-header-actions { gap: 5px !important; }
+          .ump-language-switch > button { padding-inline: 7px !important; }
+          .ump-theme-toggle { width: 34px !important; height: 34px !important; border-radius: 8px !important; }
+          .ump-theme-toggle > span { position: static !important; margin: auto; width: 22px !important; height: 22px !important; }
         }
 
         /* Site-wide search dropdown (2026-08-08 -- see SearchOverlay.tsx).
@@ -260,6 +277,9 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
         @media (min-width: 720px) { .ump-footer { padding-bottom: 0; } }
         .ump-footer-grid { display: flex; flex-direction: column; gap: 28px; padding: 32px 20px 24px; }
         .ump-footer-links-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 20px; }
+        @media (min-width: 1080px) {
+          .ump-browse-catpills { display: none !important; }
+        }
         @media (min-width: 720px) {
           .ump-footer-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 32px; padding: 44px 20px 28px; }
           .ump-footer-links-grid { grid-template-columns: repeat(2, 1fr); gap: 32px; }
@@ -763,7 +783,6 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
           .ump-sort-options > button { flex: 1 1 0; text-align: center !important; }
           .ump-browse-active-filters { overflow: visible; flex-wrap: wrap; }
           .ump-filter-options { flex-wrap: wrap; overflow: visible; }
-          .ump-browse-catpills { display: none !important; }
         }
         @media (max-width: 719px) {
           .ump-filter-drawer-backdrop { align-items: flex-end; }
