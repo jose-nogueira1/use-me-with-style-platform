@@ -1,6 +1,6 @@
 # Storefront UI/UX remediation review — 5 September 2026
 
-The storefront remediation is ready for review on local branch `fix/storefront-ui-ux-audit-2026-09-05`, based on commit `551f5688eddd8c8c984a7917f50e0a6847989f21`. The code work was limited to storefront code and local review evidence. Nothing was deployed, pushed, merged, or submitted. Following explicit approval on 6 September 2026, the production CMS was updated only for finding 3: the PT/EN Terms payment paragraph and four AO/PT manual WhatsApp instruction fields. No other CMS record was changed.
+The storefront remediation was merged into `main` in commit `132c390` and deployed to production on 6 September 2026. The merged tree is based on `551f5688eddd8c8c984a7917f50e0a6847989f21`. Following explicit approval, the production CMS was updated only for finding 3: the PT/EN Terms payment paragraph and four AO/PT manual WhatsApp instruction fields. No other CMS record was changed and no real order, payment, or customer form was submitted.
 
 ## Finding status
 
@@ -38,6 +38,17 @@ Commands and results:
 - Browser interaction matrix — 26/26 checks passed across AO/PT, Portuguese/English, Day/Night persistence, responsive header/category discovery, modal focus/Tab/Escape/restore, persistent labels/16 px fields, validation presentation, search empty-state recovery, filter drawer Escape/restore, market cart retention and variant flow.
 
 Physical devices, native virtual keyboards, screen readers, payment-provider widgets, completed orders and post-purchase tracking were not exercised. This report does not claim full accessibility compliance.
+
+## Production release verification — 6 September 2026
+
+Vercel deployment `dpl_GfTw4XR7NoZcZBsLQPdC5GF8S8xh` reached `READY` and was assigned to `usemewithstyle.shop`, `ao.usemewithstyle.shop`, `pt.usemewithstyle.shop`, `www.usemewithstyle.shop`, and the Vercel production alias. Live smoke checks confirmed:
+
+- AO/Portuguese at 320 px and PT/English at 375 px: appearance control visible, no document overflow, approved Terms copy, accurate pending-payment FAQ, and market-specific returns teaser.
+- AO product dialog at 1440 px: initial focus, Escape dismissal, and trigger-focus restoration.
+- AO cart at 320 px: Bloom & Pearl Rosa kept `IMG_2901`, size S and `36 990 Kz` from confirmation through cart reload, then reached the WhatsApp checkout.
+- Vercel production error-log scan after the smoke checks returned no errors.
+
+Machine-readable production evidence and screenshots are stored locally under `output/playwright/ui-ux-2026-09-06-production`.
 
 ## Current-run screenshot evidence
 
