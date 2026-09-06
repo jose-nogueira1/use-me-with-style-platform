@@ -100,7 +100,7 @@ export function CustomerReturnForm({ orderNumber, email, lang, onSubmitted }: Pr
 }
 
 const fileData = (file: File) => new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = reject; reader.readAsDataURL(file); });
-const box = { padding: 16, border: `1px solid ${C.ruleLight}`, borderRadius: 8, background: C.paper } as const;
+const box = { padding: 16, border: `1px solid ${C.surfaceBorder}`, borderRadius: 8, background: C.paper } as const;
 const primary = { padding: '11px 15px', background: C.black, color: C.onDarkGold, borderRadius: 7, fontWeight: 800 } as const;
 const secondary = { padding: '11px 15px', border: `1px solid ${C.rule}`, borderRadius: 7, color: C.ink } as const;
 const input = { padding: '9px', border: `1px solid ${C.fieldBorder}`, borderRadius: 6, background: C.paper } as const;

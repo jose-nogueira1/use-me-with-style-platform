@@ -56,7 +56,7 @@ export function StyleArticle() {
       <div style={{ borderTop: `1px solid ${C.ruleLight}`, paddingTop: 30 }}>
         {localized.body.map((block, index) => <ArticleBlock key={block.id ?? `${block.kind}-${index}`} block={block} />)}
       </div>
-      <aside style={{ marginTop: 42, padding: 22, borderRadius: 10, background: C.subtleBg, border: `1px solid ${C.ruleLight}` }}>
+      <aside style={{ marginTop: 42, padding: 22, borderRadius: 10, background: C.subtleBg, border: `1px solid ${C.surfaceBorder}` }}>
         <div style={{ color: C.ink, fontWeight: 800, fontSize: 14, marginBottom: 8 }}>{lang === 'pt' ? 'Pronta para encontrar o seu próximo look?' : 'Ready to find your next look?'}</div>
         <Link to="/catalogo" style={{ color: C.goldDeep, fontWeight: 800, fontSize: 12, textDecoration: 'none' }}>{lang === 'pt' ? 'Explorar o catálogo →' : 'Explore the catalogue →'}</Link>
       </aside>

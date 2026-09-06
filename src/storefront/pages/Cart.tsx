@@ -194,7 +194,7 @@ export function Cart() {
             padding: '4px 10px',
             borderRadius: 20,
             background: C.subtleBg,
-            border: `1px solid ${C.ruleLight}`,
+            border: `1px solid ${C.surfaceBorder}`,
             fontSize: 10,
             fontWeight: 700,
             color: C.inkSoft,
@@ -205,7 +205,7 @@ export function Cart() {
       </div>
 
       {removedNotice && (
-        <div style={{ margin: '0 20px 12px', padding: '10px 12px', background: C.subtleBg, border: `1px solid ${C.ruleLight}`, borderRadius: 6, fontSize: 11, color: C.inkSoft, lineHeight: 1.5 }}>
+        <div style={{ margin: '0 20px 12px', padding: '10px 12px', background: C.subtleBg, border: `1px solid ${C.surfaceBorder}`, borderRadius: 6, fontSize: 11, color: C.inkSoft, lineHeight: 1.5 }}>
           {t('cartItemsRemovedUnavailable', lang)}
         </div>
       )}
@@ -309,7 +309,7 @@ export function Cart() {
             {t('cartOutOfStockBlockNotice', lang)}
           </div>
         )}
-        <div style={{ padding: 16, background: C.subtleBg, border: `1px solid ${C.ruleLight}`, borderRadius: 8 }}>
+        <div style={{ padding: 16, background: C.subtleBg, border: `1px solid ${C.surfaceBorder}`, borderRadius: 8 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 13, color: C.inkSoft, marginBottom: 8 }}>
             <span>{t('subtotal', lang)}</span>
             {/* While the current market/language's product data is still

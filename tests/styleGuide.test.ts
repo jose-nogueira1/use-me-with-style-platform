@@ -65,3 +65,10 @@ test('listing, article, admin and API surfaces are connected', () => {
   assert.match(admin, /adminUpdatePost/);
   assert.match(api, /where\[status\]\[equals\]=published/);
 });
+
+test('each style-guide card is one accessible article link', () => {
+  const listing = projectFile('src/storefront/pages/StyleGuide.tsx');
+  assert.match(listing, /<Link\s+[\s\S]*to=\{`\/estilo\/\$\{encodeURIComponent\(post\.slug\)\}`\}[\s\S]*<article/);
+  assert.match(listing, /aria-label=\{`\$\{lang === 'pt' \? 'Ler' : 'Read'\}: \$\{localized\.title\}`\}/);
+  assert.doesNotMatch(listing, /<article[\s\S]*<Link/);
+});

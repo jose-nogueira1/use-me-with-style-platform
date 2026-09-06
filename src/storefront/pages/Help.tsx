@@ -191,7 +191,7 @@ export function Help() {
           <div style={{ marginTop: 5, fontSize: 11.5, lineHeight: 1.55, color: C.inkSoft }}>support@usemewithstyle.shop</div>
         </a>
       </div>
-      <div style={{ marginTop: 12, padding: 14, background: C.subtleBg, borderRadius: 8, fontSize: 11.5, color: C.inkSoft, lineHeight: 1.6 }}>
+      <div style={{ marginTop: 12, padding: 14, background: C.subtleBg, border: `1px solid ${C.surfaceBorder}`, borderRadius: 8, fontSize: 11.5, color: C.inkSoft, lineHeight: 1.6 }}>
         {t('supportEmailGuidance', lang)}
       </div>
 

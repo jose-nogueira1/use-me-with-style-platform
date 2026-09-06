@@ -572,7 +572,7 @@ export function Home() {
                   aspectRatio: '3 / 4',
                   borderRadius: 10,
                   overflow: 'hidden',
-                  border: `1px solid ${C.ruleLight}`,
+                  border: `1px solid ${C.surfaceBorder}`,
                   textDecoration: 'none',
                 }}
               >

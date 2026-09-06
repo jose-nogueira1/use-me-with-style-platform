@@ -28,7 +28,7 @@ export function ProductDetail() {
   const { slug } = useParams<{ slug: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { market, lang, cart, dispatchCart } = useApp();
+  const { market, lang, themeMode, cart, dispatchCart } = useApp();
   const { products, loading } = useProducts(market, lang);
   const fmtPrice = useFormatPrice();
   const fmtOriginalPrice = useFormatOriginalPrice();
@@ -379,7 +379,7 @@ export function ProductDetail() {
                   hiding the whole selector (and its size-guide link) when a
                   product has real size variants but no label was set. */}
               <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1, color: C.goldDeep, textTransform: 'uppercase' }}>{product.optionLabel || t('size', lang)}</div>
-              {product.sizeGuide && product.sizeGuide.length > 0 && <button onClick={() => setShowSizeGuide(true)} style={{ fontSize: 10, color: C.inkSoft, textDecoration: 'underline' }}>
+              {product.sizeGuide && product.sizeGuide.length > 0 && <button onClick={() => setShowSizeGuide(true)} style={{ fontSize: 11, fontWeight: 700, color: C.inkSoft, textDecoration: 'underline' }}>
                 {t('sizeGuide', lang)}
               </button>}
             </div>
@@ -458,7 +458,7 @@ export function ProductDetail() {
             </div>
           </div>}
 
-          <div style={{ marginTop: 24, padding: '16px 0', borderTop: `1px solid ${C.ruleLight}` }}>
+          <div style={{ marginTop: 24, padding: '16px 0', borderTop: `1px solid ${C.surfaceBorder}` }}>
             <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1, color: C.goldDeep, textTransform: 'uppercase', marginBottom: 8 }}>
               {t('description', lang)}
             </div>
@@ -466,7 +466,7 @@ export function ProductDetail() {
           </div>
 
           {product.productType === 'bundle' && product.bundleComponents.length > 0 && (
-            <div style={{ marginTop: 4, padding: '16px 0', borderTop: `1px solid ${C.ruleLight}` }}>
+            <div style={{ marginTop: 4, padding: '16px 0', borderTop: `1px solid ${C.surfaceBorder}` }}>
               <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1, color: C.goldDeep, textTransform: 'uppercase', marginBottom: 10 }}>
                 {lang === 'pt' ? 'O que está incluído' : "What's included"}
               </div>
@@ -482,7 +482,7 @@ export function ProductDetail() {
           )}
 
           {product.specifications.length > 0 && (
-            <div style={{ marginTop: 4, padding: '16px 0', borderTop: `1px solid ${C.ruleLight}` }}>
+            <div style={{ marginTop: 4, padding: '16px 0', borderTop: `1px solid ${C.surfaceBorder}` }}>
               <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1, color: C.goldDeep, textTransform: 'uppercase', marginBottom: 10 }}>
                 {lang === 'pt' ? 'Detalhes do produto' : 'Product details'}
               </div>
@@ -496,7 +496,7 @@ export function ProductDetail() {
             </div>
           )}
 
-          <div style={{ background: C.subtleBg, borderRadius: 8, padding: 14, marginTop: 4 }}>
+          <div style={{ background: C.subtleBg, border: `1px solid ${C.surfaceBorder}`, borderRadius: 8, padding: 14, marginTop: 4 }}>
             <div>
               <button
                 className="ump-disclosure-button"
@@ -515,7 +515,7 @@ export function ProductDetail() {
                 </div>
               ) : null}
             </div>
-            <div style={{ borderTop: `1px solid ${C.ruleLight}` }}>
+            <div style={{ borderTop: `1px solid ${C.surfaceBorder}` }}>
               <button
                 className="ump-disclosure-button"
                 type="button"
@@ -542,8 +542,8 @@ export function ProductDetail() {
       </div>
 
       {showSizeGuide && createPortal(
-        <div onMouseDown={(event) => event.target === event.currentTarget && closeSizeGuide()} style={{ position: 'fixed', inset: 0, background: C.scrim, zIndex: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <div ref={sizeGuideDialogRef} role="dialog" aria-modal="true" aria-labelledby="size-guide-title" tabIndex={-1} style={{ background: C.paper, color: C.ink, borderRadius: 10, padding: 20, width: '100%', maxWidth: 360, boxShadow: '0 20px 50px rgba(0,0,0,0.24)' }}>
+        <div className="ump-theme-scope" data-theme={themeMode} onMouseDown={(event) => event.target === event.currentTarget && closeSizeGuide()} style={{ position: 'fixed', inset: 0, background: C.scrim, zIndex: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+          <div ref={sizeGuideDialogRef} role="dialog" aria-modal="true" aria-labelledby="size-guide-title" tabIndex={-1} style={{ background: C.paper, color: C.ink, border: `1px solid ${C.surfaceBorder}`, borderRadius: 10, padding: 20, width: '100%', maxWidth: 360, boxShadow: '0 20px 50px rgba(0,0,0,0.24)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
               <div id="size-guide-title" style={{ fontFamily: F.display, fontSize: 20, fontWeight: 800 }}>{t('sizeGuide', lang)}</div>
               <button data-dialog-initial-focus aria-label={lang === 'pt' ? 'Fechar guia de tamanhos' : 'Close size guide'} onClick={closeSizeGuide}>

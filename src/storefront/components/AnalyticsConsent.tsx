@@ -28,7 +28,7 @@ export function AnalyticsConsentManager() {
   };
 
   return (
-    <section aria-label={lang === 'pt' ? 'Preferências de cookies' : 'Cookie preferences'} style={{ position: 'fixed', zIndex: 100, left: 16, right: 16, bottom: 16, maxWidth: 560, margin: '0 auto', padding: 18, borderRadius: 10, background: C.paper, color: C.ink, border: `1px solid ${C.rule}`, boxShadow: '0 14px 40px rgba(0,0,0,.2)' }}>
+    <section aria-label={lang === 'pt' ? 'Preferências de cookies' : 'Cookie preferences'} style={{ position: 'fixed', zIndex: 100, left: 16, right: 16, bottom: 16, maxWidth: 560, margin: '0 auto', padding: 18, borderRadius: 10, background: C.paper, color: C.ink, border: `1px solid ${C.surfaceBorder}`, boxShadow: '0 14px 40px rgba(0,0,0,.2)' }}>
       <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 6 }}>{lang === 'pt' ? 'A sua privacidade' : 'Your privacy'}</div>
       <div style={{ fontSize: 12, lineHeight: 1.55, color: C.inkSoft }}>
         {lang === 'pt' ? 'Usamos cookies analíticos opcionais da Meta para medir visitas e compras e melhorar a loja. Pode recusar sem afetar a sua compra.' : 'We use optional Meta analytics cookies to measure visits and purchases and improve the shop. You can reject them without affecting your purchase.'}

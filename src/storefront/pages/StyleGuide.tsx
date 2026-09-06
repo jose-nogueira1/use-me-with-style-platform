@@ -61,17 +61,24 @@ function PostCard({ post, lang }: { post: ApiPost; lang: 'pt' | 'en' }) {
   const localized = localizePost(post, lang);
   const date = post.publishedAt || post.createdAt;
   return (
-    <article className="ump-hover-lift" style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 12, padding: 22, display: 'flex', flexDirection: 'column', minHeight: 260 }}>
-      <time dateTime={date} style={{ color: C.goldDeep, fontSize: 10, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase' }}>
-        {formatPostDate(date, lang)}
-      </time>
-      <h2 style={{ fontFamily: F.display, color: C.ink, fontSize: 21, lineHeight: 1.25, margin: '14px 0 10px' }}>
-        <Link to={`/estilo/${encodeURIComponent(post.slug)}`} style={{ color: 'inherit', textDecoration: 'none' }}>{localized.title}</Link>
-      </h2>
-      <p style={{ color: C.inkSoft, fontSize: 13, lineHeight: 1.7, margin: '0 0 20px' }}>{localized.excerpt}</p>
-      <Link to={`/estilo/${encodeURIComponent(post.slug)}`} aria-label={`${lang === 'pt' ? 'Ler' : 'Read'}: ${localized.title}`} style={{ color: C.goldDeep, fontSize: 12, fontWeight: 800, textDecoration: 'none', marginTop: 'auto' }}>
-        {lang === 'pt' ? 'Ler artigo →' : 'Read article →'}
-      </Link>
-    </article>
+    <Link
+      to={`/estilo/${encodeURIComponent(post.slug)}`}
+      aria-label={`${lang === 'pt' ? 'Ler' : 'Read'}: ${localized.title}`}
+      className="ump-hover-lift"
+      style={{ display: 'flex', background: C.paper, border: `1px solid ${C.surfaceBorder}`, borderRadius: 12, padding: 22, color: 'inherit', textDecoration: 'none' }}
+    >
+      <article style={{ display: 'flex', flex: 1, flexDirection: 'column', minWidth: 0, minHeight: 216 }}>
+        <time dateTime={date} style={{ color: C.goldDeep, fontSize: 10, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase' }}>
+          {formatPostDate(date, lang)}
+        </time>
+        <h2 style={{ fontFamily: F.display, color: C.ink, fontSize: 21, lineHeight: 1.25, margin: '14px 0 10px' }}>
+          {localized.title}
+        </h2>
+        <p style={{ color: C.inkSoft, fontSize: 13, lineHeight: 1.7, margin: '0 0 20px' }}>{localized.excerpt}</p>
+        <span aria-hidden="true" style={{ color: C.goldDeep, fontSize: 12, fontWeight: 800, marginTop: 'auto' }}>
+          {lang === 'pt' ? 'Ler artigo →' : 'Read article →'}
+        </span>
+      </article>
+    </Link>
   );
 }

@@ -36,7 +36,7 @@ export function InstagramProductCard({ product, lookId, compact = false }: { pro
         gridTemplateColumns: compact ? '88px minmax(0, 1fr)' : undefined,
         minWidth: 0,
         overflow: 'hidden',
-        border: `1px solid ${C.ruleLight}`,
+        border: `1px solid ${C.surfaceBorder}`,
         borderRadius: 10,
         background: C.paper,
         color: C.ink,
@@ -53,7 +53,7 @@ export function InstagramProductCard({ product, lookId, compact = false }: { pro
           />
         </div>
         {!compact && (!product.inStock || (lowStock && !product.onSale)) && <div aria-label={!product.inStock ? (lang === 'pt' ? 'Esgotado' : 'Sold out') : stockLabel} style={{ position: 'absolute', top: 0, right: 0, zIndex: 3, padding: '7px 10px', borderRadius: '0 0 0 7px', background: !product.inStock ? C.danger : C.tagBg, color: !product.inStock ? C.paper : C.dangerStrong, fontSize: 9, fontWeight: 850, boxShadow: '0 1px 3px rgba(0,0,0,0.14)' }}>{!product.inStock ? (lang === 'pt' ? 'Esgotado' : 'Sold out') : stockLabel}</div>}
-        {!compact && product.onSale && product.inStock && <div aria-label={lang === 'pt' ? `Promoção: ${saleLabel}` : `Sale: ${saleLabel}`} style={{ position: 'absolute', top: 20, right: -42, width: 160, zIndex: 3, padding: '7px 8px', background: 'linear-gradient(135deg, #B95545, #A6483A)', color: C.paper, fontSize: 10, fontWeight: 900, letterSpacing: 0.3, textAlign: 'center', whiteSpace: 'nowrap', transform: 'rotate(45deg)', boxShadow: '0 1px 3px rgba(0,0,0,0.16)' }}>{saleLabel}</div>}
+        {!compact && product.onSale && product.inStock && <div aria-label={lang === 'pt' ? `Promoção: ${saleLabel}` : `Sale: ${saleLabel}`} style={{ position: 'absolute', top: 20, right: -42, width: 160, zIndex: 3, padding: '7px 8px', background: 'linear-gradient(135deg, #B95545, #A6483A)', color: C.onDark, fontSize: 10, fontWeight: 900, letterSpacing: 0.3, textAlign: 'center', whiteSpace: 'nowrap', transform: 'rotate(45deg)', boxShadow: '0 1px 3px rgba(0,0,0,0.16)' }}>{saleLabel}</div>}
         {!compact && !product.inStock && <span aria-hidden style={{ position: 'absolute', left: '-33.35%', top: '50%', width: '166.7%', height: 3, zIndex: 2, background: C.dangerStrong, transform: 'rotate(53.13deg)', pointerEvents: 'none' }} />}
       </div>
       <div style={{ padding: compact ? '12px' : 11, minWidth: 0 }}>

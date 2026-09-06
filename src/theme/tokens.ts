@@ -39,6 +39,7 @@ export const C = {
   tagBg: 'var(--c-tag-bg)',
   rule: 'var(--c-rule)',
   ruleLight: 'var(--c-rule-light)',
+  surfaceBorder: 'var(--c-surface-border)',
   subtleBg: 'var(--c-subtle-bg)',
   successBg: 'var(--c-success-bg)',
   successText: 'var(--c-success-text)',
@@ -159,6 +160,7 @@ export const LIGHT_VARS: Record<string, string> = {
   // Nudged 2026-07-30 from #ECE5D8 (1.23:1 against paper -- effectively
   // invisible) to 1.58:1. Still a whisper of an edge, but a perceivable one.
   '--c-rule-light': '#D5CBB6',
+  '--c-surface-border': '#D5CBB6',
   '--c-subtle-bg': '#F8F4EC',
   '--c-success-bg': '#EFF2EA',
   '--c-success-text': '#4B5944',
@@ -202,7 +204,12 @@ export const DARK_VARS: Record<string, string> = {
   // Nudged 2026-07-30 from #2A251E (1.28:1) to 1.58:1, mirroring the light
   // mode change so container edges read the same way in both themes.
   '--c-rule-light': '#3B342A',
-  '--c-subtle-bg': '#17130F',
+  // Meaningful card and panel boundaries use this stronger edge while
+  // decorative dividers keep the quieter rule tokens.
+  '--c-surface-border': '#6E6455',
+  // Raised from #17130F (1.05:1 against paper) so grouped content remains
+  // visible; inkSoft still clears AA against this surface at 5.77:1.
+  '--c-subtle-bg': '#28231D',
   '--c-success-bg': '#16231A',
   '--c-success-text': '#8FBF88',
   '--c-hero-bg': '#1B1712',

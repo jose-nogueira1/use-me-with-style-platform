@@ -566,7 +566,7 @@ function BottomNav({ lang }: { lang: Lang }) {
       ref={navRef}
       style={{
         flexShrink: 0,
-        borderTop: `1px solid ${C.ruleLight}`,
+        borderTop: `1px solid ${C.surfaceBorder}`,
         background: C.paper,
         display: 'flex',
         padding: '10px 0 max(16px, env(safe-area-inset-bottom))',
@@ -609,8 +609,8 @@ function BottomNav({ lang }: { lang: Lang }) {
               textDecoration: 'none',
             }}
           >
-            <Icon size={18} color={active ? C.goldDeep : C.inkSoft} strokeWidth={active ? 2.25 : 1.75} />
-            <span style={{ fontSize: 9, fontWeight: 800, color: active ? C.goldDeep : C.inkSoft }}>{t(item.labelKey, lang)}</span>
+            <Icon size={19} color={active ? C.goldDeep : C.inkSoft} strokeWidth={active ? 2.4 : 2} />
+            <span style={{ fontSize: 10, fontWeight: 800, color: active ? C.goldDeep : C.inkSoft }}>{t(item.labelKey, lang)}</span>
           </Link>
         );
       })}

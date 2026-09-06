@@ -48,7 +48,7 @@ export function Footer() {
   ];
 
   return (
-    <footer className="ump-footer" style={{ background: C.subtleBg, borderTop: `1px solid ${C.ruleLight}` }}>
+    <footer className="ump-footer" style={{ background: C.subtleBg, borderTop: `1px solid ${C.surfaceBorder}` }}>
       <div className="ump-content-width ump-footer-grid">
         <div className="ump-footer-col">
           <div style={{ marginBottom: 14 }}>

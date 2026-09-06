@@ -48,7 +48,7 @@ export function SizeGuide() {
         </p>
       </header>
 
-      <section aria-labelledby="how-to-measure" style={{ background: C.subtleBg, borderRadius: 10, padding: 20, marginBottom: 28 }}>
+      <section aria-labelledby="how-to-measure" style={{ background: C.subtleBg, border: `1px solid ${C.surfaceBorder}`, borderRadius: 10, padding: 20, marginBottom: 28 }}>
         <h2 id="how-to-measure" style={{ fontFamily: F.display, color: C.ink, fontSize: 19, margin: '0 0 12px' }}>{lang === 'pt' ? copy.sizeGuideHowToTitlePT : copy.sizeGuideHowToTitleEN}</h2>
         <ul style={{ margin: 0, paddingLeft: 20, color: C.inkSoft, fontSize: 12.5, lineHeight: 1.75 }}>
           {instructions.map((instruction) => <li key={instruction}>{instruction}</li>)}
@@ -57,7 +57,7 @@ export function SizeGuide() {
 
       <section aria-label={lang === 'pt' ? 'Tabelas de tamanhos' : 'Size charts'} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
         {guides.map((guide) => (
-          <article key={guide.id} data-size-guide style={{ border: `1px solid ${C.ruleLight}`, borderRadius: 10, padding: 20 }}>
+          <article key={guide.id} data-size-guide style={{ border: `1px solid ${C.surfaceBorder}`, borderRadius: 10, padding: 20 }}>
             <h2 style={{ fontFamily: F.display, color: C.ink, fontSize: 19, margin: '0 0 8px' }}>{publicSizeGuideName(guide.name, categories, lang)}</h2>
             <SizeGuideTable rows={sizeGuideRows(guide.rows)} lang={lang} />
           </article>

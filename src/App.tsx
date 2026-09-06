@@ -38,7 +38,8 @@ export default function App() {
         :root {
 ${Object.entries(LIGHT_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
         }
-        .ump-shell[data-theme='dark'] {
+        .ump-shell[data-theme='dark'],
+        .ump-theme-scope[data-theme='dark'] {
 ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
         }
 
@@ -68,6 +69,8 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
 
         button { cursor: pointer; border: none; background: none; font-family: inherit; }
         a { color: inherit; }
+        input::placeholder,
+        textarea::placeholder { color: ${C.inkSoft}; opacity: 1; }
         :focus-visible { outline: 3px solid ${C.gold}; outline-offset: 3px; }
         .ump-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 

@@ -346,7 +346,7 @@ export function ConfirmationLookup() {
         )}
 
         {result && result !== 'not_found' && result !== 'service_error' && (
-          <div style={{ marginTop: 20, background: C.subtleBg, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 16 }}>
+          <div style={{ marginTop: 20, background: C.subtleBg, border: `1px solid ${C.surfaceBorder}`, borderRadius: 8, padding: 16 }}>
             <div style={{ fontFamily: F.display, fontSize: 16, color: C.ink, fontWeight: 800 }}>{result.orderNumber}</div>
             <div style={{ fontSize: 11, color: C.goldDeep, fontWeight: 800, marginTop: 4, textTransform: 'uppercase' }}>
               {ALL_STATUS_LABEL_KEY[result.status] ? t(ALL_STATUS_LABEL_KEY[result.status], lang) : result.status}

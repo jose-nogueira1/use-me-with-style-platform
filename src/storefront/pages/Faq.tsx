@@ -66,7 +66,7 @@ export function Faq() {
         ))}
       </section>
 
-      <aside style={{ marginTop: 28, padding: 18, borderRadius: 8, background: C.subtleBg, textAlign: 'center', color: C.inkSoft, fontSize: 12.5, lineHeight: 1.65 }}>
+      <aside style={{ marginTop: 28, padding: 18, borderRadius: 8, background: C.subtleBg, border: `1px solid ${C.surfaceBorder}`, textAlign: 'center', color: C.inkSoft, fontSize: 12.5, lineHeight: 1.65 }}>
         {lang === 'pt' ? copy.faqSupportPromptPT : copy.faqSupportPromptEN}{' '}
         <Link to="/ajuda" style={{ color: C.goldDeep, fontWeight: 800 }}>
           {lang === 'pt' ? copy.faqSupportLabelPT : copy.faqSupportLabelEN}

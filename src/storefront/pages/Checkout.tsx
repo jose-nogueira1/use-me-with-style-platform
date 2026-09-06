@@ -1086,7 +1086,7 @@ export function Checkout() {
             </div>
           )}
           {isHeavyPortugalParcel && (
-            <div style={{ marginTop: 8, padding: 10, background: C.subtleBg, borderRadius: 6, fontSize: 11, color: C.ink, lineHeight: 1.5 }}>
+            <div style={{ marginTop: 8, padding: 10, background: C.subtleBg, border: `1px solid ${C.surfaceBorder}`, borderRadius: 6, fontSize: 11, color: C.ink, lineHeight: 1.5 }}>
               {t('heavyParcelTrackedOnly', lang)
                 .replace('{weight}', (totalWeightGrams / 1000).toFixed(1))
                 .replace('{mainland}', formatMoney(portugalShipping.heavyMainlandPrice, 'PT', lang))
@@ -1105,7 +1105,7 @@ export function Checkout() {
             <RadioRow key={opt} name="payment" value={opt} checked={paymentMethod === opt} onSelect={() => handleSelectPaymentMethod(opt)} label={PAYMENT_LABEL_KEYS[opt] ? t(PAYMENT_LABEL_KEYS[opt], lang) : opt} />
           ))}
           {paymentMethod === 'manual_whatsapp' && (
-            <div role="status" style={{ marginTop: 8, padding: 12, background: C.subtleBg, borderRadius: 6, fontSize: 12, color: C.inkSoft, lineHeight: 1.5 }}>
+            <div role="status" style={{ marginTop: 8, padding: 12, background: C.subtleBg, border: `1px solid ${C.surfaceBorder}`, borderRadius: 6, fontSize: 12, color: C.inkSoft, lineHeight: 1.5 }}>
               {t('manualWhatsappCheckoutExplanation', lang)}
             </div>
           )}
@@ -1148,12 +1148,12 @@ export function Checkout() {
         </div>
 
         {usesEurSettlement && (
-          <div data-testid="eur-settlement-notice" style={{ marginBottom: 12, padding: '10px 12px', background: C.subtleBg, border: `1px solid ${C.ruleLight}`, borderRadius: 6, fontSize: 11, color: C.inkSoft, lineHeight: 1.5 }}>
+          <div data-testid="eur-settlement-notice" style={{ marginBottom: 12, padding: '10px 12px', background: C.subtleBg, border: `1px solid ${C.surfaceBorder}`, borderRadius: 6, fontSize: 11, color: C.inkSoft, lineHeight: 1.5 }}>
             {t('eurSettlementNotice', lang)}
           </div>
         )}
 
-        <div style={{ background: C.subtleBg, borderRadius: 8, padding: 16, border: `1px solid ${C.ruleLight}` }}>
+        <div style={{ background: C.subtleBg, borderRadius: 8, padding: 16, border: `1px solid ${C.surfaceBorder}` }}>
           <Row testId="checkout-subtotal" label={t('subtotal', lang)} value={fmt(settlementSubtotal)} />
           {discountAmount > 0 && <Row testId="checkout-discount" label={appliedCoupon?.label || t('discount', lang)} value={`-${fmt(discountAmount)}`} />}
           <Row

@@ -98,7 +98,7 @@ export function ShopInstagram() {
 
 function LookCard({ post, lang, priority = false }: { post: ApiInstagramPost; lang: 'pt' | 'en'; priority?: boolean }) {
   return (
-    <Link to={`/shop-instagram/${encodeURIComponent(post.lookSlug)}`} style={{ display: 'block', overflow: 'hidden', borderRadius: 12, border: `1px solid ${C.ruleLight}`, background: C.paper, color: C.ink, textDecoration: 'none' }}>
+    <Link to={`/shop-instagram/${encodeURIComponent(post.lookSlug)}`} style={{ display: 'block', overflow: 'hidden', borderRadius: 12, border: `1px solid ${C.surfaceBorder}`, background: C.paper, color: C.ink, textDecoration: 'none' }}>
       <div style={{ aspectRatio: '4 / 5', overflow: 'hidden', position: 'relative' }}>
         <ProductPhoto tone="dark" radius={0} image={{ url: post.imageUrl, alt: post.captionDisplay }} priority={priority} />
         <div style={{ position: 'absolute', left: 10, bottom: 10, display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 10px', borderRadius: 999, background: 'rgba(5,5,5,0.78)', color: C.onDarkGold, fontSize: 9, fontWeight: 850 }}>
@@ -142,7 +142,7 @@ function LookDetail({ post, lang }: { post: ApiInstagramPost; lang: 'pt' | 'en' 
 
 function EmptyState({ title, detail, lang }: { title: string; detail: string; lang: 'pt' | 'en' }) {
   return (
-    <div style={{ maxWidth: 560, margin: '30px auto', padding: 32, border: `1px solid ${C.ruleLight}`, borderRadius: 12, textAlign: 'center', background: C.subtleBg }}>
+    <div style={{ maxWidth: 560, margin: '30px auto', padding: 32, border: `1px solid ${C.surfaceBorder}`, borderRadius: 12, textAlign: 'center', background: C.subtleBg }}>
       <ShoppingBag size={24} color={C.goldDeep} />
       <h2 style={{ margin: '12px 0 5px', fontFamily: F.display, fontSize: 22, color: C.ink }}>{title}</h2>
       <p style={{ margin: 0, color: C.inkSoft, fontSize: 12 }}>{detail}</p>

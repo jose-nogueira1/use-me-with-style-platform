@@ -62,7 +62,7 @@ export function About() {
             <SectionLabel id="about-values-title">{localized(copy.aboutValuesTitlePT, copy.aboutValuesTitleEN)}</SectionLabel>
             <div className="ump-admin-fields-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 14 }}>
               {values.map((value, index) => (
-                <article key={value.id ?? `${value.titlePT}-${index}`} style={{ border: `1px solid ${C.ruleLight}`, background: C.subtleBg, borderRadius: 10, padding: 20 }}>
+                <article key={value.id ?? `${value.titlePT}-${index}`} style={{ border: `1px solid ${C.surfaceBorder}`, background: C.subtleBg, borderRadius: 10, padding: 20 }}>
                   <div aria-hidden="true" style={{ color: C.goldDeep, fontFamily: F.display, fontSize: 22, fontWeight: 800, marginBottom: 14 }}>{String(index + 1).padStart(2, '0')}</div>
                   <h3 style={{ fontSize: 13, fontWeight: 800, color: C.ink, margin: '0 0 7px' }}>{localized(value.titlePT, value.titleEN)}</h3>
                   <p style={{ fontSize: 12.5, color: C.inkSoft, lineHeight: 1.65, margin: 0 }}>{localized(value.bodyPT, value.bodyEN)}</p>
@@ -102,7 +102,7 @@ function SectionLabel({ id, children }: { id: string; children: React.ReactNode 
 
 function PresenceCard({ market, title, body }: { market: 'AO' | 'PT'; title: string; body: string }) {
   return (
-    <article style={{ border: `1px solid ${C.ruleLight}`, borderRadius: 10, padding: 20, background: C.paper }}>
+    <article style={{ border: `1px solid ${C.surfaceBorder}`, borderRadius: 10, padding: 20, background: C.paper }}>
       <div style={{ color: C.goldDeep, fontSize: 10, fontWeight: 800, letterSpacing: 1.5, marginBottom: 8 }}>{market}</div>
       <h3 style={{ fontFamily: F.display, color: C.ink, fontSize: 18, margin: '0 0 10px' }}>{title}</h3>
       <p style={{ color: C.inkSoft, fontSize: 12.5, lineHeight: 1.7, margin: 0 }}>{body}</p>
