@@ -12,6 +12,7 @@ const PAYMENT_NAMES: Record<string, Record<Lang, string>> = {
   paypal: { pt: 'PayPal', en: 'PayPal' },
   stripe: { pt: 'cartão através da Stripe', en: 'card through Stripe' },
   mbway: { pt: 'MB WAY', en: 'MB WAY' },
+  multicaixa_express: { pt: 'Multicaixa Express', en: 'Multicaixa Express' },
 };
 
 function formatAmount(value: number, market: Market, lang: Lang): string {
@@ -20,23 +21,26 @@ function formatAmount(value: number, market: Market, lang: Lang): string {
 }
 
 function paymentAnswer(market: Market, lang: Lang, settings: MarketSettings | null): string {
-  if (market === 'AO') {
+  const paymentsEnabled = market === 'AO' ? settings?.angolaPaymentLive : settings?.portugalPaymentsEnabled;
+  if (paymentsEnabled === false) {
     return lang === 'pt'
-      ? 'Na loja Angola, o checkout apresenta o AppyPay para pagamento por Multicaixa Express ou Referência. A encomenda só fica confirmada depois de o pagamento ser verificado.'
-      : 'In the Angola store, checkout presents AppyPay for Multicaixa Express or payment by Reference. Your order is confirmed only after the payment is verified.';
+      ? `Na loja ${market === 'AO' ? 'Angola' : 'Portugal'}, a encomenda é criada com o pagamento pendente e o site abre o WhatsApp para coordenar os passos seguintes. A encomenda só fica confirmada depois de o pagamento ser verificado.`
+      : `In the ${market === 'AO' ? 'Angola' : 'Portugal'} store, the order is created with payment pending and the site opens WhatsApp to coordinate the next steps. The order is confirmed only after payment is verified.`;
   }
 
-  if (!settings?.portugalPaymentsEnabled) {
+  if (!settings) {
     return lang === 'pt'
-      ? 'Na loja Portugal, o pagamento é atualmente coordenado por email após a criação da encomenda. Quando os pagamentos online estiverem ativos, o checkout mostrará apenas os métodos disponíveis, que poderão incluir cartão através da Stripe, PayPal ou MB WAY.'
-      : 'In the Portugal store, payment is currently coordinated by email after the order is created. When online payments are active, checkout will show only the available methods, which may include card through Stripe, PayPal, or MB WAY.';
+      ? 'Os métodos de pagamento disponíveis são apresentados no checkout. A encomenda só fica confirmada depois de o pagamento ser verificado.'
+      : 'Available payment methods are shown at checkout. The order is confirmed only after payment is verified.';
   }
 
-  const methods = (settings.portugalPaymentMethods ?? []).map((method) => PAYMENT_NAMES[method]?.[lang]).filter(Boolean);
+  const methods = (market === 'AO' ? settings.angolaPaymentMethods : settings.portugalPaymentMethods)
+    .map((method) => PAYMENT_NAMES[method]?.[lang])
+    .filter(Boolean);
   const available = methods.length ? methods.join(', ') : (lang === 'pt' ? 'os métodos apresentados no checkout' : 'the methods shown at checkout');
   return lang === 'pt'
-    ? `Na loja Portugal pode pagar com ${available}. A encomenda só fica confirmada depois de o pagamento ser verificado.`
-    : `In the Portugal store you can pay with ${available}. Your order is confirmed only after the payment is verified.`;
+    ? `Na loja ${market === 'AO' ? 'Angola' : 'Portugal'} pode pagar com ${available}. A encomenda só fica confirmada depois de o pagamento ser verificado.`
+    : `In the ${market === 'AO' ? 'Angola' : 'Portugal'} store you can pay with ${available}. Your order is confirmed only after payment is verified.`;
 }
 
 export function buildFaqEntries(market: Market, lang: Lang, settings: MarketSettings | null, content?: StorefrontContent | null): FaqEntry[] {
@@ -47,7 +51,8 @@ export function buildFaqEntries(market: Market, lang: Lang, settings: MarketSett
         const question = (lang === 'en' ? entry.questionEN : entry.questionPT).trim();
         const baseAnswer = lang === 'en' ? entry.answerEN : entry.answerPT;
         const portugalAnswer = lang === 'en' ? entry.answerENPT : entry.answerPTPT;
-        const answer = (market === 'PT' && portugalAnswer?.trim() ? portugalAnswer : baseAnswer).trim();
+        const authoredAnswer = (market === 'PT' && portugalAnswer?.trim() ? portugalAnswer : baseAnswer).trim();
+        const answer = /pagamento|payment/i.test(question) ? paymentAnswer(market, lang, settings) : authoredAnswer;
         const linkLabel = (lang === 'en' ? entry.linkLabelEN : entry.linkLabelPT)?.trim();
         const linkPath = entry.linkPath?.trim();
         return {

@@ -4,7 +4,8 @@ import type { MarketStockStatus, Product, ProductBundleComponent, ProductColor, 
 const SIZE_ORDER = ['XS', 'S', 'M', 'L', 'XL'];
 import { TONE_CYCLE } from '../components/ProductPhoto';
 import { publicEnv } from '../config/env';
-import { buildProductImageAlt } from './productImageAlt';
+import { usableProductImageAlt, verifiedProductType } from './productImageAlt';
+import { normalizeLocalizedProductName } from './productCopy';
 
 // Recognised "new arrival" merch-tag labels (2026-07-25 navbar fix), checked
 // case-insensitively against BOTH labelPT and labelEN regardless of the
@@ -75,7 +76,7 @@ export function absoluteMediaUrl(url?: string): string | undefined {
 }
 
 export function adaptApiProduct(api: ApiProduct, market: 'AO' | 'PT', lang: 'pt' | 'en', index = 0): Product {
-  const localizedName = (lang === 'en' ? api.nameEN : api.namePT)?.trim() || api.name;
+  const localizedName = normalizeLocalizedProductName((lang === 'en' ? api.nameEN : api.namePT)?.trim() || api.name);
   const localizedDescription = (lang === 'en' ? api.descriptionEN : api.descriptionPT)?.trim() || api.description;
 
   // Taxonomies became relationships on 2026-07-25; every product call uses
@@ -84,6 +85,7 @@ export function adaptApiProduct(api: ApiProduct, market: 'AO' | 'PT', lang: 'pt'
   // than crashing.
   const category = resolveRef(api.category);
   const categoryLabel = (lang === 'en' ? category?.nameEN : category?.namePT)?.trim() || category?.namePT || '';
+  const imageProductType = verifiedProductType(api.id, lang, categoryLabel);
   const images = (api.images ?? []).flatMap(({ image, color }) => {
     if (!image || typeof image !== 'object') return [];
     const url = absoluteMediaUrl(image.url);
@@ -97,7 +99,7 @@ export function adaptApiProduct(api: ApiProduct, market: 'AO' | 'PT', lang: 'pt'
       smallUrl: absoluteMediaUrl(image.sizes?.small?.url),
       mediumUrl: absoluteMediaUrl(image.sizes?.medium?.url),
       largeUrl: absoluteMediaUrl(image.sizes?.large?.url),
-      alt: image.alt?.trim() || buildProductImageAlt({ productName: localizedName, colorName: imageColor, productType: categoryLabel }),
+      alt: usableProductImageAlt(image.alt, { productName: localizedName, colorName: imageColor, productType: imageProductType }),
       colorId: refId(color) || undefined,
     }];
   });

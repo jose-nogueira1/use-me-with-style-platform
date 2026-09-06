@@ -102,7 +102,7 @@ function LookCard({ post, lang, priority = false }: { post: ApiInstagramPost; la
       <div style={{ aspectRatio: '4 / 5', overflow: 'hidden', position: 'relative' }}>
         <ProductPhoto tone="dark" radius={0} image={{ url: post.imageUrl, alt: post.captionDisplay }} priority={priority} />
         <div style={{ position: 'absolute', left: 10, bottom: 10, display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 10px', borderRadius: 999, background: 'rgba(5,5,5,0.78)', color: C.onDarkGold, fontSize: 9, fontWeight: 850 }}>
-          <ShoppingBag size={11} /> {post.products?.length} {lang === 'pt' ? 'peças' : 'pieces'}
+          <ShoppingBag size={11} /> {post.products?.length} {lang === 'pt' ? (post.products?.length === 1 ? 'peça' : 'peças') : (post.products?.length === 1 ? 'piece' : 'pieces')}
         </div>
       </div>
       <div style={{ padding: 13 }}>

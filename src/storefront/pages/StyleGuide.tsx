@@ -27,7 +27,7 @@ export function StyleGuide() {
     : 'Practical advice for choosing, styling and caring for your activewear.';
 
   return (
-    <div className="ump-content-width" style={{ padding: '48px 20px 64px' }}>
+    <div className="ump-listing-width" style={{ padding: '48px 20px 64px' }}>
       <Seo
         title={lang === 'pt' ? 'Guia de estilo e moda desportiva | Use Me With Style' : 'Activewear style guide | Use Me With Style'}
         description={lang === 'pt' ? 'Guias sobre leggings, roupa para o ginásio, tecidos e estilo ativo para mulheres em Angola e Portugal.' : 'Guides to leggings, gym outfits, activewear fabrics and active style for women in Angola and Portugal.'}
@@ -36,7 +36,7 @@ export function StyleGuide() {
         { name: lang === 'pt' ? 'Início' : 'Home', path: '/' },
         { name: title, path: '/estilo' },
       ]} />
-      <header style={{ maxWidth: 720, marginBottom: 36 }}>
+      <header className="ump-page-header" style={{ marginBottom: 36 }}>
         <div style={{ color: C.goldDeep, fontSize: 10, fontWeight: 800, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 10 }}>Use Me With Style</div>
         <h1 style={{ fontFamily: F.display, color: C.ink, fontSize: 36, lineHeight: 1.15, margin: '0 0 14px' }}>{title}</h1>
         <p style={{ color: C.inkSoft, fontSize: 15, lineHeight: 1.7, margin: 0 }}>{intro}</p>

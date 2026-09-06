@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Check, ChevronDown, ChevronLeft, ChevronRight, Search, X } from 'lucide-react';
 import { C, F, t } from '../../theme';
@@ -17,8 +18,8 @@ import { serializeJsonLd } from '../../lib/jsonLd';
 import { SizeGuideTable } from '../components/SizeGuideTable';
 import { BreadcrumbJsonLd } from '../components/BreadcrumbJsonLd';
 import { CartAddedDrawer } from '../components/CartAddedDrawer';
-import { openMiniCart } from '../miniCart';
 import { saleDiscountLabel, saleUrgencyLabel } from '../../lib/salePresentation';
+import { useModalDialog } from '../../lib/dialogFocus';
 
 // Category display names now come from the CMS categories collection (via
 // product.catLabel) instead of a hardcoded slug->i18n-key map (2026-07-25).
@@ -55,6 +56,9 @@ export function ProductDetail() {
   const [color, setColor] = useState<string | null>(null);
   const [added, setAdded] = useState(false);
   const [showSizeGuide, setShowSizeGuide] = useState(false);
+  const sizeGuideDialogRef = useRef<HTMLDivElement>(null);
+  const closeSizeGuide = useCallback(() => setShowSizeGuide(false), []);
+  useModalDialog(sizeGuideDialogRef, showSizeGuide, closeSizeGuide);
   const [shippingOpen, setShippingOpen] = useState(true);
   const [returnsOpen, setReturnsOpen] = useState(false);
   // Gallery (2026-08-07, per-colour photo galleries): tracks the shopper's
@@ -249,7 +253,8 @@ export function ProductDetail() {
       <CartAddedDrawer
         open={added}
         onClose={() => setAdded(false)}
-        onViewCart={() => { setAdded(false); openMiniCart(); }}
+        onViewCart={() => { setAdded(false); navigate('/carrinho'); }}
+        onCheckout={() => { setAdded(false); navigate('/checkout'); }}
         lang={lang}
         productName={product.name}
         image={mainImage}
@@ -494,14 +499,15 @@ export function ProductDetail() {
           <div style={{ background: C.subtleBg, borderRadius: 8, padding: 14, marginTop: 4 }}>
             <div>
               <button
+                className="ump-disclosure-button"
                 type="button"
                 onClick={() => setShippingOpen((open) => !open)}
                 aria-expanded={shippingOpen}
                 aria-controls="product-shipping-details"
-                style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '6px 0', color: C.ink, fontSize: 12, fontWeight: 700, textAlign: 'left' }}
+                style={{ padding: '10px 0', fontSize: 12 }}
               >
                 <span>{t('shipping', lang)}</span>
-                <ChevronDown size={16} style={{ flexShrink: 0, transform: shippingOpen ? 'rotate(180deg)' : undefined }} />
+                <ChevronDown className="ump-disclosure-icon" size={16} />
               </button>
               {shippingOpen ? (
                 <div id="product-shipping-details" style={{ padding: '0 0 8px', color: C.inkSoft, fontSize: 12, lineHeight: 1.5 }}>
@@ -511,14 +517,15 @@ export function ProductDetail() {
             </div>
             <div style={{ borderTop: `1px solid ${C.ruleLight}` }}>
               <button
+                className="ump-disclosure-button"
                 type="button"
                 onClick={() => setReturnsOpen((open) => !open)}
                 aria-expanded={returnsOpen}
                 aria-controls="product-returns-details"
-                style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '12px 0 6px', color: C.ink, fontSize: 12, fontWeight: 700, textAlign: 'left' }}
+                style={{ padding: '12px 0 8px', fontSize: 12 }}
               >
                 <span>{t('returns', lang)}</span>
-                <ChevronDown size={16} style={{ flexShrink: 0, transform: returnsOpen ? 'rotate(180deg)' : undefined }} />
+                <ChevronDown className="ump-disclosure-icon" size={16} />
               </button>
               {returnsOpen ? (
                 <div id="product-returns-details" style={{ padding: '0 0 2px', color: C.inkSoft, fontSize: 12, lineHeight: 1.5 }}>
@@ -534,12 +541,12 @@ export function ProductDetail() {
         </div>
       </div>
 
-      {showSizeGuide && (
-        <div style={{ position: 'fixed', inset: 0, background: C.scrim, zIndex: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <div role="dialog" aria-modal="true" aria-labelledby="size-guide-title" style={{ background: C.paper, borderRadius: 10, padding: 20, width: '100%', maxWidth: 360, boxShadow: '0 20px 50px rgba(0,0,0,0.24)' }}>
+      {showSizeGuide && createPortal(
+        <div onMouseDown={(event) => event.target === event.currentTarget && closeSizeGuide()} style={{ position: 'fixed', inset: 0, background: C.scrim, zIndex: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+          <div ref={sizeGuideDialogRef} role="dialog" aria-modal="true" aria-labelledby="size-guide-title" tabIndex={-1} style={{ background: C.paper, color: C.ink, borderRadius: 10, padding: 20, width: '100%', maxWidth: 360, boxShadow: '0 20px 50px rgba(0,0,0,0.24)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
               <div id="size-guide-title" style={{ fontFamily: F.display, fontSize: 20, fontWeight: 800 }}>{t('sizeGuide', lang)}</div>
-              <button aria-label={lang === 'pt' ? 'Fechar guia de tamanhos' : 'Close size guide'} onClick={() => setShowSizeGuide(false)}>
+              <button data-dialog-initial-focus aria-label={lang === 'pt' ? 'Fechar guia de tamanhos' : 'Close size guide'} onClick={closeSizeGuide}>
                 <X size={18} />
               </button>
             </div>
@@ -554,7 +561,8 @@ export function ProductDetail() {
               </div>
             )}
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
 
       <div className="ump-sticky-cta ump-pd-mobile-actions ump-pd-width" style={{ background: C.paper, padding: '14px 20px', borderTop: `1px solid ${C.ruleLight}`, boxShadow: '0 -4px 12px rgba(0,0,0,0.04)', display: 'flex', gap: 10 }}>

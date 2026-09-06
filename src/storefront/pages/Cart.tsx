@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Minus, Plus, ShoppingBag, X } from 'lucide-react';
-import { C, F, formatKz, t } from '../../theme';
+import { C, F, formatMoney, t } from '../../theme';
 import { useApp, useFormatPrice } from '../../state/AppContext';
 import { useProducts } from '../../hooks/useProducts';
 import { ProductPhoto } from '../../components/ProductPhoto';
 import { trackMetaEvent } from '../../lib/metaAnalytics';
 import { fetchTaxRates, type TaxRates } from '../../lib/api';
 import { DEFAULT_TAX_RATES, vatIncludedAmount } from '../shipping';
+import { cartItemImage } from '../../lib/cartPresentation';
+import { otherMarketCartSummary } from '../../lib/marketCart';
 
 // Placeholder for a price/line-item value that hasn't loaded for the
 // current market yet -- see the `loading` usage below. Sizing is passed per
@@ -18,7 +20,7 @@ function SkeletonBar({ width, height = 13 }: { width: number; height?: number })
 }
 
 export function Cart() {
-  const { market, lang, cart, dispatchCart } = useApp();
+  const { market, setMarket, lang, cart, dispatchCart } = useApp();
   const { products, loading } = useProducts(market, lang);
   const fmtPrice = useFormatPrice();
   const navigate = useNavigate();
@@ -75,13 +77,24 @@ export function Cart() {
   }, [cart, loading, products, dispatchCart]);
 
   if (cart.length === 0) {
+    const otherCart = typeof window === 'undefined' ? { market: market === 'AO' ? 'PT' as const : 'AO' as const, itemCount: 0 } : otherMarketCartSummary(localStorage, market);
+    const currentMarketName = t(market === 'AO' ? 'angola' : 'portugal', lang);
+    const otherMarketName = t(otherCart.market === 'AO' ? 'angola' : 'portugal', lang);
     return (
       <div className="ump-form-width" style={{ padding: '60px 30px', textAlign: 'center' }}>
         <div style={{ width: 60, height: 60, margin: '0 auto 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 30, background: C.subtleBg }}>
           <ShoppingBag size={28} color={C.goldDeep} />
         </div>
         <h1 style={{ fontFamily: F.display, fontSize: 22, color: C.ink, margin: '0 0 8px', fontWeight: 800 }}>{t('cartEmpty', lang)}</h1>
-        <div style={{ fontSize: 13, color: C.inkSoft, marginBottom: 24, lineHeight: 1.5 }}>{t('cartEmptyHint', lang)}</div>
+        <div style={{ fontSize: 13, color: C.inkSoft, marginBottom: 12, lineHeight: 1.5 }}>{t('cartEmptyMarketHint', lang, { market: currentMarketName })}</div>
+        <div style={{ fontSize: 12, color: C.inkSoft, marginBottom: 24, lineHeight: 1.5 }}>
+          {otherCart.itemCount > 0 ? t(otherCart.itemCount === 1 ? 'cartRetainedOtherMarketOne' : 'cartRetainedOtherMarketMany', lang, { count: otherCart.itemCount, market: otherMarketName }) : t('cartSeparateMarkets', lang, { market: otherMarketName })}
+        </div>
+        {otherCart.itemCount > 0 && (
+          <button type="button" onClick={() => setMarket(otherCart.market)} style={{ display: 'block', margin: '0 auto 20px', color: C.goldDeep, fontSize: 12, fontWeight: 800, textDecoration: 'underline' }}>
+            {t(otherCart.market === 'AO' ? 'shopAngolaStore' : 'shopPortugalStore', lang)}
+          </button>
+        )}
         <Link
           to="/"
           style={{ padding: '12px 24px', background: C.ctaBg, border: `1px solid ${C.ctaBorder}`, color: C.onDarkGold, fontSize: 11, fontWeight: 800, letterSpacing: 1.5, textTransform: 'uppercase', borderRadius: 8, textDecoration: 'none' }}
@@ -235,7 +248,7 @@ export function Cart() {
           return (
             <div key={`${item.id}:${item.variantId ?? `${item.size}:${item.color}`}`} style={{ display: 'flex', gap: 12, padding: '14px 0', borderTop: `1px solid ${C.ruleLight}` }}>
               <div style={{ width: 72, height: 88, flexShrink: 0, borderRadius: 6, overflow: 'hidden' }}>
-                <ProductPhoto tone={p.tone} radius={6} image={p.images[0]} variant="thumbnail" />
+                <ProductPhoto tone={p.tone} radius={6} image={cartItemImage(p, item)} variant="thumbnail" />
               </div>
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                 <div>
@@ -308,11 +321,11 @@ export function Cart() {
                 but wrong "0 Kz" total for the ~1-2 seconds the fetch is in
                 flight (2026-07-26 QA pass). A skeleton makes it visibly
                 "still loading" instead of "your cart is worth nothing". */}
-            {loading ? <SkeletonBar width={70} /> : <span>{market === 'AO' ? `${formatKz(subtotal, lang)} Kz` : `€${subtotal.toFixed(2)}`}</span>}
+            {loading ? <SkeletonBar width={70} /> : <span>{formatMoney(subtotal, market, lang)}</span>}
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 16, fontWeight: 800, color: C.ink }}>
             <span>{t('total', lang)}</span>
-            {loading ? <SkeletonBar width={90} height={16} /> : <span>{market === 'AO' ? `${formatKz(subtotal, lang)} Kz` : `€${subtotal.toFixed(2)}`}</span>}
+            {loading ? <SkeletonBar width={90} height={16} /> : <span>{formatMoney(subtotal, market, lang)}</span>}
           </div>
           <div data-testid="cart-vat-included" style={{ fontSize: 10, color: C.inkSoft, marginTop: 4, marginBottom: 16, textAlign: 'right' }}>
             {loading ? (
@@ -320,7 +333,7 @@ export function Cart() {
             ) : (
               t('vatIncludedLabel', lang)
                 .replace('{rate}', String(vatRate))
-                .replace('{amount}', market === 'AO' ? `${formatKz(vatAmount, lang)} Kz` : `€${vatAmount.toFixed(2)}`)
+                .replace('{amount}', formatMoney(vatAmount, market, lang))
             )}
           </div>
           <button

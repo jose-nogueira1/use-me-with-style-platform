@@ -161,7 +161,7 @@ export function StorefrontLayout() {
         }}
       >
         <div
-          className="ump-content-width"
+          className="ump-content-width ump-header-row"
           style={{
             padding: '14px 16px',
             display: 'flex',
@@ -188,7 +188,7 @@ export function StorefrontLayout() {
             </IconButton>
           )}
 
-          <Link to="/" style={{ textAlign: 'center', textDecoration: 'none', flex: 1, display: 'flex', justifyContent: 'center' }}>
+          <Link className="ump-header-logo" to="/" style={{ textAlign: 'center', textDecoration: 'none', flex: 1, display: 'flex', justifyContent: 'center' }}>
             {isHome ? (
               <BrandLogo tone="gold" goldColor={C.heroAccent} height={46} />
             ) : (
@@ -213,7 +213,7 @@ export function StorefrontLayout() {
             ))}
           </nav>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          <div className="ump-header-actions" style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
             <LanguageSwitch lang={lang} setLang={setLang} dark={isHome} />
             <ThemeToggle mode={themeMode} onChange={setThemeMode} dark={isHome} lang={lang} />
             {/* 2026-08-08: a persistent search icon, present on every page
@@ -299,6 +299,7 @@ export function StorefrontLayout() {
         open={miniCartOpen}
         onClose={() => setMiniCartOpen(false)}
         onViewCart={() => { setMiniCartOpen(false); navigate('/carrinho'); }}
+        onCheckout={() => { setMiniCartOpen(false); navigate('/checkout'); }}
       />
 
       <div className="ump-bottom-nav">
@@ -334,7 +335,7 @@ function LanguageSwitch({
   }, []);
 
   return (
-    <div ref={ref} style={{ position: 'relative', flexShrink: 0 }}>
+    <div ref={ref} className="ump-language-switch" style={{ position: 'relative', flexShrink: 0 }}>
       <button
         onClick={() => setOpen((o) => !o)}
         aria-label={`${t('language', lang)}: ${lang.toUpperCase()}`}

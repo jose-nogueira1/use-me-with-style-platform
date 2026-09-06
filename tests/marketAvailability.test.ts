@@ -80,12 +80,10 @@ test('mobile homepage categories and product cards get a modest size increase', 
   assert.match(layoutSource, /\.ump-home-product-card \{ width: 170\.75px !important; \}/)
 })
 
-test('mobile low-stock messaging moves below the image without covering photography', () => {
+test('mobile low-stock image badge is hidden to avoid covering photography', () => {
   assert.match(cardSource, /className=\{product\.marketStatus === 'low_stock' \? 'ump-stock-image-badge-low' : undefined\}/)
-  assert.match(cardSource, /className="ump-stock-mobile-badge"/)
-  assert.match(cardSource, /Só \$\{product\.marketStock\} restantes/)
   assert.match(layoutSource, /\.ump-stock-image-badge-low \{ display: none; \}/)
-  assert.match(layoutSource, /\.ump-stock-mobile-badge \{ display: inline-block !important; white-space: nowrap;/)
+  assert.doesNotMatch(cardSource, /className="ump-stock-mobile-badge"/)
 })
 
 test('mobile product colours use a single horizontal scroll track', () => {

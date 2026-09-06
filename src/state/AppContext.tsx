@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useReducer, type ReactNode } from 'react';
-import { formatKz, type Lang } from '../theme';
+import { formatMoney, type Lang } from '../theme';
 import { publicEnv } from '../config/env';
 import { cartReducer, type CartItem, type CartAction } from './cartReducer';
 import { applyCartActionToStorage, parseStoredCart } from './cartSync';
@@ -298,7 +298,7 @@ export function useApp(): AppContextValue {
 export function useFormatPrice() {
   const { market, lang } = useApp();
   return (product: { effectivePriceKz: number; effectivePriceEur: number }) =>
-    market === 'AO' ? `Kz ${formatKz(product.effectivePriceKz, lang)}` : `€${product.effectivePriceEur}`;
+    formatMoney(market === 'AO' ? product.effectivePriceKz : product.effectivePriceEur, market, lang);
 }
 
 /** The regular (pre-sale) price, for a strikethrough next to useFormatPrice's
@@ -307,5 +307,5 @@ export function useFormatPrice() {
 export function useFormatOriginalPrice() {
   const { market, lang } = useApp();
   return (product: { priceKz: number; priceEur: number }) =>
-    market === 'AO' ? `Kz ${formatKz(product.priceKz, lang)}` : `€${product.priceEur}`;
+    formatMoney(market === 'AO' ? product.priceKz : product.priceEur, market, lang);
 }

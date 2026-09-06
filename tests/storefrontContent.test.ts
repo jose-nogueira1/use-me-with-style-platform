@@ -32,11 +32,12 @@ test('CMS FAQ order, visibility, market overrides and safe internal links drive 
 });
 
 test('homepage metadata is market-aware and gives Angola its local trust signals', () => {
-  const ao = homeSeoMetadata('AO', 'pt');
+  const ao = homeSeoMetadata('AO', 'pt', { homeSeoDescriptionAngolaPT: 'Pagamento por Multicaixa Express ou Referência.' });
   const pt = homeSeoMetadata('PT', 'pt');
   assert.match(ao.title, /Luanda/);
   assert.match(ao.description, /Luanda/);
-  assert.match(ao.description, /Multicaixa Express/);
+  assert.match(ao.description, /métodos de pagamento disponíveis/);
+  assert.doesNotMatch(ao.description, /Multicaixa Express|Referência|AppyPay/);
   assert.match(pt.title, /Portugal/);
   assert.doesNotMatch(pt.description, /Luanda|Multicaixa|AppyPay/);
   assert.ok(ao.description.length <= 160);

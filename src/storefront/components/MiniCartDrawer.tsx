@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Minus, Plus, ShoppingBag, X } from 'lucide-react';
-import { C, F, formatKz, t } from '../../theme';
+import { C, F, formatMoney, t } from '../../theme';
 import { useApp, useFormatPrice } from '../../state/AppContext';
 import { useProducts } from '../../hooks/useProducts';
 import { ProductPhoto } from '../../components/ProductPhoto';
@@ -10,9 +10,10 @@ type Props = {
   open: boolean;
   onClose: () => void;
   onViewCart: () => void;
+  onCheckout: () => void;
 };
 
-export function MiniCartDrawer({ open, onClose, onViewCart }: Props) {
+export function MiniCartDrawer({ open, onClose, onViewCart, onCheckout }: Props) {
   const { market, lang, cart, dispatchCart } = useApp();
   const { products, loading } = useProducts(market, lang);
   const fmtPrice = useFormatPrice();
@@ -23,9 +24,7 @@ export function MiniCartDrawer({ open, onClose, onViewCart }: Props) {
     const product = products.find((candidate) => candidate.id === item.id);
     return product ? sum + (market === 'AO' ? product.effectivePriceKz : product.effectivePriceEur) * item.qty : sum;
   }, 0);
-  const formattedSubtotal = market === 'AO'
-    ? formatKz(subtotal)
-    : new Intl.NumberFormat(lang === 'pt' ? 'pt-PT' : 'en-IE', { style: 'currency', currency: 'EUR' }).format(subtotal);
+  const formattedSubtotal = formatMoney(subtotal, market, lang);
 
   useEffect(() => {
     if (!open) return;
@@ -145,7 +144,8 @@ export function MiniCartDrawer({ open, onClose, onViewCart }: Props) {
                 <strong>{formattedSubtotal}</strong>
               </div>
               <div className="ump-mini-cart-note">{lang === 'pt' ? 'Envio e descontos calculados no checkout.' : 'Shipping and discounts calculated at checkout.'}</div>
-              <button type="button" className="ump-cart-added-primary" onClick={onViewCart}>{lang === 'pt' ? 'Ver carrinho e finalizar' : 'View cart and checkout'}</button>
+              <button type="button" className="ump-cart-added-primary" onClick={onCheckout}>{t('checkout', lang)}</button>
+              <button type="button" className="ump-cart-added-secondary" onClick={onViewCart}>{lang === 'pt' ? 'Rever carrinho' : 'Review cart'}</button>
             </>
           ) : null}
           <button type="button" className="ump-cart-added-secondary" onClick={onClose}>{lang === 'pt' ? 'Continuar a comprar' : 'Continue shopping'}</button>

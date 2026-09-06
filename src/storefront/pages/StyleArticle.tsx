@@ -37,7 +37,7 @@ export function StyleArticle() {
   const date = post.publishedAt || post.createdAt;
 
   return (
-    <article className="ump-form-width" style={{ padding: '38px 20px 64px' }}>
+    <article className="ump-reading-width" style={{ padding: '38px 20px 64px' }}>
       <Seo title={localized.seoTitle} description={localized.seoDescription} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(structuredData) }} />
       <BreadcrumbJsonLd items={[

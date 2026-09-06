@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { C, F, pickBilingual } from '../../theme';
 import { useApp } from '../../state/AppContext';
 import { fetchLegalContent, type LegalContent } from '../../lib/api';
+import { Link } from 'react-router-dom';
 
 // Shared renderer for Privacy Policy and Terms & Conditions (added
 // 2026-07-24, user request) -- same "fetch once, split on blank lines"
@@ -43,9 +44,15 @@ export function LegalPage({ heading, pendingNotice, loadingNotice, getTextPT, ge
   }, []);
 
   const text = content ? pickBilingual(getTextPT(content), getTextEN(content), lang) : null;
+  const sections = (text ?? '').split(/\n{2,}/).map((paragraph) => {
+    const colon = paragraph.indexOf(':');
+    if (colon > 0 && colon < 100) return { heading: paragraph.slice(0, colon).trim(), body: paragraph.slice(colon + 1).trim() };
+    const numbered = paragraph.match(/^(\d+[.)]\s+[^.]{2,80})\.\s+([\s\S]+)$/);
+    return numbered ? { heading: numbered[1], body: numbered[2] } : { heading: null, body: paragraph };
+  });
 
   return (
-    <div className="ump-form-width" style={{ padding: '40px 20px 56px', textAlign: 'left' }}>
+    <article className="ump-reading-width" style={{ padding: '40px 20px 56px', textAlign: 'left' }}>
       <h1 style={{ fontFamily: F.display, fontSize: 22, color: C.ink, fontWeight: 800, margin: '0 0 24px', textAlign: 'center' }}>
         {heading}
       </h1>
@@ -55,17 +62,23 @@ export function LegalPage({ heading, pendingNotice, loadingNotice, getTextPT, ge
         </div>
       ) : text ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {text.split(/\n{2,}/).map((paragraph, i) => (
-            <p key={i} style={{ fontSize: 13, color: C.ink, lineHeight: 1.75, margin: 0 }}>
-              {paragraph}
-            </p>
+          {sections.map((section, i) => (
+            <section key={i}>
+              {section.heading && <h2 style={{ fontFamily: F.display, fontSize: 18, color: C.ink, margin: '8px 0 8px' }}>{section.heading}</h2>}
+              {section.body && <p style={{ fontSize: 14, color: C.ink, lineHeight: 1.75, margin: 0 }}>{section.body}</p>}
+            </section>
           ))}
+          <nav aria-label={lang === 'pt' ? 'Informação relacionada' : 'Related information'} style={{ display: 'flex', flexWrap: 'wrap', gap: '10px 18px', paddingTop: 16, borderTop: `1px solid ${C.ruleLight}`, fontSize: 13, fontWeight: 750, color: C.goldDeep }}>
+            <Link to="/ajuda">{lang === 'pt' ? 'Contactar o apoio' : 'Contact support'}</Link>
+            <Link to="/politica-privacidade">{lang === 'pt' ? 'Política de Privacidade' : 'Privacy Policy'}</Link>
+            <Link to="/termos-condicoes">{lang === 'pt' ? 'Termos e Condições' : 'Terms and Conditions'}</Link>
+          </nav>
         </div>
       ) : (
         <div role="status" style={{ textAlign: 'center', color: C.inkSoft, fontSize: 13 }}>
           {pendingNotice}
         </div>
       )}
-    </div>
+    </article>
   );
 }

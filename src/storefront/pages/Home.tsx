@@ -41,6 +41,7 @@ const FALLBACK_CATEGORIES: ApiCategory[] = [
 const CATEGORY_TONE_CYCLE: ProductTone[] = ['rose', 'dark', 'blue', 'gold'];
 
 function HomeProductShelf({ products }: { products: Product[] }) {
+  const { lang } = useApp();
   const trackRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{ startX: number; startScrollLeft: number; pointerId: number } | null>(null);
   const paginationDragRef = useRef<{ startX: number; pointerId: number } | null>(null);
@@ -215,7 +216,7 @@ function HomeProductShelf({ products }: { products: Product[] }) {
         <div
           className="ump-home-shelf-dots"
           data-dragging={isPaginationDragging || isDragging ? 'true' : undefined}
-          aria-label="Shelf pagination"
+          aria-label={t('shelfPagination', lang)}
           onPointerDown={handlePaginationPointerDown}
           onPointerMove={handlePaginationPointerMove}
           onPointerUp={finishPaginationDrag}
@@ -227,7 +228,7 @@ function HomeProductShelf({ products }: { products: Product[] }) {
               key={product.id}
               type="button"
               className={`ump-home-shelf-dot${index === activeDot ? ' ump-home-shelf-dot-active' : ''}`}
-              aria-label={`Show product ${index + 1}`}
+              aria-label={t('showProduct', lang, { number: index + 1 })}
               aria-current={index === activeDot ? 'true' : undefined}
               onClick={() => scrollToProduct(index)}
             />

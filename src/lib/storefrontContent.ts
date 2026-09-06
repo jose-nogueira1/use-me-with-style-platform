@@ -10,8 +10,8 @@ export const DEFAULT_STOREFRONT_CONTENT = {
   tiktokUrl: '',
   homeSeoTitleAngolaPT: 'Moda desportiva feminina em Luanda | Use Me With Style',
   homeSeoTitleAngolaEN: "Women's activewear in Luanda | Use Me With Style",
-  homeSeoDescriptionAngolaPT: 'Compre moda desportiva feminina com entrega em Luanda e pagamento por Multicaixa Express ou Referência. Preços em Kz e apoio local.',
-  homeSeoDescriptionAngolaEN: "Shop women's activewear with delivery across Luanda and payment by Multicaixa Express or Reference. Prices in Kz and local support.",
+  homeSeoDescriptionAngolaPT: 'Compre moda desportiva feminina com entrega em Luanda. Consulte no checkout os métodos de pagamento disponíveis. Preços em Kz e apoio local.',
+  homeSeoDescriptionAngolaEN: "Shop women's activewear with delivery across Luanda. See available payment methods at checkout. Prices in Kz and local support.",
   homeSeoTitlePortugalPT: 'Moda desportiva feminina em Portugal | Use Me With Style',
   homeSeoTitlePortugalEN: "Women's activewear in Portugal | Use Me With Style",
   homeSeoDescriptionPortugalPT: 'Compre leggings, conjuntos, tops e vestidos com entrega em Portugal. Peças versáteis para treino e para o dia a dia.',
@@ -32,8 +32,8 @@ export const DEFAULT_STOREFRONT_CONTENT = {
   aboutPresenceTitleEN: 'Angola and Portugal, close to you',
   aboutAngolaTitlePT: 'Loja Angola',
   aboutAngolaTitleEN: 'Angola store',
-  aboutAngolaBodyPT: 'Na loja Angola, encontra preços em Kz, entrega por estafeta nos 16 municípios de Luanda e pagamento por Multicaixa Express ou Referência. Para outros destinos, o apoio confirma as opções disponíveis.',
-  aboutAngolaBodyEN: 'In the Angola store, prices are shown in Kz, with courier delivery across Luanda’s 16 municipalities and payment by Multicaixa Express or Reference. For other destinations, support confirms the available options.',
+  aboutAngolaBodyPT: 'Na loja Angola, encontra preços em Kz e entrega por estafeta nos 16 municípios de Luanda. Os métodos de pagamento disponíveis são apresentados no checkout. Para outros destinos, o apoio confirma as opções disponíveis.',
+  aboutAngolaBodyEN: 'In the Angola store, prices are shown in Kz, with courier delivery across Luanda’s 16 municipalities. Available payment methods are shown at checkout. For other destinations, support confirms the available options.',
   aboutPortugalTitlePT: 'Loja Portugal',
   aboutPortugalTitleEN: 'Portugal store',
   aboutPortugalBodyPT: 'Na loja Portugal, compra em euros e recebe via CTT, com opções Standard ou Registado quando disponíveis para o peso da encomenda. Madeira e Açores podem ter prazos diferentes.',
@@ -104,8 +104,8 @@ export function homeSeoMetadata(market: 'AO' | 'PT', lang: 'pt' | 'en', value?: 
   const content = normalizeStorefrontContent(value);
   if (market === 'AO') {
     return lang === 'en'
-      ? { title: content.homeSeoTitleAngolaEN, description: content.homeSeoDescriptionAngolaEN }
-      : { title: content.homeSeoTitleAngolaPT, description: content.homeSeoDescriptionAngolaPT };
+      ? { title: content.homeSeoTitleAngolaEN, description: DEFAULT_STOREFRONT_CONTENT.homeSeoDescriptionAngolaEN }
+      : { title: content.homeSeoTitleAngolaPT, description: DEFAULT_STOREFRONT_CONTENT.homeSeoDescriptionAngolaPT };
   }
   return lang === 'en'
     ? { title: content.homeSeoTitlePortugalEN, description: content.homeSeoDescriptionPortugalEN }

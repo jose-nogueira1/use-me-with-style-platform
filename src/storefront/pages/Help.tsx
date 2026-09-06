@@ -43,17 +43,13 @@ function AccordionSection({
   return (
     <div id={id} style={{ marginTop: 12, borderTop: `1px solid ${C.rule}`, scrollMarginTop: 96 }}>
       <button
+        className="ump-disclosure-button"
         type="button"
         onClick={onToggle}
         disabled={loading}
         aria-expanded={open}
         style={{
-          width: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 12,
-          padding: '16px 0',
+          padding: '16px 4px',
           background: 'none',
           border: 'none',
           cursor: loading ? 'default' : 'pointer',
@@ -63,9 +59,10 @@ function AccordionSection({
         <span style={{ fontFamily: F.display, fontSize: 15, color: C.ink, fontWeight: 800 }}>{heading}</span>
         {!loading && (
           <ChevronDown
+            className="ump-disclosure-icon"
             size={18}
             color={C.inkSoft}
-            style={{ flexShrink: 0, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}
+            style={{ transform: open ? 'rotate(180deg)' : 'none' }}
           />
         )}
       </button>
@@ -84,7 +81,7 @@ function AccordionSection({
 
 const inputStyle = {
   padding: '10px 12px',
-  fontSize: 13,
+  fontSize: 16,
   border: `1px solid ${C.fieldBorder}`,
   borderRadius: 6,
   background: C.paper,
@@ -178,10 +175,10 @@ export function Help() {
 
   return (
     <div className="ump-form-width" style={{ padding: '40px 20px', textAlign: 'center' }}>
-      <h1 style={{ fontFamily: F.display, fontSize: 22, color: C.ink, fontWeight: 800, margin: '0 0 10px' }}>{t('needAHand', lang)}</h1>
-      <div style={{ fontSize: 13, color: C.inkSoft, lineHeight: 1.6, marginBottom: 20 }}>
-        {t('helpBody', lang)}
-      </div>
+      <header className="ump-page-header">
+        <h1 style={{ fontFamily: F.display, fontSize: 28, color: C.ink, fontWeight: 800, margin: '0 0 10px' }}>{t('needAHand', lang)}</h1>
+        <div style={{ fontSize: 14, color: C.inkSoft, lineHeight: 1.65 }}>{t('helpBody', lang)}</div>
+      </header>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 12, textAlign: 'left' }}>
         <Link to="/conta" style={{ padding: 16, border: `1px solid ${C.fieldBorder}`, borderRadius: 8, background: C.paper, color: C.ink, textDecoration: 'none' }}>
           <Search size={18} color={C.goldDeep} />
@@ -236,50 +233,50 @@ export function Help() {
       )}
 
       <div style={{ marginTop: 32, paddingTop: 32, borderTop: `1px solid ${C.rule}`, textAlign: 'left' }}>
-        <div style={{ fontFamily: F.display, fontSize: 16, color: C.ink, fontWeight: 800, marginBottom: 6, textAlign: 'center' }}>
+        <div style={{ fontFamily: F.display, fontSize: 18, color: C.ink, fontWeight: 800, marginBottom: 6 }}>
           {t('emailUsHeading', lang)}
         </div>
-        <div style={{ fontSize: 12.5, color: C.inkSoft, lineHeight: 1.6, marginBottom: 16, textAlign: 'center' }}>
+        <div style={{ fontSize: 13, color: C.inkSoft, lineHeight: 1.6, marginBottom: 16 }}>
           {t('emailUsBody', lang)}
         </div>
         <form onSubmit={handleContactSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <input
+          <label className="ump-form-label"><span>{t('contactNameLabel', lang)}</span><input className="ump-form-control"
             value={contactName}
             onChange={(e) => setContactName(e.target.value)}
             placeholder={t('contactNamePlaceholder', lang)}
             required
             style={inputStyle}
-          />
-          <input
+          /></label>
+          <label className="ump-form-label"><span>{t('contactEmailLabel', lang)}</span><input className="ump-form-control"
             value={contactEmail}
             onChange={(e) => setContactEmail(e.target.value)}
             placeholder={t('contactEmailPlaceholder', lang)}
             type="email"
             required
             style={inputStyle}
-          />
-          <input
+          /></label>
+          <label className="ump-form-label"><span>{t('contactPhoneLabel', lang)}</span><input className="ump-form-control"
             value={contactPhone}
             onChange={(e) => setContactPhone(e.target.value)}
             placeholder={t('contactPhonePlaceholder', lang)}
             type="tel"
             required
             style={inputStyle}
-          />
-          <input
+          /></label>
+          <label className="ump-form-label"><span>{t('contactOrderLabel', lang)}</span><input className="ump-form-control"
             value={contactOrder}
             onChange={(e) => setContactOrder(e.target.value)}
             placeholder={t('contactOrderPlaceholder', lang)}
             style={inputStyle}
-          />
-          <textarea
+          /></label>
+          <label className="ump-form-label"><span>{t('contactMessageLabel', lang)}</span><textarea className="ump-form-control"
             value={contactMessage}
             onChange={(e) => setContactMessage(e.target.value)}
             placeholder={t('contactMessagePlaceholder', lang)}
             required
             rows={4}
             style={{ ...inputStyle, resize: 'vertical' }}
-          />
+          /></label>
           <button
             type="submit"
             disabled={sendState === 'sending'}

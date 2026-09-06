@@ -7,11 +7,13 @@ import { buildFaqEntries, buildFaqStructuredData } from '../../lib/faqContent';
 import { serializeJsonLd } from '../../lib/jsonLd';
 import { Seo } from '../../lib/seo';
 import { normalizeStorefrontContent } from '../../lib/storefrontContent';
+import { Disclosure } from '../components/Disclosure';
 
 export function Faq() {
   const { lang, market } = useApp();
   const [settings, setSettings] = useState<MarketSettings | null>(null);
   const [content, setContent] = useState<StorefrontContent | null>(null);
+  const [openEntries, setOpenEntries] = useState<Set<number>>(() => new Set());
 
   useEffect(() => {
     let cancelled = false;
@@ -39,33 +41,28 @@ export function Faq() {
       <Seo title={title} description={description} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(structuredData) }} />
 
-      <header style={{ textAlign: 'center', marginBottom: 28 }}>
+      <header className="ump-page-header" style={{ marginBottom: 28 }}>
         <div style={{ color: C.goldDeep, fontSize: 10, fontWeight: 800, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 8 }}>
           {lang === 'pt' ? (market === 'AO' ? 'Loja Angola' : 'Loja Portugal') : (market === 'AO' ? 'Angola store' : 'Portugal store')}
         </div>
         <h1 style={{ fontFamily: F.display, fontSize: 28, lineHeight: 1.2, color: C.ink, fontWeight: 800, margin: 0 }}>
           {lang === 'pt' ? copy.faqTitlePT : copy.faqTitleEN}
         </h1>
-        <p style={{ maxWidth: 520, margin: '12px auto 0', color: C.inkSoft, fontSize: 13, lineHeight: 1.65 }}>
+        <p style={{ maxWidth: 520, margin: '12px 0 0', color: C.inkSoft, fontSize: 13, lineHeight: 1.65 }}>
           {lang === 'pt' ? copy.faqIntroPT : copy.faqIntroEN}
         </p>
       </header>
 
       <section aria-label={lang === 'pt' ? 'Respostas a perguntas frequentes' : 'Frequently asked question answers'} style={{ borderTop: `1px solid ${C.rule}` }}>
         {entries.map((entry, index) => (
-          <details key={entry.question} open={index === 0} style={{ borderBottom: `1px solid ${C.rule}` }}>
-            <summary style={{ padding: '18px 4px', color: C.ink, fontFamily: F.display, fontSize: 15, fontWeight: 800, lineHeight: 1.45, cursor: 'pointer' }}>
-              {entry.question}
-            </summary>
-            <div style={{ padding: '0 4px 20px', color: C.inkSoft, fontSize: 12.5, lineHeight: 1.75 }}>
+          <Disclosure key={entry.question} id={`faq-answer-${index}`} heading={entry.question} open={openEntries.has(index)} onToggle={() => setOpenEntries(current => { const next = new Set(current); if (next.has(index)) next.delete(index); else next.add(index); return next; })}>
               <p style={{ margin: 0 }}>{entry.answer}</p>
               {entry.link && (
                 <Link to={entry.link.to} style={{ display: 'inline-block', marginTop: 10, color: C.goldDeep, fontWeight: 800 }}>
                   {entry.link.label}
                 </Link>
               )}
-            </div>
-          </details>
+          </Disclosure>
         ))}
       </section>
 

@@ -1,6 +1,7 @@
 import { t } from '../../theme';
 import { useApp } from '../../state/AppContext';
 import { LegalPage } from './LegalPage';
+import { withApprovedTermsPaymentCopy } from '../../lib/legalCopy';
 
 export function Terms() {
   const { lang } = useApp();
@@ -9,8 +10,8 @@ export function Terms() {
       heading={t('termsNav', lang)}
       loadingNotice={t('legalPageLoading', lang)}
       pendingNotice={t('legalPagePending', lang)}
-      getTextPT={(c) => c.termsTextPT}
-      getTextEN={(c) => c.termsTextEN}
+      getTextPT={(c) => withApprovedTermsPaymentCopy(c.termsTextPT, 'pt')}
+      getTextEN={(c) => withApprovedTermsPaymentCopy(c.termsTextEN, 'en')}
     />
   );
 }

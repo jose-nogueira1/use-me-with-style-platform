@@ -4,7 +4,7 @@ import { C, F } from '../../theme';
 import { useApp } from '../../state/AppContext';
 import { fetchStorefrontContent, type StorefrontContent } from '../../lib/api';
 import { Seo } from '../../lib/seo';
-import { normalizeStorefrontContent } from '../../lib/storefrontContent';
+import { DEFAULT_STOREFRONT_CONTENT, normalizeStorefrontContent } from '../../lib/storefrontContent';
 
 export function About() {
   const { lang } = useApp();
@@ -78,7 +78,7 @@ export function About() {
             <PresenceCard
               market="AO"
               title={localized(copy.aboutAngolaTitlePT, copy.aboutAngolaTitleEN)}
-              body={localized(copy.aboutAngolaBodyPT, copy.aboutAngolaBodyEN)}
+              body={localized(DEFAULT_STOREFRONT_CONTENT.aboutAngolaBodyPT, DEFAULT_STOREFRONT_CONTENT.aboutAngolaBodyEN)}
             />
             <PresenceCard
               market="PT"

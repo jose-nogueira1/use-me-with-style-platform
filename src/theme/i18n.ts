@@ -130,6 +130,10 @@ export const T: Record<string, Record<Lang, string>> = {
   cart: { pt: 'Carrinho', en: 'Cart' },
   cartEmpty: { pt: 'O seu carrinho está vazio', en: 'Your cart is empty' },
   cartEmptyHint: { pt: 'Adicione peças para começar.', en: 'Add pieces to get started.' },
+  cartEmptyMarketHint: { pt: 'O carrinho da loja {market} está vazio.', en: 'Your {market} store cart is empty.' },
+  cartRetainedOtherMarketOne: { pt: 'O carrinho da loja {market} mantém 1 artigo.', en: 'Your {market} store cart still holds 1 item.' },
+  cartRetainedOtherMarketMany: { pt: 'O carrinho da loja {market} mantém {count} artigos.', en: 'Your {market} store cart still holds {count} items.' },
+  cartSeparateMarkets: { pt: 'As lojas têm carrinhos separados. O carrinho da loja {market} não foi alterado.', en: 'Each store has a separate cart. Your {market} store cart has not changed.' },
   itemSingular: { pt: 'peça', en: 'item' },
   itemPlural: { pt: 'peças', en: 'items' },
   // Market-switch cart follow-up (2026-07-27): each market has its own
@@ -249,7 +253,13 @@ export const T: Record<string, Record<Lang, string>> = {
   // replaces the old hard-blocking error with a single manual method,
   // mirrored on Angola's existing bank-transfer fallback.
   paymentManualWhatsapp: { pt: 'Coordenar pagamento pelo WhatsApp', en: 'Arrange payment through WhatsApp' },
-  completeWhatsapp: { pt: 'Finalizar encomenda pelo WhatsApp', en: 'Complete order through WhatsApp' },
+  manualWhatsappCheckoutExplanation: {
+    pt: 'Ao concluir, criaremos a encomenda e abriremos o WhatsApp. A nossa equipa confirmará o pagamento e os próximos passos nessa conversa.',
+    en: 'When you continue, we will create the order and open WhatsApp. Our team will confirm payment and the next steps in that conversation.',
+  },
+  countryCode: { pt: 'Indicativo do país', en: 'Country code' },
+  searchCountryCode: { pt: 'Pesquisar país ou indicativo', en: 'Search country or code' },
+  completeWhatsapp: { pt: 'Criar encomenda e continuar no WhatsApp', en: 'Create order and continue in WhatsApp' },
   continueWhatsapp: { pt: 'Continuar no WhatsApp', en: 'Continue on WhatsApp' },
   whatsappPendingNote: { pt: 'A encomenda foi criada e aguarda a confirmação manual do pagamento.', en: 'Your order has been created and is awaiting manual payment confirmation.' },
   paymentBankTransfer: { pt: 'Transferência bancária', en: 'Bank transfer' },
@@ -398,8 +408,8 @@ export const T: Record<string, Record<Lang, string>> = {
   orderHelpBody: { pt: 'Consulte primeiro o estado e os detalhes da sua encomenda.', en: 'Check your order status and details first.' },
   paymentHelpHeading: { pt: 'Pagamentos', en: 'Payments' },
   paymentHelpBody: {
-    pt: 'Uma encomenda só é confirmada depois de o pagamento ser verificado. Se o pagamento falhar ou ficar pendente, envie um email com o número da encomenda.',
-    en: 'An order is only confirmed after payment is verified. If payment fails or remains pending, email us with your order number.',
+    pt: 'Os métodos disponíveis são apresentados no checkout. Enquanto os pagamentos online não estiverem ativos, a encomenda é criada com o pagamento pendente e o WhatsApp abre para coordenar os passos seguintes. A encomenda só fica confirmada depois de o pagamento ser verificado.',
+    en: 'Available methods are shown at checkout. While online payments are inactive, the order is created with payment pending and WhatsApp opens to coordinate the next steps. The order is confirmed only after payment is verified.',
   },
   returnsPolicyHeading: { pt: 'Política de trocas e devoluções', en: 'Returns & exchanges policy' },
   returnsPolicyLoading: { pt: 'A carregar política…', en: 'Loading policy…' },
@@ -424,6 +434,11 @@ export const T: Record<string, Record<Lang, string>> = {
     en: 'Email is our official support channel. Include your order number and a contact telephone number; if necessary, we will contact you directly.',
   },
   contactNamePlaceholder: { pt: 'Nome', en: 'Name' },
+  contactNameLabel: { pt: 'Nome', en: 'Name' },
+  contactEmailLabel: { pt: 'Email', en: 'Email' },
+  contactPhoneLabel: { pt: 'Telefone', en: 'Phone' },
+  contactOrderLabel: { pt: 'Número da encomenda (opcional)', en: 'Order number (optional)' },
+  contactMessageLabel: { pt: 'Mensagem', en: 'Message' },
   contactEmailPlaceholder: { pt: 'O seu email', en: 'Your email' },
   contactPhonePlaceholder: { pt: 'Telefone de contacto', en: 'Contact telephone number' },
   contactOrderPlaceholder: { pt: 'Número da encomenda (se aplicável)', en: 'Order number (if applicable)' },
@@ -446,7 +461,16 @@ export const T: Record<string, Record<Lang, string>> = {
   footerShopHeading: { pt: 'Comprar', en: 'Shop' },
   footerSupportHeading: { pt: 'Apoio', en: 'Support' },
   footerInfoHeading: { pt: 'Informação', en: 'Information' },
-  footerReturnsNote: { pt: 'Devoluções em {days}', en: 'Returns within {days}' },
+  footerReturnsNoteAo: { pt: 'Trocas: pedido em até 14 dias', en: 'Exchanges: request within 14 days' },
+  footerReturnsNotePt: { pt: 'Devoluções: comunicar em 14 dias', en: 'Returns: notify us within 14 days' },
+  appearance: { pt: 'Aparência', en: 'Appearance' },
+  lightTheme: { pt: 'Claro', en: 'Light' },
+  darkTheme: { pt: 'Escuro', en: 'Dark' },
+  shelfPagination: { pt: 'Paginação de produtos', en: 'Product pagination' },
+  showProduct: { pt: 'Mostrar produto {number}', en: 'Show product {number}' },
+  activeFiltersCount: { pt: '{count} filtros ativos', en: '{count} active filters' },
+  activeFilterCount: { pt: '1 filtro ativo', en: '1 active filter' },
+  trackOrderInitial: { pt: 'Consultar encomenda', en: 'Look up an order' },
   footerPricesNoteAo: { pt: 'Preços em Kz', en: 'Prices shown in Kz' },
   footerPricesNotePt: { pt: 'Preços em EUR', en: 'Prices shown in EUR' },
   prices: { pt: 'Preços', en: 'Prices' },
@@ -558,4 +582,17 @@ export function pickBilingual(pt: string | undefined, en: string | undefined, la
 // screen recording, 2026-08-07).
 export function formatKz(amount: number, lang: Lang): string {
   return amount.toLocaleString(lang === 'pt' ? 'pt-PT' : 'en-US', { maximumFractionDigits: 0 });
+}
+
+export function formatMoney(amount: number, market: 'AO' | 'PT', lang: Lang): string {
+  const currency = market === 'AO' ? 'AOA' : 'EUR';
+  const locale = lang === 'pt' ? 'pt-PT' : market === 'AO' ? 'en-US' : 'en-IE';
+  const fractionDigits = market === 'AO' ? 0 : 2;
+  return new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency,
+    currencyDisplay: 'narrowSymbol',
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+  }).format(amount);
 }

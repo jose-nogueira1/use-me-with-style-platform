@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { C, F, t, pickBilingual, formatKz, type Lang } from '../../theme';
+import { C, F, t, formatMoney, type Lang } from '../../theme';
 import { useApp } from '../../state/AppContext';
 import { useProducts } from '../../hooks/useProducts';
 import {
@@ -31,18 +31,13 @@ import {
   vatIncludedAmount,
 } from '../shipping';
 
-// Angola delivery is local courier only and payment is Multicaixa Express
-// through AppyPay. Portugal retains its separate online-payment methods.
+// Each market lists only the methods enabled by its current settings; when
+// online payments are deferred, checkout uses the manual WhatsApp handoff.
 
 const DEFAULT_MARKET_SETTINGS: MarketSettings = {
   angolaPaymentLive: false,
-  // Bilingual fallback (2026-07-26 bilingual audit fix): this used to be a
-  // single English-only string, so Angola's Portuguese-default shoppers saw
-  // English bank-transfer instructions whenever the CMS field was blank.
-  angolaBankTransferInstructionsPT:
-    'A nossa equipa enviará por email quaisquer instruções adicionais necessárias após a confirmação da encomenda.',
-  angolaBankTransferInstructionsEN:
-    'Our team will email any additional instructions required after the order is confirmed.',
+  angolaBankTransferInstructionsPT: '',
+  angolaBankTransferInstructionsEN: '',
   angolaPaymentMethods: ['multicaixa_express'],
   angolaDeliveryMethods: ['courier_ao'],
   angolaMunicipalityPrices: {
@@ -57,10 +52,8 @@ const DEFAULT_MARKET_SETTINGS: MarketSettings = {
   portugalWhatsappNumber: '',
   manualWhatsappMessagePT: '',
   manualWhatsappMessageEN: '',
-  portugalManualCheckoutInstructionsPT:
-    'Enviaremos por email as instruções para concluir o pagamento assim que a encomenda for confirmada.',
-  portugalManualCheckoutInstructionsEN:
-    "We'll email the instructions needed to complete payment once the order is confirmed.",
+  portugalManualCheckoutInstructionsPT: '',
+  portugalManualCheckoutInstructionsEN: '',
   portugalPaymentMethods: ['paypal', 'stripe'],
   portugalDeliveryMethods: ['ctt', 'courier_pt'],
   portugalStandardShippingPrice: 4.9,
@@ -637,7 +630,7 @@ export function Checkout() {
     ? 0
     : checkoutShippingCost(market, deliveryMethod, merchandiseTotalAfterDiscount, settings, form.city, totalWeightGrams, form.postalCode);
   const total = merchandiseTotalAfterDiscount + shippingCost;
-  const fmt = (n: number) => (market === 'PT' || usesEurSettlement ? `€${n.toFixed(2)}` : `${formatKz(n, lang)} Kz`);
+  const fmt = (n: number) => formatMoney(n, market === 'PT' || usesEurSettlement ? 'PT' : 'AO', lang);
 
   // VAT included-in-price breakdown (2026-08-04) -- see vatIncludedAmount's
   // own comment in shipping.ts for how the rate/region are chosen. Base is
@@ -1044,9 +1037,10 @@ export function Checkout() {
             />
           )}
           {market === 'AO' ? (
-            <label style={{ display: 'block', marginBottom: 12 }}>
-              <div style={{ fontSize: 10, fontWeight: 800, color: C.ink, marginBottom: 6 }}>{t('municipality', lang)} *</div>
+            <label className="ump-form-label" style={{ display: 'block', marginBottom: 12 }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: C.ink, marginBottom: 6 }}>{t('municipality', lang)} *</div>
               <select
+                className="ump-form-control"
                 value={form.city}
                 onChange={(e) => setForm({ ...form, city: e.target.value })}
                 required
@@ -1054,7 +1048,7 @@ export function Checkout() {
               >
                 <option value="">{t('selectMunicipality', lang)}</option>
                 {LUANDA_MUNICIPALITIES.map((municipality) => (
-                  <option key={municipality} value={municipality}>{municipality} — {angolaShipping.municipalityPrices[municipality].toLocaleString('pt-PT')} Kz</option>
+                  <option key={municipality} value={municipality}>{municipality} — {formatMoney(angolaShipping.municipalityPrices[municipality], 'AO', lang)}</option>
                 ))}
               </select>
             </label>
@@ -1088,20 +1082,20 @@ export function Checkout() {
           ))}
           {market === 'PT' && (
             <div style={{ marginTop: 8, fontSize: 11, color: C.inkSoft, lineHeight: 1.5 }}>
-              {t('portugalDeliveryTerms', lang).replace('{amount}', `€${portugalShipping.freeThreshold.toFixed(2)}`)}
+              {t('portugalDeliveryTerms', lang).replace('{amount}', formatMoney(portugalShipping.freeThreshold, 'PT', lang))}
             </div>
           )}
           {isHeavyPortugalParcel && (
             <div style={{ marginTop: 8, padding: 10, background: C.subtleBg, borderRadius: 6, fontSize: 11, color: C.ink, lineHeight: 1.5 }}>
               {t('heavyParcelTrackedOnly', lang)
                 .replace('{weight}', (totalWeightGrams / 1000).toFixed(1))
-                .replace('{mainland}', `€${portugalShipping.heavyMainlandPrice.toFixed(2)}`)
-                .replace('{islands}', `€${portugalShipping.heavyIslandsPrice.toFixed(2)}`)}
+                .replace('{mainland}', formatMoney(portugalShipping.heavyMainlandPrice, 'PT', lang))
+                .replace('{islands}', formatMoney(portugalShipping.heavyIslandsPrice, 'PT', lang))}
             </div>
           )}
           {market === 'AO' && (
             <div style={{ marginTop: 8, fontSize: 11, color: C.inkSoft, lineHeight: 1.5 }}>
-              {t('angolaDeliveryTerms', lang).replace('{amount}', `${angolaShipping.freeThreshold.toLocaleString('pt-PT')} Kz`)}
+              {t('angolaDeliveryTerms', lang).replace('{amount}', formatMoney(angolaShipping.freeThreshold, 'AO', lang))}
             </div>
           )}
         </Section>
@@ -1112,9 +1106,7 @@ export function Checkout() {
           ))}
           {paymentMethod === 'manual_whatsapp' && (
             <div role="status" style={{ marginTop: 8, padding: 12, background: C.subtleBg, borderRadius: 6, fontSize: 12, color: C.inkSoft, lineHeight: 1.5 }}>
-              {market === 'AO'
-                ? pickBilingual(settings.angolaBankTransferInstructionsPT, settings.angolaBankTransferInstructionsEN, lang)
-                : pickBilingual(settings.portugalManualCheckoutInstructionsPT, settings.portugalManualCheckoutInstructionsEN, lang)}
+              {t('manualWhatsappCheckoutExplanation', lang)}
             </div>
           )}
         </Section>
@@ -1134,6 +1126,7 @@ export function Checkout() {
           ) : (
             <div style={{ display: 'flex', gap: 8 }}>
               <input
+                className="ump-form-control"
                 type="text"
                 value={couponInput}
                 onChange={(e) => setCouponInput(e.target.value)}
@@ -1276,12 +1269,13 @@ function Field({
   hint?: string;
 }) {
   return (
-    <label style={{ display: 'block' }}>
-      <div style={{ fontSize: 11, color: C.inkSoft, marginBottom: 4 }}>
+    <label className="ump-form-label" style={{ display: 'block' }}>
+      <div style={{ fontSize: 12, color: C.inkSoft, marginBottom: 4 }}>
         {label}
         {required && ' *'}
       </div>
       <input
+        className="ump-form-control"
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -1339,6 +1333,7 @@ function PhoneField({
 
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
+  const phoneInputId = useId();
   const wrapRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -1370,17 +1365,17 @@ function PhoneField({
   };
 
   return (
-    <label style={{ display: 'block' }}>
-      <div style={{ fontSize: 11, color: C.inkSoft, marginBottom: 4 }}>
+    <div className="ump-form-label" style={{ display: 'block' }}>
+      <label htmlFor={phoneInputId} style={{ display: 'block', fontSize: 12, color: C.inkSoft, marginBottom: 4 }}>
         {label}
         {required && ' *'}
-      </div>
+      </label>
       <div style={{ display: 'flex', gap: 8 }}>
         <div ref={wrapRef} style={{ position: 'relative', flexShrink: 0 }}>
           <button
             type="button"
             onClick={() => setOpen((o) => !o)}
-            aria-label="Country code"
+            aria-label={t('countryCode', lang)}
             aria-haspopup="listbox"
             aria-expanded={open}
             style={{
@@ -1426,6 +1421,7 @@ function PhoneField({
               }}
             >
               <input
+                className="ump-form-control"
                 ref={searchRef}
                 type="text"
                 value={query}
@@ -1439,7 +1435,8 @@ function PhoneField({
                     selectAndClose(filtered[0].iso2);
                   }
                 }}
-                placeholder={lang === 'pt' ? 'Pesquisar país…' : 'Search country…'}
+                placeholder={t('searchCountryCode', lang)}
+                aria-label={t('searchCountryCode', lang)}
                 style={{
                   margin: 8,
                   padding: '8px 10px',
@@ -1489,6 +1486,8 @@ function PhoneField({
           )}
         </div>
         <input
+          id={phoneInputId}
+          className="ump-form-control"
           type="tel"
           value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -1496,7 +1495,7 @@ function PhoneField({
           style={{ flex: 1, minWidth: 0, padding: '10px 12px', fontSize: 13, border: `1px solid ${C.fieldBorder}`, borderRadius: 6, background: C.paper, color: C.ink }}
         />
       </div>
-    </label>
+    </div>
   );
 }
 
