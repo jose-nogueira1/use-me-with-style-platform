@@ -7,6 +7,7 @@ import { useApp, useFormatOriginalPrice, useFormatPrice } from '../../state/AppC
 import { useProducts } from '../../hooks/useProducts';
 import { ProductPhoto } from '../../components/ProductPhoto';
 import { ProductCard } from '../components/ProductCard';
+import { ProductGalleryTrack } from '../components/ProductGalleryTrack';
 import { trackMetaEvent } from '../../lib/metaAnalytics';
 import { hasSwatch, swatchBackground } from '../../lib/colorSwatch';
 import { colorHasStock } from '../../lib/productAdapters';
@@ -267,10 +268,22 @@ export function ProductDetail() {
         <div>
         <div style={{ aspectRatio: '3 / 4', borderRadius: 0, overflow: 'hidden', position: 'relative' }}>
           <div style={{ width: '100%', height: '100%', opacity: isActiveColorSoldOut ? 0.55 : 1 }}>
-            <ProductPhoto tone={product.tone} radius={0} image={mainImage} variant="full" priority />
+            <ProductGalleryTrack
+              key={JSON.stringify([product.id, activeColor, galleryImages.map(image => image.url)])}
+              images={galleryImages}
+              selectedIndex={mainImageIndex}
+              onSelect={setSelectedImageUrl}
+              tone={product.tone}
+              lang={lang}
+            />
           </div>
           {isActiveColorSoldOut && (
             <span aria-hidden style={{ position: 'absolute', left: '-33.35%', top: '50%', width: '166.7%', height: 3, zIndex: 2, background: C.dangerStrong, transform: 'rotate(-53.13deg)', pointerEvents: 'none' }} />
+          )}
+          {galleryImages.length > 1 && (
+            <span className="ump-product-gallery-count" aria-live="polite" aria-atomic="true">
+              {mainImageIndex + 1} / {galleryImages.length}
+            </span>
           )}
           {/* Favourite products is reserved for phase 2 once persistence and
               account syncing are available. */}
@@ -321,7 +334,7 @@ export function ProductDetail() {
             thumbnail here just moves selectedImageUrl, no navigation. Only
             rendered when there's more than one photo to choose from. */}
         {galleryImages.length > 1 && (
-          <div style={{ display: 'flex', gap: 8, marginTop: 10, overflowX: 'auto', padding: 2 }}>
+          <div className="ump-product-gallery-thumbnails" style={{ display: 'flex', gap: 8, marginTop: 10, overflowX: 'auto', padding: 2 }}>
             {galleryImages.map((img, i) => (
               <button
                 key={img.url}

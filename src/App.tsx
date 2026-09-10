@@ -56,6 +56,10 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
         .ump-hover-lift { transition: transform 0.2s ease, box-shadow 0.2s ease; }
         .ump-hover-lift:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
 
+        @media (prefers-reduced-motion: no-preference) {
+          .ump-product-card:active { transform: scale(0.985); }
+        }
+
         /* Generic loading placeholder (2026-07-26, cart-pricing QA fix) --
            used wherever real data hasn't arrived yet and showing a real-
            looking but wrong number (e.g. "0 Kz") would be misleading. Plain
@@ -822,6 +826,14 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
            it with no gap at all -- same 20px the browse sidebar already
            uses for its own top breathing room. */
         .ump-product-layout { display: block; padding-top: 20px; }
+        .ump-product-gallery-track { display: flex; width: 100%; height: 100%; overflow: hidden; scrollbar-width: none; }
+        .ump-product-gallery-track::-webkit-scrollbar { display: none; }
+        .ump-product-gallery-slide { flex: 0 0 100%; min-width: 0; height: 100%; scroll-snap-align: start; scroll-snap-stop: always; }
+        .ump-product-gallery-count { position: absolute; right: 12px; bottom: 12px; padding: 5px 9px; border-radius: 999px; background: ${C.photoChipBg}; color: ${C.photoChipFg}; font-size: 11px; font-weight: 800; pointer-events: none; }
+        @media (max-width: 719px) {
+          .ump-product-gallery-track { overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; }
+          .ump-product-gallery-thumbnails { display: none !important; }
+        }
         .ump-pd-desktop-actions { display: none; }
         @media (min-width: 720px) {
           .ump-product-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: stretch; max-width: 1000px; margin: 0 auto; }

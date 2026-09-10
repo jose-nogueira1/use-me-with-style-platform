@@ -205,8 +205,8 @@ export function Browse() {
   // browse dresses and sets together, should be able to say so in one pass.
   // Standard faceted behaviour applies -- OR within a dimension, AND across
   // dimensions, so "dresses or sets" AND "S or M" AND "black or navy".
-  const [filterSizes, setFilterSizes] = useState<string[]>([]);
-  const [filterColors, setFilterColors] = useState<string[]>([]);
+  const filterSizes = useMemo(() => [...new Set((searchParams.get('size') || '').split(',').map(value => value.trim()).filter(Boolean))], [searchParams]);
+  const filterColors = useMemo(() => [...new Set((searchParams.get('colour') || '').split(',').map(value => value.trim()).filter(Boolean))], [searchParams]);
   const [availableOnly, setAvailableOnly] = useState(false);
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
@@ -219,7 +219,25 @@ export function Browse() {
   }
   const [filterProductTypes, setFilterProductTypes] = useState<string[]>([]);
   const [filterCollections, setFilterCollections] = useState<string[]>([]);
-  const [sortBy, setSortBy] = useState<'default' | 'price-asc' | 'price-desc'>('default');
+  const sortParam = searchParams.get('sort');
+  const sortBy = sortParam === 'price-asc' || sortParam === 'price-desc' ? sortParam : 'default';
+  const setSortBy = (value: 'default' | 'price-asc' | 'price-desc') => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      if (value === 'default') next.delete('sort');
+      else next.set('sort', value);
+      return next;
+    }, { replace: true });
+  };
+  const toggleUrlFilter = (key: 'size' | 'colour', values: string[], value: string | null) => {
+    const selected = value === null ? [] : values.includes(value) ? values.filter(item => item !== value) : [...values, value];
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      if (selected.length) next.set(key, selected.join(','));
+      else next.delete(key);
+      return next;
+    }, { replace: true });
+  };
 
   const toggleInList = (setter: React.Dispatch<React.SetStateAction<string[]>>) => (value: string | null) => {
     if (value === null) {
@@ -228,8 +246,8 @@ export function Browse() {
     }
     setter((prev) => (prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]));
   };
-  const toggleSize = toggleInList(setFilterSizes);
-  const toggleColor = toggleInList(setFilterColors);
+  const toggleSize = (value: string | null) => toggleUrlFilter('size', filterSizes, value);
+  const toggleColor = (value: string | null) => toggleUrlFilter('colour', filterColors, value);
   const toggleProductType = toggleInList(setFilterProductTypes);
 
   const toggleCollection = (value: string | null) => {
@@ -308,29 +326,30 @@ export function Browse() {
   // own clear affordance, so a shopper who had narrowed on three or four at
   // once had to undo each by hand to get back to the full catalogue.
   //
-  // `activeTag` lives in the URL rather than in component state, so resetting
-  // it means removing the query param; everything else is local state.
+  // Clear local filters and URL-backed filters together in one navigation.
   const hasActiveFilters =
     activeCats.length > 0 || Boolean(activeTag) || Boolean(searchTerm) || availableOnly || minPrice !== '' || maxPrice !== '' || onSale ||
     filterSizes.length > 0 || filterColors.length > 0 || filterProductTypes.length > 0 || filterCollections.length > 0 || sortBy !== 'default';
 
   const clearAllFilters = () => {
     setSearchTerm('');
-    setFilterSizes([]);
-    setFilterColors([]);
     setAvailableOnly(false);
     setMinPrice('');
     setMaxPrice('');
-    setSaleFilter(false);
+    setOnSale(false);
     setFilterProductTypes([]);
     setFilterCollections([]);
-    setSortBy('default');
     setSearchParams((prev) => {
       const p = new URLSearchParams(prev);
       p.delete('tag');
       p.delete('cat');
+      p.delete('q');
+      p.delete('sale');
+      p.delete('size');
+      p.delete('colour');
+      p.delete('sort');
       return p;
-    });
+    }, { replace: true });
   };
 
   const allSizes = ['XS', 'S', 'M', 'L', 'XL'];

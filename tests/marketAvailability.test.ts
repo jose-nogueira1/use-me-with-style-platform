@@ -66,7 +66,7 @@ test('product detail favourite action stays disabled until phase two', () => {
 
 test('mobile catalogue and homepage cards use a compact two-column layout', () => {
   assert.match(layoutSource, /@media \(max-width: 620px\) \{\s*\.ump-grid-auto, \.ump-home-product-grid \{ grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/)
-  assert.match(cardSource, /className=\{`ump-hover-lift\$\{homepage \? ' ump-home-product-card' : ''\}`\}/)
+  assert.match(cardSource, /className=\{`ump-product-card ump-hover-lift\$\{homepage \? ' ump-home-product-card' : ''\}`\}/)
   assert.match(layoutSource, /\.ump-home-product-card \{ width: 170\.75px !important; \}/)
 })
 

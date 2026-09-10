@@ -27,7 +27,7 @@ test('product loading and global controls avoid measured CLS and accessibility r
 test('storefront image priority is limited to likely LCP candidates', () => {
   assert.match(projectFile('src/storefront/pages/Browse.tsx'), /priority=\{index === 0\}/);
   assert.match(projectFile('src/storefront/pages/ShopInstagram.tsx'), /priority=\{index === 0\}/);
-  assert.match(projectFile('src/storefront/pages/ProductDetail.tsx'), /variant="full" priority/);
+  assert.match(projectFile('src/storefront/components/ProductGalleryTrack.tsx'), /variant="full" priority/);
   assert.match(projectFile('src/storefront/pages/ProductDetail.tsx'), /variant="thumbnail"/);
 });
 

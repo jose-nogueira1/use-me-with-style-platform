@@ -39,7 +39,7 @@ export function ProductCard({ product, size = 'grid', priority = false, homepage
   return (
     <Link
       to={`/produto/${product.slug}`}
-      className={`ump-hover-lift${homepage ? ' ump-home-product-card' : ''}`}
+      className={`ump-product-card ump-hover-lift${homepage ? ' ump-home-product-card' : ''}`}
       style={{
         flexShrink: isSmall ? 0 : undefined,
         width: isSmall ? (homepage ? 258.75 : 215.625) : undefined,
