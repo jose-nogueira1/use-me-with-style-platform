@@ -27,7 +27,7 @@ test('sale cues and navbar link use the shared sale filter', () => {
   assert.match(detailSource, /saleDiscountLabel/);
   assert.match(detailSource, /saleUrgency/);
   assert.match(layoutSource, /to: '\/catalogo\?sale=1'/);
-  assert.match(layoutSource, /item\.to\.includes\('sale=1'\) \? C\.dangerStrong/);
+  assert.match(layoutSource, /item\.to\.includes\('sale=1'\) \? C\.saleNav/);
   assert.match(browseSource, /searchParams\.get\('sale'\) === '1'/);
   assert.match(browseSource, /p\.set\('sale', '1'\)/);
 });

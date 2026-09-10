@@ -1,3 +1,4 @@
+import { heroPosition } from '../../lib/heroPosition';
 import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { C, F } from '../../theme';
@@ -1267,7 +1268,7 @@ function HeroVersionDetail({ lang, version }: { lang: Lang; version: HomeHero })
       <div>
         <div style={{ fontSize: 9, fontWeight: 800, color: C.goldDeep, marginBottom: 4 }}>{t('heroImageLabel', lang)}</div>
         {imageUrl ? (
-          <img src={imageUrl} alt="" style={{ width: 64, height: 64, borderRadius: 6, objectFit: 'cover', border: `1px solid ${C.rule}` }} />
+          <img src={imageUrl} alt="" style={{ width: 64, height: 64, borderRadius: 6, objectFit: 'cover', objectPosition: heroPosition(version, 'desktop'), border: `1px solid ${C.rule}` }} />
         ) : (
           <div style={{ fontSize: 10, color: C.inkSoft }}>{t('versionNoImageLabel', lang)}</div>
         )}
@@ -1544,7 +1545,7 @@ function HomeHeroSection() {
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 16fr) minmax(0, 8fr)', gap: 10, alignItems: 'start', marginBottom: 10 }}>
                 <div>
-                  <div style={{ fontSize: 9, color: C.inkSoft, marginBottom: 5 }}>{lang === 'pt' ? 'Desktop — 3:2' : 'Desktop — 3:2'}</div>
+                  <div style={{ fontSize: 9, color: C.inkSoft, marginBottom: 5 }}>{lang === 'pt' ? 'Recorte desktop — 3:2' : 'Desktop crop — 3:2'}</div>
                   {heroImageUrl ? (
                   <div style={{ position: 'relative', width: '100%', aspectRatio: '3 / 2', borderRadius: 8, overflow: 'hidden', border: `1px solid ${C.rule}`, background: C.disabledBg }}>
                     <img src={heroImageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
@@ -1556,15 +1557,52 @@ function HomeHeroSection() {
                   </div>) : <div style={{ aspectRatio: '3 / 2', display: 'grid', placeItems: 'center', borderRadius: 8, border: `1px dashed ${C.rule}`, color: C.inkSoft, fontSize: 9 }}>{lang === 'pt' ? 'Sem imagem' : 'No image'}</div>}
                 </div>
                 <div>
-                  <div style={{ fontSize: 9, color: C.inkSoft, marginBottom: 5 }}>{lang === 'pt' ? 'Mobile — 4:5' : 'Mobile — 4:5'}</div>
+                  <div style={{ fontSize: 9, color: C.inkSoft, marginBottom: 5 }}>{lang === 'pt' ? 'Pré-visualização mobile (recorte 4:5)' : 'Mobile preview (4:5 crop)'}</div>
                   {mobileImageUrl ? (
-                    <div style={{ position: 'relative', width: '100%', aspectRatio: '4 / 5', borderRadius: 8, overflow: 'hidden', border: `1px solid ${C.rule}`, background: C.disabledBg }}>
-                      <img src={mobileImageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                    <div style={{ position: 'relative', width: '100%', aspectRatio: '3 / 5', borderRadius: 8, overflow: 'hidden', border: `1px solid ${C.rule}`, background: C.disabledBg }}>
+                      <img src={mobileImageUrl} alt="" style={{ objectPosition: heroPosition(content, 'mobile'), width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                       {pendingMobileImage && <div style={{ position: 'absolute', top: 6, left: 6, padding: '4px 6px', borderRadius: 4, background: 'rgba(18,16,13,.78)', color: '#fff', fontSize: 8, fontWeight: 800 }}>{lang === 'pt' ? 'Não guardada' : 'Not saved'}</div>}
                     </div>
                   ) : <div style={{ aspectRatio: '4 / 5', display: 'grid', placeItems: 'center', borderRadius: 8, border: `1px dashed ${C.rule}`, color: C.inkSoft, fontSize: 9, textAlign: 'center', padding: 6 }}>{lang === 'pt' ? 'Usa desktop' : 'Uses desktop'}</div>}
                 </div>
               </div>
+              {(['desktop', 'mobile'] as const).map((layout) => (
+                <fieldset key={layout} style={{ border: `1px solid ${C.rule}`, borderRadius: 8, padding: 12, margin: '0 0 12px' }}>
+                  <legend style={{ fontSize: 11, fontWeight: 800, color: C.ink }}>{layout === 'desktop' ? (lang === 'pt' ? 'Posição desktop' : 'Desktop position') : (lang === 'pt' ? 'Posição mobile' : 'Mobile position')}</legend>
+                  {(['X', 'Y'] as const).map(axis => {
+                    const key = `hero${layout === 'desktop' ? 'Desktop' : 'Mobile'}Position${axis}` as 'heroDesktopPositionX' | 'heroDesktopPositionY' | 'heroMobilePositionX' | 'heroMobilePositionY';
+                    const value = content[key] ?? (layout === 'desktop' ? (axis === 'X' ? 65 : 20) : 50);
+                    return <label key={axis} style={{ display: 'block', fontSize: 11, color: C.inkSoft, marginBottom: 8 }}>
+                      {axis === 'X' ? (lang === 'pt' ? 'Horizontal — esquerda / direita' : 'Horizontal — left / right') : (lang === 'pt' ? 'Vertical — cima / baixo' : 'Vertical — top / bottom')} · {value}%
+                      <input type="range" min={0} max={100} step={1} value={value} disabled={saving} onChange={event => setContent(previous => ({ ...previous, [key]: Number(event.target.value) }))} style={{ display: 'block', width: '100%', marginTop: 6, accentColor: C.goldDeep }} />
+                    </label>;
+                  })}
+                  <button type="button" disabled={saving} onClick={() => setContent(previous => layout === 'desktop' ? { ...previous, heroDesktopPositionX: 65, heroDesktopPositionY: 20 } : { ...previous, heroMobilePositionX: 50, heroMobilePositionY: 50 })} style={{ fontSize: 10, color: C.goldDeep, textDecoration: 'underline' }}>{lang === 'pt' ? 'Repor posição inicial' : 'Reset position'}</button>
+                </fieldset>
+              ))}
+              <p style={{ fontSize: 11, color: C.inkSoft, lineHeight: 1.5 }}>{lang === 'pt' ? 'A posição só altera o enquadramento quando a imagem é recortada pelo ecrã. Veja o resultado nas pré-visualizações e selecione Guardar destaque.' : 'Position changes the framing where the screen crops the image. Check the previews, then select Save hero.'}</p>
+              <div style={{ fontSize: 11, lineHeight: 1.6, color: C.inkSoft, marginBottom: 12 }}>
+                {lang === 'pt'
+                  ? 'Desktop: use uma fotografia com pelo menos 2560 px de largura, se possível. O recorte adapta-se ao ecrã; deixe espaço para o texto à esquerda. O mobile mantém o seu recorte separado, com o texto na parte inferior.'
+                  : 'Desktop: use a photo at least 2560 px wide when possible. The crop adapts to the screen; leave room for text on the left. Mobile keeps its separate crop, with text at the bottom.'}
+              </div>
+              {heroImageUrl && (
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 10, fontWeight: 800, color: C.ink, marginBottom: 6 }}>
+                    {lang === 'pt' ? 'Composição em ecrã grande — pré-visualização aproximada' : 'Large-screen composition — approximate preview'}
+                  </div>
+                  <div style={{ position: 'relative', aspectRatio: '16 / 9', display: 'flex', alignItems: 'flex-end', overflow: 'hidden', borderRadius: 8, background: '#050505' }}>
+                    <img src={heroImageUrl} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: heroPosition(content, 'desktop') }} />
+                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, rgba(5,5,5,.76) 0%, rgba(5,5,5,.5) 32%, rgba(5,5,5,.08) 68%), linear-gradient(0deg, rgba(5,5,5,.28), transparent 50%)' }} />
+                    <div style={{ position: 'relative', width: '58%', padding: '6%', color: '#fff' }}>
+                      <div style={{ fontSize: 8, letterSpacing: 1, color: '#E5C24F', fontWeight: 800, marginBottom: 6 }}>{(lang === 'pt' ? content.heroEyebrowPT : content.heroEyebrowEN) || content.heroEyebrowPT}</div>
+                      <div style={{ fontSize: 20, lineHeight: 1.08, fontWeight: 800, marginBottom: 8 }}>{(lang === 'pt' ? content.heroHeadlinePT : content.heroHeadlineEN) || content.heroHeadlinePT}</div>
+                      <div style={{ fontSize: 9, lineHeight: 1.5, marginBottom: 10 }}>{(lang === 'pt' ? content.heroSubtitlePT : content.heroSubtitleEN) || content.heroSubtitlePT}</div>
+                      <span style={{ display: 'inline-block', background: '#E5C24F', color: '#050505', padding: '7px 10px', borderRadius: 4, fontSize: 8, fontWeight: 800 }}>{(lang === 'pt' ? content.heroCtaLabelPT : content.heroCtaLabelEN) || content.heroCtaLabelPT}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
               {heroImageUrl ? (
                 <div style={{ marginBottom: 10 }}>
                   <button
@@ -1631,7 +1669,7 @@ function HomeHeroSection() {
               outputWidth={cropStage === 'desktop' ? 2560 : 1600}
               lang={lang}
               title={cropStage === 'desktop' ? (lang === 'pt' ? '1 de 2 — Ajustar desktop' : '1 of 2 — Adjust desktop') : (lang === 'pt' ? '2 de 2 — Ajustar mobile' : '2 of 2 — Adjust mobile')}
-              description={cropStage === 'desktop' ? (lang === 'pt' ? 'Composição horizontal 3:2 para mostrar mais da fotografia no computador.' : 'Horizontal 3:2 composition that retains more of the photograph on desktop.') : (lang === 'pt' ? 'Composição vertical 4:5 com o texto sobre a imagem.' : 'Vertical 4:5 composition with text over the image.')}
+              description={cropStage === 'desktop' ? (lang === 'pt' ? 'Recorte horizontal 3:2. Nos ecrãs grandes, a imagem preenche o destaque e o texto aparece à esquerda. Deixe espaço livre nessa zona e mantenha os rostos afastados das margens.' : 'Horizontal 3:2 crop. On large screens the image fills the hero, with text on the left. Leave open space there and keep faces away from the edges.') : (lang === 'pt' ? 'Composição vertical 4:5 com o texto sobre a imagem.' : 'Vertical 4:5 composition with text over the image.')}
               applyLabel={cropStage === 'desktop' ? (lang === 'pt' ? 'Seguinte: mobile' : 'Next: mobile') : (lang === 'pt' ? 'Aplicar os dois recortes' : 'Apply both crops')}
               outputSuffix={cropStage === 'desktop' ? 'hero-desktop' : 'hero-mobile'}
               onCancel={cancelCropSequence}

@@ -297,16 +297,7 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
         }
         .ump-footer-bottom { padding: 16px 20px 22px; border-top: 1px solid ${C.ruleLight}; }
 
-        /* Home hero: headline above the photo on mobile, side-by-side on
-           desktop (per "07. Desktop Home and Collection").
-           The mobile rule used to be "display: none", which hid the hero
-           visual outright on every viewport under 860px -- i.e. on every
-           phone, the single most-viewed screen opened with a wall of text
-           and no imagery, on a fashion storefront (2026-07-30 fix). The
-           vestigial "margin-top: 20px" on that same hidden rule is the
-           giveaway that stacking was always the intent. It now shows at the
-           260px height the element already carries inline, with the desktop
-           override lifting it to 360px alongside the copy. */
+        /* Home hero: mobile overlay, split tablet layout, full-width desktop campaign. */
         .ump-home-hero { padding: 0 !important; }
         .ump-hero-grid {
           display: flex;
@@ -316,23 +307,42 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
           position: relative;
         }
         .ump-hero-copy { position: relative; z-index: 2; width: 100%; padding: 42px 24px 38px; color: #fff; }
-        .ump-hero-eyebrow { color: #fff !important; text-shadow: 0 1px 12px rgba(0,0,0,.45); }
+        .ump-hero-eyebrow { color: #E5C24F !important; text-shadow: 0 1px 12px rgba(0,0,0,.45); }
         .ump-hero-headline { color: #fff; font-size: clamp(34px, 10vw, 48px) !important; max-width: 520px; text-shadow: 0 2px 18px rgba(0,0,0,.45); }
-        .ump-hero-subtitle { display: none; }
+        .ump-hero-subtitle { display: block; color: rgba(255,255,255,.9) !important; text-shadow: 0 1px 12px rgba(0,0,0,.45); }
         .ump-hero-cta { background: #090909 !important; border-color: #090909 !important; color: #fff !important; padding: 14px 25px !important; }
         .ump-hero-photo { display: block; position: absolute; inset: 0; margin: 0; aspect-ratio: auto !important; border-radius: 0 !important; }
         .ump-hero-photo picture, .ump-hero-photo picture img { display: block; width: 100%; height: 100%; }
+        .ump-hero-photo picture img { object-position: var(--hero-mobile-position, 50% 50%); }
         .ump-hero-shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.04) 25%, rgba(0,0,0,.72) 100%); pointer-events: none; }
+        @media (max-width: 859px) {
+          .ump-hero-subtitle { max-width: 290px !important; text-wrap: balance; }
+        }
         @media (min-width: 860px) {
           .ump-home-hero { padding: 44px 0 48px !important; }
           .ump-hero-grid { display: grid; grid-template-columns: .9fr 1.15fr; gap: 32px; align-items: center; min-height: 0; padding: 0 20px !important; }
           .ump-hero-copy { width: auto; padding: 0; color: inherit; }
           .ump-hero-eyebrow { color: ${C.heroAccent} !important; text-shadow: none; }
           .ump-hero-headline { color: inherit; font-size: 34px !important; text-shadow: none; }
-          .ump-hero-subtitle { display: block; }
+          .ump-hero-subtitle { display: block; color: ${C.heroSubtitle} !important; text-shadow: none; }
           .ump-hero-cta { background: ${C.champagne} !important; border-color: ${C.heroCtaBorder} !important; color: ${C.black} !important; padding: 13px 22px !important; }
           .ump-hero-photo { display: block; position: relative; inset: auto; margin: 0; aspect-ratio: 3 / 2 !important; border-radius: 10px !important; }
+          .ump-hero-photo picture img { object-position: var(--hero-desktop-position, 65% 20%); }
           .ump-hero-shade { display: none; }
+        }
+
+
+        @media (min-width: 1024px) {
+          .ump-home-hero { padding: 0 !important; }
+          .ump-hero-grid { display: flex; align-items: flex-end; min-height: clamp(600px, 82svh, 900px); max-width: none !important; width: 100%; padding: 0 !important; }
+          .ump-hero-photo { position: absolute; inset: 0; aspect-ratio: auto !important; border-radius: 0 !important; }
+          .ump-hero-photo picture img { object-position: var(--hero-desktop-position, 65% 20%); }
+          .ump-hero-shade { display: block; background: linear-gradient(90deg, rgba(5,5,5,.76) 0%, rgba(5,5,5,.5) 32%, rgba(5,5,5,.08) 68%), linear-gradient(0deg, rgba(5,5,5,.28), transparent 50%); }
+          .ump-hero-copy { width: min(52%, 720px); padding: 76px 0 76px clamp(56px, 7vw, 136px); color: #fff; }
+          .ump-hero-eyebrow { color: #E5C24F !important; font-size: 11px !important; letter-spacing: 3px !important; margin-bottom: 22px !important; }
+          .ump-hero-headline { color: #fff; font-size: clamp(44px, 4.1vw, 68px) !important; line-height: 1.08 !important; letter-spacing: -.035em !important; max-width: 650px; margin-bottom: 24px !important; text-wrap: balance; }
+          .ump-hero-subtitle { color: rgba(255,255,255,.9) !important; font-size: 16px !important; line-height: 1.65 !important; max-width: 390px !important; margin-bottom: 30px !important; }
+          .ump-hero-cta { background: #E5C24F !important; border-color: #E5C24F !important; color: #050505 !important; padding: 17px 28px !important; }
         }
 
         .ump-grid-auto { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(215.625px, 100%), 1fr)); gap: 10px; }

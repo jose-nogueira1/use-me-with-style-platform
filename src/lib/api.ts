@@ -689,6 +689,10 @@ export type StorefrontContent = {
 // page... it should have previous versions of just each individually").
 // Each now has its own fetch/save/version-history functions further down.
 export type HomeHero = {
+  heroDesktopPositionX?: number | null;
+  heroDesktopPositionY?: number | null;
+  heroMobilePositionX?: number | null;
+  heroMobilePositionY?: number | null;
   heroEyebrowPT?: string;
   heroEyebrowEN?: string;
   heroHeadlinePT?: string;

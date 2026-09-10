@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react';
+import type { CSSProperties, MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { C, F, t } from '../../theme';
@@ -23,6 +23,7 @@ import {
 } from '../../lib/api';
 import { absoluteMediaUrl } from '../../lib/productAdapters';
 import { Seo } from '../../lib/seo';
+import { heroPosition } from '../../lib/heroPosition';
 import { homeSeoMetadata } from '../../lib/storefrontContent';
 import pictorialWhite from '../../assets/brand/pictorial-white.png';
 import type { Product } from '../../types/product';
@@ -439,11 +440,8 @@ export function Home() {
           means "don't override", leaving useSeoDefaults' wordmark fallback
           in place rather than pointing a link preview at a placeholder. */}
       <Seo title={seoTitle} description={seoDescription} image={heroImageUrl} />
-      {/* Hero, per Figma "01. Home" / "07. Desktop Home and Collection" --
-          background/text use the hero* tokens so this panel (and the
-          matching header background in StorefrontLayout) flips between the
-          light and dark palettes along with the rest of the app. */}
-      <div className="ump-home-hero" style={{ background: C.heroBg, color: C.heroText, padding: '36px 0 40px', position: 'relative', overflow: 'hidden' }}>
+      {/* CMS campaign artwork and copy, with responsive overlay/split layouts. */}
+      <div className="ump-home-hero" style={{ background: C.heroBg, color: C.heroText, padding: '36px 0 40px', position: 'relative', overflow: 'hidden', '--hero-desktop-position': heroPosition(hero, 'desktop'), '--hero-mobile-position': heroPosition(hero, 'mobile') } as CSSProperties}>
         <div
           className="ump-hero-grid ump-content-width"
           style={{ position: 'relative', zIndex: 1, padding: '0 20px' }}
@@ -486,7 +484,7 @@ export function Home() {
                   <img
                     src={heroImageUrl}
                     srcSet={heroImageSrcSet || undefined}
-                    sizes="(max-width: 859px) 100vw, 58vw"
+                    sizes="(min-width: 1024px) 100vw, (min-width: 860px) 58vw, 100vw"
                     alt={heroImage?.alt?.trim() || (lang === 'pt' ? 'Coleção Use Me With Style' : 'Use Me With Style collection')}
                     width={1600}
                     height={1067}
