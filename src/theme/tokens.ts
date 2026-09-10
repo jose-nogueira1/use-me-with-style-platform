@@ -79,6 +79,7 @@ export const C = {
   //   dangerBg     -- the tinted notice box behind `danger` text
   danger: 'var(--c-danger)',
   dangerStrong: 'var(--c-danger-strong)',
+  saleNav: 'var(--c-sale-nav)',
   dangerBg: 'var(--c-danger-bg)',
 
   // Disabled controls (e.g. the "Out of stock" CTA). Previously painted
@@ -183,6 +184,7 @@ export const LIGHT_VARS: Record<string, string> = {
   '--c-cta-bg': '#050505',
   '--c-cta-border': '#050505',
   '--c-danger': '#A6483A',
+  '--c-sale-nav': '#E00000',
   '--c-danger-strong': '#B95545',
   '--c-danger-bg': '#FBEAE4',
   '--c-disabled-bg': '#6C655D',
@@ -228,6 +230,7 @@ export const DARK_VARS: Record<string, string> = {
   '--c-cta-border': '#8A6C24',
   // 7.60:1 / 8.54:1 against --c-paper (the light-mode values scored 3.33:1).
   '--c-danger': '#E8887A',
+  '--c-sale-nav': '#FF453A',
   '--c-danger-strong': '#F0938A',
   // Deep oxblood tint so the notice reads as a dark-theme surface rather
   // than a cream light-mode island; --c-danger on it is 6.59:1.

@@ -204,7 +204,7 @@ export function StorefrontLayout() {
                 style={{
                   fontSize: 12,
                   fontWeight: 800,
-                  color: item.to.includes('sale=1') ? C.dangerStrong : (location.pathname === item.to ? C.ink : C.inkSoft),
+                  color: item.to.includes('sale=1') ? C.saleNav : (location.pathname === item.to ? C.ink : C.inkSoft),
                   textDecoration: 'none',
                 }}
               >
@@ -275,7 +275,7 @@ export function StorefrontLayout() {
                   padding: '12px 4px',
                   fontSize: 14,
                   fontWeight: 800,
-                  color: item.to.includes('sale=1') ? C.dangerStrong : (isHome ? C.heroText : C.ink),
+                  color: item.to.includes('sale=1') ? C.saleNav : (isHome ? C.heroText : C.ink),
                   textDecoration: 'none',
                   borderBottom: `1px solid ${isHome ? 'rgba(255,255,255,0.08)' : C.ruleLight}`,
                 }}
