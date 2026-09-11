@@ -1,9 +1,9 @@
 # Workflow setup verification — 11 September 2026
 
-## Delivery state
+## Delivery state at initial verification
 
 The preceding hero work was pushed to main: platform `be15c40`, CMS `caaf684`.
-The subsequent engineering setup is on `codex/project-workflow-setup` in both repositories. It has not been pushed. The parent workspace map is local because the parent directory is not a Git repository.
+At initial verification, the subsequent engineering setup was on `codex/project-workflow-setup` in both repositories and had not yet been pushed. This section records that historical state; use Git history for the current delivery state. The parent workspace map is local because the parent directory is not a Git repository.
 
 ## Implemented
 
@@ -28,6 +28,6 @@ The subsequent engineering setup is on `codex/project-workflow-setup` in both re
 
 Local checks used Node 26 and PostgreSQL 16; the workflows specify Node 22 and PostgreSQL 18. GitHub Actions has not run this unpublished setup. Production CMS-backed frontend prerendering and deployed smoke checks were not repeated for this local setup task.
 
-## External activation
+## External activation checklist
 
-Publish the setup commits before expecting GitHub Actions or main-branch documentation links to reflect them. After the checks run, configure branch protection to require Platform checks / CMS checks respectively; branch protection was not modified here. Verify existing Linear labels before the first tracker write. Existing operational automation remains in place.
+Publishing the setup commits activates the workflows and makes main-branch documentation links available. After the checks run, configure branch protection to require Platform checks / CMS checks respectively; branch protection was not modified here. Verify existing Linear labels before the first tracker write. Existing operational automation remains in place.
