@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { CSSProperties, MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -25,6 +25,7 @@ import { absoluteMediaUrl } from '../../lib/productAdapters';
 import { Seo } from '../../lib/seo';
 import { heroPosition } from '../../lib/heroPosition';
 import { homeSeoMetadata } from '../../lib/storefrontContent';
+import { HOME_RUNTIME_READY_EVENT, readPrerenderHomeHero, rememberHomeHeroForPrerender } from '../../lib/prerenderBootstrap';
 import pictorialWhite from '../../assets/brand/pictorial-white.png';
 import type { Product } from '../../types/product';
 
@@ -243,6 +244,9 @@ function HomeProductShelf({ products }: { products: Product[] }) {
 export function Home() {
   const { market, lang } = useApp();
   const { products, loading } = useProducts(market, lang);
+  useLayoutEffect(() => {
+    window.dispatchEvent(new Event(HOME_RUNTIME_READY_EVENT));
+  }, []);
   // 2026-07-25 navbar fix: was `p.tag === 'New'`, which only ever matched
   // the English display label and broke for PT (or any renamed tag) --
   // isNewArrival is resolved once in productAdapters.ts from the merch
@@ -258,7 +262,10 @@ export function Home() {
   // keys stay as the fallback (both the initial loading moment and an
   // unreachable CMS), and also supply the defaults baked into each global
   // itself, so nothing visibly changes until the admin actually edits it.
-  const [hero, setHero] = useState<HomeHero | null>(null);
+  // Production prerender embeds the hero data alongside its HTML. React uses
+  // that same data on its first render, so the already-requesting hero image
+  // is never replaced by the gradient while the CMS refresh completes.
+  const [hero, setHero] = useState<HomeHero | null>(readPrerenderHomeHero);
   const [homeCategories, setHomeCategories] = useState<HomeCategories | null>(null);
   const [homeCollections, setHomeCollections] = useState<HomeCollections | null>(null);
   const [storefrontContent, setStorefrontContent] = useState<StorefrontContent | null>(null);
@@ -266,7 +273,10 @@ export function Home() {
     let cancelled = false;
     fetchHomeHero()
       .then((content) => {
-        if (!cancelled) setHero(content);
+        if (!cancelled) {
+          rememberHomeHeroForPrerender(content);
+          setHero(content);
+        }
       })
       .catch(() => {
         /* keep the i18n fallback below */

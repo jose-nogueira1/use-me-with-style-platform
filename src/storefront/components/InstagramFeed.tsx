@@ -124,6 +124,8 @@ const DRAG_THRESHOLD_PX = 4;
 
 export function InstagramFeed() {
   const { lang, market } = useApp();
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const [shouldLoad, setShouldLoad] = useState(false);
   const [posts, setPosts] = useState<ApiInstagramPost[]>([]);
   const [selectedPost, setSelectedPost] = useState<ApiInstagramPost | null>(null);
   // Reset together whenever a (possibly different) post is opened -- see the
@@ -153,6 +155,23 @@ export function InstagramFeed() {
   }, [selectedPost]);
 
   useEffect(() => {
+    const section = sectionRef.current;
+    if (!section || shouldLoad) return;
+    if (!('IntersectionObserver' in window)) {
+      const fallback = setTimeout(() => setShouldLoad(true), 0);
+      return () => clearTimeout(fallback);
+    }
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) return;
+      setShouldLoad(true);
+      observer.disconnect();
+    }, { rootMargin: '300px 0px' });
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, [shouldLoad]);
+
+  useEffect(() => {
+    if (!shouldLoad) return;
     let cancelled = false;
     fetchInstagramFeed(TILE_COUNT, market).then((result) => {
       if (cancelled) return;
@@ -161,7 +180,7 @@ export function InstagramFeed() {
     return () => {
       cancelled = true;
     };
-  }, [market]);
+  }, [market, shouldLoad]);
 
   // Close the lightbox on Escape; a plain Effect rather than an inline
   // handler since it needs to listen globally (the trigger tile isn't
@@ -331,7 +350,7 @@ export function InstagramFeed() {
   const loopedTiles = shouldLoop ? [...tiles, ...tiles] : tiles;
 
   return (
-    <div style={{ padding: '28px 0 40px' }}>
+    <div ref={sectionRef} data-instagram-load={shouldLoad ? 'ready' : 'deferred'} style={{ padding: '28px 0 40px' }}>
       <div className="ump-content-width" style={{ textAlign: 'center', marginBottom: 16, padding: '0 20px' }}>
         {/* 2026-08-08: the heading itself is now the follow link (opens the
             profile in a new tab), replacing the separate "Follow on
@@ -404,7 +423,12 @@ export function InstagramFeed() {
               <ProductPhoto
                 tone={TONE_CYCLE[originalIndex % TONE_CYCLE.length]}
                 radius={10}
-                image={post ? { url: post.imageUrl, alt: displayLabel || '' } : undefined}
+                image={post ? {
+                  url: post.thumbnailLargeUrl || post.thumbnailUrl || post.imageUrl,
+                  smallUrl: post.thumbnailUrl,
+                  mediumUrl: post.thumbnailLargeUrl,
+                  alt: displayLabel || '',
+                } : undefined}
               />
               <div className="ump-instagram-tile-hover">
                 <Expand size={18} color="#FFFDF8" />

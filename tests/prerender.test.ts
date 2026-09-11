@@ -42,6 +42,7 @@ test('private and stateful routes cannot enter the prerender manifest', () => {
 
 test('Vercel selects AO and PT documents by host before preserving the SPA fallback', () => {
   const config = JSON.parse(projectFile('vercel.json')) as {
+    headers?: Array<{ source: string; headers: Array<{ key: string; value: string }> }>;
     rewrites: Array<{
       source: string;
       destination: string;
@@ -56,6 +57,12 @@ test('Vercel selects AO and PT documents by host before preserving the SPA fallb
   assert.ok(config.rewrites.some((rule) => rule.destination === '/__prerender/pt/produto/:slug/index.html'));
   assert.ok(config.rewrites.some((rule) => rule.destination === '/__prerender/ao/estilo/:slug/index.html'));
   assert.ok(config.rewrites.some((rule) => rule.destination === '/__prerender/pt/estilo/:slug/index.html'));
+  for (const source of ['/api/media/file/:path*', '/api/instagram-thumbnail/:path*']) {
+    const rule = config.headers?.find((entry) => entry.source === source);
+    assert.ok(rule, `${source} should have an explicit cache policy`);
+    assert.ok(rule.headers.some((header) => header.key === 'Cache-Control' && header.value.includes('immutable')));
+    assert.ok(rule.headers.some((header) => header.key === 'CDN-Cache-Control' && header.value.includes('immutable')));
+  }
   assert.ok(config.rewrites.some((rule) => rule.destination.endsWith('/api/robots.txt?market=AO')));
   assert.ok(config.rewrites.some((rule) => rule.destination.endsWith('/api/sitemap.xml?market=PT')));
   assert.ok(config.rewrites.some((rule) => rule.destination === '/__prerender/ao/catalogo/category/:category/index.html' && rule.has?.some((condition) => condition.key === 'cat')));
@@ -81,12 +88,15 @@ test('route allowlists distinguish public, runtime-only and genuinely invalid UR
   }
 });
 
-test('all configured static routes are public and the SPA clears captured markup before mounting', () => {
+test('all configured static routes are public and the homepage snapshot stays until its runtime commits', () => {
   for (const route of STATIC_PRERENDER_ROUTES) assert.equal(normalizePublicRoute(route), route);
   const entry = projectFile('src/main.tsx');
   assert.match(entry, /root\.dataset\.prerendered === 'true'/);
-  assert.match(entry, /root\.replaceChildren\(\)/);
-  assert.match(entry, /createRoot\(root\)\.render/);
+  assert.doesNotMatch(entry, /root\.replaceChildren\(\)/);
+  assert.match(entry, /HOME_RUNTIME_READY_EVENT/);
+  assert.match(entry, /root\.id = 'ump-prerender-snapshot'/);
+  assert.match(entry, /root\.remove\(\)/);
+  assert.match(entry, /flushSync\(\(\) => appRoot\.render\(application\)\)/);
 });
 
 test('production builds force the same-origin API and use a Vercel-compatible browser', () => {
@@ -102,6 +112,7 @@ test('production builds force the same-origin API and use a Vercel-compatible br
   assert.match(prerender, /retryableCmsStatuses/);
   assert.match(prerender, /response\.status\(\) >= 400/);
   assert.match(prerender, /response: \$\{response\.status\(\)\} \$\{response\.url\(\)\}/);
+  assert.match(prerender, /dataScript\.id = 'ump-prerender-data'/);
 
   const verifier = projectFile('scripts/verify-prerender.mjs');
   assert.match(verifier, /contains a product image with empty alt text/);
