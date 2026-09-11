@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FileText, Mail } from 'lucide-react';
-import { C, t } from '../../theme';
+import { C, t, type Lang } from '../../theme';
 import { useApp, type Market } from '../../state/AppContext';
 import { BrandLogo } from '../../components/BrandLogo';
 import { clearAnalyticsConsent } from '../../lib/analyticsConsent';
@@ -156,7 +156,7 @@ function MarketSwitchLink({
         padding: '6px 10px',
         borderRadius: 8,
         background: C.paper,
-        border: `1px solid ${C.fieldBorder}`,
+        border: `1px solid ${C.heroFieldBorder}`,
         color: C.ink,
         fontSize: 11,
         fontWeight: 800,

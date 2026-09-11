@@ -100,7 +100,7 @@ export function ProductDetail() {
   // must keep referring to the same colour if the shopper switches
   // language mid-session). `activeColorLabel` below is what's shown.
   const requestedColor = searchParams.get('cor');
-  const activeColor = color ?? (product.colors.some((candidate) => candidate.id === requestedColor) ? requestedColor : product.colors[0]?.id);
+  const activeColor = color ?? product.colors.find((candidate) => candidate.id === requestedColor)?.id ?? product.colors[0]?.id;
   // Variant-level stock (2026-07-25): availability is per colour+size, so
   // switching colour changes which sizes are in stock.
   const stockFor = (colorId: string | null | undefined, optionValue: string | null | undefined) =>

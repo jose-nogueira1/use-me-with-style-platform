@@ -41,4 +41,14 @@ test('admin positions save independently and the storefront uses the saved frami
   await expect(image).toHaveCSS('object-position', '100% 20%');
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(image).toHaveCSS('object-position', '50% 0%');
+  await page.goto('/admin/definicoes?tab=home');
+  await desktop.getByRole('button', { name: /Repor posição inicial|Reset position/ }).click();
+  await expect(desktop.getByRole('slider').first()).toHaveValue('65');
+  await expect(mobile.getByRole('slider').nth(1)).toHaveValue('0');
+  await page.getByRole('button', { name: /Guardar destaque|Save hero/, exact: true }).click();
+  await expect(page.getByRole('button', { name: /Guardar destaque|Save hero/, exact: true })).toBeDisabled();
+  await page.reload();
+  await expect(desktop.getByRole('slider').first()).toHaveValue('65');
+  await expect(mobile.getByRole('slider').nth(1)).toHaveValue('0');
+
 });

@@ -184,7 +184,7 @@ export const LIGHT_VARS: Record<string, string> = {
   '--c-cta-bg': '#050505',
   '--c-cta-border': '#050505',
   '--c-danger': '#A6483A',
-  '--c-sale-nav': '#E00000',
+  '--c-sale-nav': '#D60000',
   '--c-danger-strong': '#B95545',
   '--c-danger-bg': '#FBEAE4',
   '--c-disabled-bg': '#6C655D',

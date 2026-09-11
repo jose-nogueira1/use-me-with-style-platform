@@ -365,7 +365,7 @@ export function Browse() {
   }, [products]);
   const allCollections = useMemo(() => [
     { value: 'new', label: t('newArrivalsNav', lang) },
-    ...tags.map((tag) => ({ value: tag.slug, label: (lang === 'en' ? tag.labelEN : tag.labelPT)?.trim() || tag.labelPT })),
+    ...tags.flatMap((tag) => tag.slug ? [{ value: tag.slug, label: (lang === 'en' ? tag.labelEN : tag.labelPT)?.trim() || tag.labelPT }] : []),
   ].filter((option, index, options) => options.findIndex((item) => item.value === option.value) === index), [tags, lang]);
   const allProductTypes = [
     { value: 'standard', label: t('productTypeStandard', lang) },

@@ -1,5 +1,7 @@
 # Use Me With Style Platform
 
+Engineering workflow: start with [AGENTS.md](AGENTS.md) and [CONTEXT.md](CONTEXT.md). The context map identifies approved decisions that supersede historical details below.
+
 Production repository for the Use Me With Style ecommerce platform.
 
 Phase 1 focuses on the launch foundation: mobile-first storefront, catalogue, product detail, cart, checkout/order capture, admin product/order operations, market/payment/delivery configuration, and WhatsApp/Instagram messaging automation foundation.

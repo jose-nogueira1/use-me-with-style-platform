@@ -21,7 +21,9 @@
     "test:e2e": "playwright test",
     "test:prerender": "node scripts/verify-prerender.mjs",
     "preview": "npm run preview:prerender",
-    "preview:prerender": "node scripts/serve-prerender.mjs"
+    "preview:prerender": "node scripts/serve-prerender.mjs",
+    "typecheck": "tsc -b --pretty false",
+    "verify": "npm run lint && npm run typecheck && npm test && npm run build:spa"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.3.0",

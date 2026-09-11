@@ -72,7 +72,6 @@ export function ProductCard({ product, size = 'grid', priority = false, homepage
               fontSize: 9,
               fontWeight: 800,
               padding: '6px 9px',
-              borderRadius: 6,
               border: `1px solid ${product.marketStatus === 'sold_out' ? C.danger : C.rule}`,
               borderRadius: '0 0 0 6px',
               boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
