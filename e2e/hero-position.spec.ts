@@ -5,7 +5,8 @@ test('admin positions save independently and the storefront uses the saved frami
   let hero: HomeHero = {
     heroEyebrowPT: 'Coleção SS26', heroHeadlinePT: 'Moda que se move consigo.',
     heroSubtitlePT: 'Peças pensadas para si, com preços sempre claros e diretos.', heroCtaLabelPT: 'Ver tudo',
-    heroImage: { id: 'preview', url: '/api/media/file/hero.svg' },
+    heroImage: { id: 84, url: '/api/media/file/hero.svg' },
+    heroImageMobile: { id: 85, url: '/api/media/file/hero.svg' },
     heroDesktopPositionX: 65, heroDesktopPositionY: 20, heroMobilePositionX: 50, heroMobilePositionY: 50,
   };
   await page.route('**/api/**', async route => {
@@ -14,7 +15,12 @@ test('admin positions save independently and the storefront uses the saved frami
     if (path === '/api/users/me') return route.fulfill({ json: { user: { id: 'local', email: 'preview@example.test' } } });
     if (path === '/api/globals/home-hero') {
       if (route.request().method() !== 'GET') {
-        hero = { ...hero, ...route.request().postDataJSON(), heroImage: hero.heroImage };
+        const submitted = route.request().postDataJSON();
+        // Payload's numeric-ID upload validator rejects string relationship IDs.
+        if (submitted.heroImage !== 84 || submitted.heroImageMobile !== 85) {
+          return route.fulfill({ status: 400, json: { errors: [{ message: 'Invalid media relationship IDs' }] } });
+        }
+        hero = { ...hero, ...submitted, heroImage: hero.heroImage, heroImageMobile: hero.heroImageMobile };
         return route.fulfill({ json: { message: 'Saved', result: hero } });
       }
       return route.fulfill({ json: hero });

@@ -1665,7 +1665,14 @@ export async function adminUpdateStorefrontContent(input: StorefrontContent): Pr
 }
 
 export async function adminUpdateHomeHero(input: Partial<HomeHero>): Promise<HomeHero> {
-  return adminUpdateGlobal('/globals/home-hero?depth=1', input);
+  const payload = { ...input };
+  // Form refs are string keys; Payload upload fields require numeric IDs as numbers.
+  // Normalize at the write boundary so existing images, uploads and restores agree.
+  for (const field of ['heroImage', 'heroImageMobile'] as const) {
+    const ref = payload[field];
+    if (ref != null) payload[field] = normalizeRelationshipIds([ref])[0];
+  }
+  return adminUpdateGlobal('/globals/home-hero?depth=1', payload);
 }
 export async function adminUpdateHomeCategories(input: Partial<HomeCategories>): Promise<HomeCategories> {
   return adminUpdateGlobal('/globals/home-categories', input);
