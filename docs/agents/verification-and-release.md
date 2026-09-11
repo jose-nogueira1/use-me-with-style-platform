@@ -10,6 +10,14 @@ CMS: `npm run verify` runs lint, generated-route typechecking, unit tests and th
 
 PR workflows use no production secrets. Required status checks are `Platform checks` and `CMS checks` in their respective repositories. Defining workflows does not enable GitHub branch protection; configure required checks separately after the workflows are published and have run.
 
+## React Doctor (platform only)
+
+`.github/workflows/react-doctor.yml` runs the official React Doctor v2 action separately from the required validation suite. Pull requests report newly introduced findings (`scope: changed`) with full Git history. `blocking: none` keeps findings advisory; do not make its score a merge requirement. Pushes to main and manual runs scan the full project.
+
+Review findings for actual correctness, accessibility, performance and maintenance value. Do not automatically apply fixes, suppress findings to improve the score, or replace typechecks, behavioral tests and browser verification. Consider blocking new errors only after the team has reviewed the signal and explicitly decided to enforce it.
+
+The action manages its own scanner installation. It uses GitHub's repository token for summary/inline comments and status reporting; it needs no additional project secret. A local full scan can be run with `npx react-doctor@latest`; review the installed CLI help before using options. See the [official CI documentation](https://www.react.doctor/docs/ci-and-prs/github-actions-setup).
+
 ## Browser matrix
 
 For visual changes: affected mobile, tablet and desktop breakpoints; relevant PT/EN copy and light/dark states. Preserve previously accepted layouts outside the request.

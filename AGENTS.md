@@ -17,6 +17,7 @@ Read `CONTEXT.md`, then `docs/agents/domain.md` and the decisions relevant to th
 - For a small visual edit: implement, inspect the affected breakpoints and run relevant checks. Avoid speculative abstractions and tests that merely assert copied source text.
 - For a substantive feature: use `grill-with-docs`/`domain-modeling` when decisions are unresolved, then `to-spec`/`to-tickets` for multi-session work, and `implement`/`tdd` with a final `code-review` as appropriate. Use `diagnosing-bugs` for reproducible failures. Do not invoke overlapping workflows together by default.
 - Use the existing theme and accepted mobile behavior. Use `prototype` only when explicitly requested for visual alternatives. Accounts and other Stage 2 features remain outside unrelated tasks.
+- React Doctor is an advisory platform check; review its findings alongside tests, without chasing a score or applying automatic rewrites. See the verification playbook.
 - Verify behavior at the affected interface. Prefer totals, inventory, payment idempotency, ownership, and admin save/reload tests over source-pattern checks. Report skipped tests and unverified deployment state.
 - Follow `docs/agents/cms-storefront-changes.md` for schema/API work and `docs/agents/verification-and-release.md` for release work. Never use production credentials/data for tests or publish messages during verification.
 
