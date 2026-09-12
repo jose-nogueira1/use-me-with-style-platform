@@ -1,5 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { flushSync } from 'react-dom'
 import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/react'
 import '@fontsource-variable/inter/wght.css'
@@ -7,6 +8,7 @@ import './index.css'
 import App from './App.tsx'
 import { applyRuntimeEnvMetadata, publicEnv } from './config/env'
 import { redirectToDetectedMarketIfNeeded } from './lib/market'
+import { HOME_RUNTIME_READY_EVENT } from './lib/prerenderBootstrap'
 
 applyRuntimeEnvMetadata()
 
@@ -27,19 +29,48 @@ redirectToDetectedMarketIfNeeded(apexHostname).then((redirected) => {
   if (redirected) return // navigation already under way -- don't mount on this page load
 
   const root = document.getElementById('root')!
-  // Task 9 prerendering deliberately keeps the existing SPA as the runtime
-  // application. Build-time browser snapshots give crawlers complete HTML,
-  // then the client clears that inert snapshot and mounts the same React app
-  // visitors used before this change. Hydrating a browser snapshot would be
-  // unsafe: its CMS-loaded state is not serialized, so React's initial empty
-  // catalogue would not match the captured DOM.
-  if (root.dataset.prerendered === 'true') root.replaceChildren()
-
-  createRoot(root).render(
+  const prerendered = root.dataset.prerendered === 'true'
+  const application = (
     <StrictMode>
       <App />
       <Analytics />
       <SpeedInsights />
-    </StrictMode>,
+    </StrictMode>
   )
+
+  // A prerendered page stays intact until React has a complete replacement.
+  // Home is code-split, so mount it invisibly alongside the snapshot and
+  // reveal it only when the real Home component commits. Its hero is seeded
+  // from the embedded CMS data and therefore matches the visible snapshot.
+  if (prerendered && window.location.pathname === '/') {
+    root.id = 'ump-prerender-snapshot'
+    const runtimeRoot = document.createElement('div')
+    runtimeRoot.id = 'root'
+    runtimeRoot.setAttribute('aria-hidden', 'true')
+    runtimeRoot.style.position = 'absolute'
+    runtimeRoot.style.visibility = 'hidden'
+    runtimeRoot.style.width = '100%'
+    root.after(runtimeRoot)
+
+    let revealed = false
+    const revealRuntime = () => {
+      if (revealed) return
+      revealed = true
+      runtimeRoot.removeAttribute('aria-hidden')
+      runtimeRoot.style.removeProperty('position')
+      runtimeRoot.style.removeProperty('visibility')
+      runtimeRoot.style.removeProperty('width')
+      root.remove()
+    }
+    window.addEventListener(HOME_RUNTIME_READY_EVENT, revealRuntime, { once: true })
+    // If the lazy route fails, expose AppErrorBoundary's recovery UI rather
+    // than leaving an inert snapshot on screen forever.
+    window.setTimeout(revealRuntime, 15_000)
+    createRoot(runtimeRoot).render(application)
+  } else if (prerendered) {
+    const appRoot = createRoot(root)
+    flushSync(() => appRoot.render(application))
+  } else {
+    createRoot(root).render(application)
+  }
 })

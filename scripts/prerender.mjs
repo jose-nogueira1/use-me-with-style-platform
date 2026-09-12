@@ -309,6 +309,18 @@ async function captureRoute(context, port, market, route) {
       marker.name = 'ump-prerender'
       marker.content = `market=${marketName}; generated=${stamp}`
       document.head.appendChild(marker)
+
+      // Preserve the CMS hero used to create this snapshot. The client reads
+      // it before its first Home render, then refreshes in the background,
+      // avoiding a real-image -> placeholder -> real-image startup cycle.
+      const prerenderData = window.__UMP_PRERENDER_DATA__
+      if (prerenderData?.homeHero) {
+        const dataScript = document.createElement('script')
+        dataScript.id = 'ump-prerender-data'
+        dataScript.type = 'application/json'
+        dataScript.textContent = JSON.stringify(prerenderData).replaceAll('<', '\\u003c')
+        document.body.appendChild(dataScript)
+      }
     }, { marketName: market, stamp: generatedAt })
 
     const title = await page.title()
