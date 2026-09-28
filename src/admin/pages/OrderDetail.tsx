@@ -11,6 +11,7 @@ import { PageHeader } from '../components/PageHeader';
 import { Badge, orderStatusBadgeProps, statusBadgeProps } from '../components/Badge';
 import { useDirty } from '../lib/useDirty';
 import { DELIVERY_METHODS, deliveryMethodLabel, paymentMethodLabel } from '../lib/orderLabels';
+import { buildPaymentDiagnostics, type PaymentTechnicalRowKey } from '../lib/paymentDiagnostics';
 import { t, type Lang } from '../i18n';
 
 const STATUSES = ['new', 'payment_review', 'processing', 'shipped', 'delivered', 'cancelled'] as const;
@@ -608,35 +609,108 @@ function PackingSlip({ order, lang }: { order: ApiOrder; lang: Lang }) {
 // admin shows. Only rendered when at least one value is actually present,
 // since most orders (non-AppyPay) won't have any of these set.
 function PaymentDiagnostics({ order, lang }: { order: ApiOrder; lang: Lang }) {
-  const rows: { label: string; value: string }[] = [
-    { label: t('diagPaymentReference', lang), value: order.paymentReference ?? '' },
-    { label: t('diagMerchantTxId', lang), value: order.appyPayMerchantTransactionId ?? '' },
-    { label: t('diagTransactionId', lang), value: order.appyPayTransactionId ?? '' },
-    { label: t('diagStatus', lang), value: order.appyPayStatus ?? '' },
-    { label: t('diagPaymentMethod', lang), value: order.appyPayPaymentMethod ?? '' },
-    { label: t('diagResponse', lang), value: order.appyPayResponseCode ? `${order.appyPayResponseCode} — ${order.appyPayResponseMessage ?? ''}` : '' },
-    { label: t('diagReference', lang), value: order.appyPayReferenceEntity ? `${order.appyPayReferenceEntity} / ${order.appyPayReferenceNumber ?? ''}` : '' },
-    { label: t('diagReferenceDueDate', lang), value: order.appyPayReferenceDueDate ? new Date(order.appyPayReferenceDueDate).toLocaleDateString() : '' },
-    { label: t('diagVerifiedAt', lang), value: order.appyPayVerifiedAt ? new Date(order.appyPayVerifiedAt).toLocaleString() : '' },
-    { label: t('diagInventoryReservation', lang), value: order.inventoryReservationStatus ?? '' },
-    { label: t('diagReservationExpires', lang), value: order.inventoryReservationExpiresAt ? new Date(order.inventoryReservationExpiresAt).toLocaleString() : '' },
-  ].filter((r) => r.value);
+  const details = buildPaymentDiagnostics(order, lang);
+  const fulfilment = orderStatusBadgeProps(order, lang);
+  const paymentKey = PAYMENT_STATUS_KEY[order.paymentStatus as keyof typeof PAYMENT_STATUS_KEY];
+  const paymentLabel = paymentKey ? t(paymentKey, lang) : order.paymentStatus;
+  const paymentTone = order.paymentStatus === 'paid' ? 'green' : order.paymentStatus === 'failed' ? 'red' : 'gold';
+  const hasSummary = Boolean(details.providerStatus || details.paymentMethod || details.verifiedAt || details.inventoryStatus);
 
-  if (rows.length === 0) return null;
+  if (!hasSummary && details.technicalRows.length === 0) return null;
 
   return (
     <div style={{ padding: '18px 28px 0' }}>
       <div style={{ background: C.paper, border: `1px solid ${C.ruleLight}`, borderRadius: 8, padding: 16 }}>
-        <div style={{ fontSize: 10, fontWeight: 800, color: C.goldDeep, marginBottom: 10 }}>{t('paymentDiagnostics', lang)}</div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }} className="ump-admin-fields-grid">
-          {rows.map((r) => (
-            <div key={r.label}>
-              <div style={{ fontSize: 9, fontWeight: 800, color: C.inkSoft, marginBottom: 3 }}>{r.label}</div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: C.ink, wordBreak: 'break-all' }}>{r.value}</div>
-            </div>
-          ))}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 14 }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: C.ink }}>{t('paymentDiagnostics', lang)}</div>
+          <span style={{ fontSize: 9, fontWeight: 800, color: C.inkSoft }}>{t('paymentReadOnly', lang)}</span>
         </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }} className="ump-admin-fields-grid">
+          <PaymentState label={t('paymentLabel', lang)}><Badge label={paymentLabel} tone={paymentTone} /></PaymentState>
+          <PaymentState label={t('fulfilmentStatusLabel', lang)}><Badge label={fulfilment.label} tone={fulfilment.tone} /></PaymentState>
+        </div>
+
+        {hasSummary && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 14, paddingTop: 14, marginTop: 14, borderTop: `1px solid ${C.ruleLight}` }} className="ump-admin-fields-grid">
+            {details.paymentMethod && <PaymentValue label={t('paymentMethodLabel', lang)} value={details.paymentMethod} />}
+            {details.providerStatus && <PaymentValue label={t('providerStatusLabel', lang)} value={details.providerStatus} />}
+            {details.verifiedAt && <PaymentValue label={t('paymentVerifiedAtLabel', lang)} value={details.verifiedAt} />}
+            {details.inventoryStatus && <PaymentValue label={t('inventoryStatusLabel', lang)} value={details.inventoryStatus} />}
+          </div>
+        )}
+
+        {details.technicalRows.length > 0 && (
+          <details style={{ marginTop: 16, paddingTop: 12, borderTop: `1px solid ${C.ruleLight}` }}>
+            <summary style={{ cursor: 'pointer', color: C.goldDeep, fontSize: 10, fontWeight: 800 }}>
+              {t('technicalDetailsLabel', lang)}
+            </summary>
+            <div style={{ display: 'grid', gap: 10, marginTop: 12 }}>
+              {details.technicalRows.map((row) => (
+                <CopyableDiagnosticValue key={row.key} label={technicalRowLabel(row.key, lang)} value={row.value} lang={lang} />
+              ))}
+            </div>
+          </details>
+        )}
       </div>
+    </div>
+  );
+}
+
+function PaymentState({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, minHeight: 42, padding: '9px 10px', background: C.subtleBg, border: `1px solid ${C.ruleLight}`, borderRadius: 6 }}>
+      <span style={{ fontSize: 10, fontWeight: 800, color: C.ink }}>{label}</span>
+      {children}
+    </div>
+  );
+}
+
+function PaymentValue({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <div style={{ fontSize: 9, fontWeight: 800, color: C.inkSoft, marginBottom: 4 }}>{label}</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: C.ink }}>{value}</div>
+    </div>
+  );
+}
+
+function technicalRowLabel(key: PaymentTechnicalRowKey, lang: Lang): string {
+  const keys: Record<PaymentTechnicalRowKey, string> = {
+    paymentReference: 'diagPaymentReference',
+    merchantReference: 'diagMerchantTxId',
+    transactionId: 'diagTransactionId',
+    providerResponse: 'diagResponse',
+    providerReference: 'diagReference',
+    referenceDueDate: 'diagReferenceDueDate',
+    reservationExpires: 'diagReservationExpires',
+  };
+  return t(keys[key], lang);
+}
+
+function CopyableDiagnosticValue({ label, value, lang }: { label: string; value: string; lang: Lang }) {
+  const [copied, setCopied] = useState(false);
+
+  const copy = async () => {
+    await navigator.clipboard.writeText(value);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1_500);
+  };
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', alignItems: 'center', gap: 12 }}>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontSize: 9, fontWeight: 800, color: C.inkSoft, marginBottom: 3 }}>{label}</div>
+        <div style={{ fontSize: 10, fontWeight: 700, color: C.ink, overflowWrap: 'anywhere' }}>{value}</div>
+      </div>
+      <button
+        type="button"
+        onClick={() => void copy()}
+        aria-label={`${t('copyAction', lang)}: ${label}`}
+        style={{ padding: '7px 9px', border: `1px solid ${C.fieldBorder}`, borderRadius: 6, background: C.paper, color: C.ink, fontSize: 9, fontWeight: 800 }}
+      >
+        {t(copied ? 'copiedAction' : 'copyAction', lang)}
+      </button>
     </div>
   );
 }

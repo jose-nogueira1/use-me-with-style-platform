@@ -1112,6 +1112,13 @@ export type AppyPayCreateOrderResult = {
   reservationExpiresAt: string;
 };
 
+export type AppyPayOrderStatus = {
+  orderNumber: string;
+  status: string;
+  paymentStatus: string;
+  appyPayStatus?: string | null;
+};
+
 /** Creates the order (pending) + a Stripe Checkout Session in one call.
  * Caller should redirect the browser to `sessionUrl`. */
 export async function createStripeCheckoutSession(
@@ -1150,6 +1157,15 @@ export async function createAppyPayOrder(input: CreateOrderInput): Promise<AppyP
 
 export async function cancelAppyPayOrder(order: Pick<AppyPayCreateOrderResult, 'merchantTransactionId' | 'cancellationToken'>): Promise<void> {
   await request<{ cancelled: true }>('/payments/appypay/cancel-order', {
+    method: 'POST',
+    body: JSON.stringify(order),
+  });
+}
+
+export async function getAppyPayOrderStatus(
+  order: Pick<AppyPayCreateOrderResult, 'merchantTransactionId' | 'cancellationToken'>,
+): Promise<AppyPayOrderStatus> {
+  return request<AppyPayOrderStatus>('/payments/appypay/status', {
     method: 'POST',
     body: JSON.stringify(order),
   });

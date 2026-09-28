@@ -7,6 +7,7 @@ import {
   createOrder,
   createAppyPayOrder,
   cancelAppyPayOrder,
+  getAppyPayOrderStatus,
   createStripeCheckoutSession,
   fetchMarketSettings,
   fetchTaxRates,
@@ -15,6 +16,7 @@ import {
   type MarketSettings,
   type TaxRates,
 } from '../../lib/api';
+import { waitForAppyPayResolution } from '../../lib/appyPayStatusPolling';
 import { isAppyPayWidgetConfigured } from '../../config/env';
 import { AppyPayPaymentModal } from '../components/AppyPayPaymentModal';
 import { getMetaOrderContext } from '../../lib/analyticsConsent';
@@ -428,6 +430,19 @@ export function Checkout() {
   useEffect(() => {
     if (error) errorRef.current?.focus();
   }, [error]);
+
+  useEffect(() => {
+    if (!appyPayOrder) return;
+    const controller = new AbortController();
+    void waitForAppyPayResolution({
+      lookup: () => getAppyPayOrderStatus(appyPayOrder),
+      signal: controller.signal,
+    }).then((resolvedOrder) => {
+      if (!resolvedOrder || controller.signal.aborted) return;
+      navigate(`/encomenda-confirmada/${resolvedOrder.orderNumber}`);
+    });
+    return () => controller.abort();
+  }, [appyPayOrder, navigate]);
 
   const [form, setForm] = useState({
     firstName: '',
