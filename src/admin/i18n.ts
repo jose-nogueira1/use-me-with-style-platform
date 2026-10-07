@@ -435,6 +435,10 @@ export const T: Record<string, Record<Lang, string>> = {
   // Invoice attached to the order (2026-08-01 request) -- see OrderDetail.tsx.
   invoiceLabel: { en: 'Invoice', pt: 'Fatura' },
   viewInvoicePdf: { en: 'View PDF', pt: 'Ver PDF' },
+  agtValidated: { en: 'AGT validated', pt: 'AGT validada' },
+  agtPending: { en: 'AGT pending', pt: 'AGT pendente' },
+  agtRejected: { en: 'AGT rejected', pt: 'AGT rejeitada' },
+  agtSandbox: { en: 'Test (sandbox)', pt: 'Teste (sandbox)' },
   invoiceFailedNote: { en: 'Generation failed -- see Invoices for details', pt: 'Falha na geração -- ver detalhes em Faturas' },
   diagPaymentReference: { en: 'Payment reference', pt: 'Referência de pagamento' },
   diagMerchantTxId: { en: 'Merchant reference', pt: 'Referência do comerciante' },

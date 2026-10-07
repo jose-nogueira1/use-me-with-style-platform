@@ -105,6 +105,24 @@ export function OrderDetail() {
     if (RETURNS_PHASE_2_ENABLED) adminListReturns({ order: id }).then(setReturns).catch(() => {});
   }, [id]);
 
+  // Angola invoices are issued by Vero a moment AFTER payment is committed (see
+  // notifyOrderEvent.ts), so unlike the internal PDF they are not there yet
+  // when a freshly paid order loads. Look again for a short while.
+  useEffect(() => {
+    if (!order || invoice || order.market !== 'AO' || order.paymentStatus !== 'paid') return;
+    let tries = 0;
+    const timer = setInterval(() => {
+      adminGetInvoiceForOrder(order.id).then((found) => {
+        if (found) {
+          setInvoice(found);
+          clearInterval(timer);
+        }
+      }).catch(() => {});
+      if (++tries >= 8) clearInterval(timer);
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [order, invoice]);
+
   const handleStatusChange = async (status: string, extra?: Record<string, unknown>) => {
     if (!order) return;
     setSaving(true);
@@ -487,6 +505,14 @@ export function OrderDetail() {
                 <div style={{ fontSize: 10, color: C.inkSoft, marginTop: 3 }}>
                   {invoice.status === 'issued' ? invoice.invoiceNumber : t('invoiceFailedNote', lang)}
                 </div>
+                {invoice.status === 'issued' && invoice.provider === 'vero' && (
+                  <div style={{ marginTop: 6 }}>
+                    <Badge
+                      label={t(invoice.agtStatus === 'validated' ? 'agtValidated' : invoice.agtStatus === 'pending' ? 'agtPending' : invoice.agtStatus === 'rejected' ? 'agtRejected' : 'agtSandbox', lang)}
+                      tone={invoice.agtStatus === 'validated' ? 'green' : invoice.agtStatus === 'pending' ? 'gold' : invoice.agtStatus === 'rejected' ? 'red' : 'neutral'}
+                    />
+                  </div>
+                )}
               </div>
               {invoice.status === 'issued' ? (
                 <a

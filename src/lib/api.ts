@@ -809,6 +809,11 @@ export type ApiInvoice = {
   currency: 'Kz' | 'EUR';
   total: number;
   errorMessage?: string;
+  /** Angola invoices are fiscal documents issued through Vero (AGT); the
+   * rest are internal PDFs. agtStatus is null/absent for sandbox documents. */
+  provider?: 'internal' | 'vero';
+  agtStatus?: 'pending' | 'validated' | 'rejected' | null;
+  atcud?: string | null;
 };
 
 /** Media library entry (product photos, etc.) -- added 2026-07-25 for
