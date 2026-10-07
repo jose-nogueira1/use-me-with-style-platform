@@ -984,6 +984,31 @@ export const T: Record<string, Record<Lang, string>> = {
   // Market scoping (2026-07-27, market-switch follow-up) -- same
   // availableAO/availablePT pattern as the Products form.
   availableAngolaCheckboxLabel: { en: 'Available in Angola', pt: 'Disponível em Angola' },
+  // Announcement bar (scrolling bar above the storefront header)
+  showOnBannerCheckboxLabel: { en: 'Show on the announcement bar', pt: 'Mostrar na barra de avisos' },
+  showOnBannerHint: {
+    en: 'Only one code can be on the bar at a time: turning this on turns it off on the others. It shows only while the code is active, in date and not used up.',
+    pt: 'Só um código pode estar na barra de cada vez: ao ligar este, os outros são desligados. Só aparece enquanto o código estiver ativo, dentro da validade e sem esgotar.',
+  },
+  bannerTextPtLabel: { en: 'Bar text — Portuguese (optional)', pt: 'Texto na barra — Português (opcional)' },
+  bannerTextEnLabel: { en: 'Bar text — English (optional)', pt: 'Texto na barra — Inglês (opcional)' },
+  onBannerBadge: { en: 'On the announcement bar', pt: 'Na barra de avisos' },
+  tabAnnouncement: { en: 'Announcement bar', pt: 'Barra de avisos' },
+  tabAnnouncementTitle: { en: 'Announcement bar', pt: 'Barra de avisos' },
+  tabAnnouncementSubtitle: {
+    en: 'The scrolling bar above the storefront header: free delivery, plus one discount code of your choice.',
+    pt: 'A barra animada acima do cabeçalho da loja: entrega grátis e, se quiser, um código de desconto.',
+  },
+  announcementNote: {
+    en: 'To promote a discount code, open the coupon and turn on "Show on the announcement bar". Leave a text blank to use the automatic wording, built from the free-delivery threshold in Markets.',
+    pt: 'Para destacar um código de desconto, abra o cupão e ligue "Mostrar na barra de avisos". Deixe o texto em branco para usar a frase automática, criada a partir do valor de entrega grátis em Mercados.',
+  },
+  announcementShowDelivery: { en: 'Show the free-delivery message', pt: 'Mostrar a mensagem de entrega grátis' },
+  announcementTextPt: { en: 'Free-delivery text — Portuguese', pt: 'Texto de entrega grátis — Português' },
+  announcementTextEn: { en: 'Free-delivery text — English', pt: 'Texto de entrega grátis — Inglês' },
+  saveAnnouncement: { en: 'Save announcement bar', pt: 'Guardar barra de avisos' },
+  couldntLoadAnnouncement: { en: 'Could not load the announcement bar settings.', pt: 'Não foi possível carregar as definições da barra de avisos.' },
+  couldntSaveAnnouncement: { en: 'Could not save the announcement bar settings.', pt: 'Não foi possível guardar as definições da barra de avisos.' },
   availablePortugalCheckboxLabel: { en: 'Available in Portugal', pt: 'Disponível em Portugal' },
   marketRestrictedBadge: { en: 'Restricted', pt: 'Restrito' },
 

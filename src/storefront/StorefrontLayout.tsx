@@ -4,6 +4,7 @@ import { ChevronDown, ChevronLeft, HelpCircle, Menu, Moon, Package, Search, Shop
 import { C, t, type Lang } from '../theme';
 import { useApp } from '../state/AppContext';
 import { Footer } from './components/Footer';
+import { AnnouncementBar } from './components/AnnouncementBar';
 import { BrandLogo } from '../components/BrandLogo';
 import { AnalyticsConsentManager } from './components/AnalyticsConsent';
 import { SearchOverlay } from './components/SearchOverlay';
@@ -149,6 +150,7 @@ export function StorefrontLayout() {
           { name: staticBreadcrumbLabel, path: location.pathname },
         ]} />
       ) : null}
+      <AnnouncementBar />
       <div
         ref={headerRef}
         style={{

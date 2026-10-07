@@ -71,6 +71,21 @@ ${Object.entries(DARK_VARS).map(([k, v]) => `          ${k}: ${v};`).join('\n')}
         .appypay-payment-spinner { animation: appypay-payment-spin 0.8s linear infinite; }
         @media (prefers-reduced-motion: reduce) { .appypay-payment-spinner { animation-duration: 1.8s; } }
 
+        /* Announcement bar (above the header): slides left by half the track, which
+           holds two identical groups, so the loop never jumps. */
+        @keyframes ump-announce-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+        .ump-announce { overflow: hidden; }
+        .ump-announce-track { display: flex; width: max-content; animation: ump-announce-scroll 60s linear infinite; }
+        .ump-announce:hover .ump-announce-track { animation-play-state: paused; }
+        .ump-announce-group { display: flex; flex-shrink: 0; }
+        .ump-announce-item { display: inline-flex; align-items: center; gap: 12px; padding: 9px 28px; font-size: 11px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; white-space: nowrap; }
+        @media (prefers-reduced-motion: reduce) {
+          .ump-announce-track { width: 100%; justify-content: center; animation: none !important; }
+          .ump-announce-group { flex-wrap: wrap; justify-content: center; }
+          .ump-announce-group[aria-hidden='true'] { display: none; }
+          .ump-announce-item { white-space: normal; text-align: center; }
+        }
+
         button { cursor: pointer; border: none; background: none; font-family: inherit; }
         a { color: inherit; }
         input::placeholder,

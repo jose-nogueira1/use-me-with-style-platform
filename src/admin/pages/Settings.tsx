@@ -9,6 +9,9 @@ import {
   adminFetchAiMessagingSettings,
   adminGetAiAssistantStatus,
   adminFetchInvoiceSettings,
+  adminFetchAnnouncementBar,
+  adminUpdateAnnouncementBar,
+  type AnnouncementBarSettings,
   adminListCategories,
   adminListHomeHeroVersions,
   adminListHomeCategoriesVersions,
@@ -119,6 +122,8 @@ const TABS = [
   { key: 'markets', labelKey: 'tabMarkets' },
   { key: 'policies', labelKey: 'tabPolicies' },
   { key: 'invoicing', labelKey: 'tabInvoicing' },
+  // Scrolling announcement bar above the storefront header (free delivery + one promoted code).
+  { key: 'announcement', labelKey: 'tabAnnouncement' },
   { key: 'legal', labelKey: 'tabLegal' },
   // Home hero (2026-07-25 admin request): the "Coleção SS26 / Moda que se
   // move consigo." banner had no admin-editable source at all before this.
@@ -144,6 +149,7 @@ const TAB_META: Record<SettingsTab, { titleKey: string; subtitleKey: string }> =
   markets: { titleKey: 'tabMarketsTitle', subtitleKey: 'tabMarketsSubtitle' },
   policies: { titleKey: 'tabPoliciesTitle', subtitleKey: 'tabPoliciesSubtitle' },
   invoicing: { titleKey: 'tabInvoicingTitle', subtitleKey: 'tabInvoicingSubtitle' },
+  announcement: { titleKey: 'tabAnnouncementTitle', subtitleKey: 'tabAnnouncementSubtitle' },
   legal: { titleKey: 'tabLegalTitle', subtitleKey: 'tabLegalSubtitle' },
   home: { titleKey: 'tabHomeTitle', subtitleKey: 'tabHomeSubtitle' },
   products: { titleKey: 'tabProductsTitle', subtitleKey: 'tabProductsSubtitle' },
@@ -499,6 +505,7 @@ export function Settings() {
       )}
 
       {tab === 'invoicing' && <InvoicingSettingsSection />}
+      {tab === 'announcement' && <AnnouncementBarSettingsSection />}
       {tab === 'legal' && <LegalPagesSection />}
       {tab === 'home' && (
         <>
@@ -950,6 +957,92 @@ function InvoiceMarketCard({
       <SettingsField label={t('vatNoteLabel', lang)} value={settings[taxNoteKey] ?? ''} onChange={(v) => set(taxNoteKey, v)} />
       <SettingsField label={t('invoicePrefixLabel', lang)} value={settings[prefixKey] ?? ''} onChange={(v) => set(prefixKey, v)} />
       <SettingsTextarea label={t('pdfFooterLabel', lang)} value={settings[footerKey] ?? ''} onChange={(v) => set(footerKey, v)} rows={2} />
+    </div>
+  );
+}
+
+// Free-delivery message of the storefront announcement bar, per market (CMS global
+// `announcement-banner`). The promoted discount code is chosen on the coupon itself.
+function AnnouncementBarSettingsSection() {
+  const { lang } = useApp();
+  const [settings, setSettings] = useState<AnnouncementBarSettings>({});
+  const [originalSettings, setOriginalSettings] = useState<AnnouncementBarSettings>({});
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const isDirty = useDirty(settings, originalSettings);
+
+  useEffect(() => {
+    adminFetchAnnouncementBar()
+      .then((s) => { setSettings(s); setOriginalSettings(s); })
+      .catch(() => setError(t('couldntLoadAnnouncement', lang)))
+      .finally(() => setLoading(false));
+  }, [lang]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    setSaved(false);
+    try {
+      const updated = await adminUpdateAnnouncementBar(settings);
+      setSettings(updated);
+      setOriginalSettings(updated);
+      setSaved(true);
+    } catch {
+      setError(t('couldntSaveAnnouncement', lang));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const market = (label: string, enabledKey: keyof AnnouncementBarSettings, ptKey: keyof AnnouncementBarSettings, enKey: keyof AnnouncementBarSettings) => (
+    <div style={{ border: `1px solid ${C.rule}`, borderRadius: 8, padding: 16, background: C.paper }}>
+      <div style={{ fontSize: 13, fontWeight: 800, color: C.ink, marginBottom: 12 }}>{label}</div>
+      <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: C.ink, marginBottom: 12 }}>
+        <input
+          type="checkbox"
+          checked={settings[enabledKey] !== false}
+          onChange={(e) => setSettings((s) => ({ ...s, [enabledKey]: e.target.checked }))}
+        />
+        {t('announcementShowDelivery', lang)}
+      </label>
+      <SettingsField label={t('announcementTextPt', lang)} value={String(settings[ptKey] ?? '')} onChange={(v) => setSettings((s) => ({ ...s, [ptKey]: v }))} />
+      <SettingsField label={t('announcementTextEn', lang)} value={String(settings[enKey] ?? '')} onChange={(v) => setSettings((s) => ({ ...s, [enKey]: v }))} />
+    </div>
+  );
+
+  return (
+    <div style={{ padding: '20px 28px 0' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+        <div style={{ fontSize: 11, color: C.inkSoft, maxWidth: 560 }}>{t('announcementNote', lang)}</div>
+        <button
+          onClick={handleSave}
+          disabled={loading || saving || !isDirty}
+          style={{
+            padding: '9px 18px',
+            background: loading || saving || !isDirty ? C.disabledBg : C.black,
+            color: loading || saving || !isDirty ? C.disabledFg : C.onDarkGold,
+            fontSize: 11,
+            fontWeight: 800,
+            borderRadius: 6,
+            flexShrink: 0,
+            cursor: loading || saving || !isDirty ? 'default' : 'pointer',
+          }}
+        >
+          {saving ? '…' : t('saveAnnouncement', lang)}
+        </button>
+      </div>
+      {error && <div style={{ fontSize: 12, color: '#B95545', marginBottom: 12 }}>{error}</div>}
+      {saved && <div style={{ fontSize: 12, color: '#3F754D', marginBottom: 12 }}>{t('savedNotice', lang)}</div>}
+      {loading ? (
+        <div style={{ fontSize: 12, color: C.inkSoft }}>{t('loadingEllipsis', lang)}</div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }} className="ump-admin-orders-grid">
+          {market(t('angolaOption', lang), 'angolaDeliveryEnabled', 'angolaDeliveryTextPt', 'angolaDeliveryTextEn')}
+          {market(t('portugalOption', lang), 'portugalDeliveryEnabled', 'portugalDeliveryTextPt', 'portugalDeliveryTextEn')}
+        </div>
+      )}
     </div>
   );
 }

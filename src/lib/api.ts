@@ -338,6 +338,11 @@ export type ApiCoupon = {
    * admin deliberately restricts it. */
   availableAO?: boolean | null;
   availablePT?: boolean | null;
+  /** Promote this code in the storefront announcement bar. The CMS keeps it to
+   * one coupon at a time (turning it on turns it off on the others). */
+  showOnBanner?: boolean | null;
+  bannerTextPt?: string | null;
+  bannerTextEn?: string | null;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -986,6 +991,34 @@ export type TaxRates = {
 };
 export async function fetchTaxRates(): Promise<TaxRates> {
   return request<TaxRates>('/tax-rates');
+}
+
+/** Storefront announcement bar (above the header): the free-delivery message and
+ * at most one promoted discount code, as display text in both languages. Built
+ * by the CMS from admin settings -- see use-me-with-style-cms/src/lib/
+ * announcementBanner.ts. Failures are the caller's to swallow: the bar is
+ * decoration and must never break a page. */
+export type AnnouncementItem = { id: 'delivery' | 'coupon'; pt: string; en: string };
+export async function fetchAnnouncementBar(market: 'AO' | 'PT'): Promise<AnnouncementItem[]> {
+  const data = await request<{ items?: AnnouncementItem[] }>(`/storefront-banner?market=${market}`);
+  return data.items ?? [];
+}
+
+/** Admin: free-delivery message of the announcement bar, per market. Blank text =
+ * automatic wording built from the market's free-delivery threshold. */
+export type AnnouncementBarSettings = {
+  angolaDeliveryEnabled?: boolean | null;
+  angolaDeliveryTextPt?: string | null;
+  angolaDeliveryTextEn?: string | null;
+  portugalDeliveryEnabled?: boolean | null;
+  portugalDeliveryTextPt?: string | null;
+  portugalDeliveryTextEn?: string | null;
+};
+export async function adminFetchAnnouncementBar(): Promise<AnnouncementBarSettings> {
+  return request<AnnouncementBarSettings>('/globals/announcement-banner', { cache: 'no-store' }, { auth: true });
+}
+export async function adminUpdateAnnouncementBar(input: AnnouncementBarSettings): Promise<AnnouncementBarSettings> {
+  return adminUpdateGlobal('/globals/announcement-banner', input);
 }
 
 export async function fetchLegalContent(): Promise<LegalContent> {
@@ -1888,6 +1921,9 @@ export type CouponInput = {
   maxRedemptionsPerEmail?: number | null;
   availableAO?: boolean | null;
   availablePT?: boolean | null;
+  showOnBanner?: boolean | null;
+  bannerTextPt?: string | null;
+  bannerTextEn?: string | null;
 };
 
 export async function adminCreateCoupon(input: CouponInput): Promise<ApiCoupon> {

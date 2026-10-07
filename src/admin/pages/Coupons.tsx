@@ -36,6 +36,9 @@ const emptyDraft: CouponInput = {
   maxRedemptionsPerEmail: null,
   availableAO: true,
   availablePT: true,
+  showOnBanner: false,
+  bannerTextPt: '',
+  bannerTextEn: '',
 };
 
 function toDateInputValue(value?: string | null): string {
@@ -129,6 +132,9 @@ export function Coupons() {
     maxRedemptionsPerEmail: c.maxRedemptionsPerEmail ?? null,
     availableAO: c.availableAO ?? true,
     availablePT: c.availablePT ?? true,
+    showOnBanner: c.showOnBanner ?? false,
+    bannerTextPt: c.bannerTextPt ?? '',
+    bannerTextEn: c.bannerTextEn ?? '',
   });
 
   const startCreate = () => {
@@ -233,6 +239,11 @@ export function Coupons() {
                   actually restricted, so an unrestricted (default, both
                   true) coupon's row looks exactly like it did before this
                   field existed. */}
+              {c.showOnBanner && (
+                <div style={{ fontSize: 10, color: C.goldDeep, fontWeight: 700, textTransform: 'uppercase', marginTop: 2 }}>
+                  ✦ {t('onBannerBadge', lang)}
+                </div>
+              )}
               {(c.availableAO === false || c.availablePT === false) && (
                 <div style={{ fontSize: 10, color: C.goldDeep, fontWeight: 700, textTransform: 'uppercase', marginTop: 2 }}>
                   {t('marketRestrictedBadge', lang)}: {[c.availableAO !== false && 'AO', c.availablePT !== false && 'PT'].filter(Boolean).join(' + ') || '—'}
@@ -313,6 +324,18 @@ function CouponForm({
         <CheckboxField label={t('activeCheckboxLabel', lang)} checked={draft.active ?? true} onChange={(v) => setDraft({ ...draft, active: v })} />
         <CheckboxField label={t('availableAngolaCheckboxLabel', lang)} checked={draft.availableAO ?? true} onChange={(v) => setDraft({ ...draft, availableAO: v })} />
         <CheckboxField label={t('availablePortugalCheckboxLabel', lang)} checked={draft.availablePT ?? true} onChange={(v) => setDraft({ ...draft, availablePT: v })} />
+      </div>
+
+      {/* Announcement bar (storefront, above the header): one promoted code at a time. */}
+      <div style={{ marginTop: 12 }}>
+        <CheckboxField label={t('showOnBannerCheckboxLabel', lang)} checked={draft.showOnBanner ?? false} onChange={(v) => setDraft({ ...draft, showOnBanner: v })} />
+        <div style={{ fontSize: 10, color: C.inkSoft, marginTop: 4 }}>{t('showOnBannerHint', lang)}</div>
+        {draft.showOnBanner ? (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12, marginTop: 10 }}>
+            <TextField label={t('bannerTextPtLabel', lang)} value={draft.bannerTextPt ?? ''} onChange={(v) => setDraft({ ...draft, bannerTextPt: v })} placeholder="Use o código SUMMER10 e ganhe 10% de desconto" />
+            <TextField label={t('bannerTextEnLabel', lang)} value={draft.bannerTextEn ?? ''} onChange={(v) => setDraft({ ...draft, bannerTextEn: v })} placeholder="Use code SUMMER10 for 10% off" />
+          </div>
+        ) : null}
       </div>
 
       {draft.type === 'percent' ? (
