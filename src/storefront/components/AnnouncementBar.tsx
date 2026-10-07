@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { C, F } from '../../theme';
 import { useApp } from '../../state/AppContext';
 import { fetchAnnouncementBar, type AnnouncementItem } from '../../lib/api';
+import { readPrerenderAnnouncement, rememberAnnouncementForPrerender } from '../../lib/prerenderBootstrap';
 import { announcementDuration, announcementRepeat, announcementTexts } from '../announcement';
 
 // Scrolling bar above the header: the free-delivery message and, when the admin
@@ -13,12 +14,17 @@ import { announcementDuration, announcementRepeat, announcementTexts } from '../
 // reduced-motion users get the messages as static centred text (App.tsx styles).
 export function AnnouncementBar() {
   const { lang, market } = useApp();
-  const [items, setItems] = useState<AnnouncementItem[]>([]);
+  // Starts from the pre-rendered snapshot's items (see prerenderBootstrap) so the
+  // bar doesn't blink out and back in while the page boots.
+  const [items, setItems] = useState<AnnouncementItem[]>(() => readPrerenderAnnouncement(market));
 
   useEffect(() => {
     let live = true;
     fetchAnnouncementBar(market)
-      .then((result) => { if (live) setItems(result); })
+      .then((result) => {
+        rememberAnnouncementForPrerender(market, result);
+        if (live) setItems(result);
+      })
       .catch(() => { if (live) setItems([]); });
     return () => { live = false; };
   }, [market]);

@@ -314,7 +314,7 @@ async function captureRoute(context, port, market, route) {
       // it before its first Home render, then refreshes in the background,
       // avoiding a real-image -> placeholder -> real-image startup cycle.
       const prerenderData = window.__UMP_PRERENDER_DATA__
-      if (prerenderData?.homeHero) {
+      if (prerenderData?.homeHero || prerenderData?.announcement) {
         const dataScript = document.createElement('script')
         dataScript.id = 'ump-prerender-data'
         dataScript.type = 'application/json'

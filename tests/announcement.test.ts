@@ -27,3 +27,14 @@ test('scroll speed stays readable: longer or more repeated text takes longer, ne
   assert.ok(short >= 30)
   assert.ok(long > short)
 })
+
+import { parsePrerenderAnnouncement } from '../src/lib/prerenderBootstrap.ts'
+
+test('the pre-rendered banner is reused only for its own market and ignores bad data', () => {
+  const raw = JSON.stringify({ announcement: { market: 'AO', items: [{ id: 'delivery', pt: 'a', en: 'b' }] } })
+  assert.equal(parsePrerenderAnnouncement(raw, 'AO').length, 1)
+  assert.deepEqual(parsePrerenderAnnouncement(raw, 'PT'), [])
+  assert.deepEqual(parsePrerenderAnnouncement('{"homeHero":{}}', 'AO'), [])
+  assert.deepEqual(parsePrerenderAnnouncement('not json', 'AO'), [])
+  assert.deepEqual(parsePrerenderAnnouncement(null, 'AO'), [])
+})
