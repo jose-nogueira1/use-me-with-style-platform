@@ -327,15 +327,20 @@ export function Cart() {
             <span>{t('total', lang)}</span>
             {loading ? <SkeletonBar width={90} height={16} /> : <span>{formatMoney(subtotal, market, lang)}</span>}
           </div>
-          <div data-testid="cart-vat-included" style={{ fontSize: 10, color: C.inkSoft, marginTop: 4, marginBottom: 16, textAlign: 'right' }}>
-            {loading ? (
-              <SkeletonBar width={90} height={10} />
-            ) : (
-              t('vatIncludedLabel', lang)
-                .replace('{rate}', String(vatRate))
-                .replace('{amount}', formatMoney(vatAmount, market, lang))
-            )}
-          </div>
+          {/* No VAT line when the rate is 0 (Angola, Regime Simplificado). */}
+          {vatRate > 0 ? (
+            <div data-testid="cart-vat-included" style={{ fontSize: 10, color: C.inkSoft, marginTop: 4, marginBottom: 16, textAlign: 'right' }}>
+              {loading ? (
+                <SkeletonBar width={90} height={10} />
+              ) : (
+                t('vatIncludedLabel', lang)
+                  .replace('{rate}', String(vatRate))
+                  .replace('{amount}', formatMoney(vatAmount, market, lang))
+              )}
+            </div>
+          ) : (
+            <div style={{ marginBottom: 16 }} />
+          )}
           <button
             disabled={loading || hasOutOfStockLine}
             onClick={() => {

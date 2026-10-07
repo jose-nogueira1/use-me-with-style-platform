@@ -78,7 +78,9 @@ export type TaxRatesConfig = {
  * between Checkout.tsx and Cart.tsx (2026-08-04, "VAT value should show on
  * cart as well not only on checkout") so both pages start from the exact
  * same default and can't drift apart. */
-export const DEFAULT_TAX_RATES: TaxRatesConfig = { AO: 14, PT: { mainland: 23, madeira: 22, azores: 16 } };
+// Angola is 0 (2026-10-07): Regime Simplificado, so no VAT line is shown unless the
+// CMS reports a rate (was 14 under Regime Geral).
+export const DEFAULT_TAX_RATES: TaxRatesConfig = { AO: 0, PT: { mainland: 23, madeira: 22, azores: 16 } };
 
 /** VAT included-in-price breakdown (2026-08-04). Angola is a flat rate
  * regardless of settlement currency -- this is about the customer's

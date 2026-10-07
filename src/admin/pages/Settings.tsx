@@ -856,7 +856,10 @@ function InvoicingSettingsSection() {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }} className="ump-admin-orders-grid">
+            {/* Angola invoices are issued through Vero (2026-10-07), so the internal-invoice card is
+                hidden, not deleted, in case Angola needs the internal PDF again:
             <InvoiceMarketCard label={t('angolaOption', lang)} market="AO" settings={settings} setSettings={setSettings} lang={lang} />
+            */}
             <InvoiceMarketCard label={t('portugalOption', lang)} market="PT" settings={settings} setSettings={setSettings} lang={lang} />
           </div>
         </>

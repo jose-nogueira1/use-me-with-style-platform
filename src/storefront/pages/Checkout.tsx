@@ -1192,9 +1192,12 @@ export function Checkout() {
           />
           <div style={{ borderTop: `1px solid ${C.rule}`, marginTop: 8, paddingTop: 8 }}>
             <Row testId="checkout-total" label={t('total', lang)} value={fmt(total)} bold />
-            <div data-testid="checkout-vat-included" style={{ fontSize: 10, color: C.inkSoft, marginTop: 4, textAlign: 'right' }}>
-              {t('vatIncludedLabel', lang).replace('{rate}', String(vatRate)).replace('{amount}', fmt(vatAmount))}
-            </div>
+            {/* No VAT line when the rate is 0 (Angola, Regime Simplificado). */}
+            {vatRate > 0 && (
+              <div data-testid="checkout-vat-included" style={{ fontSize: 10, color: C.inkSoft, marginTop: 4, textAlign: 'right' }}>
+                {t('vatIncludedLabel', lang).replace('{rate}', String(vatRate)).replace('{amount}', fmt(vatAmount))}
+              </div>
+            )}
           </div>
         </div>
 
