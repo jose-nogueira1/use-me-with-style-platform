@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Clock } from 'lucide-react';
 import { C, F, t } from '../../theme';
@@ -5,6 +6,7 @@ import { useApp, useFormatOriginalPrice, useFormatPrice } from '../../state/AppC
 import { ProductPhoto } from '../../components/ProductPhoto';
 import { hasSwatch, swatchBackground } from '../../lib/colorSwatch';
 import { colorHasStock } from '../../lib/productAdapters';
+import { hoverImage } from '../../lib/hoverImage';
 import { saleDiscountLabel, saleDiscountPercent, saleUrgencyLabel } from '../../lib/salePresentation';
 import type { Product } from '../../types/product';
 
@@ -25,6 +27,20 @@ export function ProductCard({ product, size = 'grid', priority = false, homepage
   const fmtPrice = useFormatPrice();
   const fmtOriginalPrice = useFormatOriginalPrice();
   const isSmall = size === 'small';
+  // Hover photo: fades in over the first photo while the pointer (or keyboard
+  // focus) is on the card and fades back out afterwards. The second photo is
+  // only mounted on the first hover, so a grid doesn't download twice as many
+  // images up front, and it only becomes visible once it has loaded, so a slow
+  // or failed image never flashes a placeholder over the real photo. Touch
+  // screens have no hover and are left alone.
+  const secondImage = hoverImage(product.images);
+  const [peeking, setPeeking] = useState(false);
+  const [secondMounted, setSecondMounted] = useState(false);
+  const [secondReady, setSecondReady] = useState(false);
+  const peek = (on: boolean) => {
+    setPeeking(on);
+    if (on) setSecondMounted(true);
+  };
   const saleLabel = product.onSale ? saleDiscountLabel(
     market === 'AO' ? product.priceKz : product.priceEur,
     market === 'AO' ? product.effectivePriceKz : product.effectivePriceEur,
@@ -39,6 +55,10 @@ export function ProductCard({ product, size = 'grid', priority = false, homepage
   return (
     <Link
       to={`/produto/${product.slug}`}
+      onPointerEnter={(event) => { if (event.pointerType !== 'touch') peek(true); }}
+      onPointerLeave={() => peek(false)}
+      onFocus={() => peek(true)}
+      onBlur={() => peek(false)}
       className={`ump-product-card ump-hover-lift${homepage ? ' ump-home-product-card' : ''}`}
       style={{
         flexShrink: isSmall ? 0 : undefined,
@@ -55,8 +75,17 @@ export function ProductCard({ product, size = 'grid', priority = false, homepage
       }}
     >
       <div style={{ aspectRatio: '3 / 4', width: '100%', position: 'relative', background: C.subtleBg }}>
-        <div style={{ width: '100%', height: '100%', opacity: product.marketStatus === 'sold_out' ? 0.55 : 1 }}>
+        <div style={{ position: 'relative', width: '100%', height: '100%', opacity: product.marketStatus === 'sold_out' ? 0.55 : 1 }}>
           <ProductPhoto tone={product.tone} radius={0} image={product.images[0]} variant="card" priority={priority} />
+          {secondImage && secondMounted && (
+            <div
+              aria-hidden
+              onLoadCapture={() => setSecondReady(true)}
+              style={{ position: 'absolute', inset: 0, opacity: peeking && secondReady ? 1 : 0, transition: 'opacity 0.35s ease', pointerEvents: 'none' }}
+            >
+              <ProductPhoto tone={product.tone} radius={0} image={secondImage} variant="card" />
+            </div>
+          )}
         </div>
         {(product.marketStatus === 'sold_out' || (product.marketStatus === 'low_stock' && !saleLabel)) && (
           <div
