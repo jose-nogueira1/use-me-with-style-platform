@@ -3,7 +3,7 @@ import { C, F } from '../../theme';
 import { useApp } from '../../state/AppContext';
 import { fetchAnnouncementBar, type AnnouncementItem } from '../../lib/api';
 import { readPrerenderAnnouncement, rememberAnnouncementForPrerender } from '../../lib/prerenderBootstrap';
-import { announcementDuration, announcementRepeat, announcementTexts } from '../announcement';
+import { announcementDuration, announcementEntries, announcementRepeat, splitAroundCode } from '../announcement';
 
 // Scrolling bar above the header: the free-delivery message and, when the admin
 // promotes one, a discount code. Content comes from the CMS (see
@@ -33,11 +33,12 @@ export function AnnouncementBar() {
     return () => { live = false; };
   }, [market]);
 
-  const texts = announcementTexts(items, lang);
-  if (!texts.length) return null;
+  const entries = announcementEntries(items, lang);
+  if (!entries.length) return null;
 
-  const repeat = announcementRepeat(texts.length);
-  const group = Array.from({ length: repeat }, () => texts).flat();
+  const texts = entries.map((entry) => entry.text);
+  const repeat = announcementRepeat(entries.length);
+  const group = Array.from({ length: repeat }, () => entries).flat();
 
   return (
     <div
@@ -50,10 +51,14 @@ export function AnnouncementBar() {
       <div className="ump-announce-track" style={{ animationDuration: `${announcementDuration(texts, repeat)}s` }}>
         {[0, 1].map((copy) => (
           <div key={copy} className="ump-announce-group" aria-hidden={copy === 1 ? true : undefined}>
-            {group.map((text, index) => (
+            {group.map((entry, index) => (
               <span key={index} className="ump-announce-item">
                 <span aria-hidden="true" style={{ color: C.onDarkGold }}>✦</span>
-                <span>{text}</span>
+                <span>
+                  {splitAroundCode(entry.text, entry.code).map((part, i) =>
+                    part.code ? <strong key={i} style={{ color: C.onDarkGold, fontWeight: 800 }}>{part.text}</strong> : part.text,
+                  )}
+                </span>
               </span>
             ))}
           </div>
