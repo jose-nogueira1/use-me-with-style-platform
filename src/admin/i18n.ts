@@ -386,6 +386,10 @@ export const T: Record<string, Record<Lang, string>> = {
   // NEXT_STEP labels past payment confirmation (2026-07-31 follow-up: the
   // CTA vanished entirely once an order reached 'processing', with nothing
   // to replace it -- "no button, no nothing"). Order matches STATUSES.
+  shipWithoutTrackingConfirm: {
+    en: "There is no Zygo tracking number on this order yet. Mark it as shipped anyway? The customer gets the shipped email now and a second, short email when you add the number later.\n\nTo send one email with the number, press Cancel, enter the number and click \"Mark as shipped\" again.",
+    pt: 'Esta encomenda ainda não tem número de rastreio da Zygo. Marcar como enviada mesmo assim? O cliente recebe já o email de envio e um segundo email curto quando adicionar o número.\n\nPara enviar um só email com o número, carregue em Cancelar, escreva o número e clique de novo em "Marcar como enviada".',
+  },
   markAsShipped: { en: 'Mark as shipped', pt: 'Marcar como enviada' },
   markAsDelivered: { en: 'Mark as delivered', pt: 'Marcar como entregue' },
   // Order total breakdown (2026-07-31, Orders QA: the admin only ever saw

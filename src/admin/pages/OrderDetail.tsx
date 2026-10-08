@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { C, F } from '../../theme';
 import { useApp } from '../../state/AppContext';
+import { shipmentExtra, shouldConfirmNoTracking } from '../lib/shipment';
 import { adminCreateReturn, adminGetInvoiceForOrder, adminGetOrder, adminInvoicePdfUrl, adminListProducts, adminListReturns, adminUpdateOrder, adminUpdateOrderStatus, type ApiInvoice, type ApiOrder, type ApiProduct, type ApiReturn } from '../../lib/api';
 import { orderItemImage } from '../lib/orderItemImage';
 
@@ -180,7 +181,14 @@ export function OrderDetail() {
   };
   const nextStep = NEXT_STEP[order?.status ?? ''];
   const handleNextStep = () => {
-    if (!nextStep) return;
+    if (!nextStep || !order) return;
+    // Shipping: send the tracking number typed above in the same request so the customer
+    // gets one email with it, and ask first when an Angola order has no number yet.
+    if (nextStep.nextStatus === 'shipped') {
+      if (shouldConfirmNoTracking(order.market, order.cttTrackingCode, form?.cttTrackingCode) && !window.confirm(t('shipWithoutTrackingConfirm', lang))) return;
+      handleStatusChange('shipped', { ...nextStep.extra, ...shipmentExtra(order.cttTrackingCode, form?.cttTrackingCode) });
+      return;
+    }
     handleStatusChange(nextStep.nextStatus, nextStep.extra);
   };
 
