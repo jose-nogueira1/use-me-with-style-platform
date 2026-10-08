@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { ZygoLink } from './ZygoLink';
+import { AppyPayLink } from './AppyPayLink';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FileText, Mail } from 'lucide-react';
@@ -97,6 +98,12 @@ export function Footer() {
               to="/ajuda#devolucoes"
             />
             <InfoLine label={t('prices', lang)} value={t(market === 'AO' ? 'footerPricesNoteAo' : 'footerPricesNotePt', lang)} />
+            {market === 'AO' && (
+              <InfoLine
+                label={t('payment', lang)}
+                value={<>{lang === 'pt' ? 'Pagamentos processados pela' : 'Payments processed by'} <AppyPayLink /> · Multicaixa Express</>}
+              />
+            )}
             <div style={{ marginTop: 4, fontSize: 9, letterSpacing: 2, color: C.inkSoft, textTransform: 'uppercase' }}>
               {t(market === 'AO' ? 'angola' : 'portugal', lang)}
             </div>

@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { t } from '../src/theme';
 import { mockCheckoutBackend, seedCheckout } from './helpers/mockCheckout';
 
-/** Angola delivery by Zygo: four priced zones, a required point of reference, a link to Zygo. */
+/** Angola delivery by Zygo: four priced zones, an optional point of reference, a link to Zygo. */
 
 function digitsOnly(text: string): string {
   return text.replace(/[^\d]/g, '');
@@ -57,4 +57,21 @@ test('Portugal checkout has no point-of-reference field and no Zygo', async ({ p
   await page.goto('/checkout');
   await expect(page.getByLabel(t('deliveryReference', 'en'))).toHaveCount(0);
   await expect(page.getByRole('link', { name: 'Zygo' })).toHaveCount(0);
+});
+
+test('the Angola footer names AppyPay as the payment processor and offers Multicaixa Express only', async ({ page }) => {
+  await mockCheckoutBackend(page);
+  await seedCheckout(page, { market: 'AO', lang: 'en' });
+  await page.goto('/checkout');
+  const footer = page.locator('footer');
+  await expect(footer).toContainText('Payments processed by AppyPay · Multicaixa Express');
+  await expect(footer.getByRole('link', { name: 'AppyPay' })).toHaveAttribute('href', 'https://www.appypay.co.ao/');
+  await expect(footer).not.toContainText('Reference');
+});
+
+test('the Portugal footer has no AppyPay line', async ({ page }) => {
+  await mockCheckoutBackend(page);
+  await seedCheckout(page, { market: 'PT', lang: 'en' });
+  await page.goto('/checkout');
+  await expect(page.locator('footer')).not.toContainText('AppyPay');
 });

@@ -268,7 +268,7 @@ export const T: Record<string, Record<Lang, string>> = {
   paymentPaypal: { pt: 'PayPal', en: 'PayPal' },
   paymentStripe: { pt: 'Cartão (Stripe)', en: 'Card (Stripe)' },
   paymentMbway: { pt: 'MB WAY', en: 'MB WAY' },
-  paymentMulticaixaExpress: { pt: 'AppyPay — Multicaixa Express ou Referência', en: 'AppyPay — Multicaixa Express or Reference' },
+  paymentMulticaixaExpress: { pt: 'AppyPay — Multicaixa Express', en: 'AppyPay — Multicaixa Express' },
   // Portugal's checkout fallback while payments are deferred (2026-08-04) --
   // replaces the old hard-blocking error with a single manual method,
   // mirrored on Angola's existing bank-transfer fallback.
