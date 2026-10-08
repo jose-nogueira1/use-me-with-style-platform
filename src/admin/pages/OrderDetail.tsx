@@ -519,11 +519,12 @@ export function OrderDetail() {
                 <div style={{ fontSize: 10, color: C.inkSoft, marginTop: 3 }}>
                   {invoice.status === 'issued' ? invoice.invoiceNumber : t('invoiceFailedNote', lang)}
                 </div>
-                {invoice.status === 'issued' && invoice.provider === 'vero' && (
+                {/* Only shown once Vero reports an AGT status; a document without one shows no badge. */}
+                {invoice.status === 'issued' && invoice.provider === 'vero' && invoice.agtStatus && (
                   <div style={{ marginTop: 6 }}>
                     <Badge
-                      label={t(invoice.agtStatus === 'validated' ? 'agtValidated' : invoice.agtStatus === 'pending' ? 'agtPending' : invoice.agtStatus === 'rejected' ? 'agtRejected' : 'agtSandbox', lang)}
-                      tone={invoice.agtStatus === 'validated' ? 'green' : invoice.agtStatus === 'pending' ? 'gold' : invoice.agtStatus === 'rejected' ? 'red' : 'neutral'}
+                      label={t(invoice.agtStatus === 'validated' ? 'agtValidated' : invoice.agtStatus === 'pending' ? 'agtPending' : 'agtRejected', lang)}
+                      tone={invoice.agtStatus === 'validated' ? 'green' : invoice.agtStatus === 'pending' ? 'gold' : 'red'}
                     />
                   </div>
                 )}
