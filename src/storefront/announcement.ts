@@ -5,6 +5,27 @@ export function announcementTexts(items: AnnouncementItem[], lang: 'pt' | 'en'):
   return items.map((item) => item[lang]?.trim()).filter((text): text is string => Boolean(text));
 }
 
+/** One bar message and, for a promoted discount code, the code to show in gold. */
+export type AnnouncementEntry = { text: string; code?: string };
+
+export function announcementEntries(items: AnnouncementItem[], lang: 'pt' | 'en'): AnnouncementEntry[] {
+  return items
+    .map((item) => ({ text: item[lang]?.trim() ?? '', code: item.code?.trim() || undefined }))
+    .filter((entry) => entry.text);
+}
+
+/** Splits a message around the first occurrence of its code (any letter case) so the
+ * code can be highlighted. A message that doesn't contain the code stays whole. */
+export function splitAroundCode(text: string, code?: string): Array<{ text: string; code: boolean }> {
+  const at = code ? text.toLowerCase().indexOf(code.toLowerCase()) : -1;
+  if (!code || at < 0) return [{ text, code: false }];
+  return [
+    { text: text.slice(0, at), code: false },
+    { text: text.slice(at, at + code.length), code: true },
+    { text: text.slice(at + code.length), code: false },
+  ].filter((part) => part.text);
+}
+
 /** How many times one set of messages is repeated inside a single scrolling
  * group so the group is always wider than the widest screen (about three
  * thousand pixels at ~380px per message), which keeps the loop seamless. */

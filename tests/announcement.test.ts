@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { announcementDuration, announcementRepeat, announcementTexts } from '../src/storefront/announcement.ts'
+import { announcementDuration, announcementEntries, announcementRepeat, announcementTexts, splitAroundCode } from '../src/storefront/announcement.ts'
 
 const items = [
   { id: 'message' as const, pt: 'Entrega grátis acima de 80.000 Kz', en: 'Free delivery over 80,000 Kz' },
@@ -37,4 +37,22 @@ test('the pre-rendered banner is reused only for its own market and ignores bad 
   assert.deepEqual(parsePrerenderAnnouncement('{"homeHero":{}}', 'AO'), [])
   assert.deepEqual(parsePrerenderAnnouncement('not json', 'AO'), [])
   assert.deepEqual(parsePrerenderAnnouncement(null, 'AO'), [])
+})
+
+test('a promoted code is split out of its message so it can be shown in gold', () => {
+  assert.deepEqual(splitAroundCode('Use o código TESTE90 e ganhe 90% de desconto', 'TESTE90'), [
+    { text: 'Use o código ', code: false },
+    { text: 'TESTE90', code: true },
+    { text: ' e ganhe 90% de desconto', code: false },
+  ])
+  assert.deepEqual(splitAroundCode('use code teste90', 'TESTE90').map((p) => [p.text, p.code]), [['use code ', false], ['teste90', true]]) // any letter case
+  assert.deepEqual(splitAroundCode('Entrega grátis', undefined), [{ text: 'Entrega grátis', code: false }])
+  assert.deepEqual(splitAroundCode('Custom wording without it', 'TESTE90'), [{ text: 'Custom wording without it', code: false }])
+  assert.deepEqual(splitAroundCode('TESTE90', 'TESTE90'), [{ text: 'TESTE90', code: true }])
+})
+
+test('entries carry the code only when the CMS sends one, and skip blank texts', () => {
+  const withCode = [{ id: 'coupon' as const, pt: 'Use o código X1', en: '', code: 'X1' }, { id: 'message' as const, pt: 'Olá', en: 'Hi' }]
+  assert.deepEqual(announcementEntries(withCode, 'pt'), [{ text: 'Use o código X1', code: 'X1' }, { text: 'Olá', code: undefined }])
+  assert.deepEqual(announcementEntries(withCode, 'en'), [{ text: 'Hi', code: undefined }])
 })

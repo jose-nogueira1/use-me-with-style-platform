@@ -1007,7 +1007,7 @@ export async function fetchTaxRates(): Promise<TaxRates> {
  * by the CMS from admin settings -- see use-me-with-style-cms/src/lib/
  * announcementBanner.ts. Failures are the caller's to swallow: the bar is
  * decoration and must never break a page. */
-export type AnnouncementItem = { id: 'message' | 'coupon'; pt: string; en: string };
+export type AnnouncementItem = { id: 'message' | 'coupon'; pt: string; en: string; code?: string };
 export async function fetchAnnouncementBar(market: 'AO' | 'PT'): Promise<AnnouncementItem[]> {
   const data = await request<{ items?: AnnouncementItem[] }>(`/storefront-banner?market=${market}`);
   return data.items ?? [];
