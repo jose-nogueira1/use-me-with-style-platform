@@ -76,7 +76,7 @@ import { ProductTaxonomySettings } from './ProductSettings';
 import { Content } from './Content';
 import { t, type Lang } from '../i18n';
 import { imageOptimizationSummary, imageUploadGuidance, prepareImageUpload } from '../../lib/imageUpload';
-import { DEFAULT_ANGOLA_MUNICIPALITY_PRICES, LUANDA_MUNICIPALITIES } from '../../storefront/shipping';
+import { ANGOLA_ZONES, DEFAULT_ANGOLA_ZONE_PRICES } from '../../storefront/shipping';
 import { MoneyField } from '../components/MoneyField';
 
 const DEFAULTS: MarketSettings = {
@@ -85,7 +85,10 @@ const DEFAULTS: MarketSettings = {
   angolaBankTransferInstructionsEN: '',
   angolaPaymentMethods: ['multicaixa_express'],
   angolaDeliveryMethods: ['courier_ao'],
-  angolaMunicipalityPrices: DEFAULT_ANGOLA_MUNICIPALITY_PRICES,
+  angolaZonePriceCentro: DEFAULT_ANGOLA_ZONE_PRICES.centro,
+  angolaZonePriceSul: DEFAULT_ANGOLA_ZONE_PRICES.sul,
+  angolaZonePriceNorte: DEFAULT_ANGOLA_ZONE_PRICES.norte,
+  angolaZonePricePeriferia: DEFAULT_ANGOLA_ZONE_PRICES.periferia,
   angolaFreeShippingThreshold: 80000,
   portugalPaymentsEnabled: false,
   manualWhatsappNumber: '',
@@ -292,6 +295,8 @@ export function Settings() {
                 />
               }
             />
+            {/* Angola delivery is by Zygo in four zones (2026-10-08). The 16-municipality price
+                editor below is commented out, not deleted, in case it is needed again:
             <ConfigRow
               label={t('municipalityPrices', lang)}
               value={
@@ -314,6 +319,37 @@ export function Settings() {
                         onChange={(value) => setSettings((s) => ({ ...s, angolaMunicipalityPrices: { ...s.angolaMunicipalityPrices, [municipality]: Number(value) || 0 } }))}
                       />
                     ))}
+                    <MoneyField label={t('freeShippingThresholdKz', lang)} value={settings.angolaFreeShippingThreshold} currency="AO" lang={lang} compact onChange={(value) => setSettings((s) => ({ ...s, angolaFreeShippingThreshold: Number(value) || 0 }))} />
+                  </div>
+                </details>
+              }
+            />
+            */}
+            <ConfigRow
+              label={t('zonePrices', lang)}
+              value={
+                <details style={{ border: `1px solid ${C.ruleLight}`, borderRadius: 7, background: C.subtleBg }}>
+                  <summary style={{ cursor: 'pointer', padding: '10px 12px', fontWeight: 800, color: C.ink, userSelect: 'none' }}>
+                    {t('editZonePrices', lang)}
+                    <span style={{ display: 'block', marginTop: 2, fontSize: 9, fontWeight: 500, color: C.inkSoft }}>
+                      {t('zonePricesHint', lang)}
+                    </span>
+                  </summary>
+                  <div style={{ display: 'grid', gap: 8, padding: '4px 12px 12px', borderTop: `1px solid ${C.ruleLight}` }}>
+                    {ANGOLA_ZONES.map((zone) => {
+                      const key = `angolaZonePrice${zone[0].toUpperCase()}${zone.slice(1)}` as 'angolaZonePriceCentro' | 'angolaZonePriceSul' | 'angolaZonePriceNorte' | 'angolaZonePricePeriferia';
+                      return (
+                        <MoneyField
+                          key={zone}
+                          label={`${t(`zone${zone[0].toUpperCase()}${zone.slice(1)}`, lang)} (Kz)`}
+                          value={Number(settings[key] ?? DEFAULT_ANGOLA_ZONE_PRICES[zone])}
+                          currency="AO"
+                          lang={lang}
+                          compact
+                          onChange={(value) => setSettings((s) => ({ ...s, [key]: Number(value) || 0 }))}
+                        />
+                      );
+                    })}
                     <MoneyField label={t('freeShippingThresholdKz', lang)} value={settings.angolaFreeShippingThreshold} currency="AO" lang={lang} compact onChange={(value) => setSettings((s) => ({ ...s, angolaFreeShippingThreshold: Number(value) || 0 }))} />
                   </div>
                 </details>

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { checkoutShippingCost, vatIncludedAmount } from '../src/storefront/shipping.ts';
+import { ANGOLA_DELIVERY_ZONES, ANGOLA_ZONES, angolaZoneOf, checkoutShippingCost, vatIncludedAmount } from '../src/storefront/shipping.ts';
 
 test('Portugal checkout offers untracked and tracked prices below the free-shipping threshold', () => {
   assert.equal(checkoutShippingCost('PT', 'ctt', 74.99), 4.9);
@@ -31,10 +31,22 @@ test('Portugal parcels over 2 kg use tracked mainland/island rates while free de
   assert.equal(checkoutShippingCost('PT', 'courier_pt', 75, undefined, undefined, 2500, '9500-001'), 0);
 });
 
-test('Angola local-courier pricing is municipality-specific and free from Kz 80,000', () => {
-  assert.equal(checkoutShippingCost('AO', 'courier_ao', 79_999, undefined, 'Ingombota'), 2500);
-  assert.equal(checkoutShippingCost('AO', 'courier_ao', 79_999, undefined, 'Mussulo'), 8000);
-  assert.equal(checkoutShippingCost('AO', 'courier_ao', 80_000, undefined, 'Mussulo'), 0);
+test('Angola Zygo pricing is by zone, editable per zone, and free from Kz 80,000', () => {
+  assert.equal(checkoutShippingCost('AO', 'courier_ao', 79_999, undefined, 'Mutamba'), 3500); // Centro
+  assert.equal(checkoutShippingCost('AO', 'courier_ao', 79_999, undefined, 'Talatona'), 3500); // Sul
+  assert.equal(checkoutShippingCost('AO', 'courier_ao', 79_999, undefined, 'Hoji ya Henda'), 3500); // Norte
+  assert.equal(checkoutShippingCost('AO', 'courier_ao', 79_999, undefined, 'Zango'), 5500); // Periferia
+  assert.equal(checkoutShippingCost('AO', 'courier_ao', 80_000, undefined, 'Zango'), 0);
+  assert.equal(checkoutShippingCost('AO', 'courier_ao', 50_000, { angolaZonePricePeriferia: 6000 }, 'Viana'), 6000);
+  assert.equal(checkoutShippingCost('AO', 'courier_ao', 50_000, { angolaZonePricePeriferia: 6000 }, 'Sambizanga'), 3500);
+  assert.equal(checkoutShippingCost('AO', 'courier_ao', 50_000, undefined, 'Mussulo'), 0); // a former municipality has no price
+  assert.equal(checkoutShippingCost('AO', 'courier_ao', 50_000, undefined, undefined), 0); // nothing selected yet
+});
+
+test('the 21 neighbourhoods are split 6/5/5/5 across the four zones', () => {
+  assert.deepEqual(ANGOLA_ZONES.map((zone) => ANGOLA_DELIVERY_ZONES[zone].length), [6, 5, 5, 5]);
+  assert.equal(angolaZoneOf('Cacuaco'), 'periferia');
+  assert.equal(angolaZoneOf('Luanda'), null);
 });
 
 test('VAT included-in-price: Angola is flat, Portugal picks the rate for the postal code region', () => {

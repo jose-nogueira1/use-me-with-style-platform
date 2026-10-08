@@ -34,6 +34,7 @@ type EditableFields = {
   customerEmail: string;
   address: string;
   addressLine2: string;
+  deliveryReference: string;
   postalCode: string;
   city: string;
   country: string;
@@ -51,6 +52,7 @@ function toEditable(order: ApiOrder): EditableFields {
     customerEmail: order.customerEmail,
     address: order.address,
     addressLine2: order.addressLine2 ?? '',
+    deliveryReference: order.deliveryReference ?? '',
     postalCode: order.postalCode ?? '',
     city: order.city,
     country: order.country,
@@ -224,6 +226,7 @@ export function OrderDetail() {
       const updated = await adminUpdateOrder(order.id, {
         ...form,
         addressLine2: form.addressLine2 || undefined,
+        deliveryReference: form.deliveryReference || undefined,
         postalCode: form.postalCode || undefined,
         taxId: form.taxId || undefined,
         notes: form.notes || undefined,
@@ -373,6 +376,9 @@ export function OrderDetail() {
             <EditField label={t('emailField', lang)} value={form.customerEmail} onChange={(v) => setField('customerEmail', v)} type="email" />
             <EditField label={t('addressField', lang)} value={form.address} onChange={(v) => setField('address', v)} />
             <EditField label={t('addressLine2Field', lang)} value={form.addressLine2} onChange={(v) => setField('addressLine2', v)} />
+            {order.market === 'AO' && (
+              <EditField label={t('deliveryReferenceField', lang)} value={form.deliveryReference} onChange={(v) => setField('deliveryReference', v)} />
+            )}
             {/* PT-only fields, previously shown (and editable) for every
                 order regardless of market (2026-07-31, found via screen
                 recording: an Angola order showed an editable "Postal code
@@ -600,6 +606,7 @@ function PackingSlip({ order, lang }: { order: ApiOrder; lang: Lang }) {
         <div style={{ fontWeight: 800 }}>{order.customerName}</div>
         <div>{order.address}{order.addressLine2 ? `, ${order.addressLine2}` : ''}</div>
         <div>{order.postalCode ? `${order.postalCode} ` : ''}{order.city}, {order.country}</div>
+        {order.deliveryReference ? <div>{t('deliveryReferenceField', lang)}: {order.deliveryReference}</div> : null}
         <div>{order.customerPhone}</div>
       </div>
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>

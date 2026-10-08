@@ -7,30 +7,49 @@ export type PortugalShippingConfig = {
   portugalHeavyIslandsShippingPrice?: number | null;
 };
 
-export const LUANDA_MUNICIPALITIES = [
-  'Luanda', 'Cacuaco', 'Cazenga', 'Viana', 'Belas', 'Talatona', 'Mussulo', 'Sambizanga',
-  'Rangel', 'Maianga', 'Samba', 'Camama', 'Mulenvos', 'Kilamba', 'Hoji Ya Henda', 'Ingombota',
-] as const;
+// Angola delivery is done by Zygo (zygo.ao) in Luanda, priced by four zones. The
+// neighbourhood -> zone map is fixed (and mirrored in the CMS, which is the
+// authority); zone prices and the free-delivery threshold come from the market
+// settings. The order's `city` stores the neighbourhood the customer picks.
+export const ANGOLA_DELIVERY_ZONES = {
+  centro: ['Ingombotas', 'Maianga', 'Alvalade', 'Maculusso', 'Mutamba', 'Cassenda'],
+  sul: ['Talatona', 'Patriota', 'Belas', 'Camama', 'Benfica'],
+  norte: ['Vila Alice', 'Sambizanga', 'Rangel', 'Cazenga', 'Hoji ya Henda'],
+  periferia: ['Viana', 'Kilamba', 'Zango', 'Cacuaco', 'Funda'],
+} as const;
 
-export const DEFAULT_ANGOLA_MUNICIPALITY_PRICES: Record<string, number> = {
-  Luanda: 3000, Cacuaco: 5000, Cazenga: 3500, Viana: 6000, Belas: 6500, Talatona: 4000,
-  Mussulo: 8000, Sambizanga: 3000, Rangel: 3000, Maianga: 2500, Samba: 3500, Camama: 4500,
-  Mulenvos: 5500, Kilamba: 5000, 'Hoji Ya Henda': 3500, Ingombota: 2500,
-};
+export type AngolaZone = keyof typeof ANGOLA_DELIVERY_ZONES;
+export const ANGOLA_ZONES = Object.keys(ANGOLA_DELIVERY_ZONES) as AngolaZone[];
+
+export const DEFAULT_ANGOLA_ZONE_PRICES: Record<AngolaZone, number> = { centro: 3500, sul: 3500, norte: 3500, periferia: 5500 };
+
+export function angolaZoneOf(neighbourhood: string | undefined): AngolaZone | null {
+  return ANGOLA_ZONES.find((zone) => (ANGOLA_DELIVERY_ZONES[zone] as readonly string[]).includes(neighbourhood ?? '')) ?? null;
+}
 
 export type MarketShippingConfig = PortugalShippingConfig & {
-  angolaMunicipalityPrices?: Record<string, unknown> | null;
+  angolaZonePriceCentro?: number | null;
+  angolaZonePriceSul?: number | null;
+  angolaZonePriceNorte?: number | null;
+  angolaZonePricePeriferia?: number | null;
   angolaFreeShippingThreshold?: number | null;
 };
 
+const ZONE_SETTING: Record<AngolaZone, keyof MarketShippingConfig> = {
+  centro: 'angolaZonePriceCentro',
+  sul: 'angolaZonePriceSul',
+  norte: 'angolaZonePriceNorte',
+  periferia: 'angolaZonePricePeriferia',
+};
+
 export function normalizeAngolaShipping(config?: MarketShippingConfig | null) {
-  const municipalityPrices = Object.fromEntries(LUANDA_MUNICIPALITIES.map((municipality) => {
-    const value = Number(config?.angolaMunicipalityPrices?.[municipality]);
-    return [municipality, Number.isFinite(value) && value >= 0 ? value : DEFAULT_ANGOLA_MUNICIPALITY_PRICES[municipality]];
-  }));
+  const zonePrices = Object.fromEntries(ANGOLA_ZONES.map((zone) => {
+    const value = Number(config?.[ZONE_SETTING[zone]]);
+    return [zone, Number.isFinite(value) && value >= 0 ? value : DEFAULT_ANGOLA_ZONE_PRICES[zone]];
+  })) as Record<AngolaZone, number>;
   const threshold = Number(config?.angolaFreeShippingThreshold);
   return {
-    municipalityPrices,
+    zonePrices,
     freeThreshold: Number.isFinite(threshold) && threshold >= 0 ? threshold : 80_000,
   };
 }
@@ -109,14 +128,15 @@ export function checkoutShippingCost(
   deliveryMethod: string,
   merchandiseTotalAfterDiscount: number,
   config?: MarketShippingConfig | null,
-  municipality?: string,
+  neighbourhood?: string,
   totalWeightGrams = 0,
   postalCode?: string,
 ): number {
   if (market === 'AO') {
     const values = normalizeAngolaShipping(config);
     if (merchandiseTotalAfterDiscount >= values.freeThreshold) return 0;
-    return values.municipalityPrices[municipality ?? ''] ?? 0;
+    const zone = angolaZoneOf(neighbourhood);
+    return zone ? values.zonePrices[zone] : 0;
   }
   const prices = normalizePortugalShipping(config);
   if (merchandiseTotalAfterDiscount >= prices.freeThreshold) return 0;

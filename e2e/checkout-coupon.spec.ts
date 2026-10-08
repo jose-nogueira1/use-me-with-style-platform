@@ -9,15 +9,15 @@ function digitsOnly(text: string): string {
 }
 
 test.describe('Checkout authoritative delivery and coupon behaviour', () => {
-  test('AO: municipality selection applies its editable local-courier price', async ({ page }) => {
+  test('AO: neighbourhood selection applies its editable Zygo zone price', async ({ page }) => {
     await mockCheckoutBackend(page);
     await seedCheckout(page, { market: 'AO', lang: 'en' });
     await page.goto('/checkout');
 
     await expect(page.locator('input[name="payment"][value="multicaixa_express"]')).toBeChecked();
     await expect(page.getByTestId('checkout-subtotal')).toContainText('Kz');
-    await page.getByLabel(t('municipality', 'en')).selectOption('Ingombota');
-    expect(digitsOnly(await page.getByTestId('checkout-shipping').innerText())).toContain('2500');
+    await page.getByLabel(t('municipality', 'en')).selectOption('Mutamba');
+    expect(digitsOnly(await page.getByTestId('checkout-shipping').innerText())).toContain('3500');
 
     await page.getByLabel(t('couponLabel', 'en')).fill('SAVE10');
     await page.getByRole('button', { name: t('couponApply', 'en') }).click();
@@ -25,14 +25,14 @@ test.describe('Checkout authoritative delivery and coupon behaviour', () => {
 
     await expect(page.getByTestId('checkout-discount')).toBeVisible();
     expect(digitsOnly(await page.getByTestId('checkout-discount').innerText())).toContain('1000');
-    expect(digitsOnly(await page.getByTestId('checkout-total').innerText())).toContain('11500');
+    expect(digitsOnly(await page.getByTestId('checkout-total').innerText())).toContain('12500');
   });
 
   test('AO: delivery is free from Kz 80,000 after discounts', async ({ page }) => {
     await mockCheckoutBackend(page);
     await seedCheckout(page, { market: 'AO', lang: 'en', qty: 8 });
     await page.goto('/checkout');
-    await page.getByLabel(t('municipality', 'en')).selectOption('Mussulo');
+    await page.getByLabel(t('municipality', 'en')).selectOption('Zango');
     await expect(page.getByTestId('checkout-shipping')).toContainText(t('free', 'en'));
     expect(digitsOnly(await page.getByTestId('checkout-total').innerText())).toContain('80000');
   });

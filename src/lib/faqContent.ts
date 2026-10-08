@@ -70,8 +70,8 @@ export function buildFaqEntries(market: Market, lang: Lang, settings: MarketSett
 
   const shipping = market === 'AO'
     ? (lang === 'pt'
-      ? 'Entregamos por estafeta local nos 16 municípios de Luanda. O custo é calculado pela localização e apresentado no checkout; depois da confirmação, a equipa coordena consigo o horário de entrega. Não prometemos um prazo de 24 horas sem confirmação prévia.'
-      : 'We deliver by local courier across Luanda’s 16 municipalities. The fee is calculated from your location and shown at checkout; after confirmation, our team coordinates the delivery time with you. We do not promise 24-hour delivery without prior confirmation.')
+      ? 'Entregamos em Luanda através da Zygo (zygo.ao), em 21 bairros organizados em 4 zonas. O custo depende da zona e é apresentado no checkout; depois da confirmação, a equipa coordena consigo o horário de entrega. Não prometemos um prazo de 24 horas sem confirmação prévia.'
+      : 'We deliver in Luanda through Zygo (zygo.ao), across 21 neighbourhoods grouped in 4 zones. The fee depends on the zone and is shown at checkout; after confirmation, our team coordinates the delivery time with you. We do not promise 24-hour delivery without prior confirmation.')
     : (lang === 'pt'
       ? 'Em Portugal enviamos pelos CTT. Pode escolher envio Standard sem rastreio ou Registado com rastreio, quando disponível para o peso da encomenda. O custo e o prazo estimado dependem do destino; Madeira e Açores podem demorar mais.'
       : 'In Portugal we ship with CTT. You can choose Standard untracked or Registered tracked delivery when available for the parcel weight. Cost and estimated timing depend on the destination; Madeira and the Azores may take longer.');

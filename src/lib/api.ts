@@ -409,9 +409,10 @@ export type CreateOrderInput = {
   address: string;
   /** Optional floor/door line (andar/porta) -- common on PT addresses, kept
    * separate from the free-text `address` line so it renders cleanly on
-   * shipping labels/invoices. Not used for AO (courier coordination is via
-   * WhatsApp, not a structured address). */
+   * shipping labels/invoices. */
   addressLine2?: string;
+  /** Angola only: landmark the courier (Zygo) uses to find the address. */
+  deliveryReference?: string;
   /** Required for PT (validated client-side against the 0000-000 CTT
    * format); not collected for AO, which has no equivalent postal-code
    * convention in this checkout. */
@@ -521,7 +522,12 @@ export type MarketSettings = {
    * the client has a Portuguese legal entity and approved providers. */
   angolaPaymentMethods: string[];
   angolaDeliveryMethods: string[];
-  angolaMunicipalityPrices: Record<string, number>;
+  /** Zygo delivery price per Luanda zone (Kz) -- see storefront/shipping.ts. The old
+   * 16-municipality price table is no longer used. */
+  angolaZonePriceCentro?: number;
+  angolaZonePriceSul?: number;
+  angolaZonePriceNorte?: number;
+  angolaZonePricePeriferia?: number;
   angolaFreeShippingThreshold: number;
   portugalPaymentsEnabled: boolean;
   manualWhatsappNumber?: string;

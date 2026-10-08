@@ -14,7 +14,7 @@ test('FAQ content is market-aware and does not claim deferred Portugal payments 
     portugalFreeShippingThreshold: 75,
   } as never);
 
-  assert.ok(ao.some((entry) => /16 municípios de Luanda/.test(entry.answer)));
+  assert.ok(ao.some((entry) => /através da Zygo/.test(entry.answer)));
   assert.ok(ao.some((entry) => /pagamento pendente/.test(entry.answer) && /WhatsApp/.test(entry.answer)));
   assert.ok(pt.some((entry) => /pagamento pendente/.test(entry.answer) && /WhatsApp/.test(entry.answer)));
   assert.ok(pt.every((entry) => !/coordenado por email|Stripe, PayPal ou MB WAY/.test(entry.answer)));

@@ -2,6 +2,7 @@ import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'rea
 import { Navigate, useNavigate } from 'react-router-dom';
 import { C, F, t, formatMoney, type Lang } from '../../theme';
 import { useApp } from '../../state/AppContext';
+import { ZygoLink } from '../components/ZygoLink';
 import { useProducts } from '../../hooks/useProducts';
 import {
   createOrder,
@@ -27,7 +28,8 @@ import { buildManualWhatsappPayload, saveManualWhatsappPayload } from '../../lib
 import {
   checkoutShippingCost,
   DEFAULT_TAX_RATES,
-  LUANDA_MUNICIPALITIES,
+  ANGOLA_DELIVERY_ZONES,
+  ANGOLA_ZONES,
   normalizeAngolaShipping,
   normalizePortugalShipping,
   vatIncludedAmount,
@@ -42,11 +44,10 @@ const DEFAULT_MARKET_SETTINGS: MarketSettings = {
   angolaBankTransferInstructionsEN: '',
   angolaPaymentMethods: ['multicaixa_express'],
   angolaDeliveryMethods: ['courier_ao'],
-  angolaMunicipalityPrices: {
-    Luanda: 3000, Cacuaco: 5000, Cazenga: 3500, Viana: 6000, Belas: 6500, Talatona: 4000,
-    Mussulo: 8000, Sambizanga: 3000, Rangel: 3000, Maianga: 2500, Samba: 3500, Camama: 4500,
-    Mulenvos: 5500, Kilamba: 5000, 'Hoji Ya Henda': 3500, Ingombota: 2500,
-  },
+  angolaZonePriceCentro: 3500,
+  angolaZonePriceSul: 3500,
+  angolaZonePriceNorte: 3500,
+  angolaZonePricePeriferia: 5500,
   angolaFreeShippingThreshold: 80000,
   portugalPaymentsEnabled: false,
   manualWhatsappNumber: '',
@@ -452,6 +453,7 @@ export function Checkout() {
     email: '',
     address: '',
     addressLine2: '',
+    deliveryReference: '',
     postalCode: '',
     city: '',
     country: market === 'AO' ? 'Angola' : 'Portugal',
@@ -746,6 +748,7 @@ export function Checkout() {
         customerEmail: form.email,
         address: form.address,
         addressLine2: form.addressLine2 || undefined,
+        deliveryReference: market === 'AO' ? form.deliveryReference.trim() || undefined : undefined,
         // This branch only runs when usesEurSettlement is true, which by
         // definition requires market === 'AO' -- postalCode is a PT-only
         // field, so it's always absent here.
@@ -776,6 +779,7 @@ export function Checkout() {
       customerEmail: form.email,
       address: form.address,
       addressLine2: form.addressLine2 || undefined,
+      deliveryReference: market === 'AO' ? form.deliveryReference.trim() || undefined : undefined,
       postalCode: market === 'PT' ? form.postalCode : undefined,
       city: form.city,
       country: form.country,
@@ -901,7 +905,7 @@ export function Checkout() {
   };
 
   const validateRequiredFields = (): boolean => {
-    if (!form.firstName || !form.lastName || !form.phone || !form.email || !form.address || !form.addressLine2 || !form.city) {
+    if (!form.firstName || !form.lastName || !form.phone || !form.email || !form.address || !form.addressLine2 || !form.city || (market === 'AO' && !form.deliveryReference.trim())) {
       setError(t('fillRequiredFields', lang));
       return false;
     }
@@ -1062,13 +1066,26 @@ export function Checkout() {
                 style={{ width: '100%', padding: '11px 12px', fontSize: 13, border: `1px solid ${C.fieldBorder}`, borderRadius: 6, background: C.paper, color: C.ink }}
               >
                 <option value="">{t('selectMunicipality', lang)}</option>
-                {LUANDA_MUNICIPALITIES.map((municipality) => (
-                  <option key={municipality} value={municipality}>{municipality} — {formatMoney(angolaShipping.municipalityPrices[municipality], 'AO', lang)}</option>
+                {ANGOLA_ZONES.map((zone) => (
+                  <optgroup key={zone} label={`${t(`zone${zone[0].toUpperCase()}${zone.slice(1)}`, lang)} — ${formatMoney(angolaShipping.zonePrices[zone], 'AO', lang)}`}>
+                    {ANGOLA_DELIVERY_ZONES[zone].map((neighbourhood) => (
+                      <option key={neighbourhood} value={neighbourhood}>{neighbourhood}</option>
+                    ))}
+                  </optgroup>
                 ))}
               </select>
             </label>
           ) : (
             <Field label={t('city', lang)} value={form.city} onChange={(v) => setForm({ ...form, city: v })} required />
+          )}
+          {market === 'AO' && (
+            <Field
+              label={t('deliveryReference', lang)}
+              value={form.deliveryReference}
+              onChange={(v) => setForm({ ...form, deliveryReference: v })}
+              placeholder={t('deliveryReferenceHint', lang)}
+              required
+            />
           )}
           {market === 'AO' ? (
             <Field
@@ -1093,7 +1110,7 @@ export function Checkout() {
 
         <Section title={t('delivery', lang)}>
           {deliveryOptions.map((opt) => (
-            <RadioRow key={opt} name="delivery" value={opt} checked={deliveryMethod === opt} onSelect={() => setDeliveryMethod(opt)} label={DELIVERY_LABEL_KEYS[opt] ? t(DELIVERY_LABEL_KEYS[opt], lang) : opt} />
+            <RadioRow key={opt} name="delivery" value={opt} checked={deliveryMethod === opt} onSelect={() => setDeliveryMethod(opt)} label={opt === 'courier_ao' ? <ZygoLink /> : DELIVERY_LABEL_KEYS[opt] ? t(DELIVERY_LABEL_KEYS[opt], lang) : opt} />
           ))}
           {market === 'PT' && (
             <div style={{ marginTop: 8, fontSize: 11, color: C.inkSoft, lineHeight: 1.5 }}>
@@ -1517,7 +1534,7 @@ function PhoneField({
   );
 }
 
-function RadioRow({ checked, onSelect, label, name, value }: { checked: boolean; onSelect: () => void; label: string; name: string; value: string }) {
+function RadioRow({ checked, onSelect, label, name, value }: { checked: boolean; onSelect: () => void; label: React.ReactNode; name: string; value: string }) {
   return (
     <label
       style={{

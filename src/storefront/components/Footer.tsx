@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+import { ZygoLink } from './ZygoLink';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FileText, Mail } from 'lucide-react';
@@ -88,7 +90,7 @@ export function Footer() {
 
           <div className="ump-footer-col">
             <FooterHeading>{lang === 'pt' ? 'Envio, devoluções e preços' : 'Shipping, returns & prices'}</FooterHeading>
-            <InfoLine label={t('shipping', lang)} value={market === 'AO' ? t('localCourierDelivery', lang) : t('businessDays', lang)} />
+            <InfoLine label={t('shipping', lang)} value={market === 'AO' ? <>{t('localCourierDelivery', lang)} <ZygoLink /></> : t('businessDays', lang)} />
             <InfoLine
               label={t('returns', lang)}
               value={t(market === 'AO' ? 'footerReturnsNoteAo' : 'footerReturnsNotePt', lang)}
@@ -241,7 +243,7 @@ function FooterCol({
   );
 }
 
-function InfoLine({ label, value, to }: { label: string; value: string; to?: string }) {
+function InfoLine({ label, value, to }: { label: string; value: ReactNode; to?: string }) {
   if (!label) return null;
   const valueStyle = { fontSize: 12, color: C.ink, marginTop: 2, lineHeight: 1.4 };
   return (
