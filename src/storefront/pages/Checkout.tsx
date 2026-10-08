@@ -48,6 +48,7 @@ const DEFAULT_MARKET_SETTINGS: MarketSettings = {
   angolaZonePriceSul: 3500,
   angolaZonePriceNorte: 3500,
   angolaZonePricePeriferia: 5500,
+  angolaFreeShippingEnabled: false,
   angolaFreeShippingThreshold: 80000,
   portugalPaymentsEnabled: false,
   manualWhatsappNumber: '',
@@ -61,6 +62,7 @@ const DEFAULT_MARKET_SETTINGS: MarketSettings = {
   portugalDeliveryMethods: ['ctt', 'courier_pt'],
   portugalStandardShippingPrice: 4.9,
   portugalTrackedShippingPrice: 6.9,
+  portugalFreeShippingEnabled: false,
   portugalFreeShippingThreshold: 75,
   portugalStandardWeightLimitGrams: 2000,
   portugalHeavyMainlandShippingPrice: 9.9,
@@ -905,7 +907,7 @@ export function Checkout() {
   };
 
   const validateRequiredFields = (): boolean => {
-    if (!form.firstName || !form.lastName || !form.phone || !form.email || !form.address || !form.addressLine2 || !form.city || (market === 'AO' && !form.deliveryReference.trim())) {
+    if (!form.firstName || !form.lastName || !form.phone || !form.email || !form.address || !form.addressLine2 || !form.city) {
       setError(t('fillRequiredFields', lang));
       return false;
     }
@@ -1084,7 +1086,6 @@ export function Checkout() {
               value={form.deliveryReference}
               onChange={(v) => setForm({ ...form, deliveryReference: v })}
               placeholder={t('deliveryReferenceHint', lang)}
-              required
             />
           )}
           {market === 'AO' ? (
@@ -1114,12 +1115,12 @@ export function Checkout() {
           ))}
           {market === 'PT' && (
             <div style={{ marginTop: 8, fontSize: 11, color: C.inkSoft, lineHeight: 1.5 }}>
-              {t('portugalDeliveryTerms', lang).replace('{amount}', formatMoney(portugalShipping.freeThreshold, 'PT', lang))}
+              {t(portugalShipping.freeEnabled ? 'portugalDeliveryTerms' : 'portugalDeliveryTermsNoFree', lang).replace('{amount}', formatMoney(portugalShipping.freeThreshold, 'PT', lang))}
             </div>
           )}
           {isHeavyPortugalParcel && (
             <div style={{ marginTop: 8, padding: 10, background: C.subtleBg, border: `1px solid ${C.surfaceBorder}`, borderRadius: 6, fontSize: 11, color: C.ink, lineHeight: 1.5 }}>
-              {t('heavyParcelTrackedOnly', lang)
+              {t(portugalShipping.freeEnabled ? 'heavyParcelTrackedOnly' : 'heavyParcelTrackedOnlyNoFree', lang)
                 .replace('{weight}', (totalWeightGrams / 1000).toFixed(1))
                 .replace('{mainland}', formatMoney(portugalShipping.heavyMainlandPrice, 'PT', lang))
                 .replace('{islands}', formatMoney(portugalShipping.heavyIslandsPrice, 'PT', lang))}
@@ -1127,7 +1128,7 @@ export function Checkout() {
           )}
           {market === 'AO' && (
             <div style={{ marginTop: 8, fontSize: 11, color: C.inkSoft, lineHeight: 1.5 }}>
-              {t('angolaDeliveryTerms', lang).replace('{amount}', formatMoney(angolaShipping.freeThreshold, 'AO', lang))}
+              {t(angolaShipping.freeEnabled ? 'angolaDeliveryTerms' : 'angolaDeliveryTermsNoFree', lang).replace('{amount}', formatMoney(angolaShipping.freeThreshold, 'AO', lang))}
             </div>
           )}
         </Section>

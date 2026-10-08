@@ -1,6 +1,7 @@
 export type PortugalShippingConfig = {
   portugalStandardShippingPrice?: number | null;
   portugalTrackedShippingPrice?: number | null;
+  portugalFreeShippingEnabled?: boolean | null;
   portugalFreeShippingThreshold?: number | null;
   portugalStandardWeightLimitGrams?: number | null;
   portugalHeavyMainlandShippingPrice?: number | null;
@@ -32,6 +33,7 @@ export type MarketShippingConfig = PortugalShippingConfig & {
   angolaZonePriceSul?: number | null;
   angolaZonePriceNorte?: number | null;
   angolaZonePricePeriferia?: number | null;
+  angolaFreeShippingEnabled?: boolean | null;
   angolaFreeShippingThreshold?: number | null;
 };
 
@@ -50,6 +52,8 @@ export function normalizeAngolaShipping(config?: MarketShippingConfig | null) {
   const threshold = Number(config?.angolaFreeShippingThreshold);
   return {
     zonePrices,
+    // Off unless an admin switches it on (Settings > Angola).
+    freeEnabled: config?.angolaFreeShippingEnabled === true,
     freeThreshold: Number.isFinite(threshold) && threshold >= 0 ? threshold : 80_000,
   };
 }
@@ -69,6 +73,7 @@ export function normalizePortugalShipping(config?: PortugalShippingConfig | null
   return {
     standardPrice: valid(config?.portugalStandardShippingPrice, DEFAULT_PORTUGAL_SHIPPING.standardPrice),
     trackedPrice: valid(config?.portugalTrackedShippingPrice, DEFAULT_PORTUGAL_SHIPPING.trackedPrice),
+    freeEnabled: config?.portugalFreeShippingEnabled === true,
     freeThreshold: valid(config?.portugalFreeShippingThreshold, DEFAULT_PORTUGAL_SHIPPING.freeThreshold),
     standardWeightLimitGrams: valid(config?.portugalStandardWeightLimitGrams, DEFAULT_PORTUGAL_SHIPPING.standardWeightLimitGrams),
     heavyMainlandPrice: valid(config?.portugalHeavyMainlandShippingPrice, DEFAULT_PORTUGAL_SHIPPING.heavyMainlandPrice),
@@ -134,12 +139,12 @@ export function checkoutShippingCost(
 ): number {
   if (market === 'AO') {
     const values = normalizeAngolaShipping(config);
-    if (merchandiseTotalAfterDiscount >= values.freeThreshold) return 0;
+    if (values.freeEnabled && merchandiseTotalAfterDiscount >= values.freeThreshold) return 0;
     const zone = angolaZoneOf(neighbourhood);
     return zone ? values.zonePrices[zone] : 0;
   }
   const prices = normalizePortugalShipping(config);
-  if (merchandiseTotalAfterDiscount >= prices.freeThreshold) return 0;
+  if (prices.freeEnabled && merchandiseTotalAfterDiscount >= prices.freeThreshold) return 0;
   if (totalWeightGrams > prices.standardWeightLimitGrams) {
     return portugalDeliveryRegion(postalCode) === 'mainland' ? prices.heavyMainlandPrice : prices.heavyIslandsPrice;
   }

@@ -84,3 +84,10 @@ test('FAQ page uses the shared accessible disclosure and emits dedicated JSON-LD
   assert.match(footer, /to: '\/perguntas-frequentes'/);
   assert.match(help, /id="devolucoes"\s+heading={t\('returnsPolicyHeading'/);
 });
+
+test('the delivery-cost FAQ only promises free delivery while it is switched on', () => {
+  const cost = (settings: object) => buildFaqEntries('AO', 'pt', { angolaPaymentMethods: ['multicaixa_express'], ...settings } as never).find((entry) => /Quanto custa a entrega/.test(entry.question))!.answer;
+  assert.doesNotMatch(cost({}), /gratuita/);
+  assert.doesNotMatch(cost({ angolaFreeShippingEnabled: false, angolaFreeShippingThreshold: 80_000 }), /gratuita/);
+  assert.match(cost({ angolaFreeShippingEnabled: true, angolaFreeShippingThreshold: 80_000 }), /gratuita a partir de/);
+});

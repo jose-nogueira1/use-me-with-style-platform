@@ -487,7 +487,7 @@ export type ApiOrder = CreateOrderInput & {
 export type PublicOrderStatus = Pick<
   ApiOrder,
   'orderNumber' | 'status' | 'paymentStatus' | 'total' | 'currency' | 'deliveryRegion' | 'cttTrackingCode' | 'updatedAt'
-> & { returns?: Array<Pick<ApiReturn, 'returnNumber' | 'status' | 'resolution' | 'approvedAmount' | 'currency' | 'updatedAt'>> };
+> & { trackingProvider?: 'ctt' | 'zygo'; trackingUrl?: string | null; returns?: Array<Pick<ApiReturn, 'returnNumber' | 'status' | 'resolution' | 'approvedAmount' | 'currency' | 'updatedAt'>> };
 
 export type ApiReturnItem = {
   orderItemId: string; product: string | number; productName: string; variantId?: string; colorId?: string;
@@ -528,6 +528,8 @@ export type MarketSettings = {
   angolaZonePriceSul?: number;
   angolaZonePriceNorte?: number;
   angolaZonePricePeriferia?: number;
+  /** Free delivery above the threshold is OFF until an admin switches it on. */
+  angolaFreeShippingEnabled?: boolean;
   angolaFreeShippingThreshold: number;
   portugalPaymentsEnabled: boolean;
   manualWhatsappNumber?: string;
@@ -545,6 +547,7 @@ export type MarketSettings = {
   portugalDeliveryMethods: string[];
   portugalStandardShippingPrice: number;
   portugalTrackedShippingPrice: number;
+  portugalFreeShippingEnabled?: boolean;
   portugalFreeShippingThreshold: number;
   portugalStandardWeightLimitGrams: number;
   portugalHeavyMainlandShippingPrice: number;
@@ -1004,21 +1007,20 @@ export async function fetchTaxRates(): Promise<TaxRates> {
  * by the CMS from admin settings -- see use-me-with-style-cms/src/lib/
  * announcementBanner.ts. Failures are the caller's to swallow: the bar is
  * decoration and must never break a page. */
-export type AnnouncementItem = { id: 'delivery' | 'coupon'; pt: string; en: string };
+export type AnnouncementItem = { id: 'message' | 'coupon'; pt: string; en: string };
 export async function fetchAnnouncementBar(market: 'AO' | 'PT'): Promise<AnnouncementItem[]> {
   const data = await request<{ items?: AnnouncementItem[] }>(`/storefront-banner?market=${market}`);
   return data.items ?? [];
 }
 
-/** Admin: free-delivery message of the announcement bar, per market. Blank text =
- * automatic wording built from the market's free-delivery threshold. */
+/** Admin: the announcement bar's own message, per market (off unless switched on). */
 export type AnnouncementBarSettings = {
-  angolaDeliveryEnabled?: boolean | null;
-  angolaDeliveryTextPt?: string | null;
-  angolaDeliveryTextEn?: string | null;
-  portugalDeliveryEnabled?: boolean | null;
-  portugalDeliveryTextPt?: string | null;
-  portugalDeliveryTextEn?: string | null;
+  angolaMessageEnabled?: boolean | null;
+  angolaMessageTextPt?: string | null;
+  angolaMessageTextEn?: string | null;
+  portugalMessageEnabled?: boolean | null;
+  portugalMessageTextPt?: string | null;
+  portugalMessageTextEn?: string | null;
 };
 export async function adminFetchAnnouncementBar(): Promise<AnnouncementBarSettings> {
   return request<AnnouncementBarSettings>('/globals/announcement-banner', { cache: 'no-store' }, { auth: true });

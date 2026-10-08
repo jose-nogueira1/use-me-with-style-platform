@@ -89,6 +89,7 @@ const DEFAULTS: MarketSettings = {
   angolaZonePriceSul: DEFAULT_ANGOLA_ZONE_PRICES.sul,
   angolaZonePriceNorte: DEFAULT_ANGOLA_ZONE_PRICES.norte,
   angolaZonePricePeriferia: DEFAULT_ANGOLA_ZONE_PRICES.periferia,
+  angolaFreeShippingEnabled: false,
   angolaFreeShippingThreshold: 80000,
   portugalPaymentsEnabled: false,
   manualWhatsappNumber: '',
@@ -102,6 +103,7 @@ const DEFAULTS: MarketSettings = {
   portugalDeliveryMethods: ['ctt', 'courier_pt'],
   portugalStandardShippingPrice: 4.9,
   portugalTrackedShippingPrice: 6.9,
+  portugalFreeShippingEnabled: false,
   portugalFreeShippingThreshold: 75,
   portugalStandardWeightLimitGrams: 2000,
   portugalHeavyMainlandShippingPrice: 9.9,
@@ -350,7 +352,13 @@ export function Settings() {
                         />
                       );
                     })}
-                    <MoneyField label={t('freeShippingThresholdKz', lang)} value={settings.angolaFreeShippingThreshold} currency="AO" lang={lang} compact onChange={(value) => setSettings((s) => ({ ...s, angolaFreeShippingThreshold: Number(value) || 0 }))} />
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
+                      <input type="checkbox" checked={Boolean(settings.angolaFreeShippingEnabled)} onChange={(e) => setSettings((s) => ({ ...s, angolaFreeShippingEnabled: e.target.checked }))} />
+                      {t('freeShippingEnabledLabel', lang)}
+                    </label>
+                    {settings.angolaFreeShippingEnabled && (
+                      <MoneyField label={t('freeShippingThresholdKz', lang)} value={settings.angolaFreeShippingThreshold} currency="AO" lang={lang} compact onChange={(value) => setSettings((s) => ({ ...s, angolaFreeShippingThreshold: Number(value) || 0 }))} />
+                    )}
                   </div>
                 </details>
               }
@@ -412,7 +420,13 @@ export function Settings() {
                 <div style={{ display: 'grid', gap: 8 }}>
                   <MoneyField label={t('cttStandardPrice', lang)} value={settings.portugalStandardShippingPrice} currency="EUR" lang={lang} compact onChange={(value) => setSettings((s) => ({ ...s, portugalStandardShippingPrice: Number(value) || 0 }))} />
                   <MoneyField label={t('cttTrackedPrice', lang)} value={settings.portugalTrackedShippingPrice} currency="EUR" lang={lang} compact onChange={(value) => setSettings((s) => ({ ...s, portugalTrackedShippingPrice: Number(value) || 0 }))} />
-                  <MoneyField label={t('freeShippingThreshold', lang)} value={settings.portugalFreeShippingThreshold} currency="EUR" lang={lang} compact onChange={(value) => setSettings((s) => ({ ...s, portugalFreeShippingThreshold: Number(value) || 0 }))} />
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
+                    <input type="checkbox" checked={Boolean(settings.portugalFreeShippingEnabled)} onChange={(e) => setSettings((s) => ({ ...s, portugalFreeShippingEnabled: e.target.checked }))} />
+                    {t('freeShippingEnabledLabel', lang)}
+                  </label>
+                  {settings.portugalFreeShippingEnabled && (
+                    <MoneyField label={t('freeShippingThreshold', lang)} value={settings.portugalFreeShippingThreshold} currency="EUR" lang={lang} compact onChange={(value) => setSettings((s) => ({ ...s, portugalFreeShippingThreshold: Number(value) || 0 }))} />
+                  )}
                   <NumberSetting label={t('standardWeightLimit', lang)} value={settings.portugalStandardWeightLimitGrams} step={100} onChange={(value) => setSettings((s) => ({ ...s, portugalStandardWeightLimitGrams: value }))} />
                   <MoneyField label={t('heavyMainlandPrice', lang)} value={settings.portugalHeavyMainlandShippingPrice} currency="EUR" lang={lang} compact onChange={(value) => setSettings((s) => ({ ...s, portugalHeavyMainlandShippingPrice: Number(value) || 0 }))} />
                   <MoneyField label={t('heavyIslandsPrice', lang)} value={settings.portugalHeavyIslandsShippingPrice} currency="EUR" lang={lang} compact onChange={(value) => setSettings((s) => ({ ...s, portugalHeavyIslandsShippingPrice: Number(value) || 0 }))} />
@@ -1038,10 +1052,10 @@ function AnnouncementBarSettingsSection() {
       <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: C.ink, marginBottom: 12 }}>
         <input
           type="checkbox"
-          checked={settings[enabledKey] !== false}
+          checked={settings[enabledKey] === true}
           onChange={(e) => setSettings((s) => ({ ...s, [enabledKey]: e.target.checked }))}
         />
-        {t('announcementShowDelivery', lang)}
+        {t('announcementShowMessage', lang)}
       </label>
       <SettingsField label={t('announcementTextPt', lang)} value={String(settings[ptKey] ?? '')} onChange={(v) => setSettings((s) => ({ ...s, [ptKey]: v }))} />
       <SettingsField label={t('announcementTextEn', lang)} value={String(settings[enKey] ?? '')} onChange={(v) => setSettings((s) => ({ ...s, [enKey]: v }))} />
@@ -1075,8 +1089,8 @@ function AnnouncementBarSettingsSection() {
         <div style={{ fontSize: 12, color: C.inkSoft }}>{t('loadingEllipsis', lang)}</div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }} className="ump-admin-orders-grid">
-          {market(t('angolaOption', lang), 'angolaDeliveryEnabled', 'angolaDeliveryTextPt', 'angolaDeliveryTextEn')}
-          {market(t('portugalOption', lang), 'portugalDeliveryEnabled', 'portugalDeliveryTextPt', 'portugalDeliveryTextEn')}
+          {market(t('angolaOption', lang), 'angolaMessageEnabled', 'angolaMessageTextPt', 'angolaMessageTextEn')}
+          {market(t('portugalOption', lang), 'portugalMessageEnabled', 'portugalMessageTextPt', 'portugalMessageTextEn')}
         </div>
       )}
     </div>

@@ -42,10 +42,10 @@ test.describe('Angola checkout: Zygo delivery', () => {
     expect(digitsOnly(await page.getByTestId('checkout-shipping').innerText())).toContain('5500');
   });
 
-  test('the point of reference is a required field and travels with the order', async ({ page }) => {
+  test('the point of reference is optional and travels with the order', async ({ page }) => {
     const reference = page.getByLabel(t('deliveryReference', 'en'));
     await expect(reference).toBeVisible();
-    await expect(reference).toHaveAttribute('required', '');
+    await expect(reference).not.toHaveAttribute('required', '');
     await reference.fill('Next to the Kero supermarket');
     await expect(reference).toHaveValue('Next to the Kero supermarket');
   });

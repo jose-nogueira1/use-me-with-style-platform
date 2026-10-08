@@ -67,6 +67,7 @@ export function buildFaqEntries(market: Market, lang: Lang, settings: MarketSett
   const freeThreshold = market === 'AO'
     ? settings?.angolaFreeShippingThreshold ?? 80_000
     : settings?.portugalFreeShippingThreshold ?? 75;
+  const freeEnabled = (market === 'AO' ? settings?.angolaFreeShippingEnabled : settings?.portugalFreeShippingEnabled) === true;
 
   const shipping = market === 'AO'
     ? (lang === 'pt'
@@ -84,8 +85,8 @@ export function buildFaqEntries(market: Market, lang: Lang, settings: MarketSett
     {
       question: lang === 'pt' ? 'Quanto custa a entrega?' : 'How much does delivery cost?',
       answer: lang === 'pt'
-        ? `O valor exato é calculado no checkout antes de confirmar. A entrega é gratuita a partir de ${formatAmount(freeThreshold, market, lang)}, depois de descontos. Também fazemos envios internacionais; contacte o apoio para confirmar custo e prazo para o seu país.`
-        : `The exact fee is calculated at checkout before you confirm. Delivery is free from ${formatAmount(freeThreshold, market, lang)}, after discounts. International shipping is also available; contact support to confirm the cost and timing for your country.`,
+        ? `O valor exato é calculado no checkout antes de confirmar. ${freeEnabled ? `A entrega é gratuita a partir de ${formatAmount(freeThreshold, market, lang)}, depois de descontos. ` : ''}Também fazemos envios internacionais; contacte o apoio para confirmar custo e prazo para o seu país.`
+        : `The exact fee is calculated at checkout before you confirm. ${freeEnabled ? `Delivery is free from ${formatAmount(freeThreshold, market, lang)}, after discounts. ` : ''}International shipping is also available; contact support to confirm the cost and timing for your country.`,
     },
     {
       question: lang === 'pt' ? 'Que métodos de pagamento aceitam?' : 'Which payment methods do you accept?',
@@ -115,8 +116,8 @@ export function buildFaqEntries(market: Market, lang: Lang, settings: MarketSett
     {
       question: lang === 'pt' ? 'Como acompanho a minha encomenda?' : 'How do I track my order?',
       answer: lang === 'pt'
-        ? 'Use o número da encomenda e o email utilizado na compra na página Consultar encomenda. Em Portugal, o código e o link de rastreio CTT aparecem depois de a encomenda ser enviada, quando o serviço escolhido inclui rastreio.'
-        : 'Use your order number and the email used at checkout on the Track order page. In Portugal, the CTT tracking code and link appear after dispatch when your selected service includes tracking.',
+        ? 'Use o número da encomenda e o email utilizado na compra na página Consultar encomenda. Em Portugal, o código e o link de rastreio CTT aparecem depois de a encomenda ser enviada, quando o serviço escolhido inclui rastreio. Em Angola, enviamos-lhe por email o número de rastreio da Zygo, que pode consultar em zygo.ao/rastreio.'
+        : 'Use your order number and the email used at checkout on the Track order page. In Portugal, the CTT tracking code and link appear after dispatch when your selected service includes tracking. In Angola, we email you the Zygo tracking number, which you can follow at zygo.ao/rastreio.',
       link: { to: '/conta', label: lang === 'pt' ? 'Consultar encomenda' : 'Track order' },
     },
   ];
