@@ -305,6 +305,12 @@ async function captureRoute(context, port, market, route) {
       const root = document.getElementById('root')
       if (!root) throw new Error('Missing #root')
       root.dataset.prerendered = 'true'
+      // The announcement bar's content is edited in the admin without a deploy, so the
+      // snapshot's text can be out of date. Keep its space (so nothing jumps when the
+      // page boots) but never show it: the live bar reveals itself once it has fetched
+      // the current content (see AnnouncementBar.tsx).
+      const announceBar = document.querySelector('.ump-announce')
+      if (announceBar instanceof HTMLElement) announceBar.style.visibility = 'hidden'
       const marker = document.createElement('meta')
       marker.name = 'ump-prerender'
       marker.content = `market=${marketName}; generated=${stamp}`

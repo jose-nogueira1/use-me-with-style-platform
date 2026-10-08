@@ -17,15 +17,19 @@ export function AnnouncementBar() {
   // Starts from the pre-rendered snapshot's items (see prerenderBootstrap) so the
   // bar doesn't blink out and back in while the page boots.
   const [items, setItems] = useState<AnnouncementItem[]>(() => readPrerenderAnnouncement(market));
+  // The snapshot can be stale (the bar is edited in the admin without a deploy), so it
+  // only holds the bar's place; nothing is shown until the current content has arrived.
+  const [fresh, setFresh] = useState(false);
 
   useEffect(() => {
     let live = true;
+    setFresh(false);
     fetchAnnouncementBar(market)
       .then((result) => {
         rememberAnnouncementForPrerender(market, result);
-        if (live) setItems(result);
+        if (live) { setItems(result); setFresh(true); }
       })
-      .catch(() => { if (live) setItems([]); });
+      .catch(() => { if (live) { setItems([]); setFresh(true); } });
     return () => { live = false; };
   }, [market]);
 
@@ -40,7 +44,8 @@ export function AnnouncementBar() {
       role="region"
       aria-label={lang === 'pt' ? 'Avisos' : 'Announcements'}
       className="ump-announce"
-      style={{ background: C.black, color: C.onDark, borderBottom: '1px solid rgba(229, 194, 79, 0.25)', fontFamily: F.sans }}
+      aria-hidden={fresh ? undefined : true}
+      style={{ background: C.black, color: C.onDark, borderBottom: '1px solid rgba(229, 194, 79, 0.25)', fontFamily: F.sans, visibility: fresh ? 'visible' : 'hidden' }}
     >
       <div className="ump-announce-track" style={{ animationDuration: `${announcementDuration(texts, repeat)}s` }}>
         {[0, 1].map((copy) => (
